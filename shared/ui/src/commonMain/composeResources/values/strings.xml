@@ -1482,4 +1482,19 @@
     <string name="notification_vpn_disconnected">VPN is off</string>
     <string name="notification_vpn_connect_failed">Could not turn VPN on</string>
     <string name="notification_vpn_disconnect_failed">Could not turn VPN off</string>
+    <string name="settings_local_proxy_http_inbound">HTTP proxy inbound</string>
+    <string name="settings_local_proxy_http_inbound_summary">Run an HTTP proxy next to SOCKS5 for browsers, system proxies and other HTTP clients</string>
+    <string name="settings_local_proxy_http_port">HTTP proxy port</string>
+    <string name="settings_local_proxy_socks_auth_mode">SOCKS5 authorization</string>
+    <string name="settings_local_proxy_http_auth_mode">HTTP authorization</string>
+    <string name="settings_local_proxy_auth_mode_auto">Auto</string>
+    <string name="settings_local_proxy_auth_mode_manual">Manual</string>
+    <string name="settings_local_proxy_auth_mode_json">From JSON</string>
+    <string name="settings_local_proxy_auth_mode_off">Off</string>
+    <string name="settings_local_proxy_auth_hint_auto">Uses the login from the custom JSON config when it has one, otherwise the generated login below</string>
+    <string name="settings_local_proxy_auth_hint_manual">Uses the login you enter below</string>
+    <string name="settings_local_proxy_auth_hint_json">Takes the login from the custom JSON inbound; without one the inbound stays open</string>
+    <string name="settings_local_proxy_socks_credentials">SOCKS5 login</string>
+    <string name="settings_local_proxy_http_credentials">HTTP login</string>
+    <string name="settings_local_proxy_http_auth_system_note">System proxies cannot send a login, so browsers will ask for it while HTTP authorization is on</string>
 </resources>

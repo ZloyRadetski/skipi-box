@@ -1471,4 +1471,19 @@
     <string name="notification_vpn_disconnected">VPN выключен</string>
     <string name="notification_vpn_connect_failed">Не удалось включить VPN</string>
     <string name="notification_vpn_disconnect_failed">Не удалось выключить VPN</string>
+    <string name="settings_local_proxy_http_inbound">HTTP-прокси (inbound)</string>
+    <string name="settings_local_proxy_http_inbound_summary">Запускать HTTP-прокси рядом с SOCKS5 для браузеров, системного прокси и других HTTP-клиентов</string>
+    <string name="settings_local_proxy_http_port">Порт HTTP-прокси</string>
+    <string name="settings_local_proxy_socks_auth_mode">Авторизация SOCKS5</string>
+    <string name="settings_local_proxy_http_auth_mode">Авторизация HTTP</string>
+    <string name="settings_local_proxy_auth_mode_auto">Авто</string>
+    <string name="settings_local_proxy_auth_mode_manual">Вручную</string>
+    <string name="settings_local_proxy_auth_mode_json">Из JSON</string>
+    <string name="settings_local_proxy_auth_mode_off">Отключить</string>
+    <string name="settings_local_proxy_auth_hint_auto">Берёт логин из кастомного JSON, если он там есть, иначе использует сгенерированный ниже</string>
+    <string name="settings_local_proxy_auth_hint_manual">Использует логин и пароль, которые вы укажете ниже</string>
+    <string name="settings_local_proxy_auth_hint_json">Берёт логин из inbound кастомного JSON; если его там нет, inbound остаётся без авторизации</string>
+    <string name="settings_local_proxy_socks_credentials">Логин SOCKS5</string>
+    <string name="settings_local_proxy_http_credentials">Логин HTTP</string>
+    <string name="settings_local_proxy_http_auth_system_note">Системный прокси не умеет передавать логин, поэтому браузеры будут его запрашивать, пока авторизация HTTP включена</string>
 </resources>

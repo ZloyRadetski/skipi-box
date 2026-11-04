@@ -1408,4 +1408,19 @@
     <string name="settings_proxy_server_list_columns_single">1 列</string>
     <string name="settings_proxy_server_list_columns_double">2 列</string>
     <string name="settings_proxy_server_list_columns_triple">3 列</string>
+    <string name="settings_local_proxy_http_inbound">HTTP 代理入站</string>
+    <string name="settings_local_proxy_http_inbound_summary">在 SOCKS5 旁运行 HTTP 代理，供浏览器、系统代理和其他 HTTP 客户端使用</string>
+    <string name="settings_local_proxy_http_port">HTTP 代理端口</string>
+    <string name="settings_local_proxy_socks_auth_mode">SOCKS5 认证</string>
+    <string name="settings_local_proxy_http_auth_mode">HTTP 认证</string>
+    <string name="settings_local_proxy_auth_mode_auto">自动</string>
+    <string name="settings_local_proxy_auth_mode_manual">手动</string>
+    <string name="settings_local_proxy_auth_mode_json">来自 JSON</string>
+    <string name="settings_local_proxy_auth_mode_off">关闭</string>
+    <string name="settings_local_proxy_auth_hint_auto">自定义 JSON 配置中有登录信息时使用它，否则使用下方生成的登录信息</string>
+    <string name="settings_local_proxy_auth_hint_manual">使用您在下方输入的登录信息</string>
+    <string name="settings_local_proxy_auth_hint_json">从自定义 JSON 的入站中获取登录信息；没有则入站不设认证</string>
+    <string name="settings_local_proxy_socks_credentials">SOCKS5 登录</string>
+    <string name="settings_local_proxy_http_credentials">HTTP 登录</string>
+    <string name="settings_local_proxy_http_auth_system_note">系统代理无法发送登录信息，因此开启 HTTP 认证时浏览器会要求输入</string>
 </resources>

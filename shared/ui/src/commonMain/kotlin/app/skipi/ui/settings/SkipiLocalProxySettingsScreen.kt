@@ -3,35 +3,6 @@
 
 package app.skipi.ui.settings
 
-import app.skipi.ui.layout.withTopBarGap
-import app.skipi.ui.layout.fadeUnderTopBar
-import app.skipi.ui.resources.common_hide
-import app.skipi.ui.resources.common_show
-import app.skipi.ui.resources.settings_local_proxy
-import app.skipi.ui.resources.settings_local_proxy_auth_title
-import app.skipi.ui.resources.settings_local_proxy_copy_password
-import app.skipi.ui.resources.settings_local_proxy_copy_username
-import app.skipi.ui.resources.settings_local_proxy_credentials_section
-import app.skipi.ui.resources.settings_local_proxy_dynamic_port
-import app.skipi.ui.resources.settings_local_proxy_dynamic_port_summary
-import app.skipi.ui.resources.settings_local_proxy_enable_auth
-import app.skipi.ui.resources.settings_local_proxy_enable_auth_summary
-import app.skipi.ui.resources.settings_local_proxy_generate
-import app.skipi.ui.resources.settings_local_proxy_lan_http_endpoint
-import app.skipi.ui.resources.settings_local_proxy_lan_instruction
-import app.skipi.ui.resources.settings_local_proxy_lan_ip_label
-import app.skipi.ui.resources.settings_local_proxy_lan_sharing_section
-import app.skipi.ui.resources.settings_local_proxy_lan_socks_endpoint
-import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces
-import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces_summary
-import app.skipi.ui.resources.settings_local_proxy_network_params
-import app.skipi.ui.resources.settings_local_proxy_password
-import app.skipi.ui.resources.settings_local_proxy_port
-import app.skipi.ui.resources.settings_local_proxy_security_section
-import app.skipi.ui.resources.settings_local_proxy_tap_to_copy
-import app.skipi.ui.resources.settings_local_proxy_username
-import app.skipi.ui.resources.Res
-import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -54,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -68,14 +40,55 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.skipi.ui.theme.SkipiTheme
+import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.layout.fadeUnderTopBar
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_hide
+import app.skipi.ui.resources.common_show
+import app.skipi.ui.resources.settings_local_proxy
+import app.skipi.ui.resources.settings_local_proxy_auth_hint_auto
+import app.skipi.ui.resources.settings_local_proxy_auth_hint_json
+import app.skipi.ui.resources.settings_local_proxy_auth_hint_manual
+import app.skipi.ui.resources.settings_local_proxy_auth_mode_auto
+import app.skipi.ui.resources.settings_local_proxy_auth_mode_json
+import app.skipi.ui.resources.settings_local_proxy_auth_mode_manual
+import app.skipi.ui.resources.settings_local_proxy_auth_mode_off
+import app.skipi.ui.resources.settings_local_proxy_copy_password
+import app.skipi.ui.resources.settings_local_proxy_copy_username
+import app.skipi.ui.resources.settings_local_proxy_dynamic_port
+import app.skipi.ui.resources.settings_local_proxy_dynamic_port_summary
+import app.skipi.ui.resources.settings_local_proxy_generate
+import app.skipi.ui.resources.settings_local_proxy_http_auth_mode
+import app.skipi.ui.resources.settings_local_proxy_http_auth_system_note
+import app.skipi.ui.resources.settings_local_proxy_http_credentials
+import app.skipi.ui.resources.settings_local_proxy_http_inbound
+import app.skipi.ui.resources.settings_local_proxy_http_inbound_summary
+import app.skipi.ui.resources.settings_local_proxy_http_port
+import app.skipi.ui.resources.settings_local_proxy_lan_http_endpoint
+import app.skipi.ui.resources.settings_local_proxy_lan_instruction
+import app.skipi.ui.resources.settings_local_proxy_lan_ip_label
+import app.skipi.ui.resources.settings_local_proxy_lan_sharing_section
+import app.skipi.ui.resources.settings_local_proxy_lan_socks_endpoint
+import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces
+import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces_summary
+import app.skipi.ui.resources.settings_local_proxy_network_params
+import app.skipi.ui.resources.settings_local_proxy_password
+import app.skipi.ui.resources.settings_local_proxy_port
+import app.skipi.ui.resources.settings_local_proxy_security_section
+import app.skipi.ui.resources.settings_local_proxy_socks_auth_mode
+import app.skipi.ui.resources.settings_local_proxy_socks_credentials
+import app.skipi.ui.resources.settings_local_proxy_tap_to_copy
+import app.skipi.ui.resources.settings_local_proxy_username
+import org.jetbrains.compose.resources.stringResource
+import platform.LocalProxyAuthMode
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -86,61 +99,11 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-data class LocalProxySettingsState(
-    val dynamicPort: Boolean,
-    val port: String,
-    val listenAllInterfaces: Boolean,
-    val enableHttpEndpoint: Boolean,
-    val authenticationEnabled: Boolean,
-    val username: String,
-    val password: String,
-    val displayIp: String,
-    val socksEndpoint: String,
-    val httpEndpoint: String,
-    val portError: String?,
-)
-
-data class LocalProxySettingsLabels(
-    val screenTitle: String,
-    val networkSectionTitle: String,
-    val dynamicPortTitle: String,
-    val dynamicPortSummary: String,
-    val portLabel: String,
-    val listenAllTitle: String,
-    val listenAllSummary: String,
-    val lanSectionTitle: String,
-    val lanInstruction: String,
-    val ipLabel: String,
-    val socksEndpointLabel: String,
-    val httpEndpointLabel: String,
-    val securitySectionTitle: String,
-    val authenticationTitle: String,
-    val authenticationSummary: String,
-    val credentialsSectionTitle: String,
-    val authorizationTitle: String,
-    val tapToCopy: String,
-    val usernameLabel: String,
-    val passwordLabel: String,
-    val generateText: String,
-    val showText: String,
-    val hideText: String,
-    val copyUsernameDescription: String,
-    val copyPasswordDescription: String,
-)
-
-data class LocalProxySettingsCapabilities(
-    val dynamicPort: Boolean = true,
-    val listenAllInterfaces: Boolean = true,
-    val authentication: Boolean = true,
-    val credentials: Boolean = true,
-    val lanEndpoints: Boolean = true,
-)
 
 /** Local proxy preference UI. Network discovery, clipboard, service changes and persistence stay in the host. */
 @OptIn(ExperimentalScrollBarApi::class)
@@ -153,16 +116,22 @@ fun SkipiLocalProxySettingsScreen(
     onBack: () -> Unit,
     onDynamicPortChange: (Boolean) -> Unit,
     onPortChange: (String) -> Unit,
+    onHttpEnabledChange: (Boolean) -> Unit,
+    onHttpPortChange: (String) -> Unit,
     onListenAllInterfacesChange: (Boolean) -> Unit,
-    onAuthenticationChange: (Boolean) -> Unit,
-    onGenerateCredentials: () -> Unit,
+    onSocksAuthModeChange: (LocalProxyAuthMode) -> Unit,
+    onHttpAuthModeChange: (LocalProxyAuthMode) -> Unit,
+    onSocksCredentialsChange: (username: String, password: String) -> Unit,
+    onHttpCredentialsChange: (username: String, password: String) -> Unit,
+    onGenerateSocksCredentials: () -> Unit,
+    onGenerateHttpCredentials: () -> Unit,
     onCopy: (text: String, label: String) -> Unit,
     capabilities: LocalProxySettingsCapabilities = LocalProxySettingsCapabilities(),
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
-    var passwordVisible by remember { mutableStateOf(false) }
+    val httpOn = capabilities.httpInbound && state.enableHttpEndpoint
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -188,28 +157,27 @@ fun SkipiLocalProxySettingsScreen(
                                     onCheckedChange = onDynamicPortChange,
                                 )
                             }
-                            AnimatedVisibility(
+                            PortField(
                                 visible = !capabilities.dynamicPort || !state.dynamicPort,
-                                enter = expandVertically() + fadeIn(),
-                                exit = shrinkVertically() + fadeOut(),
-                            ) {
-                                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                    TextField(
-                                        value = state.port,
-                                        onValueChange = { onPortChange(sanitizeLocalProxyPort(it)) },
-                                        label = labels.portLabel,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    state.portError?.let { error ->
-                                        Text(
-                                            text = error,
-                                            fontSize = 12.sp,
-                                            color = MiuixTheme.colorScheme.error,
-                                            modifier = Modifier.padding(top = 4.dp, start = 4.dp),
-                                        )
-                                    }
-                                }
+                                value = state.port,
+                                label = labels.portLabel,
+                                error = state.portError,
+                                onValueChange = onPortChange,
+                            )
+                            if (capabilities.httpInbound) {
+                                SwitchPreference(
+                                    title = labels.httpInboundTitle,
+                                    summary = labels.httpInboundSummary,
+                                    checked = state.enableHttpEndpoint,
+                                    onCheckedChange = onHttpEnabledChange,
+                                )
+                                PortField(
+                                    visible = state.enableHttpEndpoint && (!capabilities.dynamicPort || !state.dynamicPort),
+                                    value = state.httpPort,
+                                    label = labels.httpPortLabel,
+                                    error = state.httpPortError,
+                                    onValueChange = onHttpPortChange,
+                                )
                             }
                             if (capabilities.listenAllInterfaces) {
                                 SwitchPreference(
@@ -239,7 +207,7 @@ fun SkipiLocalProxySettingsScreen(
                                 LanEndpointRow(labels.socksEndpointLabel, state.socksEndpoint) {
                                     onCopy(state.socksEndpoint, labels.socksEndpointLabel)
                                 }
-                                if (state.enableHttpEndpoint) {
+                                if (httpOn) {
                                     Spacer(Modifier.height(10.dp))
                                     LanEndpointRow(labels.httpEndpointLabel, state.httpEndpoint) {
                                         onCopy(state.httpEndpoint, labels.httpEndpointLabel)
@@ -254,64 +222,49 @@ fun SkipiLocalProxySettingsScreen(
                     item(key = "local_proxy_security_card") {
                         SkipiSettingsSectionCard {
                             Column(Modifier.padding(vertical = 4.dp)) {
-                                SwitchPreference(
-                                    title = labels.authenticationTitle,
-                                    summary = labels.authenticationSummary,
-                                    checked = state.authenticationEnabled,
-                                    onCheckedChange = onAuthenticationChange,
-                                )
+                                AuthModeSelector(labels.socksAuthModeTitle, state.socksAuthMode, labels, onSocksAuthModeChange)
+                                if (httpOn) {
+                                    AuthModeSelector(labels.httpAuthModeTitle, state.httpAuthMode, labels, onHttpAuthModeChange)
+                                    if (state.httpAuthMode != LocalProxyAuthMode.Off) {
+                                        Text(
+                                            text = labels.httpAuthSystemNote,
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp,
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                if (capabilities.authentication && capabilities.credentials && state.authenticationEnabled) {
-                    item(key = "local_proxy_credentials_title") { SmallTitle(text = labels.credentialsSectionTitle) }
-                    item(key = "local_proxy_credentials_card") {
-                        SkipiSettingsSectionCard {
-                            Column(Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            text = labels.authorizationTitle,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.onSurface,
-                                        )
-                                        Text(
-                                            text = labels.tapToCopy,
-                                            fontSize = 12.sp,
-                                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        )
-                                    }
-                                    TextButton(text = labels.generateText, onClick = onGenerateCredentials)
-                                }
-                                Spacer(Modifier.height(14.dp))
-                                CredentialRow(
-                                    title = labels.usernameLabelOrFallback(),
-                                    value = state.username.ifBlank { "—" },
-                                    visible = true,
-                                    showText = labels.showText,
-                                    hideText = labels.hideText,
-                                    copyDescription = labels.copyUsernameDescription,
-                                    onCopy = { onCopy(state.username, labels.usernameLabelOrFallback()) },
-                                )
-                                Spacer(Modifier.height(10.dp))
-                                CredentialRow(
-                                    title = labels.passwordLabelOrFallback(),
-                                    value = state.password.ifBlank { "—" },
-                                    visible = passwordVisible,
-                                    showText = labels.showText,
-                                    hideText = labels.hideText,
-                                    copyDescription = labels.copyPasswordDescription,
-                                    onCopy = { onCopy(state.password, labels.passwordLabelOrFallback()) },
-                                    onVisibilityChange = { passwordVisible = it },
-                                )
-                            }
-                        }
+                if (capabilities.authentication && capabilities.credentials) {
+                    if (state.socksAuthMode.showsCredentials()) {
+                        credentialsItems(
+                            keyPrefix = "local_proxy_socks_credentials",
+                            title = labels.socksCredentialsTitle,
+                            mode = state.socksAuthMode,
+                            username = state.username,
+                            password = state.password,
+                            labels = labels,
+                            onChange = onSocksCredentialsChange,
+                            onGenerate = onGenerateSocksCredentials,
+                            onCopy = onCopy,
+                        )
+                    }
+                    if (httpOn && state.httpAuthMode.showsCredentials()) {
+                        credentialsItems(
+                            keyPrefix = "local_proxy_http_credentials",
+                            title = labels.httpCredentialsTitle,
+                            mode = state.httpAuthMode,
+                            username = state.httpUsername,
+                            password = state.httpPassword,
+                            labels = labels,
+                            onChange = onHttpCredentialsChange,
+                            onGenerate = onGenerateHttpCredentials,
+                            onCopy = onCopy,
+                        )
                     }
                 }
                 platformContent?.let { content -> item(key = "local_proxy_platform_extension") { Column(content = content) } }
@@ -321,6 +274,120 @@ fun SkipiLocalProxySettingsScreen(
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
             )
+        }
+    }
+}
+
+@Composable
+private fun PortField(visible: Boolean, value: String, label: String, error: String?, onValueChange: (String) -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut(),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+            TextField(
+                value = value,
+                onValueChange = { onValueChange(sanitizeLocalProxyPort(it)) },
+                label = label,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            error?.let { message ->
+                Text(
+                    text = message,
+                    fontSize = 12.sp,
+                    color = MiuixTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AuthModeSelector(
+    title: String,
+    mode: LocalProxyAuthMode,
+    labels: LocalProxySettingsLabels,
+    onModeChange: (LocalProxyAuthMode) -> Unit,
+) {
+    AppWindowDropdownPreference(
+        title = title,
+        summary = labels.modeHint(mode),
+        items = LocalProxyAuthModeOptions.map(labels::modeName),
+        selectedIndex = LocalProxyAuthModeOptions.indexOf(mode).coerceAtLeast(0),
+        onSelectedIndexChange = { index -> onModeChange(LocalProxyAuthModeOptions[index]) },
+    )
+}
+
+private fun LazyListScope.credentialsItems(
+    keyPrefix: String,
+    title: String,
+    mode: LocalProxyAuthMode,
+    username: String,
+    password: String,
+    labels: LocalProxySettingsLabels,
+    onChange: (username: String, password: String) -> Unit,
+    onGenerate: () -> Unit,
+    onCopy: (text: String, label: String) -> Unit,
+) {
+    item(key = "${keyPrefix}_title") { SmallTitle(text = title) }
+    item(key = "${keyPrefix}_card") {
+        var passwordVisible by remember { mutableStateOf(false) }
+        SkipiSettingsSectionCard {
+            Column(Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (mode == LocalProxyAuthMode.Auto) labels.tapToCopy else "",
+                        fontSize = 12.sp,
+                        color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(text = labels.generateText, onClick = onGenerate)
+                }
+                Spacer(Modifier.height(10.dp))
+                if (mode == LocalProxyAuthMode.Manual) {
+                    TextField(
+                        value = username,
+                        onValueChange = { onChange(it, password) },
+                        label = labels.usernameLabel,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    TextField(
+                        value = password,
+                        onValueChange = { onChange(username, it) },
+                        label = labels.passwordLabel,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    CredentialRow(
+                        title = labels.usernameLabel,
+                        value = username.ifBlank { "—" },
+                        visible = true,
+                        showText = labels.showText,
+                        hideText = labels.hideText,
+                        copyDescription = labels.copyUsernameDescription,
+                        onCopy = { onCopy(username, labels.usernameLabel) },
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    CredentialRow(
+                        title = labels.passwordLabel,
+                        value = password.ifBlank { "—" },
+                        visible = passwordVisible,
+                        showText = labels.showText,
+                        hideText = labels.hideText,
+                        copyDescription = labels.copyPasswordDescription,
+                        onCopy = { onCopy(password, labels.passwordLabel) },
+                        onVisibilityChange = { passwordVisible = it },
+                    )
+                }
+            }
         }
     }
 }
@@ -393,35 +460,43 @@ private fun CredentialRow(
     }
 }
 
-private fun LocalProxySettingsLabels.usernameLabelOrFallback(): String = usernameLabel
-private fun LocalProxySettingsLabels.passwordLabelOrFallback(): String = passwordLabel
-
 /** Localized local-proxy labels shared by every host. */
 @Composable
 fun rememberLocalProxySettingsLabels(): LocalProxySettingsLabels = LocalProxySettingsLabels(
-        screenTitle = stringResource(Res.string.settings_local_proxy),
-        networkSectionTitle = stringResource(Res.string.settings_local_proxy_network_params),
-        dynamicPortTitle = stringResource(Res.string.settings_local_proxy_dynamic_port),
-        dynamicPortSummary = stringResource(Res.string.settings_local_proxy_dynamic_port_summary),
-        portLabel = stringResource(Res.string.settings_local_proxy_port),
-        listenAllTitle = stringResource(Res.string.settings_local_proxy_listen_all_interfaces),
-        listenAllSummary = stringResource(Res.string.settings_local_proxy_listen_all_interfaces_summary),
-        lanSectionTitle = stringResource(Res.string.settings_local_proxy_lan_sharing_section),
-        lanInstruction = stringResource(Res.string.settings_local_proxy_lan_instruction),
-        ipLabel = stringResource(Res.string.settings_local_proxy_lan_ip_label),
-        socksEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_socks_endpoint),
-        httpEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_http_endpoint),
-        securitySectionTitle = stringResource(Res.string.settings_local_proxy_security_section),
-        authenticationTitle = stringResource(Res.string.settings_local_proxy_enable_auth),
-        authenticationSummary = stringResource(Res.string.settings_local_proxy_enable_auth_summary),
-        credentialsSectionTitle = stringResource(Res.string.settings_local_proxy_credentials_section),
-        authorizationTitle = stringResource(Res.string.settings_local_proxy_auth_title),
-        tapToCopy = stringResource(Res.string.settings_local_proxy_tap_to_copy),
-        usernameLabel = stringResource(Res.string.settings_local_proxy_username),
-        passwordLabel = stringResource(Res.string.settings_local_proxy_password),
-        generateText = stringResource(Res.string.settings_local_proxy_generate),
-        showText = stringResource(Res.string.common_show),
-        hideText = stringResource(Res.string.common_hide),
-        copyUsernameDescription = stringResource(Res.string.settings_local_proxy_copy_username),
-        copyPasswordDescription = stringResource(Res.string.settings_local_proxy_copy_password),
-    )
+    screenTitle = stringResource(Res.string.settings_local_proxy),
+    networkSectionTitle = stringResource(Res.string.settings_local_proxy_network_params),
+    dynamicPortTitle = stringResource(Res.string.settings_local_proxy_dynamic_port),
+    dynamicPortSummary = stringResource(Res.string.settings_local_proxy_dynamic_port_summary),
+    portLabel = stringResource(Res.string.settings_local_proxy_port),
+    httpInboundTitle = stringResource(Res.string.settings_local_proxy_http_inbound),
+    httpInboundSummary = stringResource(Res.string.settings_local_proxy_http_inbound_summary),
+    httpPortLabel = stringResource(Res.string.settings_local_proxy_http_port),
+    listenAllTitle = stringResource(Res.string.settings_local_proxy_listen_all_interfaces),
+    listenAllSummary = stringResource(Res.string.settings_local_proxy_listen_all_interfaces_summary),
+    lanSectionTitle = stringResource(Res.string.settings_local_proxy_lan_sharing_section),
+    lanInstruction = stringResource(Res.string.settings_local_proxy_lan_instruction),
+    ipLabel = stringResource(Res.string.settings_local_proxy_lan_ip_label),
+    socksEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_socks_endpoint),
+    httpEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_http_endpoint),
+    securitySectionTitle = stringResource(Res.string.settings_local_proxy_security_section),
+    socksAuthModeTitle = stringResource(Res.string.settings_local_proxy_socks_auth_mode),
+    httpAuthModeTitle = stringResource(Res.string.settings_local_proxy_http_auth_mode),
+    authModeAuto = stringResource(Res.string.settings_local_proxy_auth_mode_auto),
+    authModeManual = stringResource(Res.string.settings_local_proxy_auth_mode_manual),
+    authModeFromJson = stringResource(Res.string.settings_local_proxy_auth_mode_json),
+    authModeOff = stringResource(Res.string.settings_local_proxy_auth_mode_off),
+    authHintAuto = stringResource(Res.string.settings_local_proxy_auth_hint_auto),
+    authHintManual = stringResource(Res.string.settings_local_proxy_auth_hint_manual),
+    authHintFromJson = stringResource(Res.string.settings_local_proxy_auth_hint_json),
+    httpAuthSystemNote = stringResource(Res.string.settings_local_proxy_http_auth_system_note),
+    socksCredentialsTitle = stringResource(Res.string.settings_local_proxy_socks_credentials),
+    httpCredentialsTitle = stringResource(Res.string.settings_local_proxy_http_credentials),
+    tapToCopy = stringResource(Res.string.settings_local_proxy_tap_to_copy),
+    usernameLabel = stringResource(Res.string.settings_local_proxy_username),
+    passwordLabel = stringResource(Res.string.settings_local_proxy_password),
+    generateText = stringResource(Res.string.settings_local_proxy_generate),
+    showText = stringResource(Res.string.common_show),
+    hideText = stringResource(Res.string.common_hide),
+    copyUsernameDescription = stringResource(Res.string.settings_local_proxy_copy_username),
+    copyPasswordDescription = stringResource(Res.string.settings_local_proxy_copy_password),
+)

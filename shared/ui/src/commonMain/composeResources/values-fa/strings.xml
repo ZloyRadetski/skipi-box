@@ -1401,4 +1401,19 @@
     <string name="settings_proxy_server_list_columns_single">۱ ستون</string>
     <string name="settings_proxy_server_list_columns_double">۲ ستون</string>
     <string name="settings_proxy_server_list_columns_triple">۳ ستون</string>
+    <string name="settings_local_proxy_http_inbound">ورودی پروکسی HTTP</string>
+    <string name="settings_local_proxy_http_inbound_summary">اجرای پروکسی HTTP در کنار SOCKS5 برای مرورگرها، پروکسی سیستم و سایر کلاینت‌های HTTP</string>
+    <string name="settings_local_proxy_http_port">پورت پروکسی HTTP</string>
+    <string name="settings_local_proxy_socks_auth_mode">احراز هویت SOCKS5</string>
+    <string name="settings_local_proxy_http_auth_mode">احراز هویت HTTP</string>
+    <string name="settings_local_proxy_auth_mode_auto">خودکار</string>
+    <string name="settings_local_proxy_auth_mode_manual">دستی</string>
+    <string name="settings_local_proxy_auth_mode_json">از JSON</string>
+    <string name="settings_local_proxy_auth_mode_off">خاموش</string>
+    <string name="settings_local_proxy_auth_hint_auto">در صورت وجود، از ورود اطلاعات پیکربندی JSON سفارشی استفاده می‌کند، وگرنه از اطلاعات تولیدشده در زیر</string>
+    <string name="settings_local_proxy_auth_hint_manual">از نام کاربری و رمز عبوری که در زیر وارد می‌کنید استفاده می‌کند</string>
+    <string name="settings_local_proxy_auth_hint_json">اطلاعات ورود را از inbound در JSON سفارشی می‌گیرد؛ بدون آن، inbound بدون احراز هویت می‌ماند</string>
+    <string name="settings_local_proxy_socks_credentials">ورود SOCKS5</string>
+    <string name="settings_local_proxy_http_credentials">ورود HTTP</string>
+    <string name="settings_local_proxy_http_auth_system_note">پروکسی سیستم نمی‌تواند نام کاربری ارسال کند، بنابراین تا زمانی که احراز هویت HTTP روشن است مرورگرها آن را درخواست می‌کنند</string>
 </resources>
