@@ -1510,7 +1510,7 @@
     <string name="routing_table_name">Название</string>
     <string name="routing_table_send_to">Куда</string>
     <string name="routing_table_server_or_group">Сервер или группа…</string>
-    <string name="routing_table_port_hint">443 или 1000-2000, несколько через запятую</string>
+    <string name="routing_table_port_hint">443, 1000-2000</string>
     <string name="routing_table_network_any">Любая</string>
     <string name="routing_table_domains">Домены</string>
     <string name="routing_table_domains_help">geosite:, domain:, full:, keyword:, regexp: или часть имени. По одному в строке</string>
@@ -1533,4 +1533,5 @@
     <string name="routing_table_skip_inbound">{name} (привязано к одному входу)</string>
     <string name="routing_table_import_unwritable">Пропущено, в строке профиля такое не записать: {values}</string>
     <string name="routing_table_import_failed">Не удалось загрузить правила: {reason}</string>
+    <string name="routing_table_apply">Применить</string>
 </resources>

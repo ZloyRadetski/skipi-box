@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -24,6 +26,7 @@ import app.skipi.app.routing.RouteOutboundPickerSubscription
 import app.skipi.app.routing.projectRouteOutboundPicker
 import app.skipi.ui.config.SkipiTrafficConfigRuleEditorPage
 import app.skipi.ui.config.SkipiTrafficConfigRulesEditorScreen
+import app.skipi.ui.config.rememberSkipiRoutingTableDraft
 import app.skipi.ui.config.rememberSkipiRoutingTableState
 import app.skipi.ui.config.rememberSkipiTrafficConfigRuleEditorState
 import app.skipi.ui.resources.Res
@@ -67,6 +70,12 @@ internal fun DesktopTrafficConfigRulesEditor(
     var showPolicySelector by remember(profile.id) { mutableStateOf(false) }
     // The table keeps what it has open while the server picker takes its place.
     val tableState = rememberSkipiRoutingTableState(profile.id)
+    // The table edits a working copy: every write of the profile restarts a running tunnel, so it is written on
+    // Apply and on leaving, not after each change.
+    val tableDraft = rememberSkipiRoutingTableDraft(profile, controller)
+    DisposableEffect(tableDraft) {
+        onDispose { tableDraft.apply(tableState) }
+    }
     var tablePolicyPick by remember(profile.id) { mutableStateOf<String?>(null) }
     val importSources = remember(fetchRoutingDocument) { DesktopRoutingImportSources.system(fetchRoutingDocument) }
 
@@ -79,7 +88,7 @@ internal fun DesktopTrafficConfigRulesEditor(
     }
     val editRuleMissing = session?.lineNumber != null && initialRule == null
 
-    androidx.compose.runtime.LaunchedEffect(session?.instanceId, profile.id, profile.rawConfig) {
+    LaunchedEffect(session?.instanceId, profile.id, profile.rawConfig) {
         if (editRuleMissing) {
             editorSession = null
             showPolicySelector = false
@@ -97,6 +106,9 @@ internal fun DesktopTrafficConfigRulesEditor(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val showTable = maxWidth >= RoutingTableMinWidth
+        LaunchedEffect(showTable) {
+            if (!showTable) tableDraft.apply(tableState)
+        }
         if (session == null || editRuleMissing) {
             val pick = tablePolicyPick
             when {
@@ -118,15 +130,21 @@ internal fun DesktopTrafficConfigRulesEditor(
                 }
 
                 showTable -> DesktopRoutingTableScreen(
-                    profile = profile,
-                    controller = controller,
+                    profile = tableDraft.profile,
+                    controller = tableDraft.controller,
                     state = tableState,
                     sources = importSources,
                     padding = padding,
                     isWideScreen = isWideScreen,
                     onBack = onBack,
                     onPickPolicy = { current -> tablePolicyPick = current },
-                    onEditRule = { rule -> openRuleEditor(lineNumber = rule.lineNumber) },
+                    onEditRule = { rule ->
+                        // The rule form works on the profile itself, so it has to see what the table holds.
+                        tableDraft.apply(tableState)
+                        openRuleEditor(lineNumber = rule.lineNumber)
+                    },
+                    canApply = tableDraft.hasChanges,
+                    onApply = { tableDraft.apply(tableState) },
                 )
 
                 else -> SkipiTrafficConfigRulesEditorScreen(

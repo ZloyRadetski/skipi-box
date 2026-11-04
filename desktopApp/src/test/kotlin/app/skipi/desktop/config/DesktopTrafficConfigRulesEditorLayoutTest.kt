@@ -20,6 +20,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import app.skipi.app.config.TrafficConfigEditorController
@@ -62,11 +63,15 @@ class DesktopTrafficConfigRulesEditorLayoutTest {
         val controller = TrafficConfigEditorController(
             object : TrafficConfigEditorProfileStore {
                 override fun update(profileId: Int, transform: (TrafficConfigState) -> TrafficConfigState): Boolean {
-                    profile = transform(profile)
+                    val updated = transform(profile)
+                    if (updated.rawConfig != profile.rawConfig) writes++
+                    profile = updated
                     return true
                 }
             },
         )
+        var writes = 0
+        var shown by mutableStateOf(true)
         val scene = ImageComposeScene(width = width, height = 860, density = Density(1f))
 
         init {
@@ -80,7 +85,7 @@ class DesktopTrafficConfigRulesEditorLayoutTest {
                     visualProfile = SkipiVisualProfile.Desktop,
                 ) {
                     Box(Modifier.fillMaxSize().background(SkipiTheme.colors.background)) {
-                        DesktopTrafficConfigRulesEditor(
+                        if (shown) DesktopTrafficConfigRulesEditor(
                             profile = this@Harness.profile,
                             trafficConfigs = listOf(this@Harness.profile),
                             controller = controller,
@@ -135,6 +140,26 @@ class DesktopTrafficConfigRulesEditorLayoutTest {
         fun clickText(text: String) = click(assertNotNull(findText(text), "no '$text' on screen").boundsInRoot.center)
 
         @OptIn(ExperimentalComposeUiApi::class)
+        fun findTag(tag: String): SemanticsNode? = scene.semanticsOwners.asSequence()
+            .flatMap { owner -> owner.unmergedRootSemanticsNode.descendants() }
+            .firstOrNull { node -> node.boundsInRoot.width > 0f && node.config.getOrElse(SemanticsProperties.TestTag) { "" } == tag }
+
+        fun clickTag(tag: String) = click(assertNotNull(findTag(tag), "no tag '$tag' on screen").boundsInRoot.center)
+
+        fun type(tag: String, value: String) {
+            val field = assertNotNull(findTag(tag), "no field '$tag' on screen")
+            assertTrue(field.config[SemanticsActions.SetText].action?.invoke(AnnotatedString(value)) == true)
+            settle()
+        }
+
+        fun apply() = clickTag("routing-apply")
+
+        fun leave() {
+            shown = false
+            settle()
+        }
+
+        @OptIn(ExperimentalComposeUiApi::class)
         fun clickBack() {
             val back = scene.semanticsOwners.asSequence()
                 .flatMap { owner -> owner.unmergedRootSemanticsNode.descendants() }
@@ -177,13 +202,102 @@ class DesktopTrafficConfigRulesEditorLayoutTest {
         runBlocking { clickText(getString(Res.string.routing_outbound_block)) }
         clickBack() // The selector's Back confirms its pending choice.
 
-        val deadline = System.nanoTime() + 6_000_000_000L
-        while (!rules[0].contains("REJECT") && System.nanoTime() < deadline) {
-            Thread.sleep(40)
-            settle()
-        }
-        assertTrue(rules[0].contains(",REJECT // Hypixel"), "rules: $rules")
         assertNotNull(findText(runBlocking { getString(Res.string.routing_table_col_targets) }), "the table should be back after the picker")
+        Thread.sleep(600)
+        settle()
+        assertEquals(0, writes, "the pick stays in the table until it is applied")
+
+        apply()
+        assertTrue(rules[0].contains(",REJECT // Hypixel"), "rules: $rules")
+        assertEquals(1, writes)
+    }
+
+    @Test
+    fun editsStayInTheTableUntilTheyAreApplied() = withHarness(width = 1180) {
+        val before = profile.rawConfig
+        clickTag("routing-toggle-2")
+        assertEquals(before, profile.rawConfig, "a switch must not reach the profile by itself")
+        assertEquals(0, writes)
+
+        apply()
+
+        assertTrue(rules[0].contains("skipi-disabled"), "rules: $rules")
+        assertEquals(1, writes)
+    }
+
+    @Test
+    fun severalEditsBecomeOneWrite() = withHarness(width = 1180) {
+        clickText("Hypixel")
+        type("routing-port", "25565, 8080")
+        Thread.sleep(700)
+        settle()
+        clickTag("routing-toggle-2")
+        clickTag("routing-route-block")
+        assertEquals(0, writes)
+
+        apply()
+
+        assertEquals(1, writes)
+        assertTrue(rules[0].contains("8080") && rules[0].contains("skipi-disabled") && rules[0].contains("REJECT"), "rules: $rules")
+    }
+
+    @Test
+    fun applyingRightAfterTypingKeepsWhatWasTyped() = withHarness(width = 1180) {
+        clickText("Hypixel")
+        type("routing-port", "8080")
+
+        apply()
+
+        assertTrue(rules[0].contains("DST-PORT,8080"), "rules: $rules")
+        assertEquals(1, writes)
+    }
+
+    @Test
+    fun applyingTwiceWritesOnce() = withHarness(width = 1180) {
+        clickTag("routing-toggle-2")
+        apply()
+        apply()
+
+        assertEquals(1, writes)
+    }
+
+    @Test
+    fun leavingTheScreenAppliesTheChanges() = withHarness(width = 1180) {
+        clickText("Hypixel")
+        type("routing-port", "8080")
+        clickTag("routing-toggle-2")
+
+        leave()
+
+        assertEquals(1, writes)
+        assertTrue(rules[0].contains("DST-PORT,8080") && rules[0].contains("skipi-disabled"), "rules: $rules")
+    }
+
+    @Test
+    fun leavingWithoutChangesWritesNothing() = withHarness(width = 1180) {
+        clickText("Hypixel")
+
+        leave()
+
+        assertEquals(0, writes)
+    }
+
+    @Test
+    fun openingARuleInTheFormAppliesTheTableFirst() = withHarness(width = 1180) {
+        clickTag("routing-toggle-2")
+        clickText("Complex one")
+        runBlocking { clickText(getString(Res.string.routing_table_complex_open)) }
+
+        assertNotNull(findText(runBlocking { getString(Res.string.configs_rules_edit) }), "the rule form did not open")
+        assertEquals(1, writes)
+        assertTrue(rules[0].contains("skipi-disabled"), "rules: $rules")
+    }
+
+    @Test
+    fun aChangeFromOutsideReachesTheTableWhenNothingIsPending() = withHarness(width = 1180) {
+        profile = profile.copy(rawConfig = profile.rawConfig.replace("FINAL,PROXY", "DOMAIN,new.example,DIRECT // From outside\nFINAL,PROXY"))
+
+        assertNotNull(findText("From outside"), "the table should follow the profile")
     }
 
     @Test

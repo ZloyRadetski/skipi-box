@@ -34,6 +34,7 @@ import app.skipi.ui.resources.routing_table_complex_open
 import app.skipi.ui.resources.routing_table_delete
 import app.skipi.ui.resources.routing_table_final
 import app.skipi.ui.resources.routing_table_move_down
+import app.skipi.ui.resources.routing_table_port_hint
 import app.skipi.ui.resources.routing_table_server_or_group
 import app.skipi.ui.theme.ProvideSkipiTheme
 import app.skipi.ui.theme.SkipiTheme
@@ -214,6 +215,28 @@ class SkipiRoutingTableTest {
     @Test
     fun theTableIsNeverSmallerThanItsDesignSize() {
         assertEquals(rowTextHeight(900), rowTextHeight(1180) / (1180f / 900f).coerceAtMost(1.5f), 1.5f)
+    }
+
+    @Test
+    fun theSearchFieldIsAsLowAsTheButtons() = withHarness {
+        val search = assertNotNull(findTag("routing-search"), "no search field")
+        // 36 dp at the zoom of this window.
+        assertTrue(search.boundsInRoot.height <= 50f, "the search field is ${search.boundsInRoot.height} px high")
+    }
+
+    @Test
+    fun theRouteChoicesHaveRoomForALongWord() = withHarness {
+        clickText("Hypixel")
+        val block = assertNotNull(findTag("routing-route-block"))
+        assertTrue(block.boundsInRoot.width >= 150f, "a route choice is only ${block.boundsInRoot.width} px wide")
+    }
+
+    @Test
+    fun thePortHintSitsUnderThePortField() = withHarness {
+        clickText("Hypixel")
+        val hint = assertNotNull(findText(runBlocking { getString(Res.string.routing_table_port_hint) }), "no port hint")
+        val port = assertNotNull(findTag("routing-port"))
+        assertTrue(hint.boundsInRoot.left >= port.boundsInRoot.left - 2f, "hint at ${hint.boundsInRoot.left}, field at ${port.boundsInRoot.left}")
     }
 
     @Test

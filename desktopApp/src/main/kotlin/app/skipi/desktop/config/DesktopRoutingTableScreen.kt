@@ -69,6 +69,8 @@ internal fun DesktopRoutingTableScreen(
     onBack: () -> Unit,
     onPickPolicy: (current: String) -> Unit,
     onEditRule: (ShadowrocketRule) -> Unit,
+    canApply: Boolean = false,
+    onApply: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf<V2rayRoutingImport?>(null) }
@@ -125,6 +127,8 @@ internal fun DesktopRoutingTableScreen(
             onEditRule = onEditRule,
             onImport = ::import,
             notice = notice,
+            canApply = canApply,
+            onApply = onApply,
         )
     }
 

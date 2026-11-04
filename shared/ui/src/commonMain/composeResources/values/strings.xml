@@ -1521,7 +1521,7 @@
     <string name="routing_table_name">Name</string>
     <string name="routing_table_send_to">Send to</string>
     <string name="routing_table_server_or_group">Server or group…</string>
-    <string name="routing_table_port_hint">443 or 1000-2000, several separated by commas</string>
+    <string name="routing_table_port_hint">443, 1000-2000</string>
     <string name="routing_table_network_any">Any</string>
     <string name="routing_table_domains">Domains</string>
     <string name="routing_table_domains_help">geosite:, domain:, full:, keyword:, regexp:, or part of a name. One per line</string>
@@ -1544,4 +1544,5 @@
     <string name="routing_table_skip_inbound">{name} (tied to one inbound)</string>
     <string name="routing_table_import_unwritable">Left out, a profile line cannot hold: {values}</string>
     <string name="routing_table_import_failed">Could not load the rules: {reason}</string>
+    <string name="routing_table_apply">Apply</string>
 </resources>
