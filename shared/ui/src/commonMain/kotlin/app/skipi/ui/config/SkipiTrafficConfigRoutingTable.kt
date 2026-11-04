@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -41,12 +43,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -132,6 +136,9 @@ enum class RoutingImportSource { File, Clipboard, Url }
 private const val EditPauseMillis = 450L
 
 private val KnownProtocols = listOf("http", "tls", "quic", "bittorrent")
+
+private const val RoutingTableDesignWidth = 900f
+private const val RoutingTableMaxZoom = 1.5f
 
 /**
  * What the routing table has open: nothing, one rule, a rule that is not saved yet, or the FINAL row. It lives apart
@@ -280,7 +287,15 @@ fun SkipiTrafficConfigRoutingTable(
         if (query.isEmpty()) table.entries else table.entries.filter { it.matches(query) }
     }
 
-    Column(modifier.fillMaxSize().padding(contentPadding)) {
+    // The table is laid out for about 900 dp and zoomed to the width it is given, so on a big screen it fills the
+    // window instead of sitting small in a corner. Wider than the cap, the flexible columns take the extra room.
+    BoxWithConstraints(modifier.fillMaxSize().padding(contentPadding)) {
+        val density = LocalDensity.current
+        val zoom = (maxWidth.value / RoutingTableDesignWidth).coerceIn(1f, RoutingTableMaxZoom)
+        // The editor takes at most 42% of the height (in the zoomed dp), so a low window still shows several rules.
+        val editorHeight = (maxHeight.value / zoom * 0.42f).coerceIn(260f, 340f).dp
+        CompositionLocalProvider(LocalDensity provides Density(density.density * zoom, density.fontScale)) {
+    Column(Modifier.fillMaxSize()) {
         RoutingTableToolbar(state, onAdd = state::startNew, onImport = onImport)
         val message = notice ?: state.unwritable.takeIf { it.isNotEmpty() }?.let {
             stringResource(Res.string.routing_table_unwritable).formatTemplate("values" to it.joinToString(", "))
@@ -302,7 +317,9 @@ fun SkipiTrafficConfigRoutingTable(
         RoutingTableFinalRow(table, selected = state.isFinalSelected, onClick = { state.selectFinal(table.finalRule) })
         if (state.hasEditor) {
             Spacer(Modifier.height(8.dp))
-            RoutingTableEditor(profile, table, state, controller, onPickPolicy, onEditRule)
+            RoutingTableEditor(profile, table, state, controller, editorHeight, onPickPolicy, onEditRule)
+        }
+    }
         }
     }
 }
@@ -479,6 +496,7 @@ private fun RoutingTableEditor(
     table: RoutingTable,
     state: SkipiRoutingTableState,
     controller: TrafficConfigEditorController,
+    height: Dp,
     onPickPolicy: (current: String) -> Unit,
     onEditRule: (ShadowrocketRule) -> Unit,
 ) {
@@ -486,7 +504,7 @@ private fun RoutingTableEditor(
     val index = table.entries.indexOfFirst { it.lineNumber == state.selectedLine }
     val savedRule = table.entries.getOrNull(index)?.rule
     Row(
-        Modifier.fillMaxWidth().height(340.dp).clip(RoundedCornerShape(12.dp)).background(SkipiTheme.colors.surface).padding(14.dp),
+        Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(12.dp)).background(SkipiTheme.colors.surface).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(Modifier.width(470.dp).fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {

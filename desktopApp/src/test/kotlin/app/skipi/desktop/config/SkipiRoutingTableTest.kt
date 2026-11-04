@@ -67,7 +67,7 @@ private val RoutingProfile = """
 """.trimIndent() + "\n"
 
 class SkipiRoutingTableTest {
-    private class Harness(raw: String = RoutingProfile) {
+    private class Harness(raw: String = RoutingProfile, width: Int = RoutingSceneWidth) {
         var profile by mutableStateOf(TrafficConfigState(id = 5, name = "P", rawConfig = raw))
         val controller = TrafficConfigEditorController(
             object : TrafficConfigEditorProfileStore {
@@ -81,7 +81,7 @@ class SkipiRoutingTableTest {
         val edited = mutableListOf<ShadowrocketRule>()
         val policyRequests = mutableListOf<String>()
         var applyPolicy: ((String) -> Unit)? = null
-        val scene = ImageComposeScene(width = RoutingSceneWidth, height = RoutingSceneHeight, density = Density(1f))
+        val scene = ImageComposeScene(width = width, height = RoutingSceneHeight, density = Density(1f))
 
         init {
             scene.setContent {
@@ -188,6 +188,32 @@ class SkipiRoutingTableTest {
         val values = nodes().flatMap { it.config.getOrElse(SemanticsProperties.Text) { emptyList() } }.map { it.text }
         assertTrue(values.any { "hypixel.net" in it && "sessionserver.mojang.com" in it }, "domains are not listed: $values")
         assertTrue(values.any { "geosite:private" in it && "geoip:private" in it })
+    }
+
+    private fun rowTextHeight(width: Int): Float {
+        val harness = Harness(width = width)
+        try {
+            return assertNotNull(harness.findText("Hypixel")).boundsInRoot.height
+        } finally {
+            harness.scene.close()
+        }
+    }
+
+    @Test
+    fun theTableGrowsWithTheWindowSoItFillsABigScreen() {
+        val atMinimum = rowTextHeight(900)
+        val atHalfAMonitor = rowTextHeight(1270)
+        val atTheCap = rowTextHeight(1350)
+        val wider = rowTextHeight(2000)
+
+        assertTrue(atHalfAMonitor > atMinimum * 1.3f, "text at 1270 px ($atHalfAMonitor) should be about 1.4 times the size at 900 px ($atMinimum)")
+        assertTrue(atTheCap >= atHalfAMonitor)
+        assertTrue(wider <= atTheCap * 1.2f, "the growth stops at a cap: $wider vs $atTheCap")
+    }
+
+    @Test
+    fun theTableIsNeverSmallerThanItsDesignSize() {
+        assertEquals(rowTextHeight(900), rowTextHeight(1180) / (1180f / 900f).coerceAtMost(1.5f), 1.5f)
     }
 
     @Test
@@ -306,6 +332,12 @@ class SkipiRoutingTableTest {
         saveFrame("routing-table-final")
         close()
         saveFrame("routing-table-closed")
+    }
+
+    @Test
+    fun rendersTheTableAtHalfAMonitorForLooking() = withHarness(Harness(width = 1270)) {
+        clickText("Hypixel")
+        saveFrame("routing-table-1270")
     }
 
     private fun Harness.close() = scene.render().close()
