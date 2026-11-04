@@ -179,7 +179,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     val homeSortSaveMutex = remember { Mutex() }
     var backgroundConnected by remember { mutableStateOf(false) }
     // With the background choice the window, and the GPU and UI memory it holds, exists only while it is shown.
-    var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground)) }
+    var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground && androidx.compose.ui.window.isTraySupported)) }
     var shownWindow by remember { mutableStateOf<java.awt.Window?>(null) }
     // State and background work below outlive the window. Strings resolve through LocalDensity, which only a window
     // provides; strings do not depend on it, so a plain one lets them resolve while no window exists.
@@ -1123,7 +1123,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
         // Closing is handled from the composable below so it can serialize with an
         // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
         onCloseRequest = {
-            when (desktopWindowCloseAction(desktopSettings)) {
+            when (desktopWindowCloseAction(desktopSettings, androidx.compose.ui.window.isTraySupported)) {
                 DesktopWindowCloseAction.ExitApplication -> tunnel.closeRequested = true
                 DesktopWindowCloseAction.HideToBackground -> windowShown = false
             }

@@ -14,11 +14,19 @@ import kotlin.test.assertTrue
 
 class DesktopWindowLifecycleTest {
     @Test
-    fun theCloseButtonQuitsUnlessTheUserChoseTheBackground() {
-        assertEquals(DesktopWindowCloseAction.ExitApplication, desktopWindowCloseAction(DesktopAppSettings()))
+    fun theCloseButtonHidesToTheTrayUnlessTheUserChoseToQuit() {
+        assertEquals(DesktopWindowCloseAction.HideToBackground, desktopWindowCloseAction(DesktopAppSettings()))
         assertEquals(
-            DesktopWindowCloseAction.HideToBackground,
-            desktopWindowCloseAction(DesktopAppSettings(closeToBackground = true)),
+            DesktopWindowCloseAction.ExitApplication,
+            desktopWindowCloseAction(DesktopAppSettings(closeToBackground = false)),
+        )
+    }
+
+    @Test
+    fun withoutATrayTheCloseButtonQuitsBecauseAHiddenWindowCouldNotComeBack() {
+        assertEquals(
+            DesktopWindowCloseAction.ExitApplication,
+            desktopWindowCloseAction(DesktopAppSettings(closeToBackground = true), traySupported = false),
         )
     }
 
@@ -32,14 +40,14 @@ class DesktopWindowLifecycleTest {
     }
 
     @Test
-    fun theChoiceIsSavedAndOlderSettingsFilesMeanQuit() {
+    fun theChoiceIsSavedAndOlderSettingsFilesMeanHideToTheTray() {
         val directory = createTempDirectory("skipi-window-settings")
         val path = directory.resolve("settings.json")
-        DesktopSettingsLibraries.save(path, DesktopAppSettings(closeToBackground = true)).getOrThrow()
-        assertTrue(DesktopSettingsLibraries.load(path).getOrThrow().closeToBackground)
+        DesktopSettingsLibraries.save(path, DesktopAppSettings(closeToBackground = false)).getOrThrow()
+        assertFalse(DesktopSettingsLibraries.load(path).getOrThrow().closeToBackground)
 
         val legacy = directory.resolve("legacy.json").apply { writeText("""{"themeMode":"Dark"}""") }
-        assertFalse(DesktopSettingsLibraries.load(legacy).getOrThrow().closeToBackground)
+        assertTrue(DesktopSettingsLibraries.load(legacy).getOrThrow().closeToBackground)
     }
 
     @Test
@@ -48,9 +56,9 @@ class DesktopWindowLifecycleTest {
             encodeAppBackup(data.toAppBackupFile(createdAtMillis = 1L, appVersionName = "0.5.0", appVersionCode = 1)),
         ).toDesktopRestorePreview(current).userData.settings
 
-        val chosenHere = DesktopUserData(settings = DesktopAppSettings(closeToBackground = true))
-        assertFalse(restore(chosenHere, current = DesktopUserData()).closeToBackground)
-        assertTrue(restore(DesktopUserData(), current = chosenHere).closeToBackground)
-        assertTrue(DesktopAppSettings(closeToBackground = true).withVpnSettingsReset().closeToBackground)
+        val chosenHere = DesktopUserData(settings = DesktopAppSettings(closeToBackground = false))
+        assertTrue(restore(chosenHere, current = DesktopUserData()).closeToBackground)
+        assertFalse(restore(DesktopUserData(), current = chosenHere).closeToBackground)
+        assertFalse(DesktopAppSettings(closeToBackground = false).withVpnSettingsReset().closeToBackground)
     }
 }
