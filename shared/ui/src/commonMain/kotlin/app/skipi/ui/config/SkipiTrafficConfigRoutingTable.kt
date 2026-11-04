@@ -3,6 +3,7 @@
 
 package app.skipi.ui.config
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,14 +13,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
@@ -42,11 +46,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -66,9 +74,6 @@ import app.skipi.ui.resources.common_replace_existing
 import app.skipi.ui.resources.configs_rules_add
 import app.skipi.ui.resources.routing_import_clipboard_message
 import app.skipi.ui.resources.routing_import_clipboard_title
-import app.skipi.ui.resources.routing_outbound_block
-import app.skipi.ui.resources.routing_outbound_direct
-import app.skipi.ui.resources.routing_outbound_proxy
 import app.skipi.ui.resources.routing_table_apply
 import app.skipi.ui.resources.routing_table_col_name
 import app.skipi.ui.resources.routing_table_col_network
@@ -127,9 +132,10 @@ import features.config.V2rayRoutingSkipReason
 import features.config.toRoutingTable
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Where a v2rayN rule export comes from; the host reads it, since files, clipboard and links are platform work. */
@@ -348,8 +354,8 @@ fun SkipiTrafficConfigRoutingTable(
     BoxWithConstraints(modifier.fillMaxSize().padding(contentPadding)) {
         val density = LocalDensity.current
         val zoom = (maxWidth.value / RoutingTableDesignWidth).coerceIn(1f, RoutingTableMaxZoom)
-        // The editor takes at most 42% of the height (in the zoomed dp), so a low window still shows several rules.
-        val editorHeight = (maxHeight.value / zoom * 0.42f).coerceIn(260f, 340f).dp
+        // The editor takes at most half of the height (in the zoomed dp), so a low window still shows several rules.
+        val editorHeight = (maxHeight.value / zoom * 0.53f).coerceIn(260f, 352f).dp
         CompositionLocalProvider(LocalDensity provides Density(density.density * zoom, density.fontScale)) {
     Column(Modifier.fillMaxSize()) {
         RoutingTableToolbar(
@@ -434,25 +440,62 @@ private fun RoutingTableToolbar(
     }
 }
 
-/** As low as the buttons beside it: the standard text field carries a floating label and is twice this height. */
 @Composable
 private fun RoutingTableSearch(state: SkipiRoutingTableState) {
-    val text = remember { TextFieldState(state.query) }
+    Box(Modifier.width(240.dp)) {
+        CompactField(
+            initial = state.query,
+            key = Unit,
+            tag = "routing-search",
+            placeholder = stringResource(Res.string.routing_table_search),
+        ) { value -> state.query = value }
+    }
+}
+
+/** A one-line field as low as the buttons: its label sits above it, unlike the standard field's floating label. */
+@Composable
+private fun CompactField(
+    initial: String,
+    key: Any,
+    tag: String,
+    placeholder: String? = null,
+    onValue: (String) -> Unit,
+) {
+    val text = remember(key) { TextFieldState(initial) }
     Box(
-        Modifier.width(240.dp).height(34.dp).clip(RoundedCornerShape(8.dp)).background(SkipiTheme.colors.surfaceVariant).padding(horizontal = 10.dp),
+        Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(8.dp)).background(SkipiTheme.colors.surfaceVariant).padding(horizontal = 10.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        if (text.text.isEmpty()) {
-            Text(stringResource(Res.string.routing_table_search), fontSize = 12.5.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (placeholder != null && text.text.isEmpty()) {
+            Text(placeholder, fontSize = 12.5.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         BasicTextField(
             state = text,
             lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation { state.query = asCharSequence().toString() },
-            textStyle = MiuixTheme.textStyles.body2.copy(fontSize = 12.5.sp, color = MiuixTheme.colorScheme.onSurface),
+            inputTransformation = InputTransformation { onValue(asCharSequence().toString()) },
+            textStyle = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp, color = MiuixTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MiuixTheme.colorScheme.onSurface),
-            modifier = Modifier.fillMaxWidth().testTag("routing-search"),
+            modifier = Modifier.fillMaxWidth().testTag(tag),
         )
+    }
+}
+
+/** A small square mark as on the table rows of the design; the row or box around it takes the click. */
+@Composable
+private fun CheckMark(checked: Boolean) {
+    val accent = SkipiTheme.colors.accent
+    val tick = SkipiTheme.colors.onAccent
+    val border = MiuixTheme.colorScheme.onSurfaceVariantSummary
+    Canvas(Modifier.size(15.dp)) {
+        val corner = CornerRadius(3.dp.toPx())
+        if (checked) {
+            drawRoundRect(accent, cornerRadius = corner)
+            val stroke = 1.8.dp.toPx()
+            drawLine(tick, Offset(size.width * 0.24f, size.height * 0.52f), Offset(size.width * 0.43f, size.height * 0.71f), stroke, StrokeCap.Round)
+            drawLine(tick, Offset(size.width * 0.43f, size.height * 0.71f), Offset(size.width * 0.77f, size.height * 0.31f), stroke, StrokeCap.Round)
+        } else {
+            drawRoundRect(border, cornerRadius = corner, style = Stroke(1.2.dp.toPx()))
+        }
     }
 }
 
@@ -520,24 +563,25 @@ private fun RoutingTableRowView(
             .padding(end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(CheckColumn), contentAlignment = Alignment.Center) {
-            Checkbox(
-                state = ToggleableState(enabled),
-                onClick = {
+        Box(
+            Modifier.width(CheckColumn).height(30.dp).clip(RoundedCornerShape(6.dp))
+                .toggleable(value = enabled, role = Role.Checkbox) {
                     // The open rule is written from its draft, which would otherwise undo the switch.
                     if (selected && row != null) {
-                        state.change(immediate = true) { it.copy(enabled = !it.enabled) }
+                        state.change(immediate = true) { draft -> draft.copy(enabled = !draft.enabled) }
                     } else {
                         controller.setRoutingRuleEnabled(profileId, entry.lineNumber, !enabled)
                     }
-                },
-                modifier = Modifier.testTag("routing-toggle-${entry.lineNumber}"),
-            )
+                }
+                .testTag("routing-toggle-${entry.lineNumber}"),
+            contentAlignment = Alignment.Center,
+        ) {
+            CheckMark(enabled)
         }
         val dim = Modifier.alpha(if (enabled) 1f else 0.45f)
         RowCell(name, NameColumn, dim, weight = FontWeight.Medium)
         Text(
-            rule.policy,
+            routeLabel(rule.policy),
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = routeColor(rule.policy),
@@ -580,11 +624,19 @@ private fun RoutingTableFinalRow(table: RoutingTable, selected: Boolean, onClick
         ) {
             Spacer(Modifier.width(CheckColumn))
             RowCell(stringResource(Res.string.routing_table_final), NameColumn, weight = FontWeight.Medium)
-            Text(policy, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = routeColor(policy), maxLines = 1, modifier = Modifier.width(RouteColumn))
+            Text(routeLabel(policy), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = routeColor(policy), maxLines = 1, modifier = Modifier.width(RouteColumn))
             Spacer(Modifier.width(PortColumn + ProtocolColumn + NetworkColumn))
             Text(stringResource(Res.string.routing_table_final_hint), fontSize = 12.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, modifier = Modifier.weight(1f))
         }
     }
+}
+
+/** The three built-in routes read the same everywhere, as in the connection log; a server or group keeps its name. */
+private fun routeLabel(policy: String): String = when {
+    policy.equals("PROXY", ignoreCase = true) -> "proxy"
+    policy.equals("DIRECT", ignoreCase = true) -> "direct"
+    policy.startsWith("REJECT", ignoreCase = true) -> "block"
+    else -> policy
 }
 
 @Composable
@@ -614,7 +666,7 @@ private fun RoutingTableEditor(
         Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(12.dp)).background(SkipiTheme.colors.surface).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(Modifier.width(470.dp).fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.width(400.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     when {
@@ -643,7 +695,12 @@ private fun RoutingTableEditor(
                         state.close()
                     }
                 }
-                SmallAction(stringResource(Res.string.common_close)) { state.close() }
+                Box(
+                    Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).clickable { state.close() }.testTag("routing-close"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(MiuixIcons.Close, contentDescription = stringResource(Res.string.common_close), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
+                }
             }
 
             if (state.isComplex) {
@@ -654,83 +711,64 @@ private fun RoutingTableEditor(
                 }
             } else {
                 if (!state.isFinalSelected) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TextField(
-                            state = remember(state.editorKey) { TextFieldState(draft.name) },
-                            inputTransformation = { val value = asCharSequence().toString(); state.change { it.copy(name = value) } },
-                            label = stringResource(Res.string.routing_table_name),
-                            lineLimits = TextFieldLineLimits.SingleLine,
-                            modifier = Modifier.weight(1.3f).testTag("routing-name"),
-                        )
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            TextField(
-                                state = remember(state.editorKey) { TextFieldState(draft.port) },
-                                inputTransformation = { val value = asCharSequence().toString(); state.change { it.copy(port = value) } },
-                                label = stringResource(Res.string.routing_table_col_port),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().testTag("routing-port"),
-                            )
-                            Text(
-                                stringResource(Res.string.routing_table_port_hint),
-                                fontSize = 11.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                maxLines = 1,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                        }
+                    Column(Modifier.fillMaxWidth()) {
+                        FieldLabel(stringResource(Res.string.routing_table_name), Modifier.padding(bottom = 5.dp))
+                        CompactField(draft.name, state.editorKey, "routing-name") { value -> state.change { it.copy(name = value) } }
                     }
                 }
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        FieldLabel(stringResource(Res.string.routing_table_send_to))
-                        Spacer(Modifier.weight(1f))
-                        SmallAction(
-                            text = stringResource(Res.string.routing_table_server_or_group) + draft.policy.takeUnless { it.uppercase() in setOf("PROXY", "DIRECT", "REJECT") }?.let { " ($it)" }.orEmpty(),
-                        ) { onPickPolicy(draft.policy) }
-                    }
+                Column(Modifier.fillMaxWidth()) {
+                    FieldLabel(stringResource(Res.string.routing_table_send_to), Modifier.padding(bottom = 5.dp))
                     Segmented(
-                        options = listOf(
-                            "proxy" to stringResource(Res.string.routing_outbound_proxy),
-                            "direct" to stringResource(Res.string.routing_outbound_direct),
-                            "block" to stringResource(Res.string.routing_outbound_block),
-                        ),
+                        options = listOf("proxy" to "proxy", "direct" to "direct", "block" to "block"),
                         selected = when {
                             draft.policy.equals("PROXY", ignoreCase = true) -> "proxy"
                             draft.policy.equals("DIRECT", ignoreCase = true) -> "direct"
                             draft.policy.equals("REJECT", ignoreCase = true) -> "block"
                             else -> ""
                         },
+                        selectedColor = routeColor(draft.policy),
                         tagPrefix = "routing-route-",
                     ) { key -> state.change(immediate = true) { it.copy(policy = when (key) { "direct" -> "DIRECT"; "block" -> "REJECT"; else -> "PROXY" }) } }
+                    Row(Modifier.padding(top = 4.dp)) {
+                        SmallAction(
+                            text = stringResource(Res.string.routing_table_server_or_group) + draft.policy.takeUnless { it.uppercase() in setOf("PROXY", "DIRECT", "REJECT") }?.let { " ($it)" }.orEmpty(),
+                        ) { onPickPolicy(draft.policy) }
+                    }
                 }
 
                 if (!state.isFinalSelected) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        FieldLabel(stringResource(Res.string.routing_table_col_network), Modifier.width(RowLabelWidth))
-                        Box(Modifier.weight(1f)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            FieldLabel(stringResource(Res.string.routing_table_col_port), Modifier.padding(bottom = 5.dp))
+                            CompactField(draft.port, state.editorKey, "routing-port", stringResource(Res.string.routing_table_port_hint)) { value -> state.change { it.copy(port = value) } }
+                        }
+                        Column(Modifier.weight(1.25f)) {
+                            FieldLabel(stringResource(Res.string.routing_table_col_network), Modifier.padding(bottom = 5.dp))
                             Segmented(
                                 options = listOf("" to stringResource(Res.string.routing_table_network_any), "tcp" to "tcp", "udp" to "udp"),
                                 selected = draft.network,
+                                selectedColor = routeColor(draft.policy),
                                 tagPrefix = "routing-network-",
                             ) { key -> state.change(immediate = true) { it.copy(network = key) } }
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        FieldLabel(stringResource(Res.string.routing_table_col_protocol), Modifier.width(RowLabelWidth - 10.dp))
-                        KnownProtocols.forEach { protocol ->
-                            val checked = protocol in draft.protocols
-                            Row(
-                                Modifier.clip(RoundedCornerShape(6.dp)).clickable {
-                                    state.change(immediate = true) { it.copy(protocols = if (checked) it.protocols - protocol else it.protocols + protocol) }
-                                },
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(
-                                    state = ToggleableState(checked),
-                                    onClick = { state.change(immediate = true) { it.copy(protocols = if (checked) it.protocols - protocol else it.protocols + protocol) } },
-                                    modifier = Modifier.testTag("routing-protocol-$protocol"),
-                                )
-                                Text(protocol, fontSize = 12.5.sp, color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.padding(end = 4.dp))
+                    Column(Modifier.fillMaxWidth()) {
+                        FieldLabel(stringResource(Res.string.routing_table_col_protocol), Modifier.padding(bottom = 5.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            KnownProtocols.forEach { protocol ->
+                                val checked = protocol in draft.protocols
+                                Row(
+                                    Modifier.clip(RoundedCornerShape(4.dp))
+                                        .toggleable(value = checked, role = Role.Checkbox) {
+                                            state.change(immediate = true) { it.copy(protocols = if (checked) it.protocols - protocol else it.protocols + protocol) }
+                                        }
+                                        .testTag("routing-protocol-$protocol"),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                ) {
+                                    CheckMark(checked)
+                                    Text(protocol, fontSize = 12.5.sp, color = MiuixTheme.colorScheme.onSurface, maxLines = 1)
+                                }
                             }
                         }
                     }
@@ -742,8 +780,8 @@ private fun RoutingTableEditor(
         }
 
         if (!state.isComplex && !state.isFinalSelected) {
-            Column(Modifier.weight(1f).fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ValuesBox(Modifier.weight(2f), stringResource(Res.string.routing_table_domains), stringResource(Res.string.routing_table_domains_help), "routing-domains", state, draft.domains) { values -> state.change { it.copy(domains = values) } }
+            Row(Modifier.weight(1f).fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ValuesBox(Modifier.weight(1f), stringResource(Res.string.routing_table_domains), stringResource(Res.string.routing_table_domains_help), "routing-domains", state, draft.domains) { values -> state.change { it.copy(domains = values) } }
                 ValuesBox(Modifier.weight(1f), stringResource(Res.string.routing_table_ips), stringResource(Res.string.routing_table_ips_help), "routing-ips", state, draft.ips) { values -> state.change { it.copy(ips = values) } }
                 ValuesBox(Modifier.weight(1f), stringResource(Res.string.routing_table_processes), stringResource(Res.string.routing_table_processes_help), "routing-processes", state, draft.processes) { values -> state.change { it.copy(processes = values) } }
             }
@@ -768,18 +806,18 @@ private fun SmallAction(text: String, enabled: Boolean = true, onClick: () -> Un
 }
 
 @Composable
-private fun Segmented(options: List<Pair<String, String>>, selected: String, tagPrefix: String, onSelect: (String) -> Unit) {
+private fun Segmented(options: List<Pair<String, String>>, selected: String, selectedColor: Color, tagPrefix: String, onSelect: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(SkipiTheme.colors.surfaceVariant).padding(2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         options.forEach { (key, label) ->
             val on = key == selected
             Box(
                 Modifier.weight(1f).height(30.dp).clip(RoundedCornerShape(6.dp))
-                    .background(if (on) SkipiTheme.colors.surface else Color.Transparent)
+                    .background(if (on) SkipiTheme.colors.background else Color.Transparent)
                     .clickable { onSelect(key) }
                     .testTag(tagPrefix + key.ifEmpty { "any" }),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(label, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, color = if (on) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
+                Text(label, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, color = if (on) selectedColor else MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 6.dp))
             }
         }
     }
@@ -797,12 +835,10 @@ private fun ValuesBox(
     onValues: (List<String>) -> Unit,
 ) {
     val text = remember(state.editorKey) { TextFieldState(values.joinToString("\n")) }
-    Column(modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            FieldLabel(label)
-            Text("  $help", fontSize = 10.5.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Spacer(Modifier.height(4.dp))
+    Column(modifier.fillMaxHeight()) {
+        FieldLabel(label)
+        // Two lines are reserved so that the three boxes start level whichever help wraps.
+        Text(help, fontSize = 10.5.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.height(30.dp))
         Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(SkipiTheme.colors.surfaceVariant).padding(8.dp)) {
             BasicTextField(
                 state = text,
@@ -835,7 +871,7 @@ fun SkipiRoutingImportDialog(
             append(stringResource(Res.string.routing_import_clipboard_message).formatTemplate("count" to import.rows.size))
             append('\n')
             append(stringResource(Res.string.routing_table_import_counts).formatTemplate("on" to import.rows.count { it.enabled }, "off" to import.rows.count { !it.enabled }))
-            import.finalPolicy?.let { append('\n').append(stringResource(Res.string.routing_table_import_final).formatTemplate("policy" to it)) }
+            import.finalPolicy?.let { append('\n').append(stringResource(Res.string.routing_table_import_final).formatTemplate("policy" to routeLabel(it))) }
             if (import.skipped.isNotEmpty()) {
                 val more = import.skipped.size - skippedNames.size
                 append('\n').append(stringResource(Res.string.routing_table_import_skipped).formatTemplate("names" to skippedNames.joinToString("; ") + if (more > 0) " +$more" else ""))

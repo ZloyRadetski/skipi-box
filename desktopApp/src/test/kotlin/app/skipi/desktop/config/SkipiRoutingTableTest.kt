@@ -232,11 +232,63 @@ class SkipiRoutingTableTest {
     }
 
     @Test
-    fun thePortHintSitsUnderThePortField() = withHarness {
+    fun theFieldsGoInTheOrderOfTheDemo() = withHarness {
         clickText("Hypixel")
-        val hint = assertNotNull(findText(runBlocking { getString(Res.string.routing_table_port_hint) }), "no port hint")
-        val port = assertNotNull(findTag("routing-port"))
-        assertTrue(hint.boundsInRoot.left >= port.boundsInRoot.left - 2f, "hint at ${hint.boundsInRoot.left}, field at ${port.boundsInRoot.left}")
+        fun top(tag: String) = assertNotNull(findTag(tag), "no '$tag'").boundsInRoot.top
+        fun left(tag: String) = assertNotNull(findTag(tag), "no '$tag'").boundsInRoot.left
+        val server = runBlocking { assertNotNull(findText(getString(Res.string.routing_table_server_or_group))) }.boundsInRoot
+
+        assertTrue(top("routing-name") < top("routing-route-direct"))
+        assertTrue(top("routing-route-direct") < server.top, "the server link goes under the route choices")
+        assertTrue(server.top < top("routing-port"))
+        assertTrue(left("routing-port") < left("routing-network-any"), "port and network share a row")
+        assertTrue(kotlin.math.abs(top("routing-port") - top("routing-network-any")) < 12f, "port and network share a row")
+        assertTrue(top("routing-port") < top("routing-protocol-http"))
+    }
+
+    @Test
+    fun theThreeValueBoxesStandSideBySide() = withHarness {
+        clickText("Hypixel")
+        val domains = assertNotNull(findTag("routing-domains")).boundsInRoot
+        val ips = assertNotNull(findTag("routing-ips")).boundsInRoot
+        val processes = assertNotNull(findTag("routing-processes")).boundsInRoot
+
+        assertEquals(domains.top, ips.top, 1f)
+        assertEquals(ips.top, processes.top, 1f)
+        assertTrue(domains.right <= ips.left && ips.right <= processes.left, "$domains $ips $processes")
+    }
+
+    @Test
+    fun aFieldIsAsLowAsInTheDemo() = withHarness {
+        clickText("Hypixel")
+        // The label sits above the field, which is 34 dp at the zoom of this window.
+        assertTrue(assertNotNull(findTag("routing-name")).boundsInRoot.height <= 46f)
+    }
+
+    @Test
+    fun anEmptyPortShowsItsHintInsideTheField() = withHarness {
+        clickText("BLOCK")
+        val hint = assertNotNull(findText(runBlocking { getString(Res.string.routing_table_port_hint) }), "no port hint").boundsInRoot
+        val port = assertNotNull(findTag("routing-port")).boundsInRoot
+
+        assertTrue(hint.top >= port.top - 12f && hint.bottom <= port.bottom + 12f, "hint $hint, field $port")
+    }
+
+    @Test
+    fun routesReadTheSameInTheTableAndInTheEditor() = withHarness {
+        clickText("Hypixel")
+        val texts = nodes().flatMap { it.config.getOrElse(SemanticsProperties.Text) { emptyList() } }.map { it.text }
+
+        assertTrue(listOf("proxy", "direct", "block").all { it in texts }, "texts: $texts")
+        assertTrue(listOf("PROXY", "DIRECT", "REJECT").none { it in texts }, "texts: $texts")
+    }
+
+    @Test
+    fun theCrossClosesTheEditor() = withHarness {
+        clickText("Hypixel")
+        clickTag("routing-close")
+
+        assertNull(findTag("routing-domains"))
     }
 
     @Test
