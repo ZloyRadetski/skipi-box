@@ -82,6 +82,8 @@ data class DesktopAppSettings(
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
     val showTunnelIp: Boolean = true,
+    /** Desktop-only, like the TUN switch: not part of the Android-shaped backup. */
+    val showConnectionLog: Boolean = true,
     val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,

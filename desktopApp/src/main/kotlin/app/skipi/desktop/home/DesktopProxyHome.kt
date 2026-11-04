@@ -38,6 +38,7 @@ import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.createProxyServerEditorDraft
 import app.skipi.ui.home.ProxyHomeScreen
+import app.skipi.ui.home.SkipiConnectionLogPanel
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
@@ -123,6 +124,8 @@ internal fun DesktopProxyHome(
     connecting: Boolean = false,
     /** Process-wide, so the session time survives leaving and returning to Home. */
     connectionClock: ConnectionClock = ConnectionClock(),
+    /** Null while the Home log is switched off. */
+    connectionLog: DesktopConnectionLog? = null,
     tunnelIp: ProxyHomeTunnelIp? = null,
     runtimeOutboundMetric: String? = null,
     canToggleTunnel: Boolean,
@@ -615,6 +618,19 @@ internal fun DesktopProxyHome(
                 floatingNavigationBottomInset = contentPadding.calculateBottomPadding(),
                 topContentPadding = DesktopProxyHomeTopContentPadding,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                wideSidePanel = connectionLog?.let { log ->
+                    { panelModifier ->
+                        val logState by log.state.collectAsState()
+                        SkipiConnectionLogPanel(
+                            state = logState,
+                            connected = running,
+                            formatTime = ::formatDesktopConnectionLogTime,
+                            onHeldChange = log::setHeld,
+                            onCopy = { host -> copyToClipboard(host) },
+                            modifier = panelModifier,
+                        )
+                    }
+                },
             )
         }
     }

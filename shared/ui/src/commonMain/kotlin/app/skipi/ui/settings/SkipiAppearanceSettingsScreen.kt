@@ -92,6 +92,8 @@ data class AppearanceSettingsCapabilities(
     val customColors: Boolean = true,
     val fonts: Boolean = true,
     val bottomBarSize: Boolean = true,
+    /** Only a host that can list the tunnel's connections on Home offers the switch. */
+    val connectionLog: Boolean = false,
 )
 
 @Composable
@@ -728,6 +730,16 @@ fun SkipiAppearanceSettingsScreen(
                                 checked = appState.maskTunnelIpOnHome,
                                 onCheckedChange = { enabled ->
                                     updateAppState { it.copy(maskTunnelIpOnHome = enabled) }
+                                },
+                            )
+                        }
+                        if (capabilities.connectionLog) {
+                            SwitchPreference(
+                                title = stringResource(Res.string.settings_connection_log_show_on_home),
+                                summary = stringResource(Res.string.settings_connection_log_show_on_home_summary),
+                                checked = appState.showConnectionLogOnHome,
+                                onCheckedChange = { enabled ->
+                                    updateAppState { it.copy(showConnectionLogOnHome = enabled) }
                                 },
                             )
                         }

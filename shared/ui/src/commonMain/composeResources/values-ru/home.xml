@@ -70,4 +70,9 @@
     <string name="home_tile_ip">IP</string>
     <string name="home_memory_megabytes">%1$s МБ</string>
     <string name="home_memory_kilobytes">%1$s КБ</string>
+    <string name="home_connection_log_title">Соединения</string>
+    <string name="home_connection_log_waiting">Ждём первые соединения…</string>
+    <string name="home_connection_log_paused">пауза</string>
+    <string name="home_connection_log_paused_more">пауза · ещё %1$d</string>
+    <string name="home_connection_log_copied">скопировано</string>
 </resources>

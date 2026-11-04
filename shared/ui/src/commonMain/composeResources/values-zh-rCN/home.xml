@@ -68,4 +68,9 @@
     <string name="home_tile_ip">IP</string>
     <string name="home_memory_megabytes">%1$s MB</string>
     <string name="home_memory_kilobytes">%1$s KB</string>
+    <string name="home_connection_log_title">连接</string>
+    <string name="home_connection_log_waiting">正在等待首个连接…</string>
+    <string name="home_connection_log_paused">已暂停</string>
+    <string name="home_connection_log_paused_more">已暂停 · 还有 %1$d 条</string>
+    <string name="home_connection_log_copied">已复制</string>
 </resources>

@@ -1486,4 +1486,6 @@
     <string name="settings_local_proxy_socks_credentials">Логин SOCKS5</string>
     <string name="settings_local_proxy_http_credentials">Логин HTTP</string>
     <string name="settings_local_proxy_http_auth_system_note">Системный прокси не умеет передавать логин, поэтому браузеры будут его запрашивать, пока авторизация HTTP включена</string>
+    <string name="settings_connection_log_show_on_home">Журнал соединений</string>
+    <string name="settings_connection_log_show_on_home_summary">Показывать время, домен и маршрут новых соединений на главном экране. Ничего не пишется на диск</string>
 </resources>

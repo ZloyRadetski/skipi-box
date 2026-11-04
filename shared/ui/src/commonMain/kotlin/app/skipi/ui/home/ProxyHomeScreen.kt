@@ -235,6 +235,7 @@ fun ProxyHomeScreen(
     floatingNavigationBottomInset: Dp = 0.dp,
     topContentPadding: Dp? = 40.dp,
     containerColor: Color = SkipiTheme.colors.background,
+    wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val state by store.uiState.collectAsState()
 
@@ -246,9 +247,14 @@ fun ProxyHomeScreen(
         floatingNavigationBottomInset = floatingNavigationBottomInset,
         topContentPadding = topContentPadding,
         containerColor = containerColor,
+        wideSidePanel = wideSidePanel,
     )
 }
 
+/**
+ * [wideSidePanel] fills what the left column of a wide window has left under the server details.
+ * It owns its state, so what it shows never recomposes the server list.
+ */
 @Composable
 fun ProxyHomeScreenContent(
     state: ProxyHomeUiState,
@@ -258,6 +264,7 @@ fun ProxyHomeScreenContent(
     floatingNavigationBottomInset: Dp = 0.dp,
     topContentPadding: Dp? = 40.dp,
     containerColor: Color = SkipiTheme.colors.background,
+    wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
@@ -603,20 +610,25 @@ fun ProxyHomeScreenContent(
                             modifier = Modifier
                                 // Wide enough for the button at any chosen size.
                                 .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
-                                .fillMaxHeight()
-                                .verticalScroll(rememberScrollState()),
+                                .fillMaxHeight(),
                         ) {
-                            HomeConnectionPanel(
-                                state = state,
-                                compact = false,
-                                onToggle = { send(ProxyHomeAction.ToggleTunnel) },
-                            )
-                            Spacer(Modifier.height(SkipiTheme.spacing.medium))
-                            SelectedServerDetailsPane(
-                                state = state,
-                                server = selectedServer,
-                                onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
-                            )
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                HomeConnectionPanel(
+                                    state = state,
+                                    compact = false,
+                                    onToggle = { send(ProxyHomeAction.ToggleTunnel) },
+                                )
+                                Spacer(Modifier.height(SkipiTheme.spacing.medium))
+                                SelectedServerDetailsPane(
+                                    state = state,
+                                    server = selectedServer,
+                                    onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
+                                )
+                            }
+                            wideSidePanel?.let { panel ->
+                                Spacer(Modifier.height(SkipiTheme.spacing.medium))
+                                panel(Modifier.fillMaxWidth().weight(1f))
+                            }
                         }
                         wideList(Modifier.weight(1f))
                     }

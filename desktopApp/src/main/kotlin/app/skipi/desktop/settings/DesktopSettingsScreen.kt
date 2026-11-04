@@ -520,6 +520,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     customColors = true,
     fonts = true,
     bottomBarSize = true,
+    connectionLog = true,
 )
 
 @Composable
@@ -1107,6 +1108,6 @@ private fun openDirectory(path: java.nio.file.Path): Result<Unit> = runCatching 
     Desktop.getDesktop().open(path.toFile())
 }
 
-private fun copyToClipboard(value: String): Result<Unit> = runCatching {
+internal fun copyToClipboard(value: String): Result<Unit> = runCatching {
     Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(value), null)
 }

@@ -1423,4 +1423,6 @@
     <string name="settings_local_proxy_socks_credentials">SOCKS5 登录</string>
     <string name="settings_local_proxy_http_credentials">HTTP 登录</string>
     <string name="settings_local_proxy_http_auth_system_note">系统代理无法发送登录信息，因此开启 HTTP 认证时浏览器会要求输入</string>
+    <string name="settings_connection_log_show_on_home">连接日志</string>
+    <string name="settings_connection_log_show_on_home_summary">在主页上显示新连接的时间、域名和路由。不会写入磁盘</string>
 </resources>

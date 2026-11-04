@@ -68,4 +68,9 @@
     <string name="home_tile_ip">IP</string>
     <string name="home_memory_megabytes">%1$s مگابایت</string>
     <string name="home_memory_kilobytes">%1$s کیلوبایت</string>
+    <string name="home_connection_log_title">اتصال‌ها</string>
+    <string name="home_connection_log_waiting">در انتظار نخستین اتصال‌ها…</string>
+    <string name="home_connection_log_paused">متوقف شد</string>
+    <string name="home_connection_log_paused_more">متوقف شد · %1$d مورد دیگر</string>
+    <string name="home_connection_log_copied">کپی شد</string>
 </resources>

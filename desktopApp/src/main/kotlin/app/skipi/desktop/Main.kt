@@ -507,6 +507,19 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 }
 
                 LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
+                val desktopConnectionLog = remember(coreController) { DesktopConnectionLog(coreController::readConnectionLog) }
+                LaunchedEffect(desktopSettings.showConnectionLog) {
+                    coreController.setConnectionLogEnabled(desktopSettings.showConnectionLog)
+                }
+                LaunchedEffect(desktopSettings.showConnectionLog, tunnel.coreState.sessionId) {
+                    desktopConnectionLog.clear()
+                    if (desktopSettings.showConnectionLog && tunnel.coreState.sessionId != null) {
+                        while (true) {
+                            withContext(Dispatchers.IO) { desktopConnectionLog.poll() }
+                            delay(ConnectionLogPollMillis)
+                        }
+                    }
+                }
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()
                 }
@@ -1220,6 +1233,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     when (currentSection) {
                         SkipiMainDestination.Proxy -> DesktopProxyHome(
                             connectionClock = connectionClock,
+                            connectionLog = desktopConnectionLog.takeIf { desktopSettings.showConnectionLog },
                             updateBanner = appUpdateState.bannerModel()?.let { banner ->
                                 {
                                     SkipiAppUpdateBanner(
