@@ -41,6 +41,7 @@ import features.backup.AppBackupTrafficConfig
 import features.backup.AppBackupFormat
 import features.backup.CurrentAppBackupVersion
 import features.backup.AppBackupWarning
+import platform.parseLocalProxyAuthMode
 
 fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -123,6 +124,13 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         enableLocalProxyAuth = enableLocalProxyAuth,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
+        localProxyAuthMode = localProxyAuthMode.name,
+        enableLocalHttpProxy = enableLocalHttpProxy,
+        localHttpProxyPort = localHttpProxyPort,
+        enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
+        localHttpProxyAuthMode = localHttpProxyAuthMode.name,
+        localHttpProxyUsername = localHttpProxyUsername,
+        localHttpProxyPassword = localHttpProxyPassword,
         enableVpnAppendHttpProxy = enableVpnAppendHttpProxy,
         enableVpnHevTun = enableVpnHevTun,
         enableKillSwitch = enableKillSwitch,
@@ -340,6 +348,13 @@ private fun AppBackupData.toAppState(): AppState {
         enableLocalProxyAuth = settings.enableLocalProxyAuth,
         localProxyUsername = settings.localProxyUsername.ifEmpty { defaults.localProxyUsername },
         localProxyPassword = settings.localProxyPassword.ifEmpty { defaults.localProxyPassword },
+        localProxyAuthMode = parseLocalProxyAuthMode(settings.localProxyAuthMode, defaults.localProxyAuthMode),
+        enableLocalHttpProxy = settings.enableLocalHttpProxy,
+        localHttpProxyPort = settings.localHttpProxyPort.ifBlank { defaults.localHttpProxyPort },
+        enableLocalHttpProxyAuth = settings.enableLocalHttpProxyAuth,
+        localHttpProxyAuthMode = parseLocalProxyAuthMode(settings.localHttpProxyAuthMode, defaults.localHttpProxyAuthMode),
+        localHttpProxyUsername = settings.localHttpProxyUsername.ifEmpty { defaults.localHttpProxyUsername },
+        localHttpProxyPassword = settings.localHttpProxyPassword.ifEmpty { defaults.localHttpProxyPassword },
         enableVpnAppendHttpProxy = settings.enableVpnAppendHttpProxy,
         enableVpnHevTun = settings.enableVpnHevTun,
         enableKillSwitch = settings.enableKillSwitch,

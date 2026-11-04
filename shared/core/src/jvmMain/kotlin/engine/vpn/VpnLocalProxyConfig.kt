@@ -4,6 +4,7 @@
 package engine.vpn
 
 import app.AppState
+import app.httpProxyInboundEnabled
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyOptions
 import engine.proxy.availablePort
@@ -16,7 +17,10 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.buildJsonArray
 
 data class VpnAppendHttpProxyOptions(
+    /** The HTTP inbound exists: the user enabled it, or the VPN's own proxy needs it. */
     val enabled: Boolean,
+    /** The VPN advertises this inbound as the system HTTP proxy (Android's "append HTTP proxy"). */
+    val appliesToVpn: Boolean = false,
     val listenAddress: String = LocalProxyLoopbackAddress,
     val port: Int,
     val username: String = "",
@@ -37,19 +41,22 @@ fun AppState.toVpnAppendHttpProxyOptions(
     localProxyOptions: LocalProxyOptions,
     excludedPorts: Set<Int> = emptySet(),
 ): VpnAppendHttpProxyOptions {
-    if (!enableVpnAppendHttpProxy) {
+    if (!httpProxyInboundEnabled) {
         return VpnAppendHttpProxyOptions.Disabled
     }
     val listenAddress = localProxyOptions.listenAddress
+    val reserved = setOf(localProxyOptions.port) + excludedPorts
+    // The configured (or, with dynamic ports, already resolved) port wins; a free one only replaces a collision.
+    val port = localProxyOptions.httpPort.takeIf { it !in reserved }
+        ?: availablePort(listenAddress = listenAddress, excludedPorts = reserved)
+        ?: fallbackAppendHttpProxyPort(localProxyOptions.port)
     return VpnAppendHttpProxyOptions(
         enabled = true,
+        appliesToVpn = enableVpnAppendHttpProxy,
         listenAddress = listenAddress,
-        port = availablePort(
-            listenAddress = listenAddress,
-            excludedPorts = setOf(localProxyOptions.port) + excludedPorts,
-        ) ?: fallbackAppendHttpProxyPort(localProxyOptions.port),
-        username = localProxyOptions.username,
-        password = localProxyOptions.password,
+        port = port,
+        username = localProxyOptions.httpUsername,
+        password = localProxyOptions.httpPassword,
     )
 }
 

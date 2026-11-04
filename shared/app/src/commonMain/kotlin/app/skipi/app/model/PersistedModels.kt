@@ -8,6 +8,7 @@ import features.config.parseSkipiPerAppSettings
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerInfo
 import features.subscription.SubscriptionExpiryReminder
+import platform.LocalProxyAuthMode
 import features.subscription.SubscriptionMetadata
 
 /**
@@ -120,6 +121,14 @@ data class LocalProxyPreferences(
     val authenticationEnabled: Boolean,
     val username: String,
     val password: String,
+    /** Absent in records written before the HTTP inbound existed; the state keeps its own values then. */
+    val authMode: LocalProxyAuthMode? = null,
+    val httpEnabled: Boolean? = null,
+    val httpPort: String? = null,
+    val httpAuthenticationEnabled: Boolean? = null,
+    val httpAuthMode: LocalProxyAuthMode? = null,
+    val httpUsername: String? = null,
+    val httpPassword: String? = null,
 )
 
 /** Subscription tester, fetch, identity, and expiry preferences from Android settings. */

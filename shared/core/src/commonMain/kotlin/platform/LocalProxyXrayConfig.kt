@@ -42,12 +42,11 @@ import kotlinx.serialization.json.put
 /** Minimal Xray process configuration for a selected, single server on desktop. */
 data class LocalProxyXrayConfigOptions(
     val socksPort: Int = DefaultLocalSocksPort,
-    /** A separate HTTP CONNECT inbound used by Windows system-proxy integration. */
+    /** The separate HTTP CONNECT inbound: system proxies, LAN sharing, any HTTP-only client. */
     val httpProxyPort: Int = DefaultLocalHttpProxyPort,
     /**
-     * Windows Internet Settings always points to this loopback-only inbound.
-     * It deliberately does not inherit [listenAddress], because SOCKS may be
-     * shared with a LAN while a system proxy must never be published on it.
+     * Hosts set this to the SOCKS [listenAddress], so "listen on all interfaces" shares both inbounds.
+     * A system proxy still points at loopback, which a wildcard listener also serves.
      */
     val httpProxyListenAddress: String = DefaultLocalHttpProxyListenAddress,
     val enableHttpProxy: Boolean = false,
@@ -55,6 +54,9 @@ data class LocalProxyXrayConfigOptions(
     /** Blank usernames retain Android's unauthenticated SOCKS settings. */
     val username: String = "",
     val password: String = "",
+    /** The HTTP inbound's own login, resolved independently of SOCKS; blank means no HTTP authentication. */
+    val httpUsername: String = "",
+    val httpPassword: String = "",
     val logLevel: String = "warning",
     val dnsServers: List<String> = emptyList(),
     val includeDefaultRouting: Boolean = false,
@@ -225,7 +227,7 @@ object LocalProxyXrayConfigFactory {
         if (options.enableHttpProxy) add(buildHttpInbound(options))
     }
 
-    /** The loopback HTTP inbound; it takes the same login as the SOCKS one, so enabling auth protects both. */
+    /** The HTTP inbound; its login is its own, so SOCKS and HTTP can be protected differently. */
     fun buildHttpInbound(options: LocalProxyXrayConfigOptions): JsonObject = buildJsonObject {
         put("tag", HttpInboundTag)
         put("listen", options.httpProxyListenAddress)
@@ -235,14 +237,14 @@ object LocalProxyXrayConfigFactory {
             "settings",
             buildJsonObject {
                 put("allowTransparent", false)
-                if (options.username.isNotBlank()) {
+                if (options.httpUsername.isNotBlank()) {
                     put(
                         "accounts",
                         buildJsonArray {
                             add(
                                 buildJsonObject {
-                                    put("user", options.username)
-                                    put("pass", options.password)
+                                    put("user", options.httpUsername)
+                                    put("pass", options.httpPassword)
                                 },
                             )
                         },
@@ -301,9 +303,7 @@ object LocalProxyXrayConfigFactory {
             require(options.httpProxyPort != options.socksPort) {
                 "Local HTTP proxy port must differ from the SOCKS port"
             }
-            require(options.httpProxyListenAddress == DefaultLocalHttpProxyListenAddress) {
-                "Windows system HTTP proxy must listen on $DefaultLocalHttpProxyListenAddress"
-            }
+            require(options.httpProxyListenAddress.isNotBlank()) { "Local HTTP proxy listen address must not be blank" }
         }
         require(options.listenAddress.isNotBlank()) { "Local SOCKS listen address must not be blank" }
     }

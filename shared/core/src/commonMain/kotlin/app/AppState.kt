@@ -23,6 +23,7 @@ import app.modes.SubscriptionPingModeTcp
 import engine.hevtun.DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis
 import engine.vpn.VpnDefaults
 import engine.network.NetworkDefaults
+import platform.LocalProxyAuthMode
 import engine.xray.DefaultDirectDnsDomains
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
@@ -114,6 +115,15 @@ data class AppState(
     val enableLocalProxyAuth: Boolean = true,
     val localProxyUsername: String = generateRandomProxyCredential(),
     val localProxyPassword: String = generateRandomProxyCredential(),
+    /** SOCKS auth mode while [enableLocalProxyAuth] is on; the switch itself is the "Off" mode. */
+    val localProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
+    /** The HTTP inbound; Android also needs it for [enableVpnAppendHttpProxy], Desktop for the system proxy. */
+    val enableLocalHttpProxy: Boolean = false,
+    val localHttpProxyPort: String = VpnDefaults.LOCAL_HTTP_PROXY_PORT.toString(),
+    val enableLocalHttpProxyAuth: Boolean = false,
+    val localHttpProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
+    val localHttpProxyUsername: String = generateRandomProxyCredential(),
+    val localHttpProxyPassword: String = generateRandomProxyCredential(),
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = true,
     val enableKillSwitch: Boolean = false,

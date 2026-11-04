@@ -51,6 +51,13 @@ private object BackupDefaults {
     const val enableLocalProxyAuth = true
     const val localProxyUsername = ""
     const val localProxyPassword = ""
+    const val localProxyAuthMode = "Auto"
+    const val enableLocalHttpProxy = false
+    const val localHttpProxyPort = "10809"
+    const val enableLocalHttpProxyAuth = false
+    const val localHttpProxyAuthMode = "Auto"
+    const val localHttpProxyUsername = ""
+    const val localHttpProxyPassword = ""
     const val enableVpnAppendHttpProxy = false
     const val enableVpnHevTun = true
     const val enableKillSwitch = false
@@ -197,6 +204,13 @@ data class AppBackupSettings(
     val enableLocalProxyAuth: Boolean = BackupDefaults.enableLocalProxyAuth,
     val localProxyUsername: String = BackupDefaults.localProxyUsername,
     val localProxyPassword: String = BackupDefaults.localProxyPassword,
+    val localProxyAuthMode: String = BackupDefaults.localProxyAuthMode,
+    val enableLocalHttpProxy: Boolean = BackupDefaults.enableLocalHttpProxy,
+    val localHttpProxyPort: String = BackupDefaults.localHttpProxyPort,
+    val enableLocalHttpProxyAuth: Boolean = BackupDefaults.enableLocalHttpProxyAuth,
+    val localHttpProxyAuthMode: String = BackupDefaults.localHttpProxyAuthMode,
+    val localHttpProxyUsername: String = BackupDefaults.localHttpProxyUsername,
+    val localHttpProxyPassword: String = BackupDefaults.localHttpProxyPassword,
     val enableVpnAppendHttpProxy: Boolean = BackupDefaults.enableVpnAppendHttpProxy,
     val enableVpnHevTun: Boolean = BackupDefaults.enableVpnHevTun,
     val enableKillSwitch: Boolean = BackupDefaults.enableKillSwitch,

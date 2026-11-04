@@ -289,13 +289,6 @@ class LocalProxyXrayConfigFactoryBuildFromPlanTest {
             LocalProxyXrayConfigOptions(
                 socksPort = 18_080,
                 httpProxyPort = 18_081,
-                enableHttpProxy = true,
-                httpProxyListenAddress = "0.0.0.0",
-                listenAddress = "",
-            ) to "Windows system HTTP proxy must listen on $DefaultLocalHttpProxyListenAddress",
-            LocalProxyXrayConfigOptions(
-                socksPort = 18_080,
-                httpProxyPort = 18_081,
                 enableHttpProxy = false,
                 listenAddress = "",
             ) to "Local SOCKS listen address must not be blank",

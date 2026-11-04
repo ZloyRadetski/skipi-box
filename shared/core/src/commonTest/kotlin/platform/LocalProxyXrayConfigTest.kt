@@ -80,21 +80,23 @@ class LocalProxyXrayConfigTest {
     }
 
     @Test
-    fun httpInboundTakesTheSameLoginAsSocksWhenAuthIsOn() {
+    fun httpInboundTakesItsOwnLoginIndependentOfSocks() {
         fun httpSettings(username: String) = LocalProxyXrayConfigFactory.buildHttpInbound(
             LocalProxyXrayConfigOptions(
                 socksPort = 20_480,
                 httpProxyPort = 20_481,
                 enableHttpProxy = true,
-                username = username,
-                password = "secret",
+                username = "socks-user",
+                password = "socks-secret",
+                httpUsername = username,
+                httpPassword = "http-secret",
             ),
         ).getValue("settings") as JsonObject
 
-        val withAuth = httpSettings("user")
+        val withAuth = httpSettings("http-user")
         val account = withAuth.getValue("accounts").jsonArray.single() as JsonObject
-        assertEquals("user", account.getValue("user").jsonPrimitive.content)
-        assertEquals("secret", account.getValue("pass").jsonPrimitive.content)
+        assertEquals("http-user", account.getValue("user").jsonPrimitive.content)
+        assertEquals("http-secret", account.getValue("pass").jsonPrimitive.content)
         assertEquals(false, httpSettings("").containsKey("accounts"))
     }
 
@@ -113,18 +115,23 @@ class LocalProxyXrayConfigTest {
     }
 
     @Test
-    fun rejectsHttpSystemProxyInboundThatIsNotLoopback() {
-        assertFailsWith<IllegalArgumentException> {
+    fun httpInboundMayListenOnTheSameAddressAsSocks() {
+        val config = Json.parseToJsonElement(
             LocalProxyXrayConfigFactory.build(
                 server = VLESS(remarks = "Desktop", id = "id", server = "example.com", port = "443"),
                 options = LocalProxyXrayConfigOptions(
                     socksPort = 20_480,
                     httpProxyPort = 20_481,
                     httpProxyListenAddress = "0.0.0.0",
+                    listenAddress = "0.0.0.0",
                     enableHttpProxy = true,
                 ),
-            )
-        }
+            ),
+        ) as JsonObject
+
+        val http = config.getValue("inbounds").jsonArray.map { it as JsonObject }
+            .single { it["protocol"]?.jsonPrimitive?.content == "http" }
+        assertEquals("0.0.0.0", http.getValue("listen").jsonPrimitive.content)
     }
 
     @Test

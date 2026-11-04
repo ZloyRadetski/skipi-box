@@ -31,6 +31,14 @@ fun AppState.withVpnSettingsReset(): AppState {
         // reset.  Credentials are regenerated only via an explicit UI action.
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
+        localProxyAuthMode = defaults.localProxyAuthMode,
+        enableLocalHttpProxy = defaults.enableLocalHttpProxy,
+        localHttpProxyPort = defaults.localHttpProxyPort,
+        enableLocalHttpProxyAuth = defaults.enableLocalHttpProxyAuth,
+        localHttpProxyAuthMode = defaults.localHttpProxyAuthMode,
+        // The HTTP login is kept like the SOCKS one, for the same reason.
+        localHttpProxyUsername = localHttpProxyUsername,
+        localHttpProxyPassword = localHttpProxyPassword,
         enableVpnAppendHttpProxy = defaults.enableVpnAppendHttpProxy,
         enableVpnHevTun = defaults.enableVpnHevTun,
         enableKillSwitch = defaults.enableKillSwitch,

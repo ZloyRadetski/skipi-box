@@ -6,6 +6,7 @@ package engine.vpn
 object VpnDefaults {
     const val LOCAL_PROXY_PORT = 10_808
     const val VPN_APPEND_HTTP_PROXY_FALLBACK_PORT = 10_809
+    const val LOCAL_HTTP_PROXY_PORT = 10_809
     const val MTU = 1400
     const val MTU_MIN = 1280
     const val MTU_MAX = 65_535
