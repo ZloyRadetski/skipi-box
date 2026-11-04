@@ -99,6 +99,21 @@ class DesktopMacTunTest {
     }
 
     @Test
+    fun theSupervisorRaisesTheDescriptorLimitBeforeStartingHev() {
+        // hev serves two descriptors per session. Its own attempt to raise the limit asks for an
+        // unlimited soft value, which macOS refuses, so a launchd child keeps the default of 256 and
+        // runs out of sockets after about a hundred sessions.
+        val script = macTunSupervisorScript(spec())
+        val hev = "'/Applications/SKIPI.app/Contents/Resources/hev/hev-socks5-tunnel'"
+
+        val raise = script.indexOf("ulimit -n 10240")
+        val start = script.indexOf("$hev '/Users/test/SKIPI/run/tun-hev.yaml'")
+        assertTrue(raise >= 0, script)
+        assertTrue(start > raise, "the limit must be raised before hev is started")
+        assertTrue("|| true" in script.substring(raise, start).lines().first(), "a refused raise must not stop the tunnel")
+    }
+
+    @Test
     fun aFailureAfterStartRemovesWhatWasInstalled() {
         val script = macTunSupervisorScript(spec())
         val fail = script.substringAfter("fail()").substringBefore("\n}")
