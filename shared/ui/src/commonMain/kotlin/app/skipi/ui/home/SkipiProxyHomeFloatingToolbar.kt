@@ -4,20 +4,15 @@
 package app.skipi.ui.home
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -57,6 +52,14 @@ import app.skipi.ui.resources.proxy_server_list_latency_test
 import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
 
+/** Which buttons the compact toolbar shows. The ping button is always available, whether or not the tunnel is up. */
+internal data class FloatingToolbarButtons(val toggle: Boolean, val ping: Boolean) {
+    val anyVisible: Boolean get() = toggle || ping
+}
+
+internal fun floatingToolbarButtons(showToggleAction: Boolean, showPingAction: Boolean) =
+    FloatingToolbarButtons(toggle = showToggleAction, ping = showPingAction)
+
 @Composable
 fun SkipiProxyHomeFloatingToolbar(
     running: Boolean,
@@ -72,8 +75,8 @@ fun SkipiProxyHomeFloatingToolbar(
     /** Long press (right click on desktop) on the ping button: ping everything on the page. Null hides the gesture. */
     onTestAllLatency: (() -> Unit)? = null,
 ) {
-    val shouldShow = showToggleAction || (showPingAction && running)
-    if (!shouldShow) return
+    val buttons = floatingToolbarButtons(showToggleAction, showPingAction)
+    if (!buttons.anyVisible) return
 
     val latencyActionDescription = stringResource(Res.string.proxy_server_list_latency_test)
     val accent = SkipiTheme.colors.accent
@@ -105,32 +108,16 @@ fun SkipiProxyHomeFloatingToolbar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (showPingAction) {
-                if (showToggleAction) {
-                    AnimatedVisibility(
-                        visible = running,
-                        enter = slideInHorizontally(initialOffsetX = { it }) + expandHorizontally(expandFrom = Alignment.End),
-                        exit = slideOutHorizontally(targetOffsetX = { it }) + shrinkHorizontally(shrinkTowards = Alignment.End),
-                    ) {
-                        PingToolbarButton(
-                            testing = isTestingLatency,
-                            enabled = canTestLatency,
-                            description = latencyActionDescription,
-                            onClick = onTestLatency,
-                            onLongClick = onTestAllLatency?.takeIf { !isTestingLatency },
-                        )
-                    }
-                } else if (running) {
-                    PingToolbarButton(
-                        testing = isTestingLatency,
-                        enabled = canTestLatency,
-                        description = latencyActionDescription,
-                        onClick = onTestLatency,
-                        onLongClick = onTestAllLatency?.takeIf { !isTestingLatency },
-                    )
-                }
+            if (buttons.ping) {
+                PingToolbarButton(
+                    testing = isTestingLatency,
+                    enabled = canTestLatency,
+                    description = latencyActionDescription,
+                    onClick = onTestLatency,
+                    onLongClick = onTestAllLatency?.takeIf { !isTestingLatency },
+                )
             }
-            if (showToggleAction) {
+            if (buttons.toggle) {
                 IconButton(
                     onClick = onToggleRunning,
                     enabled = canToggleTunnel,
