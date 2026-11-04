@@ -53,11 +53,11 @@ class ShadowrocketLogicalRouteConversionTest {
     }
 
     @Test
-    fun andDistributesOverOr() {
-        val rules = convert("AND,((OR,((DOMAIN-SUFFIX,a.com),(DOMAIN-SUFFIX,b.com))),(DST-PORT,443)),DIRECT").rules
-        assertEquals(2, rules.size)
-        assertTrue(rules.all { it.port == "443" })
-        assertEquals(listOf(listOf("domain:a.com"), listOf("domain:b.com")), rules.map { it.domain })
+    fun andDistributesOverOrAndTheAlternativesShareOneRule() {
+        // (a OR b) AND port 443 is one Xray rule with a domain list: the same match, without a rule per domain.
+        val rule = convert("AND,((OR,((DOMAIN-SUFFIX,a.com),(DOMAIN-SUFFIX,b.com))),(DST-PORT,443)),DIRECT").rules.single()
+        assertEquals("443", rule.port)
+        assertEquals(listOf("domain:a.com", "domain:b.com"), rule.domain)
     }
 
     @Test
@@ -81,6 +81,57 @@ class ShadowrocketLogicalRouteConversionTest {
         }
         // 4 OR groups of 4 domains ANDed would need 256 Xray rules, and AND of domains is unsupported anyway.
         val result = convert("AND,($ors),DIRECT")
+        assertTrue(result.rules.isEmpty())
+        assertNotNull(result.unsupportedReason)
+    }
+
+    private fun domains(count: Int) = (1..count).joinToString(",") { "(DOMAIN-SUFFIX,site$it.example)" }
+
+    @Test
+    fun hundredsOfDomainsInOneOrStayOneRule() {
+        val rule = convert("OR,(${domains(300)}),DIRECT").rules.single()
+        assertEquals(300, rule.domain.size)
+        assertEquals("domain:site300.example", rule.domain.last())
+    }
+
+    @Test
+    fun manyDomainsWithAPortStayOneRule() {
+        val result = convert("AND,((OR,(${domains(100)})),(DST-PORT,443)),DIRECT")
+        assertNull(result.unsupportedReason)
+        val rule = result.rules.single()
+        assertEquals(100, rule.domain.size)
+        assertEquals("443", rule.port)
+    }
+
+    @Test
+    fun domainsAndAddressesWithSeveralPortsAreOneRulePerKind() {
+        val line = "AND,((OR,((DOMAIN-SUFFIX,a.com),(DOMAIN-SUFFIX,b.com),(IP-CIDR,10.0.0.0/8))),(OR,((DST-PORT,443),(DST-PORT,8000-8100)))),PROXY"
+        val rules = convert(line).rules
+        assertEquals(2, rules.size)
+        assertEquals(listOf("domain:a.com", "domain:b.com"), rules[0].domain)
+        assertEquals(listOf("10.0.0.0/8"), rules[1].ip)
+        assertEquals(listOf("443,8000-8100", "443,8000-8100"), rules.map { it.port })
+    }
+
+    @Test
+    fun severalProtocolsShareOneRule() {
+        val rule = convert("AND,((DOMAIN-SUFFIX,a.com),(OR,((PROTOCOL,http),(PROTOCOL,tls)))),DIRECT").rules.single()
+        assertEquals("http,tls", rule.protocol)
+        assertEquals(listOf("domain:a.com"), rule.domain)
+    }
+
+    @Test
+    fun rulesThatDifferInTwoFieldsAreNotMerged() {
+        val rules = convert("OR,((AND,((DOMAIN-SUFFIX,a.com),(DST-PORT,443))),(AND,((DOMAIN-SUFFIX,b.com),(DST-PORT,80)))),DIRECT").rules
+        assertEquals(2, rules.size)
+        assertEquals(listOf("443", "80"), rules.map { it.port })
+    }
+
+    @Test
+    fun combinationsThatCannotBeMergedStillHitTheCap() {
+        val pairs = (1..70).joinToString(",") { "(AND,((DOMAIN-SUFFIX,site$it.example),(DST-PORT,${1000 + it}),(NETWORK,tcp)))" }
+        // Seventy rules that differ in domain and port cannot be folded, so the conversion refuses rather than guesses.
+        val result = convert("OR,($pairs),DIRECT")
         assertTrue(result.rules.isEmpty())
         assertNotNull(result.unsupportedReason)
     }

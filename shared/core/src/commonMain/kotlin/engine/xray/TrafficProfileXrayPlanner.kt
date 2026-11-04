@@ -24,6 +24,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import utils.toDistinctCsvValues
 
 data class TrafficProfileServerRecord(val id: Int, val server: ProxyServer<*>)
 
@@ -282,7 +283,7 @@ private fun ShadowrocketRule.toTrafficProfileXrayRules(
             if (route.process.isNotEmpty()) putJsonArray("process") { route.process.forEach(::add) }
             if (route.port.isNotBlank()) put("port", route.port)
             if (route.network.isNotBlank()) put("network", route.network)
-            if (route.protocol.isNotBlank()) putJsonArray("protocol") { add(route.protocol) }
+            if (route.protocol.isNotBlank()) putJsonArray("protocol") { route.protocol.toDistinctCsvValues().forEach(::add) }
             requireNotNull(target).applyTo(this)
         }
     }

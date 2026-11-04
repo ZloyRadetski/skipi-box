@@ -15,6 +15,7 @@ fun ShadowrocketRule.toXrayRouteRule(
     id: Int,
     resolvePolicy: (String) -> String,
 ): RouteRule? {
+    if (isDisabled) return null
     val cleanValue = value.trim()
     val ruleType = type.trim().uppercase()
     val domain = when (ruleType) {

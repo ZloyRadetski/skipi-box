@@ -63,6 +63,21 @@ data class ShadowrocketRule(
 ) {
     val isFinal: Boolean
         get() = type.equals("FINAL", ignoreCase = true)
+
+    /** A rule switched off in the table: it stays in the profile in its place but does not route anything. */
+    val isDisabled: Boolean
+        get() = option.orEmpty().split(',').any { it.trim().equals(DisabledRuleOption, ignoreCase = true) }
+}
+
+/** SKIPI option written after the policy of a rule that is switched off; other clients ignore unknown options. */
+const val DisabledRuleOption = "skipi-disabled"
+
+/** The line of this rule with [DisabledRuleOption] added or removed, its other options and its name kept. */
+fun ShadowrocketRule.withDisabled(disabled: Boolean): String {
+    val others = option.orEmpty().split(',').map(String::trim)
+        .filter { it.isNotEmpty() && !it.equals(DisabledRuleOption, ignoreCase = true) }
+    val updated = (others + listOfNotNull(DisabledRuleOption.takeIf { disabled })).joinToString(", ")
+    return copy(option = updated.takeIf(String::isNotBlank)).toShadowrocketLine()
 }
 
 data class ShadowrocketConfigDiagnostic(

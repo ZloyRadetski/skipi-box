@@ -170,6 +170,38 @@ class TrafficProfileXrayPlannerTest {
     }
 
     @Test
+    fun severalProtocolsOfOneRuleBecomeSeparateXrayProtocolValues() {
+        val server = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val result = TrafficProfileXrayPlanner.plan(
+            profileContent = "[Rule]\nAND,((DOMAIN-SUFFIX,a.com),(OR,((PROTOCOL,http),(PROTOCOL,tls)))),DIRECT\nFINAL,PROXY\n",
+            servers = listOf(server),
+            selectedServerId = server.id,
+        )
+        val rule = result.routingRules.first { "protocol" in it }
+
+        assertEquals(listOf("http", "tls"), rule.getValue("protocol").jsonArray.map { it.jsonPrimitive.content })
+    }
+
+    @Test
+    fun disabledRuleIsNotPlanned() {
+        val server = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val result = TrafficProfileXrayPlanner.plan(
+            profileContent = "[Rule]\nDOMAIN,off.example,DIRECT,skipi-disabled\nDOMAIN,on.example,DIRECT\nFINAL,PROXY\n",
+            servers = listOf(server),
+            selectedServerId = server.id,
+        )
+        val domains = result.routingRules.flatMap { rule -> rule["domain"]?.jsonArray.orEmpty().map { it.jsonPrimitive.content } }
+
+        assertEquals(listOf("full:on.example"), domains)
+    }
+
+    @Test
     fun domainRuleWithExtLookingValueIsNotAnExternalResourceReference() {
         val server = TrafficProfileServerRecord(
             1,
