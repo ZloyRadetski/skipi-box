@@ -60,6 +60,16 @@ internal interface DesktopCoreNative : AutoCloseable {
         error("This SKIPI Core library cannot measure a TCP connect")
     }
 
+    /** Switches the session's in-memory connection log; an older library reports that it has none. */
+    fun setConnectionLogEnabled(handle: Long, enabled: Boolean) {
+        error("This SKIPI Core library has no connection log")
+    }
+
+    /** The connections newer than [afterSeq] as JSON: `{"seq":n,"entries":[...]}`. */
+    fun readConnectionLog(handle: Long, afterSeq: Long): String {
+        error("This SKIPI Core library has no connection log")
+    }
+
     /**
      * Starts the AmneziaWG runner and its private loopback SOCKS listener. Call it before [start]
      * so Xray can connect to the listener; a library without the runner reports that clearly.
@@ -166,6 +176,18 @@ internal class DesktopCoreFfmNative(
         downcall(
             "SkipiCoreDesktopMeasureTcpDelay",
             FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+        )
+    }
+    private val setConnectionLogEnabledFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopSetConnectionLogEnabled",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT),
+        )
+    }
+    private val readConnectionLogFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopReadConnectionLog",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
         )
     }
     private val startAmneziaWgFunction by lazy {
@@ -279,6 +301,17 @@ internal class DesktopCoreFfmNative(
                     ?: error("SKIPI Core returned an invalid outbound delay result")
                 if (delay >= 0) delay else throw failure("measure the outbound delay")
             }
+        }
+
+    override fun setConnectionLogEnabled(handle: Long, enabled: Boolean) {
+        errorResult("switch the connection log") {
+            invokePointer(setConnectionLogEnabledFunction, handle, if (enabled) 1 else 0)
+        }
+    }
+
+    override fun readConnectionLog(handle: Long, afterSeq: Long): String =
+        nullableOwnedString("read the connection log") {
+            invokePointer(readConnectionLogFunction, handle, afterSeq)
         }
 
     override fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Long =

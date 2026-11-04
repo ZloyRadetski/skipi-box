@@ -39,6 +39,7 @@ internal class DesktopCoreController(
     @Volatile private var native: DesktopCoreNative? = null
     private var loadedLibrary: Path? = null
     @Volatile private var activeHandle: Long? = null
+    @Volatile private var connectionLogEnabled = false
     @Volatile private var activeCoreVersion: String? = null
     @Volatile private var diagnostic: String = ""
     @Volatile private var amneziaWgActive = false
@@ -104,6 +105,8 @@ internal class DesktopCoreController(
             releaseAmneziaWg(core)?.let(error::addSuppressed)
             throw error
         }
+        // An older library has no connection log; that must never stop the tunnel.
+        runCatching { core.setConnectionLogEnabled(handle, connectionLogEnabled) }
         try {
             core.start(handle, configJson)
         } catch (error: Throwable) {
@@ -176,6 +179,22 @@ internal class DesktopCoreController(
             "SKIPI Core returned malformed traffic statistics"
         }
         snapshot.inbound.aggregateCoreInboundTraffic().toTunnelTraffic()
+    }
+
+    /** Remembered for the next session and applied at once to a running one. Never waits for a running probe. */
+    fun setConnectionLogEnabled(enabled: Boolean) {
+        connectionLogEnabled = enabled
+        val handle = activeHandle ?: return
+        runCatching { native?.setConnectionLogEnabled(handle, enabled) }
+    }
+
+    /**
+     * Polled for the Home log, so a failure stays out of the diagnostic shown to the user. Not synchronized:
+     * a delay probe holds the monitor for seconds, and the log must keep moving meanwhile.
+     */
+    fun readConnectionLog(afterSeq: Long): Result<String> = runCatching {
+        val handle = checkNotNull(activeHandle) { "SKIPI Core is not running" }
+        checkNotNull(native) { "SKIPI Core native library is unavailable" }.readConnectionLog(handle, afterSeq)
     }
 
     @Synchronized
