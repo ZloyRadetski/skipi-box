@@ -25,22 +25,33 @@ class V2RayNgRoutingRulesTest {
     }
 
     @Test
-    fun singleFieldRuleBecomesOneLinePerValue() {
+    fun singleFieldRuleBecomesOneOrRuleAndOneValueStaysPlain() {
         val lines = rules(
-            """[{"outboundTag":"block","domain":["geosite:win-spy","domain:a.com","full:b.com","keyword:ads","*.c.net","plain.org"],"enabled":true}
-            ,{"outboundTag":"direct","ip":["10.0.0.0/8","::1","geoip:ru"]}]""",
+            """[{"outboundTag":"block","domain":["geosite:win-spy","domain:a.com","full:b.com","keyword:ads","*.c.net","plain.org","domain:a.com"],"enabled":true}
+            ,{"outboundTag":"direct","ip":["10.0.0.0/8","::1","geoip:ru"]}
+            ,{"outboundTag":"direct","ip":["10.0.0.0/8"]}]""",
         )
         assertEquals(
             listOf(
-                "DOMAIN-SET,geosite:win-spy,REJECT",
-                "DOMAIN-SUFFIX,a.com,REJECT",
-                "DOMAIN,b.com,REJECT",
-                "DOMAIN-KEYWORD,ads,REJECT",
-                "DOMAIN-WILDCARD,*.c.net,REJECT",
-                "DOMAIN-KEYWORD,plain.org,REJECT",
+                "OR,((DOMAIN-SET,geosite:win-spy),(DOMAIN-SUFFIX,a.com),(DOMAIN,b.com),(DOMAIN-KEYWORD,ads)," +
+                    "(DOMAIN-WILDCARD,*.c.net),(DOMAIN-KEYWORD,plain.org)),REJECT",
+                "OR,((IP-CIDR,10.0.0.0/8),(IP-CIDR6,::1),(GEOIP,ru)),DIRECT",
                 "IP-CIDR,10.0.0.0/8,DIRECT",
-                "IP-CIDR6,::1,DIRECT",
-                "GEOIP,ru,DIRECT",
+                "FINAL,PROXY",
+            ),
+            lines,
+        )
+    }
+
+    @Test
+    fun aSingleRuleObjectIsAcceptedLikeAnArray() {
+        val lines = rules(
+            """{"port":"","network":"tcp,udp","outboundTag":"proxy","domain":["steamdb.info","modrinth.com","cdn.modrinth.com","modrinth.com"],
+               "enabled":true,"remarks":"proxy","ruleType":0}""",
+        )
+        assertEquals(
+            listOf(
+                "OR,((DOMAIN-KEYWORD,steamdb.info),(DOMAIN-KEYWORD,modrinth.com),(DOMAIN-KEYWORD,cdn.modrinth.com)),PROXY // proxy",
                 "FINAL,PROXY",
             ),
             lines,
@@ -120,12 +131,24 @@ sites"},
         )
         assertEquals(
             listOf(
-                "DOMAIN-SUFFIX,a.com,DIRECT // Direct sites",
-                "DOMAIN-SUFFIX,b.com,DIRECT // Direct sites",
+                "OR,((DOMAIN-SUFFIX,a.com),(DOMAIN-SUFFIX,b.com)),DIRECT // Direct sites",
                 "AND,((DOMAIN-SUFFIX,c.com),(DST-PORT,443)),DIRECT // With port",
                 "FINAL,PROXY // Rest",
             ),
             lines,
         )
+    }
+
+    @Test
+    fun theMergedRuleIsOneCardThatXrayCanRoute() {
+        val conf = assertNotNull(
+            """{"outboundTag":"proxy","remarks":"proxy","domain":["steamdb.info","domain:a.com","geosite:rockstar","full:b.com"]}"""
+                .toV2RayNgRoutingConfOrNull("Config"),
+        )
+        val parsed = conf.analyzeShadowrocketConfig().rules
+        assertEquals(2, parsed.size)
+        assertEquals("proxy", parsed[0].remarks)
+        assertEquals(4, parsed[0].condition?.children?.size)
+        assertNull(parsed[0].xrayUnsupportedReason())
     }
 }

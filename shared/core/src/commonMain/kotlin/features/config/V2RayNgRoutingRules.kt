@@ -29,9 +29,16 @@ private const val V2RayNgDnsOnlyRuleType = 2
 /** Parses the v2rayNG rule array, or null when [this] is not one (so subscriptions and links pass through). */
 private fun String.toV2RayNgRulesOrNull(): List<JsonObject>? {
     val trimmed = trim()
-    if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null
-    val array = runCatching { V2RayNgRulesFormat.parseToJsonElement(trimmed) }.getOrNull() as? JsonArray ?: return null
-    val rules = array.map { it as? JsonObject ?: return null }
+    val isArray = trimmed.startsWith("[") && trimmed.endsWith("]")
+    val isObject = trimmed.startsWith("{") && trimmed.endsWith("}")
+    if (!isArray && !isObject) return null
+    val element = runCatching { V2RayNgRulesFormat.parseToJsonElement(trimmed) }.getOrNull() ?: return null
+    // One copied rule is an object; an export is an array of them.
+    val rules = when (element) {
+        is JsonArray -> element.map { it as? JsonObject ?: return null }
+        is JsonObject -> listOf(element)
+        else -> return null
+    }
     if (rules.isEmpty() || rules.any { rule -> rule.text("outboundTag") == null }) return null
     return rules
 }
@@ -60,7 +67,10 @@ fun String.toV2RayNgRoutingConfOrNull(fallbackName: String): String? {
                 lines += "FINAL,$policy$remarks"
                 break
             }
-            fields.size == 1 -> fields.single().forEach { leaf -> lines += "${leaf.type},${leaf.value},$policy$remarks" }
+            fields.size == 1 && fields.single().size == 1 -> fields.single().single().let { leaf ->
+                lines += "${leaf.type},${leaf.value},$policy$remarks"
+            }
+            fields.size == 1 -> lines += "OR,${Group(ShadowrocketLogicalOperator.Or, fields.single()).toBodyText()},$policy$remarks"
             else -> {
                 val children = fields.map { leaves -> if (leaves.size == 1) leaves.single() else Group(ShadowrocketLogicalOperator.Or, leaves) }
                 lines += "AND,${Group(ShadowrocketLogicalOperator.And, children).toBodyText()},$policy$remarks"
@@ -100,7 +110,7 @@ private fun JsonObject.conditionFields(): List<List<Leaf>> {
     }
     val protocols = stringList("protocol").flatMap { it.split(',') }.map { it.trim().lowercase() }.filter(String::isNotEmpty).distinct()
     return listOf(domains, ips, portLeaves, networkLeaves, protocols.map { Leaf("PROTOCOL", it) })
-        .map { leaves -> leaves.filter { it.value.isSafeRuleValue() } }
+        .map { leaves -> leaves.filter { it.value.isSafeRuleValue() }.distinct() }
         .filter(List<Leaf>::isNotEmpty)
 }
 
