@@ -10,13 +10,23 @@ import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigState
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
+import features.config.RoutingTableRow
 import features.config.RuleRemarksSeparator
+import features.config.ShadowrocketRule
+import features.config.UnwritableRowValue
+import features.config.V2rayRoutingImport
 import features.config.toShadowrocketLine
+import features.config.toShadowrocketLineOrNull
+import features.config.unwritableValues
+import features.config.withDisabled
+import features.config.withRoutingRowsImported
+import features.config.withShadowrocketRulesReordered
 import features.config.withShadowrocketProxyGroupAdded
 import features.config.withShadowrocketProxyGroupLine
 import features.config.withShadowrocketRuleAdded
 import features.config.withShadowrocketRuleLine
 import features.config.withoutShadowrocketProxyGroupLine
+import features.config.withoutShadowrocketRuleLine
 import features.proxy.app.updateProxyAppListSelection
 import features.proxy.app.usecase.ProxyAppListClipboardData
 import features.proxy.app.usecase.applyProxyAppListClipboardImport
@@ -56,6 +66,20 @@ sealed interface TrafficConfigEditorResult {
     data class Rejected(val message: String) : TrafficConfigEditorResult
     data class Failed(val cause: Exception) : TrafficConfigEditorResult
 }
+
+/** [unwritable] lists the values left out of the rule because a profile line cannot hold them. */
+data class TrafficConfigRowSaveResult(
+    val result: TrafficConfigEditorResult,
+    val unwritable: List<String> = emptyList(),
+    /** The line the rule is on after the save, so the table can keep it selected; null when nothing was written. */
+    val lineNumber: Int? = null,
+)
+
+data class TrafficConfigRoutingImportResult(
+    val result: TrafficConfigEditorResult,
+    val added: Int,
+    val unwritable: List<UnwritableRowValue>,
+)
 
 data class TrafficConfigProxyAppListImportResult(
     val updateResult: TrafficConfigEditorResult,
@@ -227,6 +251,88 @@ class TrafficConfigEditorController(
             } ?: current.rawConfig.withShadowrocketRuleAdded(line)
             current.copy(rawConfig = updatedRaw)
         }
+    }
+
+    /** Writes a table row as a rule: replaces the rule on [lineNumber], or adds it before FINAL when that is null. */
+    fun saveRoutingRow(
+        profileId: Int,
+        lineNumber: Int?,
+        row: RoutingTableRow,
+    ): TrafficConfigRowSaveResult {
+        val written = row.toShadowrocketLineOrNull()
+            ?: return TrafficConfigRowSaveResult(TrafficConfigEditorResult.Skipped, row.unwritableValues())
+        var savedLine: Int? = null
+        val result = update(profileId) { current ->
+            val document = lineNumber?.let { current.rawConfig.withShadowrocketRuleLine(it, written.line) }
+                ?: current.rawConfig.withShadowrocketRuleAdded(written.line)
+            savedLine = lineNumber ?: document.analyzeShadowrocketConfig().rules
+                .lastOrNull { !it.isFinal && it.raw.trim() == written.line }?.lineNumber
+            current.copy(rawConfig = document)
+        }
+        val saved = result == TrafficConfigEditorResult.Saved
+        return TrafficConfigRowSaveResult(result, if (saved) written.unwritable else emptyList(), if (saved) savedLine else null)
+    }
+
+    /** Switches a rule on or off without moving it. */
+    fun setRoutingRuleEnabled(
+        profileId: Int,
+        lineNumber: Int,
+        enabled: Boolean,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        val rule = current.rawConfig.analyzeShadowrocketConfig().rules.firstOrNull { it.lineNumber == lineNumber }
+        if (rule == null || rule.isFinal || rule.isDisabled == !enabled) {
+            current
+        } else {
+            current.copy(rawConfig = current.rawConfig.withShadowrocketRuleLine(lineNumber, rule.withDisabled(disabled = !enabled)))
+        }
+    }
+
+    fun deleteRoutingRule(
+        profileId: Int,
+        lineNumber: Int,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        val exists = current.rawConfig.analyzeShadowrocketConfig().rules.any { it.lineNumber == lineNumber && !it.isFinal }
+        if (exists) current.copy(rawConfig = current.rawConfig.withoutShadowrocketRuleLine(lineNumber)) else current
+    }
+
+    /** Moves a rule among the rules other than FINAL; the indices count those rules only. */
+    fun moveRoutingRule(
+        profileId: Int,
+        fromRuleIndex: Int,
+        toRuleIndex: Int,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        current.copy(rawConfig = current.rawConfig.withShadowrocketRulesReordered(fromRuleIndex, toRuleIndex))
+    }
+
+    /** Sets where the traffic goes that no rule matched, creating FINAL when the profile has none. */
+    fun setRoutingFinalPolicy(
+        profileId: Int,
+        policy: String,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        val line = "FINAL,${policy.trim()}"
+        val finalRule = current.rawConfig.analyzeShadowrocketConfig().rules.lastOrNull(ShadowrocketRule::isFinal)
+        current.copy(
+            rawConfig = finalRule?.let { current.rawConfig.withShadowrocketRuleLine(it.lineNumber, line) }
+                ?: current.rawConfig.withShadowrocketRuleAdded(line),
+        )
+    }
+
+    /** Writes the rules of a v2rayN export into the profile, merging with its rules or replacing them. */
+    fun importRoutingRows(
+        profileId: Int,
+        import: V2rayRoutingImport,
+        mode: ClipboardImportMode,
+    ): TrafficConfigRoutingImportResult {
+        var added = 0
+        var unwritable = emptyList<UnwritableRowValue>()
+        val result = update(profileId) { current ->
+            val imported = current.rawConfig.withRoutingRowsImported(import.rows, import.finalPolicy, mode)
+            added = imported.added
+            unwritable = imported.unwritable
+            current.copy(rawConfig = imported.document)
+        }
+        val saved = result == TrafficConfigEditorResult.Saved
+        return TrafficConfigRoutingImportResult(result, if (saved) added else 0, if (saved) unwritable else emptyList())
     }
 
     fun saveRaw(
