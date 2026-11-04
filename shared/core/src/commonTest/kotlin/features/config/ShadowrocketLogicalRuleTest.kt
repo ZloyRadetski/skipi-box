@@ -104,3 +104,44 @@ class ShadowrocketLogicalRuleSummaryTest {
         assertNotNull(rule("AND,((DOMAIN,a.com),(DOMAIN-KEYWORD,b)),DIRECT").xrayUnsupportedReason())
     }
 }
+
+class ShadowrocketReadableSummaryTest {
+    private val tree = ShadowrocketCondition.Group(
+        ShadowrocketLogicalOperator.Or,
+        listOf(
+            ShadowrocketCondition.Leaf("DOMAIN-SUFFIX", "a.com"),
+            ShadowrocketCondition.Group(
+                ShadowrocketLogicalOperator.And,
+                listOf(ShadowrocketCondition.Leaf("DOMAIN-SUFFIX", "b.com"), ShadowrocketCondition.Leaf("DST-PORT", "443")),
+            ),
+        ),
+    )
+
+    @Test
+    fun usesTheGivenWordsForOperators() {
+        kotlin.test.assertEquals(
+            "DOMAIN-SUFFIX a.com ИЛИ (DOMAIN-SUFFIX b.com И DST-PORT 443)",
+            tree.readableSummary(orWord = "ИЛИ", andWord = "И"),
+        )
+    }
+
+    @Test
+    fun skipsBlankConditionsAndEmptyGroups() {
+        val half = ShadowrocketCondition.Group(
+            ShadowrocketLogicalOperator.And,
+            listOf(
+                ShadowrocketCondition.Leaf("DOMAIN", "a.com"),
+                ShadowrocketCondition.Leaf("DOMAIN", " "),
+                ShadowrocketCondition.Group(ShadowrocketLogicalOperator.Or, listOf(ShadowrocketCondition.Leaf("GEOIP", ""))),
+            ),
+        )
+        kotlin.test.assertEquals("DOMAIN a.com", half.readableSummary(orWord = "OR", andWord = "AND"))
+        kotlin.test.assertEquals("", ShadowrocketCondition.Group(ShadowrocketLogicalOperator.Or, emptyList()).readableSummary("OR", "AND"))
+    }
+
+    @Test
+    fun listSummaryKeepsItsEnglishWords() {
+        val rule = ShadowrocketRule(0, "OR", tree.toBodyText(), "DIRECT", raw = "", condition = tree)
+        kotlin.test.assertEquals("DOMAIN-SUFFIX a.com OR (DOMAIN-SUFFIX b.com AND DST-PORT 443)", rule.listSummary())
+    }
+}

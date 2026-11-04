@@ -39,13 +39,22 @@ fun xrayUnsupportedReasonForCondition(operator: ShadowrocketLogicalOperator, bod
 /** One-line reading of a rule for lists: `TYPE, value`, or `A OR (B AND C)` for an OR / AND rule. */
 fun ShadowrocketRule.listSummary(): String {
     val group = condition ?: return "$type, $value"
-    return group.children.joinToString(" ${group.operator.keyword} ") { it.summaryText(nested = group.children.size > 1) }
+    return group.readableSummary(orWord = "OR", andWord = "AND")
 }
 
-private fun ShadowrocketCondition.summaryText(nested: Boolean): String = when (this) {
+/**
+ * Reads a condition tree as one line, `A OR (B AND C)`, with the operator words supplied by the caller so the editor
+ * can show them in the user's language. Blank conditions and empty groups are left out.
+ */
+fun ShadowrocketCondition.Group.readableSummary(orWord: String, andWord: String): String =
+    pruned().summaryText(nested = false, orWord = orWord, andWord = andWord)
+
+private fun ShadowrocketCondition.summaryText(nested: Boolean, orWord: String, andWord: String): String = when (this) {
     is ShadowrocketCondition.Leaf -> "$type $value"
     is ShadowrocketCondition.Group -> children
-        .joinToString(" ${operator.keyword} ") { it.summaryText(nested = children.size > 1) }
+        .joinToString(" ${if (operator == ShadowrocketLogicalOperator.Or) orWord else andWord} ") {
+            it.summaryText(nested = children.size > 1, orWord = orWord, andWord = andWord)
+        }
         .let { text -> if (nested && children.size > 1) "($text)" else text }
 }
 

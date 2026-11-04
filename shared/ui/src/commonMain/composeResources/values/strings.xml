@@ -876,6 +876,16 @@
     <string name="configs_rules_add_group">+ Group</string>
     <string name="configs_rules_group_operator">Group</string>
     <string name="configs_rules_logical_unsupported">Xray cannot route this combination (for example two conditions of the same kind joined by AND). The rule is saved and exported, but ignored by the app.</string>
+    <string name="configs_rules_type_or">Several conditions: any of them (OR)</string>
+    <string name="configs_rules_type_and">Several conditions: all at once (AND)</string>
+    <string name="configs_rules_any_of">Any of</string>
+    <string name="configs_rules_all_of">All at once</string>
+    <string name="configs_rules_any_of_hint">The rule applies when at least one of the conditions below matches.</string>
+    <string name="configs_rules_all_of_hint">The rule applies only when every condition below matches at the same time.</string>
+    <string name="configs_rules_word_or">OR</string>
+    <string name="configs_rules_word_and">AND</string>
+    <string name="configs_rules_summary_title">How the rule reads</string>
+    <string name="configs_rules_summary_empty">Add the first condition</string>
     <string name="configs_rules_value">Value</string>
     <string name="configs_rules_policy">Send through</string>
     <string name="configs_android_title">Core &amp; bypass settings</string>

@@ -1034,6 +1034,16 @@
     <string name="configs_rules_add_group">+ Группа</string>
     <string name="configs_rules_group_operator">Группа</string>
     <string name="configs_rules_logical_unsupported">Xray не умеет маршрутизировать такую комбинацию (например, два условия одного вида через AND). Правило сохранится и попадёт в экспорт, но приложение его игнорирует.</string>
+    <string name="configs_rules_type_or">Несколько условий: любое из них (ИЛИ)</string>
+    <string name="configs_rules_type_and">Несколько условий: все сразу (И)</string>
+    <string name="configs_rules_any_of">Любое из</string>
+    <string name="configs_rules_all_of">Все сразу</string>
+    <string name="configs_rules_any_of_hint">Правило сработает, если совпало хотя бы одно из условий ниже.</string>
+    <string name="configs_rules_all_of_hint">Правило сработает, только если одновременно совпали все условия ниже.</string>
+    <string name="configs_rules_word_or">ИЛИ</string>
+    <string name="configs_rules_word_and">И</string>
+    <string name="configs_rules_summary_title">Как читается правило</string>
+    <string name="configs_rules_summary_empty">Добавьте первое условие</string>
     <string name="configs_rules_value">Значение</string>
     <string name="configs_rules_policy">Направить через</string>
     <string name="configs_android_title">Параметры ядра и обхода</string>

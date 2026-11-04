@@ -28,6 +28,8 @@ import app.skipi.ui.components.AppWindowDropdownPreference
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_rules_policy
 import app.skipi.ui.resources.configs_rules_type
+import app.skipi.ui.resources.configs_rules_type_and
+import app.skipi.ui.resources.configs_rules_type_or
 import app.skipi.ui.resources.configs_rules_unsupported_on_android
 import app.skipi.ui.resources.configs_rules_value
 import app.skipi.ui.resources.routing_info_title
@@ -37,6 +39,7 @@ import app.skipi.ui.resources.routing_suggestions_geoip
 import app.skipi.ui.resources.routing_suggestions_title
 import app.skipi.ui.theme.SkipiTheme
 import features.config.ShadowrocketLogicalOperator
+import features.config.keyword
 import app.skipi.ui.text.themedFontWeight
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
@@ -99,9 +102,17 @@ fun SkipiTrafficConfigRuleEditorForm(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
                 colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
             ) {
+                val anyLabel = stringResource(Res.string.configs_rules_type_or)
+                val allLabel = stringResource(Res.string.configs_rules_type_and)
                 AppWindowDropdownPreference(
                     title = stringResource(Res.string.configs_rules_type),
-                    items = typeOptions,
+                    items = typeOptions.map { type ->
+                        when (type) {
+                            "OR" -> anyLabel
+                            "AND" -> allLabel
+                            else -> type
+                        }
+                    },
                     selectedIndex = typeOptions.indexOf(selectedType).coerceAtLeast(0),
                     onSelectedIndexChange = onTypeSelected,
                 )
@@ -140,6 +151,9 @@ fun SkipiTrafficConfigRuleEditorForm(
                     operator = if (selectedType == "AND") ShadowrocketLogicalOperator.And else ShadowrocketLogicalOperator.Or,
                     bodyText = value,
                     onBodyChange = onValueChange,
+                    onOperatorChange = { operator ->
+                        typeOptions.indexOf(operator.keyword).takeIf { it >= 0 }?.let(onTypeSelected)
+                    },
                     modifier = Modifier.padding(bottom = 10.dp),
                 )
                 "NETWORK" -> {
