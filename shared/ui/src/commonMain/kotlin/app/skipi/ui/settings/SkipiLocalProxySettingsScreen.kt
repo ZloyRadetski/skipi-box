@@ -248,6 +248,7 @@ fun SkipiLocalProxySettingsScreen(
                             username = state.username,
                             password = state.password,
                             labels = labels,
+                            wide = isWideScreen,
                             onChange = onSocksCredentialsChange,
                             onGenerate = onGenerateSocksCredentials,
                             onCopy = onCopy,
@@ -261,6 +262,7 @@ fun SkipiLocalProxySettingsScreen(
                             username = state.httpUsername,
                             password = state.httpPassword,
                             labels = labels,
+                            wide = isWideScreen,
                             onChange = onHttpCredentialsChange,
                             onGenerate = onGenerateHttpCredentials,
                             onCopy = onCopy,
@@ -328,41 +330,32 @@ private fun LazyListScope.credentialsItems(
     username: String,
     password: String,
     labels: LocalProxySettingsLabels,
+    wide: Boolean,
     onChange: (username: String, password: String) -> Unit,
     onGenerate: () -> Unit,
     onCopy: (text: String, label: String) -> Unit,
 ) {
-    item(key = "${keyPrefix}_title") { SmallTitle(text = title) }
+    // The generate button sits in the section header, so the card holds only the two values.
+    item(key = "${keyPrefix}_title") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SmallTitle(text = title)
+            TextButton(text = labels.generateText, onClick = onGenerate, modifier = Modifier.padding(end = 8.dp))
+        }
+    }
     item(key = "${keyPrefix}_card") {
         var passwordVisible by remember { mutableStateOf(false) }
         SkipiSettingsSectionCard {
-            Column(Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = if (mode == LocalProxyAuthMode.Auto) labels.tapToCopy else "",
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(text = labels.generateText, onClick = onGenerate)
-                }
-                Spacer(Modifier.height(10.dp))
+            val first: @Composable () -> Unit = {
                 if (mode == LocalProxyAuthMode.Manual) {
                     TextField(
                         value = username,
                         onValueChange = { onChange(it, password) },
                         label = labels.usernameLabel,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    TextField(
-                        value = password,
-                        onValueChange = { onChange(username, it) },
-                        label = labels.passwordLabel,
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
@@ -375,7 +368,18 @@ private fun LazyListScope.credentialsItems(
                         copyDescription = labels.copyUsernameDescription,
                         onCopy = { onCopy(username, labels.usernameLabel) },
                     )
-                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            val second: @Composable () -> Unit = {
+                if (mode == LocalProxyAuthMode.Manual) {
+                    TextField(
+                        value = password,
+                        onValueChange = { onChange(username, it) },
+                        label = labels.passwordLabel,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
                     CredentialRow(
                         title = labels.passwordLabel,
                         value = password.ifBlank { "—" },
@@ -386,6 +390,17 @@ private fun LazyListScope.credentialsItems(
                         onCopy = { onCopy(password, labels.passwordLabel) },
                         onVisibilityChange = { passwordVisible = it },
                     )
+                }
+            }
+            if (wide) {
+                Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f)) { first() }
+                    Box(Modifier.weight(1f)) { second() }
+                }
+            } else {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    first()
+                    second()
                 }
             }
         }
@@ -426,7 +441,7 @@ private fun CredentialRow(
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
             .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-            .clickable(onClick = onCopy).padding(horizontal = 14.dp, vertical = 10.dp),
+            .clickable(onClick = onCopy).padding(horizontal = 14.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
