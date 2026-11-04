@@ -1543,4 +1543,5 @@
     <string name="routing_table_skip_outbound">{name} (unknown outbound {tag})</string>
     <string name="routing_table_skip_inbound">{name} (tied to one inbound)</string>
     <string name="routing_table_import_unwritable">Left out, a profile line cannot hold: {values}</string>
+    <string name="routing_table_import_failed">Could not load the rules: {reason}</string>
 </resources>

@@ -69,7 +69,7 @@ class DesktopTrafficConfigRulesResponsiveRenderTest {
         )
 
         renderViewport(width = 390, height = 844, labels = labels)
-        renderViewport(width = 1100, height = 800, labels = labels)
+        renderViewport(width = 880, height = 800, labels = labels)
     }
 
     private fun renderViewport(width: Int, height: Int, labels: Labels) {

@@ -1532,4 +1532,5 @@
     <string name="routing_table_skip_outbound">{name} (неизвестный outbound {tag})</string>
     <string name="routing_table_skip_inbound">{name} (привязано к одному входу)</string>
     <string name="routing_table_import_unwritable">Пропущено, в строке профиля такое не записать: {values}</string>
+    <string name="routing_table_import_failed">Не удалось загрузить правила: {reason}</string>
 </resources>

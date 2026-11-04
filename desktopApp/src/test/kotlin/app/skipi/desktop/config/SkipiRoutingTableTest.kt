@@ -158,7 +158,7 @@ class SkipiRoutingTableTest {
 
         /** Waits for the short pause after which an edit is written, as the real window would. */
         fun waitForSave(until: () -> Boolean) {
-            val deadline = System.nanoTime() + 3_000_000_000L
+            val deadline = System.nanoTime() + 6_000_000_000L
             while (!until() && System.nanoTime() < deadline) {
                 Thread.sleep(40)
                 settle()

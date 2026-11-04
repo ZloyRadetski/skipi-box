@@ -60,7 +60,7 @@ import kotlin.test.assertTrue
 
 class DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest {
     private companion object {
-        const val SCENE_WIDTH = 1500
+        const val SCENE_WIDTH = 860
         const val SCENE_HEIGHT = 1600
         const val POINTER_SCROLL_STEP = 120f
         const val MAX_POINTER_SCROLL_STEPS = 12

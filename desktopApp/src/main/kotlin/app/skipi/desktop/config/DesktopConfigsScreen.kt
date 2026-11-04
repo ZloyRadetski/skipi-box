@@ -622,6 +622,7 @@ internal fun DesktopConfigsScreen(
                     onBack = {
                         visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
                     },
+                    fetchRoutingDocument = ::fetchImportedDocument,
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }
                     },

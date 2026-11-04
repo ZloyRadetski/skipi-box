@@ -56,7 +56,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 private const val CatalogOutboundServerName = "Catalog outbound fixture"
-private const val TestSceneWidth = 1500f
+private const val TestSceneWidth = 860f
 private const val TestSceneHeight = 1600f
 
 class DesktopTrafficConfigRulesScreenIntegrationTest {
@@ -136,7 +136,7 @@ FINAL,PROXY
                 },
                 pickFile = { null },
             )
-            val scene = ImageComposeScene(width = 1500, height = 1600)
+            val scene = ImageComposeScene(width = 860, height = 1600)
             try {
                 scene.setContent {
                     ProvideSkipiTheme(
@@ -267,7 +267,7 @@ vendor-option = keep-me
                 },
                 pickFile = { null },
             )
-            val scene = ImageComposeScene(width = 1500, height = 1600)
+            val scene = ImageComposeScene(width = 860, height = 1600)
             val typedValue = "typed-before-policy.example"
             try {
                 scene.setContent {
@@ -403,7 +403,7 @@ vendor-option = keep-me
                 },
                 pickFile = { null },
             )
-            val scene = ImageComposeScene(width = 1500, height = 1600)
+            val scene = ImageComposeScene(width = 860, height = 1600)
             try {
                 scene.setContent {
                     ProvideSkipiTheme(
@@ -541,7 +541,7 @@ FINAL,PROXY
                 },
                 pickFile = { null },
             )
-            val scene = ImageComposeScene(width = 1500, height = 1600)
+            val scene = ImageComposeScene(width = 860, height = 1600)
             try {
                 scene.setContent {
                     ProvideSkipiTheme(
