@@ -69,7 +69,7 @@ class DesktopWindowsTunRoutesTest {
         attach.attach(ipv4Plan).getOrThrow()
 
         assertEquals(3, checks)
-        assertEquals(windowsTunAddRouteCommands(ipv4Plan), ran)
+        assertEquals(windowsTunAddRouteCommands(ipv4Plan), ran.take(2), "the routes come first")
     }
 
     @Test
@@ -131,9 +131,56 @@ class DesktopWindowsTunRoutesTest {
         failDeletes = true
 
         assertTrue(routes.detach().isSuccess)
-        assertEquals(windowsTunDeleteRouteCommands(ipv4Plan), ran)
+        assertEquals(windowsTunDeleteRouteCommands(ipv4Plan), ran.filter { "delete" in it })
         ran.clear()
         assertTrue(routes.detach().isSuccess)
         assertTrue(ran.isEmpty(), "a second detach has nothing to delete")
+    }
+
+    // Windows sends SSDP, LLMNR and mDNS discovery to every adapter, so a new TUN adapter received
+    // about a thousand UDP flows within seconds. hev serves at most 1023 sessions at once and then
+    // fails every new socket, TCP included: the tunnel was up and carried no traffic.
+    @Test
+    fun multicastAndBroadcastAreBlockedOnlyOnTheTunnelAdapter() {
+        val command = windowsTunMulticastBlockCommand(ipv4Plan)
+
+        assertEquals(listOf("powershell.exe", "-NoProfile", "-NonInteractive", "-Command"), command.take(4))
+        val script = command.last()
+        assertTrue("-InterfaceAlias 'skipi0'" in script)
+        assertTrue("-Direction Outbound" in script && "-Action Block" in script)
+        for (range in listOf("224.0.0.0/4", "255.255.255.255", "ff00::/8")) assertTrue(range in script, range)
+        assertTrue(script.indexOf("Remove-NetFirewallRule") < script.indexOf("New-NetFirewallRule"), "a stale rule goes first")
+    }
+
+    @Test
+    fun theBlockRuleIsInstalledAfterTheRoutesAndRemovedOnDetach() {
+        val ran = mutableListOf<List<String>>()
+        val routes = DesktopWindowsTunRoutes(
+            run = { command -> ran += command; Result.success(Unit) },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        routes.attach(ipv4Plan).getOrThrow()
+        assertEquals(windowsTunAddRouteCommands(ipv4Plan) + listOf(windowsTunMulticastBlockCommand(ipv4Plan)), ran)
+
+        ran.clear()
+        routes.detach()
+        assertEquals(windowsTunDeleteRouteCommands(ipv4Plan) + listOf(windowsTunMulticastUnblockCommand()), ran)
+    }
+
+    @Test
+    fun aFailedBlockRuleDoesNotFailTheTunnel() {
+        val routes = DesktopWindowsTunRoutes(
+            run = { command ->
+                if ("New-NetFirewallRule" in command.last()) Result.failure(IllegalStateException("no firewall service")) else Result.success(Unit)
+            },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        assertTrue(routes.attach(ipv4Plan).isSuccess)
     }
 }

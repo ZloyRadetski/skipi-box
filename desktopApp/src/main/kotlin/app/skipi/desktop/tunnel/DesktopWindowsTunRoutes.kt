@@ -27,6 +27,29 @@ internal fun windowsTunAddRouteCommands(plan: TunInterfacePlan): List<List<Strin
         )
     }
 
+private const val MulticastBlockRuleName = "SKIPI TUN multicast block"
+
+/**
+ * Windows sends SSDP, LLMNR and mDNS discovery to every adapter, so a new tunnel adapter received
+ * about a thousand UDP flows within seconds. hev serves at most 1023 sessions at once and then fails
+ * every new socket, TCP included: the tunnel was up and carried no traffic. Multicast and broadcast
+ * never belong in the tunnel, so they are blocked on this adapter only; the LAN keeps its discovery.
+ */
+internal fun windowsTunMulticastBlockCommand(plan: TunInterfacePlan): List<String> {
+    require(Regex("[A-Za-z][A-Za-z0-9_-]{0,14}").matches(plan.name)) { "invalid adapter name" }
+    return powershellCommand(
+        "Remove-NetFirewallRule -DisplayName '$MulticastBlockRuleName' -ErrorAction SilentlyContinue; " +
+            "New-NetFirewallRule -DisplayName '$MulticastBlockRuleName' -Direction Outbound -Action Block " +
+            "-InterfaceAlias '${plan.name}' -RemoteAddress 224.0.0.0/4,255.255.255.255,ff00::/8 | Out-Null",
+    )
+}
+
+internal fun windowsTunMulticastUnblockCommand(): List<String> =
+    powershellCommand("Remove-NetFirewallRule -DisplayName '$MulticastBlockRuleName' -ErrorAction SilentlyContinue")
+
+private fun powershellCommand(script: String) =
+    listOf("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script)
+
 internal fun windowsTunDeleteRouteCommands(plan: TunInterfacePlan): List<List<String>> =
     plan.routePrefixes().map { (family, prefix) ->
         listOf(
@@ -61,6 +84,8 @@ internal class DesktopWindowsTunRoutes(
                 return Result.failure(result.exceptionOrNull() ?: IllegalStateException("netsh failed"))
             }
         }
+        // Best effort: without the rule the tunnel still works, it only stays open to a discovery storm.
+        run(windowsTunMulticastBlockCommand(plan))
         attached = plan
         return Result.success(Unit)
     }
@@ -71,6 +96,7 @@ internal class DesktopWindowsTunRoutes(
         attached = null
         // A route that is already gone (the adapter was removed first) is not an error.
         windowsTunDeleteRouteCommands(plan).forEach { run(it) }
+        run(windowsTunMulticastUnblockCommand())
         return Result.success(Unit)
     }
 
