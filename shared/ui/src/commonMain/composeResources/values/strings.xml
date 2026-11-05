@@ -1497,8 +1497,8 @@
     <string name="settings_local_proxy_socks_credentials">SOCKS5 login</string>
     <string name="settings_local_proxy_http_credentials">HTTP login</string>
     <string name="settings_local_proxy_http_auth_system_note">System proxies cannot send a login, so browsers will ask for it while HTTP authorization is on</string>
-    <string name="settings_connection_log_show_on_home">Connection log</string>
-    <string name="settings_connection_log_show_on_home_summary">Show the time, domain and route of new connections on the home screen. Nothing is written to disk</string>
+    <string name="settings_connection_log_show_on_home">Log on the home screen</string>
+    <string name="settings_connection_log_show_on_home_summary">Show connections, errors and app messages on the home screen</string>
     <!-- Routing table: all rules of a profile as one table (wide windows) -->
     <string name="routing_table_import_file">From file</string>
     <string name="routing_table_import_clipboard">From clipboard</string>

@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import features.logs.CoreLogFile
 import features.logs.CoreLogFileTailer
+import features.logs.ParsedCoreLogLine
 import features.logs.XrayFileLogRepository
 import java.nio.file.Files
 import java.nio.file.Path
@@ -25,12 +26,22 @@ internal data class DesktopCoreLogPaths(private val root: Path) {
 /**
  * Desktop host of the shared core/access log viewers: restores the previous session, tails the
  * files while Core runs (access log only while it is enabled), applies retention and clears.
+ * [onCoreLines] gets each new line of the core log; the access log's are the Home log's connections.
  */
 internal class DesktopCoreLogs(
     private val paths: DesktopCoreLogPaths = DesktopCoreLogPaths.default(),
+    private val onCoreLines: (List<ParsedCoreLogLine>) -> Unit = { lines ->
+        lines.forEach { line -> DesktopAppLogFeed.add(line.toConnectionLogMessage()) }
+    },
 ) {
-    val core = XrayFileLogRepository("DesktopCoreLogRepository") { message, error ->
-        DesktopLogger.warn("DesktopCoreLogRepository", message, error)
+    val core: XrayFileLogRepository = object : XrayFileLogRepository(
+        "DesktopCoreLogRepository",
+        { message, error -> DesktopLogger.warn("DesktopCoreLogRepository", message, error) },
+    ) {
+        override fun appendBatch(lines: List<ParsedCoreLogLine>) {
+            super.appendBatch(lines)
+            onCoreLines(lines)
+        }
     }
     val access = XrayFileLogRepository("DesktopAccessLogRepository") { message, error ->
         DesktopLogger.warn("DesktopAccessLogRepository", message, error)

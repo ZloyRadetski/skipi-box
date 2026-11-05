@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ConnectionLogMessage
+import app.skipi.app.home.ConnectionLogSource
+import app.skipi.app.home.connectionLogLevel
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.nio.charset.StandardCharsets
@@ -64,6 +67,15 @@ object DesktopLogger {
 
         val line = "[$timestamp] [$level] [$tag] $message$stackTrace\n"
         println(line.trimEnd())
+        val cause = throwable?.let { error -> ": ${error.message ?: error}" }.orEmpty()
+        DesktopAppLogFeed.add(
+            ConnectionLogMessage(
+                timeMillis = System.currentTimeMillis(),
+                level = connectionLogLevel(level),
+                source = ConnectionLogSource.App,
+                text = "$tag: $message$cause$stackTrace",
+            ),
+        )
 
         try {
             val dir = logDirectory()

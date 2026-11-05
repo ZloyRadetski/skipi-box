@@ -53,6 +53,7 @@ import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.updater.SkipiAppUpdateBanner
+import features.logs.CoreLogTailerPollingPolicy
 import features.updater.AppUpdateState
 import features.updater.bannerModel
 import app.skipi.ui.navigation.navigationBarSizeForSetting
@@ -507,18 +508,19 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 }
 
                 LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
-                val desktopConnectionLog = remember(coreController) { DesktopConnectionLog(coreController::readConnectionLog) }
+                val desktopConnectionLog = remember(coreController) {
+                    DesktopConnectionLog(coreController::readConnectionLog, DesktopAppLogFeed::after)
+                }
                 LaunchedEffect(desktopSettings.showConnectionLog) {
                     coreController.setConnectionLogEnabled(desktopSettings.showConnectionLog)
                 }
+                DisposableEffect(desktopSettings.showConnectionLog) {
+                    // The Home log is a visible viewer of what the tailers read.
+                    val viewerLease = if (desktopSettings.showConnectionLog) CoreLogTailerPollingPolicy.acquireViewer() else null
+                    onDispose { viewerLease?.close() }
+                }
                 LaunchedEffect(desktopSettings.showConnectionLog, tunnel.coreState.sessionId) {
-                    desktopConnectionLog.clear()
-                    if (desktopSettings.showConnectionLog && tunnel.coreState.sessionId != null) {
-                        while (true) {
-                            withContext(Dispatchers.IO) { desktopConnectionLog.poll() }
-                            delay(ConnectionLogPollMillis)
-                        }
-                    }
+                    desktopConnectionLog.follow(desktopSettings.showConnectionLog)
                 }
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()

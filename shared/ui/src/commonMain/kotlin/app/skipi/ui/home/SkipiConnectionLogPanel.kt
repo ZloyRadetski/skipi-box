@@ -36,8 +36,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.skipi.app.home.ConnectionLogLevel
+import app.skipi.app.home.ConnectionLogLine
+import app.skipi.app.home.ConnectionLogMessageRow
 import app.skipi.app.home.ConnectionLogRoute
 import app.skipi.app.home.ConnectionLogRow
+import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.ConnectionLogState
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.home_connection_log_copied
@@ -53,10 +57,13 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 
 private val ConnectionLogRowHeight = 20.dp
+private val ConnectionLogMessageTopPadding = 3.dp
 private const val ConnectionLogCopiedMillis = 1_600L
+private const val ConnectionLogProblemMaxLines = 3
 
 /**
- * Thin live lines of what the tunnel carries. The pointer over it holds the list still, so a line can
+ * Thin live lines of what the tunnel carries and what the app and Xray log. The rows outlive the
+ * session, so a failed start stays readable. The pointer over it holds the list still, so a line can
  * be read, copied or scrolled back to with the wheel; leaving returns to the newest line.
  */
 @Composable
@@ -90,7 +97,7 @@ fun SkipiConnectionLogPanel(
     }
 
     Box(modifier = modifier.hoverable(hoverSource)) {
-        if (connected) {
+        if (connected || state.rows.isNotEmpty()) {
             Column {
                 ConnectionLogHeader(state = state, copied = copied)
                 if (state.rows.isEmpty()) {
@@ -101,20 +108,21 @@ fun SkipiConnectionLogPanel(
                     )
                 } else {
                     LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
-                        items(state.rows, key = ConnectionLogRow::id) { row ->
-                            ConnectionLogLine(
-                                row = row,
-                                time = formatTime(row.timeMillis),
-                                onClick = {
-                                    onCopy(row.host)
-                                    copied = true
-                                },
-                                modifier = Modifier.animateItem(
-                                    fadeInSpec = tween(220),
-                                    placementSpec = tween(180),
-                                    fadeOutSpec = null,
-                                ),
+                        items(state.rows, key = ConnectionLogLine::id) { row ->
+                            val onClick = {
+                                onCopy(row.copyText)
+                                copied = true
+                            }
+                            val rowModifier = Modifier.animateItem(
+                                fadeInSpec = tween(220),
+                                placementSpec = tween(180),
+                                fadeOutSpec = null,
                             )
+                            val time = formatTime(row.timeMillis)
+                            when (row) {
+                                is ConnectionLogRow -> ConnectionLogLine(row, time, onClick, rowModifier)
+                                is ConnectionLogMessageRow -> ConnectionLogMessageLine(row, time, onClick, rowModifier)
+                            }
                         }
                     }
                 }
@@ -191,6 +199,75 @@ private fun ConnectionLogLine(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(end = SkipiTheme.spacing.extraSmall),
         )
+    }
+}
+
+@Composable
+private fun ConnectionLogMessageLine(
+    row: ConnectionLogMessageRow,
+    time: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val muted = SkipiTheme.colors.onSurfaceVariant
+    val style = SkipiTheme.typography.labelSmall
+    val isProblem = row.level == ConnectionLogLevel.Warning || row.level == ConnectionLogLevel.Error
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = ConnectionLogRowHeight)
+            .clip(RoundedCornerShape(5.dp))
+            .clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = time,
+            color = muted,
+            style = style,
+            fontFamily = FontFamily.Monospace,
+            maxLines = 1,
+            modifier = Modifier.padding(top = ConnectionLogMessageTopPadding),
+        )
+        // The reason of a failure is usually past the first line's width, so problems may wrap.
+        Text(
+            text = row.title,
+            color = if (row.level == ConnectionLogLevel.Debug) muted else SkipiTheme.colors.onSurface,
+            style = style,
+            maxLines = if (isProblem) ConnectionLogProblemMaxLines else 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(top = ConnectionLogMessageTopPadding),
+        )
+        if (row.count > 1) {
+            Text(
+                text = "×${row.count}",
+                color = muted,
+                style = style,
+                maxLines = 1,
+                modifier = Modifier.padding(top = ConnectionLogMessageTopPadding),
+            )
+        }
+        Text(
+            text = when (row.source) {
+                ConnectionLogSource.App -> "SKIPI"
+                ConnectionLogSource.Core -> "Xray"
+            },
+            color = connectionLogLevelColor(row.level),
+            style = style,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
+            maxLines = 1,
+            modifier = Modifier.padding(top = ConnectionLogMessageTopPadding, end = SkipiTheme.spacing.extraSmall),
+        )
+    }
+}
+
+@Composable
+private fun connectionLogLevelColor(level: ConnectionLogLevel): Color {
+    val isDark = SkipiTheme.colors.isDark
+    return when (level) {
+        ConnectionLogLevel.Debug, ConnectionLogLevel.Info -> SkipiTheme.colors.onSurfaceVariant
+        ConnectionLogLevel.Warning -> StatusColorDefaults.pingMedium(isDark)
+        ConnectionLogLevel.Error -> StatusColorDefaults.statusStopped(isDark)
     }
 }
 

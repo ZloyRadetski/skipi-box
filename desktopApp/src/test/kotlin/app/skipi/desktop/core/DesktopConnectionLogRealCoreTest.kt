@@ -3,14 +3,22 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ConnectionLogLevel
+import app.skipi.app.home.ConnectionLogMessageRow
+import app.skipi.app.home.ConnectionLogRow
+import app.skipi.app.home.ConnectionLogSource
+import features.logs.CoreLogTailerPollingPolicy
 import java.io.DataInputStream
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /** Opt-in: the Home connection log through the real Core library over FFM. */
 class DesktopConnectionLogRealCoreTest {
@@ -58,11 +66,58 @@ class DesktopConnectionLogRealCoreTest {
                 }
             }
 
-            val row = log.state.value.rows.single()
+            val row = log.state.value.rows.filterIsInstance<ConnectionLogRow>().single()
             assertEquals("real-core.test", row.host)
             assertEquals("direct", row.outbound)
         } finally {
             target.close()
+            controller.close()
+        }
+    }
+
+    @Test
+    fun whatXrayWritesToItsErrorLogReachesTheList() {
+        val runtimeDirectory = System.getenv("SKIPI_CORE_INTEGRATION_DIR")?.takeIf(String::isNotBlank) ?: return
+        val runtime = DesktopCoreRuntimes.fromDirectory(Path.of(runtimeDirectory)).getOrThrow()
+        val controller = DesktopCoreController(runtimeProvider = { Result.success(runtime) })
+        val paths = DesktopCoreLogPaths(Files.createTempDirectory("skipi-home-log"))
+        val feed = DesktopLogFeed()
+        val logs = DesktopCoreLogs(paths, onCoreLines = { lines ->
+            lines.forEach { line -> feed.add(line.toConnectionLogMessage()) }
+        })
+        val log = DesktopConnectionLog(controller::readConnectionLog, feed::after)
+        val errorLog = paths.errorLogPath.replace("\\", "\\\\")
+        val socksPort = ServerSocket(0, 0, InetAddress.getLoopbackAddress()).use(ServerSocket::getLocalPort)
+        val config = """
+            {
+              "log": { "loglevel": "warning", "error": "$errorLog" },
+              "inbounds": [{
+                "tag": "in", "listen": "127.0.0.1", "port": $socksPort, "protocol": "socks",
+                "settings": { "auth": "noauth" }
+              }],
+              "outbounds": [{ "protocol": "freedom", "tag": "direct" }]
+            }
+        """.trimIndent()
+        val viewerLease = CoreLogTailerPollingPolicy.acquireViewer()
+        try {
+            logs.clear()
+            logs.startTailers(DesktopAppSettings())
+            controller.start(config).getOrThrow()
+
+            repeat(250) {
+                log.poll()
+                if (log.state.value.rows.isNotEmpty()) return@repeat
+                Thread.sleep(20)
+            }
+
+            val row = log.state.value.rows.filterIsInstance<ConnectionLogMessageRow>().first()
+            assertEquals(ConnectionLogSource.Core, row.source)
+            assertEquals(ConnectionLogLevel.Warning, row.level)
+            assertTrue("started" in row.title, row.title)
+            assertFalse(row.title.startsWith("20"), row.title)
+        } finally {
+            viewerLease.close()
+            logs.stopTailers()
             controller.close()
         }
     }

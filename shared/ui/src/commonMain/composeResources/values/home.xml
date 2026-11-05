@@ -70,8 +70,8 @@
     <string name="home_tile_ip">IP</string>
     <string name="home_memory_megabytes">%1$s MB</string>
     <string name="home_memory_kilobytes">%1$s KB</string>
-    <string name="home_connection_log_title">Connections</string>
-    <string name="home_connection_log_waiting">Waiting for the first connections…</string>
+    <string name="home_connection_log_title">Log</string>
+    <string name="home_connection_log_waiting">Waiting for the first lines…</string>
     <string name="home_connection_log_paused">paused</string>
     <string name="home_connection_log_paused_more">paused · %1$d more</string>
     <string name="home_connection_log_copied">copied</string>

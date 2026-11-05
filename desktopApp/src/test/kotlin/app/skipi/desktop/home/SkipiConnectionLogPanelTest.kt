@@ -16,6 +16,9 @@ import androidx.compose.ui.input.pointer.PointerButtons
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.unit.Density
 import app.skipi.app.home.ConnectionLogEntry
+import app.skipi.app.home.ConnectionLogLevel
+import app.skipi.app.home.ConnectionLogMessage
+import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.ConnectionLogState
 import app.skipi.ui.home.SkipiConnectionLogPanel
 import app.skipi.ui.theme.ProvideSkipiTheme
@@ -172,7 +175,39 @@ class SkipiConnectionLogPanelTest {
         }
 
     @Test
-    fun nothingIsDrawnWhileDisconnected() {
+    fun clickingAMessageCopiesAllOfItsText() = withHarness(
+        Harness(
+            ConnectionLogState().append(
+                listOf(
+                    ConnectionLogMessage(
+                        timeMillis = 1_000,
+                        level = ConnectionLogLevel.Error,
+                        source = ConnectionLogSource.App,
+                        text = "Tunnel: Connection failed\njava.io.IOException: refused",
+                    ),
+                ),
+            ),
+        ),
+    ) {
+        click(30f)
+
+        assertEquals(listOf("Tunnel: Connection failed\njava.io.IOException: refused"), copied)
+    }
+
+    @Test
+    fun rowsStayOnScreenAfterDisconnecting() {
+        val blank = Harness(ConnectionLogState(), connected = false)
+        val kept = Harness(ConnectionLogState().append(entries(3)), connected = false)
+        try {
+            assertNotEquals(blank.pixels().toList(), kept.pixels().toList(), "rows are missing")
+        } finally {
+            blank.scene.close()
+            kept.scene.close()
+        }
+    }
+
+    @Test
+    fun nothingIsDrawnWhileDisconnectedWithNoRows() {
         val blank = Harness(ConnectionLogState(), connected = false)
         val idle = Harness(ConnectionLogState(), connected = true)
         val busy = Harness(ConnectionLogState().append(entries(3)), connected = true)

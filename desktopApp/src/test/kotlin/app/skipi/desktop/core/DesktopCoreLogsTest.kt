@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import app.skipi.app.model.RoutingConfigRecord
 import features.config.ConfigProfileLibrary
+import features.logs.ParsedCoreLogLine
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Socks
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -149,6 +151,57 @@ class DesktopCoreLogsTest {
         } finally {
             logs.stopTailers()
         }
+    }
+
+    @Test
+    fun linesTailedFromTheErrorLogAreHandedOnOnce() = runBlocking {
+        val handed = CopyOnWriteArrayList<ParsedCoreLogLine>()
+        val logs = DesktopCoreLogs(paths, onCoreLines = handed::addAll)
+        try {
+            Files.createDirectories(Path.of(paths.errorLogPath).parent)
+            Files.writeString(Path.of(paths.errorLogPath), "2026/09/11 20:40:05 [Error] boom\n")
+
+            logs.startTailers(DesktopAppSettings(enableAccessLog = false))
+            withTimeout(3_000) {
+                while (handed.isEmpty()) kotlinx.coroutines.delay(10)
+            }
+            logs.core.refresh()
+
+            assertEquals(1, handed.size)
+            assertTrue(handed.single().message.endsWith("[Error] boom"))
+        } finally {
+            logs.stopTailers()
+        }
+    }
+
+    @Test
+    fun theAccessLogIsNotHandedOnBecauseConnectionsAlreadyShowIt() = runBlocking {
+        val handed = CopyOnWriteArrayList<ParsedCoreLogLine>()
+        val logs = DesktopCoreLogs(paths, onCoreLines = handed::addAll)
+        try {
+            Files.createDirectories(Path.of(paths.accessLogPath).parent)
+            Files.writeString(Path.of(paths.accessLogPath), "2026/09/11 20:40:05 accepted a\n")
+
+            logs.startTailers(DesktopAppSettings(enableAccessLog = true))
+            withTimeout(3_000) { logs.access.entries.first { it.isNotEmpty() } }
+
+            assertTrue(handed.isEmpty())
+        } finally {
+            logs.stopTailers()
+        }
+    }
+
+    @Test
+    fun linesRestoredFromThePreviousSessionAreNotHandedOn() {
+        val handed = CopyOnWriteArrayList<ParsedCoreLogLine>()
+        val logs = DesktopCoreLogs(paths, onCoreLines = handed::addAll)
+        Files.createDirectories(Path.of(paths.errorLogPath).parent)
+        Files.writeString(Path.of(paths.errorLogPath), "2026/09/11 20:40:05 [Error] old\n")
+
+        logs.restore(retentionDays = 0)
+
+        assertEquals(1, logs.core.entries.value.size)
+        assertTrue(handed.isEmpty())
     }
 
     @Test

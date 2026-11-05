@@ -1416,6 +1416,6 @@
     <string name="settings_local_proxy_socks_credentials">ورود SOCKS5</string>
     <string name="settings_local_proxy_http_credentials">ورود HTTP</string>
     <string name="settings_local_proxy_http_auth_system_note">پروکسی سیستم نمی‌تواند نام کاربری ارسال کند، بنابراین تا زمانی که احراز هویت HTTP روشن است مرورگرها آن را درخواست می‌کنند</string>
-    <string name="settings_connection_log_show_on_home">گزارش اتصال‌ها</string>
-    <string name="settings_connection_log_show_on_home_summary">زمان، دامنه و مسیر اتصال‌های جدید را در صفحه اصلی نشان می‌دهد. چیزی روی دیسک نوشته نمی‌شود</string>
+    <string name="settings_connection_log_show_on_home">گزارش در صفحه اصلی</string>
+    <string name="settings_connection_log_show_on_home_summary">اتصال‌ها، خطاها و پیام‌های برنامه را در صفحه اصلی نشان می‌دهد</string>
 </resources>
