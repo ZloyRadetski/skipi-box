@@ -14,13 +14,15 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.offset
 
 /**
- * Lets a scrolling region draw over the padding of its parent: it keeps the box the parent gave it
- * but its content grows by [horizontal] on both sides, [top] upwards and [bottom] downwards.
- * The scroller then has no visible edge inside the padded column; the caller adds the same amounts
- * as content padding so items still rest where they did.
+ * Lets a scrolling region draw over the padding of its parent: it keeps its own box but its content
+ * grows by [horizontal] on both sides, [top] upwards and [bottom] downwards. The scroller then has
+ * no visible edge inside the padded column; the caller adds the same amounts as content padding so
+ * items still rest where they did.
  */
 fun Modifier.scrollBleed(horizontal: Dp, top: Dp = Dp(0f), bottom: Dp = Dp(0f)): Modifier =
     layout { measurable, constraints ->
@@ -28,7 +30,9 @@ fun Modifier.scrollBleed(horizontal: Dp, top: Dp = Dp(0f), bottom: Dp = Dp(0f)):
         val t = top.roundToPx()
         val b = bottom.roundToPx()
         val placeable = measurable.measure(constraints.offset(horizontal = 2 * h, vertical = t + b))
-        layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-h, -t) }
+        val width = constraints.constrainWidth(placeable.width - 2 * h)
+        val height = constraints.constrainHeight(placeable.height - t - b)
+        layout(width, height) { placeable.place(-h, -t) }
     }
 
 /**

@@ -132,7 +132,7 @@ fun SkipiProxyHeroPowerButtonWaves(
                     .size(size)
                     .graphicsLayer {
                         val progress = progressState.value
-                        val scale = 1f + 0.35f * progress
+                        val scale = 1f + (SkipiProxyHeroAuraRatio - 1f) * progress
                         scaleX = scale
                         scaleY = scale
                         alpha = (1f - progress) * 0.40f

@@ -76,6 +76,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -612,7 +614,20 @@ fun ProxyHomeScreenContent(
                                 .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
                                 .fillMaxHeight(),
                         ) {
-                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                            val leftColumnScroll = rememberScrollState()
+                            val auraBleed = skipiClassicButtonAuraBleed(state.displayOptions.classicButtonSize, compact = false)
+                            Column(
+                                modifier = Modifier
+                                    .scrollBleed(horizontal = auraBleed, top = auraBleed)
+                                    // The aura may reach over the header while it rests; scrolled content may not.
+                                    .drawWithContent {
+                                        clipRect(top = minOf(auraBleed.toPx(), leftColumnScroll.value.toFloat())) {
+                                            this@drawWithContent.drawContent()
+                                        }
+                                    }
+                                    .verticalScroll(leftColumnScroll)
+                                    .padding(start = auraBleed, top = auraBleed, end = auraBleed),
+                            ) {
                                 HomeConnectionPanel(
                                     state = state,
                                     compact = false,

@@ -10,6 +10,9 @@ import app.skipi.app.home.ProxyHomeButtonSize
 /** The thin ring around the classic button is this much wider than the button itself. */
 const val SkipiClassicButtonRingRatio = 1.1f
 
+/** The aura of a connected button ends this many button diameters wide. */
+const val SkipiProxyHeroAuraRatio = 1.35f
+
 /**
  * Outer diameter (the thin ring) of the classic connection button. Large is the full base size; a phone-width
  * window uses a smaller base than a wide one.
@@ -23,4 +26,10 @@ fun skipiClassicButtonOuterSize(size: ProxyHomeButtonSize, compact: Boolean): Dp
         ProxyHomeButtonSize.Giant -> 1.2f
     }
     return base * scale
+}
+
+/** How far past the ring the aura of the classic button reaches, on every side. */
+fun skipiClassicButtonAuraBleed(size: ProxyHomeButtonSize, compact: Boolean): Dp {
+    val outerSize = skipiClassicButtonOuterSize(size, compact)
+    return (outerSize / SkipiClassicButtonRingRatio * SkipiProxyHeroAuraRatio - outerSize) / 2
 }
