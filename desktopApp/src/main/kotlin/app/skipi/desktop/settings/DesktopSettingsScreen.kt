@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import app.skipi.ui.diagnostics.SkipiDnsLeakTestScreen
 import app.skipi.ui.diagnostics.SkipiIpInfoScreen
 import app.skipi.ui.diagnostics.SkipiSpeedTestScreen
+import app.skipi.ui.navigation.OnNavigationReselect
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -219,6 +220,14 @@ internal fun DesktopSettingsScreen(
     val automationSavedMessage = "Правила сети сохранены."
     val goBack: () -> Unit = {
         desktopSettingsParent(destination)?.let { parent -> destination = parent }
+    }
+    OnNavigationReselect {
+        if (destination != DesktopSettingsDestination.Overview) {
+            diagnostics.speedTest.stop()
+            diagnostics.dnsLeak.stop()
+            diagnostics.ipInfo.stop()
+            destination = DesktopSettingsDestination.Overview
+        }
     }
     DisposableEffect(destination, escapeHandler) {
         escapeHandler.register(goBack.takeIf { destination != DesktopSettingsDestination.Overview })

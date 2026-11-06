@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import app.skipi.ui.navigation.OnNavigationReselect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Bolt
@@ -111,6 +112,7 @@ fun SkipiSettingsHomeScreen(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val listState = rememberLazyListState()
+    OnNavigationReselect { listState.animateScrollToItem(0) }
     val categoryIconColor = state.categoryIconColor
     val visible = state.visibleDestinations
     val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()

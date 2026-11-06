@@ -15,6 +15,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import app.skipi.ui.navigation.OnNavigationReselect
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.Role
@@ -877,6 +878,7 @@ private fun PageServerGrid(
     val providerBorder = Color.Transparent
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
     val gridState = rememberLazyGridState()
+    OnNavigationReselect { gridState.animateScrollToItem(0) }
     val rowContext = remember(
         state.sortMode,
         state.searchQuery,

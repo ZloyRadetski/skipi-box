@@ -1,6 +1,8 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+
 package app.skipi.desktop
 
 import features.subscription.DefaultSubscriptionUserAgent
@@ -13,6 +15,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -60,6 +67,7 @@ import app.skipi.ui.subscription.toSubscriptionRecord
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import app.skipi.ui.navigation.LocalNavigationReselectToken
 import app.skipi.ui.navigation.SkipiSidebarNavigation
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.logs.CoreLogTailerPollingPolicy
@@ -228,6 +236,15 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
                 }
                 var currentSection by remember { mutableStateOf(SkipiMainDestination.Proxy) }
+                // A tap on the item of the section that is already open: the page goes to its top or its start.
+                val reselectTokens = remember { mutableStateMapOf<SkipiMainDestination, Int>() }
+                val selectSection: (SkipiMainDestination) -> Unit = { destination ->
+                    if (destination == currentSection) {
+                        reselectTokens[destination] = (reselectTokens[destination] ?: 0) + 1
+                    } else {
+                        currentSection = destination
+                    }
+                }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -1163,6 +1180,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
         CompositionLocalProvider(
             LocalDesktopThemeMode provides desktopSettings.themeMode,
             LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
+            LocalNavigationReselectToken provides (reselectTokens[currentSection] ?: 0),
         ) {
             DesktopAppTheme {
                 DesktopWindowChrome(
@@ -1170,12 +1188,20 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     isDark = app.skipi.ui.theme.SkipiTheme.colors.isDark,
                 )
                 DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
-                Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
+                Surface(
+                    modifier = Modifier.fillMaxSize().onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+                        // The mouse's back button does what Escape does.
+                        if (event.button == PointerButton.Back && escapeHandler.onEscape()) {
+                            event.changes.forEach { change -> change.consume() }
+                        }
+                    },
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                ) {
                 val sidebar = desktopSettings.onboardingCompleted && desktopSettings.navigationStyle == 1
                 Row(Modifier.fillMaxSize()) {
                 if (sidebar) DesktopSidebarNavigation(
                     selected = currentSection,
-                    onSelect = { currentSection = it },
+                    onSelect = selectSection,
                     expanded = !desktopSettings.sidebarCollapsed,
                     onExpandedChange = { expanded ->
                         val next = desktopSettings.copy(sidebarCollapsed = !expanded)
@@ -1190,7 +1216,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                         if (desktopSettings.onboardingCompleted && desktopSettings.navigationStyle != 1) DesktopBottomNavigation(
                             sizeSetting = desktopSettings.bottomBarSize ?: 1,
                             selected = currentSection,
-                            onSelect = { currentSection = it },
+                            onSelect = selectSection,
                         )
                     },
                 ) { scaffoldPadding ->
