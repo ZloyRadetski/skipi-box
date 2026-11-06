@@ -1345,6 +1345,7 @@
     <string name="settings_category_speed_test_summary">Measure ping, download and upload speed</string>
     <string name="tools_speed_test_title">Speed test</string>
     <string name="tools_speed_mbps">Mbps</string>
+    <string name="tools_speed_ms">ms</string>
     <string name="tools_speed_start">Start test</string>
     <string name="tools_speed_stop">Stop</string>
     <string name="tools_speed_phase_idle">Ready to measure your connection</string>

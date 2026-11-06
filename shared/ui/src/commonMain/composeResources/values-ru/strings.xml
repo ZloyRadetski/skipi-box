@@ -1334,6 +1334,7 @@
     <string name="settings_category_speed_test_summary">Измерить пинг, скорость загрузки и отдачи</string>
     <string name="tools_speed_test_title">Тест скорости</string>
     <string name="tools_speed_mbps">Мбит/с</string>
+    <string name="tools_speed_ms">мс</string>
     <string name="tools_speed_start">Запустить тест</string>
     <string name="tools_speed_stop">Остановить</string>
     <string name="tools_speed_phase_idle">Готов к измерению вашего соединения</string>
