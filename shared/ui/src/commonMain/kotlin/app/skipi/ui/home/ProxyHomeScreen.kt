@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -604,14 +605,16 @@ fun ProxyHomeScreenContent(
                         )
                     }
                 } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.large),
-                    ) {
+                    // The left column starts as wide as the button needs; dragging the divider widens it.
+                    var leftColumnExtra by remember { mutableStateOf(0.dp) }
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    val leftColumnBase = maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false))
+                    val leftColumnMax = maxOf(leftColumnBase, this@BoxWithConstraints.maxWidth * 0.6f)
+                    val leftColumnWidth = (leftColumnBase + leftColumnExtra).coerceIn(leftColumnBase, leftColumnMax)
+                    Row(modifier = Modifier.fillMaxSize()) {
                         Column(
                             modifier = Modifier
-                                // Wide enough for the button at any chosen size.
-                                .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
+                                .width(leftColumnWidth)
                                 .fillMaxHeight(),
                         ) {
                             val leftColumnScroll = rememberScrollState()
@@ -645,7 +648,15 @@ fun ProxyHomeScreenContent(
                                 panel(Modifier.fillMaxWidth().weight(1f))
                             }
                         }
+                        SkipiPaneDivider(
+                            onDrag = { delta ->
+                                leftColumnExtra = (leftColumnWidth + delta - leftColumnBase)
+                                    .coerceIn(0.dp, leftColumnMax - leftColumnBase)
+                            },
+                            width = SkipiTheme.spacing.large,
+                        )
                         wideList(Modifier.weight(1f))
+                    }
                     }
                 }
             } else {
