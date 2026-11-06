@@ -14,7 +14,7 @@ object ProjectConfig {
     const val VERSION_NAME = "0.5.0"
     const val PACKAGE_NAME = "com.radetski.skipi"
     const val XRAY_CORE_VERSION = "v26.10.31"
-    const val SKIPI_CORE_VERSION = "v1.0.30"
+    const val SKIPI_CORE_VERSION = "v1.0.31"
     const val HEV_SOCKS5_TUNNEL_VERSION = "2.19.3"
     const val TARGET_SDK = 37
     const val MIN_SDK = 24
