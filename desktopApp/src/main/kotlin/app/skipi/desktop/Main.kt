@@ -11,6 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -511,6 +512,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 val desktopConnectionLog = remember(coreController) {
                     DesktopConnectionLog(coreController::readConnectionLog, DesktopAppLogFeed::after)
                 }
+                SideEffect { desktopConnectionLog.logLevel = desktopSettings.coreLogLevel }
                 LaunchedEffect(desktopSettings.showConnectionLog) {
                     coreController.setConnectionLogEnabled(desktopSettings.showConnectionLog)
                 }

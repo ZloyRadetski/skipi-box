@@ -120,6 +120,45 @@ class DesktopConnectionLogTest {
         assertEquals(listOf("b.test", "a.test"), log.state.value.connections.map { it.host })
     }
 
+    private fun lineAt(level: ConnectionLogLevel, text: String, source: ConnectionLogSource = ConnectionLogSource.App) =
+        ConnectionLogMessage(1_000, level, source, text)
+
+    private fun shownAt(levelName: String): List<String> {
+        val feed = DesktopLogFeed()
+        val log = DesktopConnectionLog(read = { Result.success(snapshot(1, "a.test")) }, readMessages = feed::after)
+        log.logLevel = levelName
+        ConnectionLogLevel.entries.forEach { level ->
+            feed.add(lineAt(level, "app $level"))
+            feed.add(lineAt(level, "xray $level", ConnectionLogSource.Core))
+        }
+        log.poll()
+        return log.state.value.rows.map { row ->
+            when (row) {
+                is ConnectionLogRow -> row.host
+                is ConnectionLogMessageRow -> row.title
+            }
+        }.sorted()
+    }
+
+    @Test
+    fun domainsAreShownAtEveryLevelAndTheLevelSetsTheLinesBesideThem() {
+        assertEquals(
+            listOf("a.test", "app Error", "xray Error"),
+            shownAt("error"),
+        )
+        assertEquals(
+            listOf("a.test", "app Error", "app Warning", "xray Error", "xray Warning"),
+            shownAt("warning"),
+        )
+        assertEquals(8 + 1, shownAt("debug").size)
+        assertEquals(6 + 1, shownAt("info").size)
+    }
+
+    @Test
+    fun noneShowsNothingAtAll() {
+        assertEquals(emptyList(), shownAt("none"))
+    }
+
     @Test
     fun logLinesReachTheListWhileCoreIsNotRunning() {
         val feed = DesktopLogFeed()
@@ -251,16 +290,15 @@ class DesktopConnectionLogTest {
     }
 
     @Test
-    fun onlyAppWarningsAndErrorsReachTheFeed() {
+    fun everyAppLogLevelReachesTheFeed() {
         val cursor = DesktopAppLogFeed.after(0).seq
 
         DesktopLogger.debug("Levels", "a debug line")
         DesktopLogger.info("Levels", "an info line")
         DesktopLogger.warn("Levels", "a warning line")
-        DesktopLogger.error("Levels", "an error line")
 
         val levels = DesktopAppLogFeed.after(cursor).messages.filter { it.text.startsWith("Levels: ") }.map { it.level }
-        assertEquals(listOf(ConnectionLogLevel.Warning, ConnectionLogLevel.Error), levels)
+        assertEquals(listOf(ConnectionLogLevel.Debug, ConnectionLogLevel.Info, ConnectionLogLevel.Warning), levels)
     }
 
     @Test

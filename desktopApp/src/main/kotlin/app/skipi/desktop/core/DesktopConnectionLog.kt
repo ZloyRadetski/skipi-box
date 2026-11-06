@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import app.skipi.app.home.ConnectionLogEntry
 import app.skipi.app.home.ConnectionLogItem
+import app.skipi.app.home.ConnectionLogLevel
 import app.skipi.app.home.ConnectionLogMessage
 import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.ConnectionLogState
@@ -62,6 +63,10 @@ internal fun ParsedCoreLogLine.toConnectionLogMessage(nowMillis: Long = System.c
         text = time?.let { message.removePrefix("$it [$level] ").removePrefix("$it ") } ?: message,
     )
 
+/** The least severe line shown beside the connections at [levelName]; null at "none", which shows nothing. */
+internal fun connectionLogThreshold(levelName: String): ConnectionLogLevel? =
+    if (levelName.trim().equals("none", ignoreCase = true)) null else connectionLogLevel(levelName)
+
 /** Host of the Home log: reads what Core and the logs recorded since the last poll. */
 internal class DesktopConnectionLog(
     private val read: (Long) -> Result<String>,
@@ -73,9 +78,21 @@ internal class DesktopConnectionLog(
 
     val state: StateFlow<ConnectionLogState> = mutableState.asStateFlow()
 
+    /** The log level chosen in settings: it sets which lines beside the connections are shown. */
+    @Volatile
+    var logLevel: String = "error"
+
     @Synchronized
     fun poll() {
-        val items: List<ConnectionLogItem> = newConnections() + newMessages()
+        // Both sources are read either way, so a level raised later does not replay old lines.
+        val connections = newConnections()
+        val messages = newMessages()
+        val threshold = connectionLogThreshold(logLevel)
+        if (threshold == null) {
+            mutableState.update(ConnectionLogState::clear)
+            return
+        }
+        val items: List<ConnectionLogItem> = connections + messages.filter { it.level >= threshold }
         mutableState.update { state -> state.append(items) }
     }
 
