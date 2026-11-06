@@ -14,6 +14,8 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -63,6 +65,47 @@ fun SkipiPaneDivider(
             Modifier
                 .width(3.dp)
                 .fillMaxHeight()
+                .clip(RoundedCornerShape(50))
+                .background(lineColor),
+        )
+    }
+}
+
+/**
+ * A horizontal handle between two stacked panes. It fills [height] of the column, so the panes keep
+ * their gap, and reports the pointer's vertical travel in dp (up is negative); a thin line shows
+ * while the pointer is over it.
+ */
+@Composable
+fun SkipiHorizontalPaneDivider(
+    onDrag: (Dp) -> Unit,
+    modifier: Modifier = Modifier,
+    height: Dp = 12.dp,
+) {
+    val density = LocalDensity.current
+    val latestOnDrag by rememberUpdatedState(onDrag)
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    val dragged by interaction.collectIsDraggedAsState()
+    val lineColor by animateColorAsState(
+        if (hovered || dragged) SkipiTheme.colors.outline else Color.Transparent,
+    )
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .hoverable(interaction)
+            .draggable(
+                orientation = Orientation.Vertical,
+                interactionSource = interaction,
+                state = rememberDraggableState { pixels -> latestOnDrag(with(density) { pixels.toDp() }) },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(3.dp)
                 .clip(RoundedCornerShape(50))
                 .background(lineColor),
         )

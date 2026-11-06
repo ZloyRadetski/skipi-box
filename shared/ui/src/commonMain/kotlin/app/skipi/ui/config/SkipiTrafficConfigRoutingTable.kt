@@ -60,6 +60,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.layout.layout
+import app.skipi.ui.home.SkipiHorizontalPaneDivider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -356,6 +358,9 @@ fun SkipiTrafficConfigRoutingTable(
         val zoom = (maxWidth.value / RoutingTableDesignWidth).coerceIn(1f, RoutingTableMaxZoom)
         // The editor takes at most half of the height (in the zoomed dp), so a low window still shows several rules.
         val editorHeight = (maxHeight.value / zoom * 0.53f).coerceIn(260f, 352f).dp
+        // Dragging the handle above the editor changes its height; the list keeps at least a fifth of the window.
+        val editorMaxHeight = maxOf(editorHeight, (maxHeight.value / zoom * 0.8f).dp)
+        val editorExtra = remember { mutableStateOf(0.dp) }
         CompositionLocalProvider(LocalDensity provides Density(density.density * zoom, density.fontScale)) {
     Column(Modifier.fillMaxSize()) {
         RoutingTableToolbar(
@@ -384,13 +389,26 @@ fun SkipiTrafficConfigRoutingTable(
         }
         RoutingTableFinalRow(table, selected = state.isFinalSelected, onClick = { state.selectFinal(table.finalRule) })
         if (state.hasEditor) {
-            Spacer(Modifier.height(8.dp))
-            RoutingTableEditor(profile, table, state, controller, editorHeight, onPickPolicy, onEditRule)
+            // Read only while measuring, so a drag relayouts the editor and never recomposes the table.
+            SkipiHorizontalPaneDivider(
+                onDrag = { delta ->
+                    editorExtra.value = (editorExtra.value - delta)
+                        .coerceIn(EditorMinHeight - editorHeight, editorMaxHeight - editorHeight)
+                },
+                height = 8.dp,
+            )
+            RoutingTableEditor(
+                profile, table, state, controller,
+                height = { (editorHeight + editorExtra.value).coerceIn(EditorMinHeight, editorMaxHeight) },
+                onPickPolicy, onEditRule,
+            )
         }
     }
         }
     }
 }
+
+private val EditorMinHeight = 160.dp
 
 private fun RoutingTableEntry.matches(query: String): Boolean {
     val row = row
@@ -655,7 +673,7 @@ private fun RoutingTableEditor(
     table: RoutingTable,
     state: SkipiRoutingTableState,
     controller: TrafficConfigEditorController,
-    height: Dp,
+    height: () -> Dp,
     onPickPolicy: (current: String) -> Unit,
     onEditRule: (ShadowrocketRule) -> Unit,
 ) {
@@ -663,7 +681,13 @@ private fun RoutingTableEditor(
     val index = table.entries.indexOfFirst { it.lineNumber == state.selectedLine }
     val savedRule = table.entries.getOrNull(index)?.rule
     Row(
-        Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(12.dp)).background(SkipiTheme.colors.surface).padding(14.dp),
+        Modifier.fillMaxWidth()
+            .layout { measurable, constraints ->
+                val fixed = height().roundToPx()
+                val placeable = measurable.measure(constraints.copy(minHeight = fixed, maxHeight = fixed))
+                layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+            }
+            .clip(RoundedCornerShape(12.dp)).background(SkipiTheme.colors.surface).padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(Modifier.width(400.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
