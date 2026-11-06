@@ -88,6 +88,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
@@ -606,16 +607,24 @@ fun ProxyHomeScreenContent(
                     }
                 } else {
                     // The left column starts as wide as the button needs; dragging the divider widens it.
-                    var leftColumnExtra by remember { mutableStateOf(0.dp) }
+                    // Read only while measuring, so a drag relayouts the row and never recomposes the screen.
+                    val leftColumnExtra = remember { mutableStateOf(0.dp) }
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     val leftColumnBase = maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false))
                     val leftColumnMax = maxOf(leftColumnBase, this@BoxWithConstraints.maxWidth * 0.6f)
-                    val leftColumnWidth = (leftColumnBase + leftColumnExtra).coerceIn(leftColumnBase, leftColumnMax)
                     Row(modifier = Modifier.fillMaxSize()) {
                         Column(
                             modifier = Modifier
-                                .width(leftColumnWidth)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .layout { measurable, constraints ->
+                                    val width = (leftColumnBase + leftColumnExtra.value)
+                                        .coerceIn(leftColumnBase, leftColumnMax)
+                                        .roundToPx()
+                                    val placeable = measurable.measure(
+                                        constraints.copy(minWidth = width, maxWidth = width),
+                                    )
+                                    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                                },
                         ) {
                             val leftColumnScroll = rememberScrollState()
                             val auraBleed = skipiClassicButtonAuraBleed(state.displayOptions.classicButtonSize, compact = false)
@@ -650,7 +659,7 @@ fun ProxyHomeScreenContent(
                         }
                         SkipiPaneDivider(
                             onDrag = { delta ->
-                                leftColumnExtra = (leftColumnWidth + delta - leftColumnBase)
+                                leftColumnExtra.value = (leftColumnExtra.value + delta)
                                     .coerceIn(0.dp, leftColumnMax - leftColumnBase)
                             },
                             width = SkipiTheme.spacing.large,
