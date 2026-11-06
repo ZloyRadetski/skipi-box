@@ -521,6 +521,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     fonts = true,
     bottomBarSize = true,
     connectionLog = true,
+    navigationStyle = true,
 )
 
 @Composable

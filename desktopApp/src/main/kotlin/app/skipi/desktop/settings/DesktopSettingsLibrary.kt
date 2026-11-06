@@ -84,6 +84,8 @@ data class DesktopAppSettings(
     val showTunnelIp: Boolean = true,
     /** Desktop-only, like the TUN switch: not part of the Android-shaped backup. */
     val showConnectionLog: Boolean = true,
+    /** 0 the floating bar at the bottom (as on phones), 1 the sidebar. */
+    val navigationStyle: Int = 0,
     val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,

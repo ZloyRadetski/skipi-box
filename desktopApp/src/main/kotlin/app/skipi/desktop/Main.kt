@@ -4,6 +4,9 @@
 package app.skipi.desktop
 
 import features.subscription.DefaultSubscriptionUserAgent
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +56,7 @@ import app.skipi.ui.subscription.toSubscriptionRecord
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import app.skipi.ui.navigation.SkipiSidebarNavigation
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.logs.CoreLogTailerPollingPolicy
 import features.updater.AppUpdateState
@@ -1163,10 +1167,17 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 )
                 DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
                 Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
+                val sidebar = desktopSettings.onboardingCompleted && desktopSettings.navigationStyle == 1
+                Row(Modifier.fillMaxSize()) {
+                if (sidebar) DesktopSidebarNavigation(
+                    selected = currentSection,
+                    onSelect = { currentSection = it },
+                )
+                Box(Modifier.weight(1f).fillMaxHeight()) {
                 Scaffold(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar = {
-                        if (desktopSettings.onboardingCompleted) DesktopBottomNavigation(
+                        if (desktopSettings.onboardingCompleted && desktopSettings.navigationStyle != 1) DesktopBottomNavigation(
                             sizeSetting = desktopSettings.bottomBarSize ?: 1,
                             selected = currentSection,
                             onSelect = { currentSection = it },
@@ -1740,6 +1751,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     }
                 }
                 }
+                }
+                }
             }
         }
     }
@@ -1765,6 +1778,25 @@ private fun DesktopBottomNavigation(
             isDark = colors.isDark,
         ),
         size = navigationBarSizeForSetting(sizeSetting),
+    )
+}
+
+@Composable
+private fun DesktopSidebarNavigation(
+    selected: SkipiMainDestination,
+    onSelect: (SkipiMainDestination) -> Unit,
+) {
+    val colors = SkipiTheme.colors
+    SkipiSidebarNavigation(
+        selectedDestination = selected,
+        onSelect = onSelect,
+        colors = SkipiExpressiveNavigationColors(
+            surface = colors.surface,
+            accent = colors.accent,
+            onAccent = colors.onAccent,
+            onSurfaceVariant = colors.onSurfaceVariant,
+            isDark = colors.isDark,
+        ),
     )
 }
 

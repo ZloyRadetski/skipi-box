@@ -52,6 +52,8 @@ data class AppearanceSettingsState(
     val showTunnelIpOnHome: Boolean = true,
     val maskTunnelIpOnHome: Boolean = false,
     val showConnectionLogOnHome: Boolean = true,
+    /** 0 the floating bar at the bottom, 1 the sidebar; only a host with a sidebar offers the choice. */
+    val navigationStyle: Int = 0,
 )
 
 enum class AppearanceColorTarget {

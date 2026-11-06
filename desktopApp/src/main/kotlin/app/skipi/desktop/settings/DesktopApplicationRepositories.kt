@@ -582,6 +582,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     showTunnelIpOnHome = showTunnelIp,
     maskTunnelIpOnHome = maskTunnelIp,
     showConnectionLogOnHome = showConnectionLog,
+    navigationStyle = navigationStyle,
 )
 
 internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
@@ -650,6 +651,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         showTunnelIp = state.showTunnelIpOnHome,
         maskTunnelIp = state.maskTunnelIpOnHome,
         showConnectionLog = state.showConnectionLogOnHome,
+        navigationStyle = state.navigationStyle.coerceIn(0, 1),
         customColorsEnabled = state.enableCustomColors,
         customAccentColor = state.customAccentColor,
         customBackgroundColor = state.customBackgroundColor,

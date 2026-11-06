@@ -1486,6 +1486,10 @@
     <string name="settings_local_proxy_socks_credentials">Логин SOCKS5</string>
     <string name="settings_local_proxy_http_credentials">Логин HTTP</string>
     <string name="settings_local_proxy_http_auth_system_note">Системный прокси не умеет передавать логин, поэтому браузеры будут его запрашивать, пока авторизация HTTP включена</string>
+    <string name="settings_navigation_style">Стиль навигации</string>
+    <string name="settings_navigation_style_summary">Нижняя панель как на телефоне или боковая панель слева</string>
+    <string name="settings_navigation_style_bottom">Нижняя панель</string>
+    <string name="settings_navigation_style_sidebar">Боковая панель</string>
     <string name="settings_connection_log_show_on_home">Журнал на главном экране</string>
     <string name="settings_connection_log_show_on_home_summary">Показывать на главном экране соединения, ошибки и сообщения приложения</string>
     <!-- Таблица правил маршрутизации: все правила профиля в одной таблице (широкие окна) -->

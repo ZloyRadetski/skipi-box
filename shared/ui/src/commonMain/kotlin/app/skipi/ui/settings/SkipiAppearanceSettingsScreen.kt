@@ -94,6 +94,8 @@ data class AppearanceSettingsCapabilities(
     val bottomBarSize: Boolean = true,
     /** Only a host that can list the tunnel's connections on Home offers the switch. */
     val connectionLog: Boolean = false,
+    /** Only a desktop host can place the navigation in a sidebar. */
+    val navigationStyle: Boolean = false,
 )
 
 @Composable
@@ -624,7 +626,21 @@ fun SkipiAppearanceSettingsScreen(
                 item(key = "appearance_layout") {
                     SmallTitle(text = stringResource(Res.string.settings_header_layout))
                     SkipiSettingsSectionCard {
-                        if (capabilities.bottomBarSize) {
+                        if (capabilities.navigationStyle) {
+                            AppOverlayDropdownPreference(
+                                title = stringResource(Res.string.settings_navigation_style),
+                                summary = stringResource(Res.string.settings_navigation_style_summary),
+                                items = listOf(
+                                    stringResource(Res.string.settings_navigation_style_bottom),
+                                    stringResource(Res.string.settings_navigation_style_sidebar),
+                                ),
+                                selectedIndex = appState.navigationStyle.coerceIn(0, 1),
+                                onSelectedIndexChange = { style ->
+                                    updateAppState { it.copy(navigationStyle = style) }
+                                },
+                            )
+                        }
+                        if (capabilities.bottomBarSize && appState.navigationStyle == 0) {
                             AppOverlayDropdownPreference(
                                 title = stringResource(Res.string.settings_bottom_bar_size),
                                 summary = stringResource(Res.string.settings_bottom_bar_size_summary),

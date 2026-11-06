@@ -1,0 +1,130 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package app.skipi.ui.navigation
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+/** Width of the desktop sidebar: wide enough for an icon and the longest label. */
+private val SidebarWidth = 196.dp
+
+/**
+ * The desktop navigation: a full-height column at the window's left edge with one row per destination
+ * (icon and label), the selected one on an accent pill and the one under the pointer lightly tinted.
+ * It takes the same items and colors as [SkipiExpressiveNavigationBar], so a host switches between the two.
+ */
+@Composable
+fun SkipiSidebarNavigation(
+    selectedDestination: SkipiMainDestination,
+    onSelect: (SkipiMainDestination) -> Unit,
+    colors: SkipiExpressiveNavigationColors,
+    modifier: Modifier = Modifier,
+    items: List<SkipiNavigationItem> = defaultSkipiNavigationItems(),
+) {
+    val borderColor = if (colors.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+    Row(modifier = modifier.fillMaxHeight()) {
+        Column(
+            modifier = Modifier
+                .width(SidebarWidth)
+                .fillMaxHeight()
+                .background(colors.surface)
+                .padding(horizontal = 12.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "SKIPI",
+                color = colors.accent,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
+                modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 16.dp),
+            )
+            items.forEach { item ->
+                SidebarItem(
+                    item = item,
+                    selected = item.destination == selectedDestination,
+                    colors = colors,
+                    onClick = { onSelect(item.destination) },
+                )
+            }
+            Spacer(Modifier.weight(1f))
+        }
+        Box(Modifier.width(1.dp).fillMaxHeight().background(borderColor))
+    }
+}
+
+@Composable
+private fun SidebarItem(
+    item: SkipiNavigationItem,
+    selected: Boolean,
+    colors: SkipiExpressiveNavigationColors,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    val background by animateColorAsState(
+        when {
+            selected -> colors.accent.copy(alpha = if (colors.isDark) 0.30f else 0.16f)
+            hovered -> colors.onSurfaceVariant.copy(alpha = 0.10f)
+            else -> Color.Transparent
+        },
+    )
+    val content by animateColorAsState(if (selected) colors.accent else colors.onSurfaceVariant)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .hoverable(interaction)
+            .selectable(
+                selected = selected,
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Tab,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(imageVector = item.icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
+        Text(
+            text = item.label,
+            color = content,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1,
+        )
+    }
+}
