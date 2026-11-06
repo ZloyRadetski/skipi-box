@@ -33,6 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -1189,7 +1193,18 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             onSelect = { currentSection = it },
                         )
                     },
-                ) { contentPadding ->
+                ) { scaffoldPadding ->
+                    // Without the bottom bar nothing lifts the page off the window's lower edge, so the lists ran into it.
+                    val contentPadding = if (sidebar) {
+                        PaddingValues(
+                            start = scaffoldPadding.calculateStartPadding(LayoutDirection.Ltr),
+                            top = scaffoldPadding.calculateTopPadding(),
+                            end = scaffoldPadding.calculateEndPadding(LayoutDirection.Ltr),
+                            bottom = scaffoldPadding.calculateBottomPadding() + 16.dp,
+                        )
+                    } else {
+                        scaffoldPadding
+                    }
                     val desktopBackupHost = remember {
                         object : DesktopBackupHost {
                             override fun currentUserData() = DesktopUserData(
