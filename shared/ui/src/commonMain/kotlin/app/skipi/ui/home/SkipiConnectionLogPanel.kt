@@ -65,6 +65,9 @@ private const val ConnectionLogProblemMaxLines = 3
  * Thin live lines of what the tunnel carries and what the app and Xray log. The rows outlive the
  * session, so a failed start stays readable. The pointer over it holds the list still, so a line can
  * be read, copied or scrolled back to with the wheel; leaving returns to the newest line.
+ *
+ * The newest line is the bottom one: the rows arrive newest first and the list is laid out in
+ * reverse, so item 0 is the bottom edge and following the log is just staying at item 0.
  */
 @Composable
 fun SkipiConnectionLogPanel(
@@ -82,12 +85,13 @@ fun SkipiConnectionLogPanel(
 
     LaunchedEffect(hovered) {
         onHeldChange(hovered)
-        if (!hovered) listState.scrollToItem(0)
+        if (!hovered) listState.requestScrollToItem(0)
     }
-    // A keyed list stays on the row it showed; an unheld log follows the newest one instead.
+    // A keyed list stays on the row it showed; an unheld log follows the newest one instead. The
+    // request is not a scroll of its own, so a wheel animation still running cannot cancel it.
     val newestRowId = state.rows.firstOrNull()?.id
     LaunchedEffect(newestRowId) {
-        if (!state.held) listState.scrollToItem(0)
+        if (!state.held) listState.requestScrollToItem(0)
     }
     LaunchedEffect(copied) {
         if (copied) {
@@ -107,7 +111,7 @@ fun SkipiConnectionLogPanel(
                         style = SkipiTheme.typography.labelSmall,
                     )
                 } else {
-                    LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
+                    LazyColumn(state = listState, reverseLayout = true, modifier = Modifier.weight(1f)) {
                         items(state.rows, key = ConnectionLogLine::id) { row ->
                             val onClick = {
                                 onCopy(row.copyText)

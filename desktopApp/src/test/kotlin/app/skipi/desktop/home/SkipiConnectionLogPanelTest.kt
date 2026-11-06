@@ -123,8 +123,8 @@ class SkipiConnectionLogPanelTest {
 
     @Test
     fun clickingARowCopiesThatRowsAddress() = withHarness(Harness(ConnectionLogState().append(entries(3)))) {
-        // Rows are 20 px under a 20 px title, newest first: host3, host2, host1.
-        click(50f)
+        // Rows are 20 px, the newest at the bottom of a 220 px panel: host1, host2, host3 downwards.
+        click(190f)
 
         assertEquals(listOf("host2.test"), copied)
     }
@@ -132,7 +132,7 @@ class SkipiConnectionLogPanelTest {
     @Test
     fun theWheelScrollsBackThroughOlderRows() = withHarness(Harness(ConnectionLogState().append(entries(60)))) {
         hover()
-        wheel(5f)
+        wheel(-5f)
 
         assertTrue(list.firstVisibleItemIndex > 0, "the list did not move")
     }
@@ -142,7 +142,7 @@ class SkipiConnectionLogPanelTest {
         withHarness(Harness(ConnectionLogState().append(entries(60)))) {
             hover()
             assertEquals(true, held.lastOrNull())
-            wheel(5f)
+            wheel(-5f)
 
             leave()
 
@@ -151,7 +151,7 @@ class SkipiConnectionLogPanelTest {
         }
 
     @Test
-    fun aNewConnectionAppearsAtTheTopOfAnUnheldList() =
+    fun aNewConnectionAppearsAtTheBottomOfAnUnheldList() =
         withHarness(Harness(ConnectionLogState().append(entries(30)))) {
             state = state.append(entries(1, firstSeq = 31))
             settle()
@@ -164,7 +164,7 @@ class SkipiConnectionLogPanelTest {
     fun aHeldListDoesNotMoveWhenRowsAreReleasedInBehindIt() =
         withHarness(Harness(ConnectionLogState().append(entries(60)).hold())) {
             hover()
-            wheel(5f)
+            wheel(-5f)
             val position = list.firstVisibleItemIndex
             assertTrue(position > 0)
 
@@ -189,7 +189,7 @@ class SkipiConnectionLogPanelTest {
             ),
         ),
     ) {
-        click(30f)
+        click(210f)
 
         assertEquals(listOf("Tunnel: Connection failed\njava.io.IOException: refused"), copied)
     }
