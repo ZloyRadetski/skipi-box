@@ -97,6 +97,8 @@ data class AppearanceSettingsCapabilities(
     val connectionLog: Boolean = false,
     /** The floating power button belongs to the phone layout; a desktop host hides its switch. */
     val floatingPowerButton: Boolean = true,
+    /** Swiping between subscriptions is a touch gesture; a desktop host hides its switch. */
+    val subscriptionSwipe: Boolean = true,
     /** Only a desktop host can place the navigation in a sidebar. */
     val navigationStyle: Boolean = false,
 )
@@ -718,14 +720,16 @@ fun SkipiAppearanceSettingsScreen(
                                 updateAppState { it.copy(proxyServerListLayout = layout) }
                             },
                         )
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_enable_subscription_swipe),
-                            summary = stringResource(Res.string.settings_enable_subscription_swipe_summary),
-                            checked = appState.enableSubscriptionSwipe,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
-                            },
-                        )
+                        if (capabilities.subscriptionSwipe) {
+                            SwitchPreference(
+                                title = stringResource(Res.string.settings_enable_subscription_swipe),
+                                summary = stringResource(Res.string.settings_enable_subscription_swipe_summary),
+                                checked = appState.enableSubscriptionSwipe,
+                                onCheckedChange = { enabled ->
+                                    updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
+                                },
+                            )
+                        }
                         SwitchPreference(
                             title = stringResource(Res.string.settings_tunnel_memory_show_on_home),
                             summary = stringResource(Res.string.settings_tunnel_memory_show_on_home_summary),

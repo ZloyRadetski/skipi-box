@@ -360,7 +360,8 @@ internal fun DesktopProxyHome(
         isStatusError = isStatusError,
         sortMode = sortMode,
         searchEnabled = desktopSettings.showServerSearch,
-        subscriptionSwipeEnabled = desktopSettings.enableSubscriptionSwipe,
+        // Swiping between subscriptions is a touch gesture: a value saved or restored earlier must not act on a desktop.
+        subscriptionSwipeEnabled = false,
         displayOptions = desktopSettings.toProxyHomeDisplayOptions(),
         availableActions = availableActions,
         availableImportSources = setOf(

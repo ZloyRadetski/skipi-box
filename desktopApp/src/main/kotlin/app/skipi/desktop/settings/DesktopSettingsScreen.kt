@@ -523,6 +523,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     connectionLog = true,
     navigationStyle = true,
     floatingPowerButton = false,
+    subscriptionSwipe = false,
 )
 
 @Composable

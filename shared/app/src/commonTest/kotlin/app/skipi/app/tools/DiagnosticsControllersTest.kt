@@ -9,6 +9,7 @@ import features.tools.dnsleak.DnsLeakTestOutcome
 import features.tools.dnsleak.DnsLeakVerdict
 import features.tools.ipinfo.IpInfoState
 import features.tools.speedtest.SpeedTestPhase
+import features.tools.speedtest.SpeedTestResult
 import features.tools.speedtest.SpeedTestState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -44,6 +45,24 @@ class DiagnosticsControllersTest {
 
         controller.stop()
         assertEquals(SpeedTestState(), controller.state.value)
+    }
+
+    @Test
+    fun aFinishedSpeedTestKeepsItsResultWhenTheScreenStopsIt() = runTest {
+        val finished = SpeedTestState(
+            phase = SpeedTestPhase.Finished,
+            result = SpeedTestResult(pingMs = 20.0, jitterMs = 2.0, downloadMbps = 90.0, uploadMbps = 40.0),
+        )
+        val controller = SpeedTestController(
+            scope = TestScope(StandardTestDispatcher(testScheduler)),
+            runnerFactory = { onState -> SpeedTestJob { onState(finished); null } },
+        )
+
+        controller.start()
+        testScheduler.runCurrent()
+        controller.stop()
+
+        assertEquals(finished, controller.state.value)
     }
 
     @Test

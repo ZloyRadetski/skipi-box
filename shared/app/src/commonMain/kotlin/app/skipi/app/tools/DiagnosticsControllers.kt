@@ -42,12 +42,16 @@ class SpeedTestController(
         job = scope.launch { speedTest.run() }
     }
 
+    /** Cancels a run in progress and clears it; a finished or failed run keeps its last state on screen. */
     fun stop() {
         job?.cancel()
         job = null
-        mutableState.value = SpeedTestState()
+        if (mutableState.value.phase.isRunning()) mutableState.value = SpeedTestState()
     }
 }
+
+private fun SpeedTestPhase.isRunning() =
+    this == SpeedTestPhase.Ping || this == SpeedTestPhase.Download || this == SpeedTestPhase.Upload
 
 data class DnsLeakTestUiState(
     val running: Boolean = false,
