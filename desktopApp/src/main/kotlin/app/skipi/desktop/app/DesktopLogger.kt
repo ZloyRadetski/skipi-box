@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ConnectionLogLevel
 import app.skipi.app.home.ConnectionLogMessage
 import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.connectionLogLevel
@@ -68,14 +69,18 @@ object DesktopLogger {
         val line = "[$timestamp] [$level] [$tag] $message$stackTrace\n"
         println(line.trimEnd())
         val cause = throwable?.let { error -> ": ${error.message ?: error}" }.orEmpty()
-        DesktopAppLogFeed.add(
-            ConnectionLogMessage(
-                timeMillis = System.currentTimeMillis(),
-                level = connectionLogLevel(level),
-                source = ConnectionLogSource.App,
-                text = "$tag: $message$cause$stackTrace",
-            ),
-        )
+        // The Home log is for what needs attention; the routine lines stay in skipi.log.
+        val logLevel = connectionLogLevel(level)
+        if (logLevel >= ConnectionLogLevel.Warning) {
+            DesktopAppLogFeed.add(
+                ConnectionLogMessage(
+                    timeMillis = System.currentTimeMillis(),
+                    level = logLevel,
+                    source = ConnectionLogSource.App,
+                    text = "$tag: $message$cause$stackTrace",
+                ),
+            )
+        }
 
         try {
             val dir = logDirectory()
