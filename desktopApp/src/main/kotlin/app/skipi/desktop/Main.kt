@@ -1172,6 +1172,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 if (sidebar) DesktopSidebarNavigation(
                     selected = currentSection,
                     onSelect = { currentSection = it },
+                    expanded = !desktopSettings.sidebarCollapsed,
+                    onExpandedChange = { expanded ->
+                        val next = desktopSettings.copy(sidebarCollapsed = !expanded)
+                        desktopSettings = next
+                        subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
+                    },
                 )
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                 Scaffold(
@@ -1785,11 +1791,15 @@ private fun DesktopBottomNavigation(
 private fun DesktopSidebarNavigation(
     selected: SkipiMainDestination,
     onSelect: (SkipiMainDestination) -> Unit,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val colors = SkipiTheme.colors
     SkipiSidebarNavigation(
         selectedDestination = selected,
         onSelect = onSelect,
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
         colors = SkipiExpressiveNavigationColors(
             surface = colors.surface,
             accent = colors.accent,

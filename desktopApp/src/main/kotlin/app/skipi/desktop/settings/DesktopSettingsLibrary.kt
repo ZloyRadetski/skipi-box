@@ -86,6 +86,8 @@ data class DesktopAppSettings(
     val showConnectionLog: Boolean = true,
     /** 0 the floating bar at the bottom (as on phones), 1 the sidebar. */
     val navigationStyle: Int = 0,
+    /** The sidebar shows only its icons. */
+    val sidebarCollapsed: Boolean = false,
     val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
