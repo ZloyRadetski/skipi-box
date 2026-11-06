@@ -72,10 +72,6 @@ fun SkipiSidebarNavigation(
                 .padding(horizontal = 12.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (onExpandedChange != null) {
-                SidebarToggle(expanded = expanded, colors = colors, onClick = { onExpandedChange(!expanded) })
-                Spacer(Modifier.height(8.dp))
-            }
             items.forEach { item ->
                 SidebarItem(
                     item = item,
@@ -84,6 +80,10 @@ fun SkipiSidebarNavigation(
                     colors = colors,
                     onClick = { onSelect(item.destination) },
                 )
+            }
+            Spacer(Modifier.weight(1f))
+            if (onExpandedChange != null) {
+                SidebarToggle(expanded = expanded, colors = colors, onClick = { onExpandedChange(!expanded) })
             }
         }
         Box(Modifier.width(1.dp).fillMaxHeight().background(borderColor))
