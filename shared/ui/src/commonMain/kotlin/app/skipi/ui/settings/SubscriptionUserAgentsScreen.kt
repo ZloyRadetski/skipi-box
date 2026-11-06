@@ -3,6 +3,7 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
@@ -63,9 +64,7 @@ fun SubscriptionUserAgentsScreen(
         topBar = {
             val title = stringResource(Res.string.settings_user_agents)
             val navigateBack: @Composable () -> Unit = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
-                }
+                BackNavigationIcon(onClick = onBack)
             }
             SmallTopAppBar(
                 title = title,

@@ -5,6 +5,7 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.animation.AnimatedVisibility
@@ -94,6 +95,8 @@ data class AppearanceSettingsCapabilities(
     val bottomBarSize: Boolean = true,
     /** Only a host that can list the tunnel's connections on Home offers the switch. */
     val connectionLog: Boolean = false,
+    /** The floating power button belongs to the phone layout; a desktop host hides its switch. */
+    val floatingPowerButton: Boolean = true,
     /** Only a desktop host can place the navigation in a sidebar. */
     val navigationStyle: Boolean = false,
 )
@@ -222,9 +225,7 @@ fun SkipiAppearanceSettingsScreen(
         topBar = {
             val title = stringResource(Res.string.settings_category_appearance)
             val navigationIcon: @Composable () -> Unit = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
-                }
+                BackNavigationIcon(onClick = onBack)
             }
             SmallTopAppBar(
                 title = title,
@@ -687,14 +688,16 @@ fun SkipiAppearanceSettingsScreen(
                                         },
                                     )
                                 }
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_classic_show_floating_power_button),
-                                    summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
-                                    checked = appState.classicShowFloatingPowerButton,
-                                    onCheckedChange = { enabled ->
-                                        updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
-                                    },
-                                )
+                                if (capabilities.floatingPowerButton) {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_classic_show_floating_power_button),
+                                        summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
+                                        checked = appState.classicShowFloatingPowerButton,
+                                        onCheckedChange = { enabled ->
+                                            updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
+                                        },
+                                    )
+                                }
                             }
                         }
                         SwitchPreference(

@@ -123,7 +123,8 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
         else -> ProxyHomeConnectionMode.Classic
     },
     pinConnectionPanel = pinConnectionPanelOnHome,
-    classicFloatingPowerButton = classicShowFloatingPowerButton,
+    // The floating button is a phone layout feature: a value saved or restored earlier must not show it here.
+    classicFloatingPowerButton = false,
     classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 1),
     requestedColumns = proxyServerListColumns,
     showAllGroup = enableAllProxyGroup,

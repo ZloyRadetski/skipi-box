@@ -522,6 +522,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     bottomBarSize = true,
     connectionLog = true,
     navigationStyle = true,
+    floatingPowerButton = false,
 )
 
 @Composable
