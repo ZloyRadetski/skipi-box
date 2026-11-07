@@ -96,12 +96,11 @@ internal fun desktopTrayWindowStep(
 }
 
 /**
- * What the panel's click and menu do. The status notifier is started before the window exists, so its
- * callbacks are bound here and pointed at the live window and tunnel state on every composition.
+ * What the panel's click does. The status notifier is started before the window exists, so its callback is
+ * bound here and pointed at the live window state on every composition.
  */
 internal class DesktopTrayActions {
     @Volatile var onToggleWindow: () -> Unit = {}
-    @Volatile var onContextMenu: (x: Int, y: Int) -> Unit = { _, _ -> }
 }
 
 /** A StatusNotifier tray exists on Linux only; Windows and macOS use the AWT tray. */
@@ -110,9 +109,8 @@ internal fun desktopStatusNotifierOrNull(actions: DesktopTrayActions): DesktopSt
     return DesktopStatusNotifier(
         busAddress = null,
         onActivate = { actions.onToggleWindow() },
-        onContextMenu = { x, y -> actions.onContextMenu(x, y) },
     ).also { notifier ->
-        notifier.start(DesktopStatusNotifierState(tooltip = "SKIPI", icons = emptyList()))
+        notifier.start(DesktopStatusNotifierState(tooltip = "SKIPI", menu = emptyList(), icons = emptyList()))
     }
 }
 
@@ -143,7 +141,8 @@ internal fun trayPixmaps(
  * where there is none and the desktop still has an XEmbed one, and hosts with neither get no icon.
  *
  * The AWT icon is the platform's, but its context menu is not: the AWT popup menu is drawn by the OS toolkit
- * (Win32 on Windows), so a right click opens a Compose menu in [theme] instead and it looks the same everywhere.
+ * (Win32 on Windows), so a right click opens a Compose menu in [theme] instead. A StatusNotifier panel draws the
+ * same entries itself from a dbusmenu, because it never asks the app to draw a menu.
  */
 @Composable
 internal fun ApplicationScope.DesktopTrayIcon(
@@ -161,29 +160,23 @@ internal fun ApplicationScope.DesktopTrayIcon(
     onExit: () -> Unit,
     theme: @Composable (@Composable () -> Unit) -> Unit,
 ) {
-    // The menu is the same Compose window wherever the click comes from: the AWT icon or a StatusNotifier panel.
-    var menuClick by remember { mutableStateOf<Point?>(null) }
-    SideEffect {
-        actions.onToggleWindow = onToggleWindow
-        actions.onContextMenu = { x, y -> menuClick = Point(x, y) }
-    }
+    SideEffect { actions.onToggleWindow = onToggleWindow }
     val logo = painterResource(Res.drawable.ic_skipi_logo)
     if (statusNotifier != null) {
         val density = LocalDensity.current
         val icons = remember(logo, connected, density) { trayPixmaps(logo, connected, density) }
-        LaunchedEffect(statusNotifier, icons, tooltip) {
+        // The panel keeps the actions of the entries it was last given, so they read the live ones when clicked.
+        val toggleTunnel by rememberUpdatedState(onToggleTunnel)
+        val exit by rememberUpdatedState(onExit)
+        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel) {
+            val menu = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, { toggleTunnel() }, { exit() })
             withContext(Dispatchers.IO) {
-                statusNotifier.update(DesktopStatusNotifierState(tooltip, icons))
+                statusNotifier.update(DesktopStatusNotifierState(tooltip, menu, icons))
             }
         }
     }
-    menuClick?.let { click ->
-        val entries = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, onToggleTunnel, onExit)
-        key(click) {
-            DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
-        }
-    }
     if (statusNotifierShown || !isTraySupported) return
+    var menuClick by remember { mutableStateOf<Point?>(null) }
     val image = remember(logo, connected) { renderTrayImage(logo, connected) }
     val toggleWindow by rememberUpdatedState(onToggleWindow)
     val trayIcon = remember { TrayIcon(image).apply { isImageAutoSize = true } }
@@ -208,6 +201,12 @@ internal fun ApplicationScope.DesktopTrayIcon(
             trayIcon.removeActionListener(action)
             trayIcon.removeMouseListener(mouse)
             if (added) SystemTray.getSystemTray().remove(trayIcon)
+        }
+    }
+    menuClick?.let { click ->
+        val entries = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, onToggleTunnel, onExit)
+        key(click) {
+            DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
         }
     }
 }
