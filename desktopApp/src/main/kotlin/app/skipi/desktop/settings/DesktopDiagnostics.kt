@@ -20,6 +20,7 @@ import app.skipi.app.tools.SpeedTestConnectionFactory
 import app.skipi.app.tools.SpeedTestController
 import app.skipi.app.tools.SpeedTestJob
 import app.skipi.app.tools.SpeedTestRunner
+import app.skipi.app.tools.SystemPathDnsTxtResolver
 import app.skipi.app.tools.socksSpeedTestConnectionFactory
 import app.skipi.ui.settings.SkipiSettingsDestination
 import kotlinx.coroutines.CoroutineScope
@@ -95,14 +96,21 @@ internal class DesktopDiagnostics(
         }
     }
 
-    val dnsLeak = DnsLeakTestController(scope) {
+    val dnsLeak = DnsLeakTestController(scope) { onStage ->
         val route = desktopDiagnosticsRoute(activeOptions())
+        val systemServers = systemDnsServers()
         DnsLeakTestRunner(
-            systemDnsServers = systemDnsServers(),
-            dns = dnsResolverFor(route),
+            systemDnsServers = systemServers,
+            // The OS reaches its own resolvers directly, so they are asked that way; only the
+            // public ones travel through the tunnel's proxy.
+            dns = SystemPathDnsTxtResolver(
+                systemServers = systemServers,
+                systemPath = dnsResolverFor(DiagnosticsRoute.Direct),
+                otherwise = dnsResolverFor(route),
+            ),
             http = httpClientFor(route),
             hasVpnNetwork = route is DiagnosticsRoute.Socks,
-        ).run()
+        ).run(onStage)
     }
 
     val ipInfo = IpInfoController(scope) { fetchIpInfo() }

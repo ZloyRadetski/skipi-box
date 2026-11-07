@@ -4,6 +4,7 @@
 package app.skipi.app.tools
 
 import features.tools.dnsleak.DnsLeakFailureKind
+import features.tools.dnsleak.DnsLeakStage
 import features.tools.dnsleak.DnsLeakTestFailure
 import features.tools.dnsleak.DnsLeakTestOutcome
 import features.tools.ipinfo.IpInfoData
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -55,43 +57,50 @@ private fun SpeedTestPhase.isRunning() =
 
 data class DnsLeakTestUiState(
     val running: Boolean = false,
+    val stage: DnsLeakStage? = null,
     val outcome: DnsLeakTestOutcome? = null,
     val failed: Boolean = false,
     val failedReason: String? = null,
     val failureKind: DnsLeakFailureKind? = null,
 )
 
+/**
+ * One run at a time. A new run drops the previous outcome and failure, so the screen never shows
+ * stale results next to a fresh status, and only the run that is current may touch the state: a
+ * cancelled run winding down after a restart must not flip the new one back to idle.
+ */
 class DnsLeakTestController(
     private val scope: CoroutineScope,
-    private val probe: suspend () -> DnsLeakTestOutcome,
+    private val probe: suspend (onStage: (DnsLeakStage) -> Unit) -> DnsLeakTestOutcome,
 ) {
     private val mutableState = MutableStateFlow(DnsLeakTestUiState())
     val state: StateFlow<DnsLeakTestUiState> = mutableState.asStateFlow()
     private var job: Job? = null
+    private var currentRun = 0
 
     fun start() {
-        stop()
-        // A new run clears the previous failure; the last outcome stays visible until replaced.
-        mutableState.value = mutableState.value.copy(
-            running = true,
-            failed = false,
-            failedReason = null,
-            failureKind = null,
-        )
+        job?.cancel()
+        val run = ++currentRun
+        mutableState.value = DnsLeakTestUiState(running = true, stage = DnsLeakStage.Probing)
+        fun update(transform: (DnsLeakTestUiState) -> DnsLeakTestUiState) {
+            if (run == currentRun) mutableState.update(transform)
+        }
         job = scope.launch {
             try {
-                val outcome = probe()
-                mutableState.value = mutableState.value.copy(outcome = outcome)
+                val outcome = probe { stage -> update { it.copy(stage = stage) } }
+                update { it.copy(outcome = outcome) }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                mutableState.value = mutableState.value.copy(
-                    failed = true,
-                    failedReason = error.message,
-                    failureKind = (error as? DnsLeakTestFailure)?.kind,
-                )
+                update {
+                    it.copy(
+                        failed = true,
+                        failedReason = error.message,
+                        failureKind = (error as? DnsLeakTestFailure)?.kind,
+                    )
+                }
             } finally {
-                mutableState.value = mutableState.value.copy(running = false)
+                update { it.copy(running = false, stage = null) }
             }
         }
     }
@@ -99,7 +108,8 @@ class DnsLeakTestController(
     fun stop() {
         job?.cancel()
         job = null
-        mutableState.value = mutableState.value.copy(running = false)
+        currentRun++
+        mutableState.update { it.copy(running = false, stage = null) }
     }
 }
 

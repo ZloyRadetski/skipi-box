@@ -120,6 +120,39 @@ class DnsLeakAnalysisTest {
         assertFalse(failure.message!!.contains("VPN"))
     }
 
+    @Test
+    fun egressIpFromTxt_accepts_ipv6_records() {
+        val records = listOf("edns0-client-subnet 2a02:6b8::/56", "2a00:1450:4025:402:0:0:0:8a")
+        assertEquals("2a00:1450:4025:402:0:0:0:8a", DnsLeakAnalysis.egressIpFromTxt(records))
+        assertEquals("2a00:1450:4001:81b::200e", DnsLeakAnalysis.egressIpFromTxt(listOf(" 2a00:1450:4001:81b::200e ")))
+        assertNull(DnsLeakAnalysis.egressIpFromTxt(listOf("not an address", "zz::1", "1:2:3")))
+    }
+
+    @Test
+    fun clientSubnetFromTxt_accepts_ipv6_base_address() {
+        val records = listOf("2a00:1450:4025:402::8a", "edns0-client-subnet 2a02:6b8:b010::/56")
+        assertEquals("2a02:6b8:b010::", DnsLeakAnalysis.clientSubnetFromTxt(records))
+        assertNull(DnsLeakAnalysis.clientSubnetFromTxt(listOf("edns0-client-subnet garbage/24")))
+    }
+
+    @Test
+    fun status_is_decided_per_resolver_against_the_exit() {
+        val exit = DnsLeakExitInfo("203.0.113.9", "DE", "Germany", "Hetzner", 24940)
+        assertEquals(DnsLeakResolverStatus.Safe, DnsLeakAnalysis.status(makeResolver("de"), exit))
+        assertEquals(DnsLeakResolverStatus.Leak, DnsLeakAnalysis.status(makeResolver("RU"), exit))
+        assertEquals(DnsLeakResolverStatus.Unknown, DnsLeakAnalysis.status(makeResolver(""), exit))
+        assertEquals(DnsLeakResolverStatus.Unknown, DnsLeakAnalysis.status(makeResolver("RU"), null))
+        assertEquals(DnsLeakResolverStatus.Unknown, DnsLeakAnalysis.status(makeResolver("RU"), exit.copy(countryCode = "")))
+    }
+
+    @Test
+    fun verdict_agrees_with_the_per_resolver_statuses() {
+        val exit = DnsLeakExitInfo("203.0.113.9", "DE", "Germany", "", null)
+        val mixed = listOf(makeResolver("DE"), makeResolver("RU"), makeResolver(""))
+        assertEquals(DnsLeakVerdict.SuspectedLeak, DnsLeakAnalysis.verdict(mixed, exit))
+        assertEquals(DnsLeakVerdict.NoLeak, DnsLeakAnalysis.verdict(listOf(makeResolver("DE"), makeResolver("")), exit))
+    }
+
     private fun makeResolver(countryCode: String): DnsLeakResolver {
         return DnsLeakResolver(
             server = "1.1.1.1",

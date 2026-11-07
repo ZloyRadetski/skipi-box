@@ -4,6 +4,7 @@
 package app.skipi.app.tools
 
 import features.tools.dnsleak.DnsLeakFailureKind
+import features.tools.dnsleak.DnsLeakStage
 import features.tools.dnsleak.DnsLeakTestFailure
 import features.tools.dnsleak.DnsLeakTestOutcome
 import features.tools.dnsleak.DnsLeakVerdict
@@ -96,6 +97,86 @@ class DiagnosticsControllersTest {
 
         assertFalse(controller.state.value.running)
         assertFalse(controller.state.value.failed)
+    }
+
+    @Test
+    fun dnsLeakControllerExposesTheStageOfTheRunInProgress() = runTest {
+        val scope = TestScope(StandardTestDispatcher(testScheduler))
+        val gate = CompletableDeferred<Unit>()
+        val controller = DnsLeakTestController(scope) { onStage ->
+            onStage(DnsLeakStage.Locating)
+            gate.await()
+            DnsLeakTestOutcome(emptyList(), DnsLeakVerdict.Unknown)
+        }
+
+        assertNull(controller.state.value.stage)
+        controller.start()
+        assertEquals(DnsLeakStage.Probing, controller.state.value.stage)
+        testScheduler.runCurrent()
+        assertEquals(DnsLeakStage.Locating, controller.state.value.stage)
+
+        gate.complete(Unit)
+        testScheduler.runCurrent()
+        assertNull(controller.state.value.stage)
+        assertFalse(controller.state.value.running)
+    }
+
+    @Test
+    fun dnsLeakNewRunDropsThePreviousOutcomeAndFailure() = runTest {
+        val scope = TestScope(StandardTestDispatcher(testScheduler))
+        val outcome = DnsLeakTestOutcome(emptyList(), DnsLeakVerdict.NoLeak)
+        var fail = false
+        val gate = CompletableDeferred<Unit>()
+        val controller = DnsLeakTestController(scope) {
+            if (fail) {
+                gate.await()
+                throw DnsLeakTestFailure(hasVpnNetwork = false)
+            }
+            outcome
+        }
+        controller.start()
+        testScheduler.runCurrent()
+        assertEquals(outcome, controller.state.value.outcome)
+
+        fail = true
+        controller.start()
+        assertNull(controller.state.value.outcome)
+        testScheduler.runCurrent()
+        gate.complete(Unit)
+        testScheduler.runCurrent()
+        assertTrue(controller.state.value.failed)
+        assertNull(controller.state.value.outcome)
+
+        fail = false
+        controller.start()
+        assertFalse(controller.state.value.failed)
+        assertNull(controller.state.value.failureKind)
+    }
+
+    @Test
+    fun dnsLeakRestartIsNotUndoneByTheCancelledRunWindingDown() = runTest {
+        val scope = TestScope(StandardTestDispatcher(testScheduler))
+        val controller = DnsLeakTestController(scope) { awaitCancellation() }
+        controller.start()
+        testScheduler.runCurrent()
+
+        controller.start()
+        testScheduler.runCurrent()
+
+        assertTrue(controller.state.value.running)
+        assertEquals(DnsLeakStage.Probing, controller.state.value.stage)
+    }
+
+    @Test
+    fun dnsLeakStopClearsTheStage() = runTest {
+        val scope = TestScope(StandardTestDispatcher(testScheduler))
+        val controller = DnsLeakTestController(scope) { awaitCancellation() }
+        controller.start()
+        testScheduler.runCurrent()
+
+        controller.stop()
+
+        assertNull(controller.state.value.stage)
     }
 
     @Test

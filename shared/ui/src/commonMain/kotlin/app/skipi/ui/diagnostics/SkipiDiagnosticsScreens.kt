@@ -49,19 +49,11 @@ import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.layout.pageScrollModifiers
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copy_field
-import app.skipi.ui.resources.tools_dns_failed
-import app.skipi.ui.resources.tools_dns_failed_detail
-import app.skipi.ui.resources.tools_dns_idle
 import app.skipi.ui.resources.tools_dns_leak_title
-import app.skipi.ui.resources.tools_dns_no_leak
-import app.skipi.ui.resources.tools_dns_reason_no_internet
-import app.skipi.ui.resources.tools_dns_reason_tunnel_not_passing
 import app.skipi.ui.resources.tools_dns_description
-import app.skipi.ui.resources.tools_dns_resolver_entry
-import app.skipi.ui.resources.tools_dns_resolvers_title
-import app.skipi.ui.resources.tools_dns_running
-import app.skipi.ui.resources.tools_dns_suspected_leak
-import app.skipi.ui.resources.tools_dns_unknown
+import app.skipi.ui.resources.tools_dns_group_public
+import app.skipi.ui.resources.tools_dns_group_system
+import app.skipi.ui.resources.tools_dns_group_unanswered
 import app.skipi.ui.resources.tools_ip_info_asn
 import app.skipi.ui.resources.tools_ip_info_capital
 import app.skipi.ui.resources.tools_ip_info_card_location
@@ -92,8 +84,6 @@ import app.skipi.ui.resources.tools_ip_info_tunnel_vpn
 import app.skipi.ui.resources.tools_ip_info_utc_offset
 import app.skipi.ui.resources.tools_speed_test_title
 import app.skipi.ui.text.themedFontWeight
-import features.tools.dnsleak.DnsLeakFailureKind
-import features.tools.dnsleak.DnsLeakVerdict
 import features.tools.ipinfo.IpInfoData
 import features.tools.ipinfo.IpInfoState
 import features.tools.speedtest.SpeedTestPhase
@@ -212,7 +202,7 @@ fun SkipiDnsLeakTestScreen(
     onStart: () -> Unit,
     onStop: () -> Unit,
 ) {
-    val outcome = state.outcome
+    val model = dnsLeakScreenModel(state)
     DiagnosticsPageScaffold(
         title = stringResource(Res.string.tools_dns_leak_title),
         padding = padding,
@@ -224,56 +214,40 @@ fun SkipiDnsLeakTestScreen(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
         ) {
-            item(key = "description") {
-                SmallTitle(text = stringResource(Res.string.tools_dns_resolvers_title))
-                val statusText = stringResource(
-                    when {
-                        state.failed -> Res.string.tools_dns_failed
-                        state.running -> Res.string.tools_dns_running
-                        outcome == null -> Res.string.tools_dns_idle
-                        outcome.verdict == DnsLeakVerdict.NoLeak -> Res.string.tools_dns_no_leak
-                        outcome.verdict == DnsLeakVerdict.SuspectedLeak -> Res.string.tools_dns_suspected_leak
-                        else -> Res.string.tools_dns_unknown
-                    },
-                )
-                val failureDetail = when (state.failureKind) {
-                    DnsLeakFailureKind.NoInternet -> stringResource(Res.string.tools_dns_reason_no_internet)
-                    DnsLeakFailureKind.TunnelNotPassing -> stringResource(Res.string.tools_dns_reason_tunnel_not_passing)
-                    null -> state.failedReason?.let { stringResource(Res.string.tools_dns_failed_detail, it) }
-                }
-                SkipiDnsLeakSummary(
-                    description = stringResource(Res.string.tools_dns_description),
-                    statusText = statusText,
-                    detailText = failureDetail,
-                    isError = state.failed || outcome?.verdict == DnsLeakVerdict.SuspectedLeak,
-                    isRunning = state.running,
-                    exitIp = outcome?.exit?.ip,
-                    exitCountry = outcome?.exit?.let { it.countryName.ifBlank { it.countryCode } },
-                    onStart = onStart,
-                    onStop = onStop,
-                )
+            item(key = "hero") {
+                SkipiDnsLeakHero(model = model, onStart = onStart, onStop = onStop, modifier = Modifier.padding(top = 12.dp))
             }
-            outcome?.resolvers?.forEachIndexed { index, resolver ->
-                item(key = "resolver_$index") {
-                    SmallTitle(text = stringResource(Res.string.tools_dns_resolver_entry, index + 1))
-                    SkipiDnsLeakResolverCard(
-                        DnsLeakResolverUi(
-                            server = resolver.server,
-                            isSystemServer = resolver.isSystemServer,
-                            observedIp = resolver.observedIp,
-                            clientSubnetIp = resolver.clientSubnetIp,
-                            observedCountryCode = resolver.observedCountryCode,
-                            isp = resolver.isp,
-                        ),
-                    )
+            if (model.systemRows.isNotEmpty()) {
+                item(key = "system") {
+                    SmallTitle(text = stringResource(Res.string.tools_dns_group_system))
+                    SkipiDnsLeakRows(model.systemRows)
                 }
+            }
+            if (model.publicRows.isNotEmpty()) {
+                item(key = "public") {
+                    SmallTitle(text = stringResource(Res.string.tools_dns_group_public))
+                    SkipiDnsLeakRows(model.publicRows)
+                }
+            }
+            if (model.unanswered.isNotEmpty()) {
+                item(key = "unanswered") {
+                    SmallTitle(text = stringResource(Res.string.tools_dns_group_unanswered))
+                    SkipiDnsLeakUnanswered(model.unanswered)
+                }
+            }
+            item(key = "description") {
+                Text(
+                    stringResource(Res.string.tools_dns_description),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 16.dp),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
             }
         }
     }
 }
 
-/** Full-screen IP details of the active connection; the first visit starts a lookup. */
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 fun SkipiIpInfoScreen(
     state: IpInfoState,

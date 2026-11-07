@@ -67,18 +67,42 @@ object DnsLeakAnalysis {
             ?.takeIf { it.success }
     }
 
-    /** Picks the resolver-chain egress IP out of the echo TXT records. */
+    /** Picks the resolver-chain egress IP (IPv4 or IPv6) out of the echo TXT records. */
     fun egressIpFromTxt(records: List<String>): String? {
-        return records.firstOrNull { record -> ipv4Regex.matches(record.trim()) }
+        return records.firstOrNull { record -> isIpAddress(record.trim()) }
             ?.trim()
     }
 
-    /** Extracts the base address from an "edns0-client-subnet a.b.c.d/n" record. */
+    /** Extracts the base address from an "edns0-client-subnet <address>/n" record. */
     fun clientSubnetFromTxt(records: List<String>): String? {
         val record = records.firstOrNull { it.startsWith(EdnsClientSubnetPrefix) } ?: return null
         val value = record.substringAfter(EdnsClientSubnetPrefix).trim()
         val address = value.substringBefore("/").trim()
-        return address.takeIf { ipv4Regex.matches(it) }
+        return address.takeIf(::isIpAddress)
+    }
+
+    private fun isIpAddress(value: String): Boolean = ipv4Regex.matches(value) || isIpv6Address(value)
+
+    private fun isIpv6Address(value: String): Boolean {
+        if (value.count { it == ':' } < 2) return false
+        if (value.any { it !in '0'..'9' && it !in 'a'..'f' && it !in 'A'..'F' && it != ':' }) return false
+        val compression = value.indexOf("::")
+        if (compression != value.lastIndexOf("::")) return false
+        fun groups(part: String): List<String>? =
+            if (part.isEmpty()) emptyList() else part.split(':').takeIf { list -> list.all { it.length in 1..4 } }
+        if (compression < 0) return groups(value)?.size == 8
+        val head = groups(value.substring(0, compression)) ?: return false
+        val tail = groups(value.substring(compression + 2)) ?: return false
+        return head.size + tail.size <= 7
+    }
+
+    /** Whether this one path exposes the same country as the HTTP exit; paths that cannot be compared stay unknown. */
+    fun status(resolver: DnsLeakResolver, exit: DnsLeakExitInfo?): DnsLeakResolverStatus {
+        return when (DnsLeakResultPolicy.verdict(listOf(resolver.observedCountryCode), exit?.countryCode)) {
+            DnsLeakVerdict.NoLeak -> DnsLeakResolverStatus.Safe
+            DnsLeakVerdict.SuspectedLeak -> DnsLeakResolverStatus.Leak
+            DnsLeakVerdict.Unknown -> DnsLeakResolverStatus.Unknown
+        }
     }
 
     fun resolvers(
@@ -111,7 +135,12 @@ object DnsLeakAnalysis {
         resolvers: List<DnsLeakResolver>,
         exit: DnsLeakExitInfo?,
     ): DnsLeakVerdict {
-        return DnsLeakResultPolicy.verdict(resolvers.map { it.observedCountryCode }, exit?.countryCode)
+        val statuses = resolvers.map { status(it, exit) }
+        return when {
+            DnsLeakResolverStatus.Leak in statuses -> DnsLeakVerdict.SuspectedLeak
+            DnsLeakResolverStatus.Safe in statuses -> DnsLeakVerdict.NoLeak
+            else -> DnsLeakVerdict.Unknown
+        }
     }
 
     /**
@@ -137,11 +166,18 @@ data class DnsProbeResult(
     val clientSubnetIp: String?,
 )
 
+/** A tested DNS server that never produced a usable answer. */
+data class DnsLeakSilentServer(
+    val server: String,
+    val isSystemServer: Boolean,
+)
+
 /** Result of one completed DNS leak test run. */
 data class DnsLeakTestOutcome(
     val resolvers: List<DnsLeakResolver>,
     val verdict: DnsLeakVerdict,
     val exit: DnsLeakExitInfo? = null,
+    val silentServers: List<DnsLeakSilentServer> = emptyList(),
 )
 
 /**

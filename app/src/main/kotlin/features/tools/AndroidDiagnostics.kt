@@ -64,7 +64,7 @@ internal object AndroidDiagnostics {
     fun dnsLeak(context: Context): DnsLeakTestController = dnsLeakController ?: synchronized(this) {
         dnsLeakController ?: run {
             val appContext = context.applicationContext
-            DnsLeakTestController(scope) {
+            DnsLeakTestController(scope) { onStage ->
                 val environment = AndroidDiagnosticsEnvironment.current(appContext)
                 try {
                     DnsLeakTestRunner(
@@ -73,7 +73,7 @@ internal object AndroidDiagnostics {
                         dns = JvmDnsTxtResolver(environment.route, environment.binding, fallbackToDirect = true),
                         http = environment.httpClient,
                         hasVpnNetwork = environment.hasTunnel,
-                    ).run()
+                    ).run(onStage)
                 } catch (error: Throwable) {
                     AppLog.warn(LogTag, "DNS leak test failed", error)
                     throw error

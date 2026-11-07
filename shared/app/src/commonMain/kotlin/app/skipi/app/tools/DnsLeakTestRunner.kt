@@ -5,6 +5,8 @@ package app.skipi.app.tools
 
 import features.tools.dnsleak.DnsLeakAnalysis
 import features.tools.dnsleak.DnsLeakExitInfo
+import features.tools.dnsleak.DnsLeakSilentServer
+import features.tools.dnsleak.DnsLeakStage
 import features.tools.dnsleak.DnsLeakTestFailure
 import features.tools.dnsleak.DnsLeakTestOutcome
 import features.tools.dnsleak.DnsProbeResult
@@ -40,24 +42,35 @@ class DnsLeakTestRunner(
     private val hasVpnNetwork: Boolean,
     private val config: DnsLeakTestConfig = DnsLeakTestConfig(),
 ) {
-    suspend fun run(onProgress: (Int) -> Unit = {}): DnsLeakTestOutcome {
-        onProgress(0)
-        val exit = fetchExitInfo()
-        onProgress(1)
-        val probes = probeServers()
-        onProgress(2)
+    /**
+     * Asks the exit and every DNS server at the same time, then locates each distinct address once.
+     * [onStage] is told which of the two phases is under way.
+     */
+    suspend fun run(onStage: (DnsLeakStage) -> Unit = {}): DnsLeakTestOutcome = coroutineScope {
+        onStage(DnsLeakStage.Probing)
+        val exitIpLookup = async { fetchExitIp() }
+        val probeRun = async { probeServers() }
+        val exitIp = exitIpLookup.await()
+        val probes = probeRun.await()
+
+        onStage(DnsLeakStage.Locating)
         val geoByIp = fetchGeoData(
-            probes.mapNotNull { probe -> probe.clientSubnetIp ?: probe.egressIp.takeIf(String::isNotBlank) }.distinct(),
+            (probes.mapNotNull(::observedIp) + listOfNotNull(exitIp)).distinct(),
         )
-        onProgress(3)
+        val exit = exitIp?.let { ip -> exitInfo(ip, geoByIp[ip]) }
         val resolvers = DnsLeakAnalysis.resolvers(probes, geoByIp)
         if (exit == null && resolvers.isEmpty()) throw DnsLeakTestFailure(hasVpnNetwork)
-        return DnsLeakTestOutcome(
+        DnsLeakTestOutcome(
             resolvers = resolvers,
             verdict = DnsLeakAnalysis.verdict(resolvers, exit),
             exit = exit,
+            silentServers = probes.filter { observedIp(it) == null }
+                .map { DnsLeakSilentServer(it.server, it.isSystemServer) },
         )
     }
+
+    private fun observedIp(probe: DnsProbeResult): String? =
+        probe.clientSubnetIp ?: probe.egressIp.takeIf(String::isNotBlank)
 
     /** Probes every system and public resolver in parallel, retrying silent servers once. */
     private suspend fun probeServers(): List<DnsProbeResult> = coroutineScope {
@@ -78,21 +91,23 @@ class DnsLeakTestRunner(
         }.awaitAll()
     }
 
-    private suspend fun fetchExitInfo(): DnsLeakExitInfo? {
-        val ip = retrying(config.httpAttempts) { httpText(config.exitIpUrl)?.trim()?.takeIf(String::isNotBlank) }
-            ?: return null
-        val geo = retrying(config.httpAttempts) { httpText("${config.geoIpUrl}$ip")?.let(DnsLeakAnalysis::parseIpWhoIs) }
-        return DnsLeakExitInfo(
-            ip = ip,
-            countryCode = geo?.countryCode.orEmpty(),
-            countryName = geo?.country.orEmpty(),
-            isp = geo?.connection?.isp ?: geo?.connection?.org.orEmpty(),
-            asn = geo?.connection?.asn,
-        )
-    }
+    private suspend fun fetchExitIp(): String? =
+        retrying(config.httpAttempts) { httpText(config.exitIpUrl)?.trim()?.takeIf(String::isNotBlank) }
+
+    private fun exitInfo(ip: String, geo: IpWhoIsResponse?) = DnsLeakExitInfo(
+        ip = ip,
+        countryCode = geo?.countryCode.orEmpty(),
+        countryName = geo?.country.orEmpty(),
+        isp = geo?.connection?.isp ?: geo?.connection?.org.orEmpty(),
+        asn = geo?.connection?.asn,
+    )
 
     private suspend fun fetchGeoData(ips: List<String>): Map<String, IpWhoIsResponse> = coroutineScope {
-        ips.map { ip -> async { ip to httpText("${config.geoIpUrl}$ip")?.let(DnsLeakAnalysis::parseIpWhoIs) } }
+        ips.map { ip ->
+            async {
+                ip to retrying(config.httpAttempts) { httpText("${config.geoIpUrl}$ip")?.let(DnsLeakAnalysis::parseIpWhoIs) }
+            }
+        }
             .awaitAll()
             .mapNotNull { (ip, geo) -> geo?.let { ip to it } }
             .toMap()

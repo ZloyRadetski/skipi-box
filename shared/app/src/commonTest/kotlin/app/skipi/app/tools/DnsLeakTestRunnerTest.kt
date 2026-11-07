@@ -4,8 +4,11 @@
 package app.skipi.app.tools
 
 import features.tools.dnsleak.DnsLeakFailureKind
+import features.tools.dnsleak.DnsLeakSilentServer
+import features.tools.dnsleak.DnsLeakStage
 import features.tools.dnsleak.DnsLeakTestFailure
 import features.tools.dnsleak.DnsLeakVerdict
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -88,6 +91,101 @@ class DnsLeakTestRunnerTest {
 
         assertEquals(DnsLeakFailureKind.TunnelNotPassing, tunnel.kind)
         assertEquals(DnsLeakFailureKind.NoInternet, offline.kind)
+    }
+
+    @Test
+    fun serversThatNeverAnsweredAreReportedInsteadOfDropped() = runTest {
+        val dns = FakeDns(mapOf("8.8.8.8" to listOf("203.0.113.9")))
+        val http = FakeHttp(
+            mapOf(
+                "https://api.ipify.org" to "203.0.113.9",
+                "https://ipwho.is/203.0.113.9" to geo("203.0.113.9", "DE", "Germany", "Hetzner"),
+            ),
+        )
+
+        val outcome = DnsLeakTestRunner(listOf("192.168.1.1"), dns, http, true, fastRetry).run()
+
+        assertEquals(listOf("8.8.8.8"), outcome.resolvers.map { it.server })
+        assertEquals(
+            listOf(
+                DnsLeakSilentServer("192.168.1.1", isSystemServer = true),
+                DnsLeakSilentServer("1.1.1.1", isSystemServer = false),
+                DnsLeakSilentServer("9.9.9.9", isSystemServer = false),
+            ),
+            outcome.silentServers,
+        )
+    }
+
+    @Test
+    fun ipv6EchoAnswersAreLocatedLikeIpv4() = runTest {
+        val v6 = "2a00:1450:4001:81b::200e"
+        val dns = FakeDns(mapOf("8.8.8.8" to listOf(v6)))
+        val http = FakeHttp(
+            mapOf(
+                "https://api.ipify.org" to "203.0.113.9",
+                "https://ipwho.is/203.0.113.9" to geo("203.0.113.9", "DE", "Germany", "Hetzner"),
+                "https://ipwho.is/$v6" to geo(v6, "DE", "Germany", "Google"),
+            ),
+        )
+
+        val outcome = DnsLeakTestRunner(emptyList(), dns, http, true, fastRetry).run()
+
+        assertEquals(v6, outcome.resolvers.single().observedIp)
+        assertEquals("Google", outcome.resolvers.single().isp)
+        assertEquals(DnsLeakVerdict.NoLeak, outcome.verdict)
+    }
+
+    @Test
+    fun everyAddressIsLocatedOnce() = runTest {
+        val dns = FakeDns(mapOf("8.8.8.8" to listOf("203.0.113.9"), "9.9.9.9" to listOf("203.0.113.9")))
+        val http = FakeHttp(
+            mapOf(
+                "https://api.ipify.org" to "203.0.113.9",
+                "https://ipwho.is/203.0.113.9" to geo("203.0.113.9", "DE", "Germany", "Hetzner"),
+            ),
+        )
+
+        DnsLeakTestRunner(emptyList(), dns, http, true, fastRetry).run()
+
+        assertEquals(1, http.requested.count { it == "https://ipwho.is/203.0.113.9" })
+    }
+
+    @Test
+    fun stagesAreReportedInOrder() = runTest {
+        val dns = FakeDns(mapOf("8.8.8.8" to listOf("203.0.113.9")))
+        val http = FakeHttp(
+            mapOf(
+                "https://api.ipify.org" to "203.0.113.9",
+                "https://ipwho.is/203.0.113.9" to geo("203.0.113.9", "DE", "Germany", "Hetzner"),
+            ),
+        )
+        val stages = mutableListOf<DnsLeakStage>()
+
+        DnsLeakTestRunner(emptyList(), dns, http, true, fastRetry).run { stages += it }
+
+        assertEquals(listOf(DnsLeakStage.Probing, DnsLeakStage.Locating), stages)
+    }
+
+    @Test
+    fun exitLookupDoesNotWaitForTheResolverProbes() = runTest {
+        val dnsStarted = CompletableDeferred<Unit>()
+        val dns = object : DnsTxtResolver {
+            override suspend fun queryTxt(server: String, domain: String): List<String>? {
+                dnsStarted.complete(Unit)
+                return null
+            }
+        }
+        val http = object : DiagnosticsHttpClient {
+            override suspend fun getText(url: String, accept: String): String? {
+                // The exit lookup only proceeds once the probes are already under way.
+                if (url == "https://api.ipify.org") dnsStarted.await()
+                return if (url == "https://api.ipify.org") "203.0.113.9" else null
+            }
+        }
+
+        val outcome = DnsLeakTestRunner(emptyList(), dns, http, true, fastRetry).run()
+
+        assertEquals("203.0.113.9", outcome.exit?.ip)
     }
 
     @Test

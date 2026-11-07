@@ -7,6 +7,12 @@ enum class DnsLeakVerdict { NoLeak, SuspectedLeak, Unknown }
 
 enum class DnsLeakFailureKind { NoInternet, TunnelNotPassing }
 
+/** What one answering DNS path says on its own: it matches the exit network, differs from it, or cannot be judged. */
+enum class DnsLeakResolverStatus { Safe, Leak, Unknown }
+
+/** The phase of a test run in progress: asking the servers and the exit, then locating the networks they exposed. */
+enum class DnsLeakStage { Probing, Locating }
+
 /** Platform-neutral verdict and failure classification for DNS probe results. */
 object DnsLeakResultPolicy {
     fun verdict(resolverCountries: List<String>, exitCountry: String?): DnsLeakVerdict {
