@@ -20,4 +20,37 @@ class DesktopHomeLeftColumnSettingTest {
             dir.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun theCollapsedSidebarAndItsStyleSurviveARestart() {
+        val dir = Files.createTempDirectory("skipi-sidebar")
+        val path = dir.resolve("settings.json")
+        try {
+            DesktopSettingsLibraries.save(
+                path,
+                DesktopAppSettings(navigationStyle = 1, sidebarCollapsed = true),
+            ).getOrThrow()
+
+            val loaded = DesktopSettingsLibraries.load(path).getOrThrow()
+            assertEquals(1, loaded.navigationStyle)
+            assertEquals(true, loaded.sidebarCollapsed)
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun theSidebarIsTheDefaultAndAChosenBottomBarIsKept() {
+        assertEquals(1, DesktopAppSettings().navigationStyle)
+
+        val dir = Files.createTempDirectory("skipi-nav-default")
+        val path = dir.resolve("settings.json")
+        try {
+            DesktopSettingsLibraries.save(path, DesktopAppSettings(navigationStyle = 0)).getOrThrow()
+
+            assertEquals(0, DesktopSettingsLibraries.load(path).getOrThrow().navigationStyle)
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
 }

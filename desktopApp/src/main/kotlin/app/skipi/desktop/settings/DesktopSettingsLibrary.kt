@@ -84,8 +84,8 @@ data class DesktopAppSettings(
     val showTunnelIp: Boolean = true,
     /** Desktop-only, like the TUN switch: not part of the Android-shaped backup. */
     val showConnectionLog: Boolean = true,
-    /** 0 the floating bar at the bottom (as on phones), 1 the sidebar. */
-    val navigationStyle: Int = 0,
+    /** 0 the floating bar at the bottom (as on phones), 1 the sidebar, which is the Desktop default. */
+    val navigationStyle: Int = 1,
     /** The sidebar shows only its icons. */
     val sidebarCollapsed: Boolean = false,
     /** How much wider than its base the Home's left column is, in dp, as the user dragged its divider. */
