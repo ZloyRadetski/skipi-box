@@ -80,8 +80,7 @@ internal fun desktopTrayWindowStep(
  */
 internal class DesktopTrayActions {
     @Volatile var onToggleWindow: () -> Unit = {}
-    @Volatile var onToggleTunnel: () -> Unit = {}
-    @Volatile var onExit: () -> Unit = {}
+    @Volatile var onContextMenu: (x: Int, y: Int) -> Unit = { _, _ -> }
 }
 
 /** A StatusNotifier tray exists on Linux only; Windows and macOS use the AWT tray. */
@@ -90,10 +89,9 @@ internal fun desktopStatusNotifierOrNull(actions: DesktopTrayActions): DesktopSt
     return DesktopStatusNotifier(
         busAddress = null,
         onActivate = { actions.onToggleWindow() },
-        onToggleTunnel = { actions.onToggleTunnel() },
-        onExit = { actions.onExit() },
+        onContextMenu = { x, y -> actions.onContextMenu(x, y) },
     ).also { notifier ->
-        notifier.start(DesktopStatusNotifierState(tooltip = "SKIPI", toggleLabel = "", exitLabel = "", icons = emptyList()))
+        notifier.start(DesktopStatusNotifierState(tooltip = "SKIPI", icons = emptyList()))
     }
 }
 
@@ -140,24 +138,34 @@ internal fun ApplicationScope.DesktopTrayIcon(
     onExit: () -> Unit,
     theme: @Composable (@Composable () -> Unit) -> Unit,
 ) {
+    // The menu is the same Compose window wherever the click comes from: the AWT icon or a StatusNotifier panel.
+    var menuClick by remember { mutableStateOf<Point?>(null) }
     SideEffect {
         actions.onToggleWindow = onToggleWindow
-        actions.onToggleTunnel = onToggleTunnel
-        actions.onExit = onExit
+        actions.onContextMenu = { x, y -> menuClick = Point(x, y) }
     }
     val logo = painterResource(Res.drawable.ic_skipi_logo)
     if (statusNotifier != null) {
         val density = LocalDensity.current
         val icons = remember(logo, connected, density) { trayPixmaps(logo, connected, density) }
-        LaunchedEffect(statusNotifier, icons, tooltip, toggleLabel, exitLabel) {
+        LaunchedEffect(statusNotifier, icons, tooltip) {
             withContext(Dispatchers.IO) {
-                statusNotifier.update(DesktopStatusNotifierState(tooltip, toggleLabel, exitLabel, icons))
+                statusNotifier.update(DesktopStatusNotifierState(tooltip, icons))
             }
+        }
+    }
+    menuClick?.let { click ->
+        val entries = listOf(
+            DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel),
+            DesktopTrayMenuEntry.Separator,
+            DesktopTrayMenuEntry.Action(exitLabel, onExit),
+        )
+        key(click) {
+            DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
         }
     }
     if (statusNotifierShown || !isTraySupported) return
     val image = remember(logo, connected) { renderTrayImage(logo, connected) }
-    var menuClick by remember { mutableStateOf<Point?>(null) }
     val toggleWindow by rememberUpdatedState(onToggleWindow)
     val trayIcon = remember { TrayIcon(image).apply { isImageAutoSize = true } }
     SideEffect {
@@ -181,16 +189,6 @@ internal fun ApplicationScope.DesktopTrayIcon(
             trayIcon.removeActionListener(action)
             trayIcon.removeMouseListener(mouse)
             if (added) SystemTray.getSystemTray().remove(trayIcon)
-        }
-    }
-    menuClick?.let { click ->
-        val entries = listOf(
-            DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel),
-            DesktopTrayMenuEntry.Separator,
-            DesktopTrayMenuEntry.Action(exitLabel, onExit),
-        )
-        key(click) {
-            DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
         }
     }
 }

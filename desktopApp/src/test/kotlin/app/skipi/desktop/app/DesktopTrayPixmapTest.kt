@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.Density
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -47,5 +48,15 @@ class DesktopTrayPixmapTest {
         assertEquals(0xFF, left ushr 24, "still opaque")
         assertTrue(red == green && green == blue, "grey, not orange: $red $green $blue")
         assertEquals(0, pixel(pixmap, 14, 8) ushr 24, "the transparent half stays transparent")
+    }
+
+    @Test
+    fun aPixmapIsSentAsBigEndianArgbBytes() {
+        val bytes = trayPixmapBytes(intArrayOf(0x80FF8040.toInt(), 0x00000000))
+
+        assertContentEquals(
+            byteArrayOf(0x80.toByte(), 0xFF.toByte(), 0x80.toByte(), 0x40, 0, 0, 0, 0),
+            bytes,
+        )
     }
 }

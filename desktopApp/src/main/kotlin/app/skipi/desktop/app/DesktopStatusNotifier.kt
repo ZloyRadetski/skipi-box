@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.freedesktop.dbus.DBusPath
 import org.freedesktop.dbus.Struct
-import org.freedesktop.dbus.Tuple
 import org.freedesktop.dbus.annotations.DBusInterfaceName
 import org.freedesktop.dbus.annotations.Position
 import org.freedesktop.dbus.connections.impl.DBusConnection
@@ -20,14 +19,11 @@ import org.freedesktop.dbus.interfaces.DBusInterface
 import org.freedesktop.dbus.interfaces.DBusSigHandler
 import org.freedesktop.dbus.interfaces.Properties
 import org.freedesktop.dbus.messages.DBusSignal
-import org.freedesktop.dbus.types.UInt32
 import org.freedesktop.dbus.types.Variant
 
-/** What the tray shows: the tooltip, the icon at a few sizes and the two menu labels. */
+/** What the tray shows: the tooltip and the icon at a few sizes. */
 internal data class DesktopStatusNotifierState(
     val tooltip: String,
-    val toggleLabel: String,
-    val exitLabel: String,
     val icons: List<DesktopTrayPixmap>,
 )
 
@@ -37,12 +33,15 @@ internal data class DesktopStatusNotifierState(
  *
  * [registered] is true while a watcher holds the item and a panel is attached to it, i.e. while the icon is
  * really on screen. It follows the watcher: a panel that starts after SKIPI, or restarts, gets the item.
+ *
+ * The item has no dbusmenu of its own: a panel draws a menu itself whenever one is exported, and it would look
+ * different in every panel. Without one it asks the item for its menu through ContextMenu, and the app draws
+ * the same Compose menu it draws on Windows and macOS.
  */
 internal class DesktopStatusNotifier(
     private val busAddress: String?,
     private val onActivate: () -> Unit,
-    private val onToggleTunnel: () -> Unit,
-    private val onExit: () -> Unit,
+    private val onContextMenu: (x: Int, y: Int) -> Unit,
 ) : AutoCloseable {
     private val lock = Any()
     private val shown = MutableStateFlow(false)
@@ -53,7 +52,6 @@ internal class DesktopStatusNotifier(
 
     @Volatile private var state: DesktopStatusNotifierState? = null
     private var connection: DBusConnection? = null
-    private var menu: DesktopStatusNotifierMenu? = null
     private var serviceName: String = ""
     private var registeredWith: String? = null
 
@@ -71,11 +69,8 @@ internal class DesktopStatusNotifier(
                     return
                 }
             val bus = DBusConnectionBuilder.forAddress(address).withShared(false).build()
-            val trayMenu = DesktopStatusNotifierMenu(initial.toggleLabel, initial.exitLabel, onToggleTunnel, onExit)
-            menu = trayMenu
             serviceName = "org.kde.StatusNotifierItem-${ProcessHandle.current().pid()}-1"
-            bus.exportObject(ItemPath, StatusNotifierItemObject({ state ?: initial }, onActivate))
-            bus.exportObject(MenuPath, DbusMenuObject(trayMenu))
+            bus.exportObject(ItemPath, StatusNotifierItemObject({ state ?: initial }, onActivate, onContextMenu))
             runCatching { bus.requestBusName(serviceName) }.onFailure { serviceName = bus.uniqueName }
             subscriptions += bus.addSigHandler(DBus.NameOwnerChanged::class.java, DBusSigHandler { change ->
                 if (change.name == WatcherName) evaluateLater()
@@ -101,10 +96,6 @@ internal class DesktopStatusNotifier(
         runCatching {
             if (previous.icons != next.icons) bus.sendMessage(StatusNotifierItemInterface.NewIcon(ItemPath))
             if (previous.tooltip != next.tooltip) bus.sendMessage(StatusNotifierItemInterface.NewToolTip(ItemPath))
-            val trayMenu = menu ?: return
-            if (trayMenu.setLabels(next.toggleLabel, next.exitLabel)) {
-                bus.sendMessage(DbusMenuInterface.LayoutUpdated(MenuPath, UInt32(trayMenu.revision.toLong()), 0))
-            }
         }.onFailure { DesktopLogger.warn("Tray", "Could not tell the panel about the new tray state", it) }
     }
 
@@ -118,7 +109,6 @@ internal class DesktopStatusNotifier(
         subscriptions.clear()
         runCatching { connection?.close() }
         connection = null
-        menu = null
         registeredWith = null
         shown.value = false
     }
@@ -163,7 +153,6 @@ internal class DesktopStatusNotifier(
         const val WatcherName = "org.kde.StatusNotifierWatcher"
         const val WatcherPath = "/StatusNotifierWatcher"
         const val ItemPath = "/StatusNotifierItem"
-        const val MenuPath = "/MenuBar"
     }
 }
 
@@ -243,6 +232,7 @@ private abstract class ReadOnlyProperties(private val interfaceName: String) : P
 private class StatusNotifierItemObject(
     private val state: () -> DesktopStatusNotifierState,
     private val onActivate: () -> Unit,
+    private val onContextMenu: (x: Int, y: Int) -> Unit,
 ) : ReadOnlyProperties("org.kde.StatusNotifierItem"), StatusNotifierItemInterface {
     private fun pixmaps() = state().icons.map { SniPixmap(it.width, it.height, trayPixmapBytes(it.argb)) }
 
@@ -255,7 +245,7 @@ private class StatusNotifierItemObject(
             "Status" to Variant("Active"),
             "WindowId" to Variant(0),
             "IconThemePath" to Variant(""),
-            "Menu" to Variant(DBusPath("/MenuBar")),
+            "Menu" to Variant(DBusPath("/NO_DBUSMENU")),
             "ItemIsMenu" to Variant(false),
             "IconName" to Variant(""),
             "IconPixmap" to Variant(pixmaps(), "a(iiay)"),
@@ -271,87 +261,11 @@ private class StatusNotifierItemObject(
     // A click arrives on a D-Bus thread; the window belongs to the UI thread.
     override fun Activate(x: Int, y: Int) = java.awt.EventQueue.invokeLater(onActivate)
 
-    // Panels ask the item to draw its own menu on ContextMenu only when it has none; ours is dbusmenu.
-    override fun ContextMenu(x: Int, y: Int) = Unit
+    // The panel asks for the menu here because the item exports none; the app draws it.
+    override fun ContextMenu(x: Int, y: Int) = java.awt.EventQueue.invokeLater { onContextMenu(x, y) }
     override fun SecondaryActivate(x: Int, y: Int) = Unit
     override fun Scroll(delta: Int, orientation: String) = Unit
 
     override fun isRemote() = false
     override fun getObjectPath() = "/StatusNotifierItem"
-}
-
-internal class DbusMenuNode(
-    @field:Position(0) @JvmField val id: Int,
-    @field:Position(1) @JvmField val properties: Map<String, Variant<*>>,
-    @field:Position(2) @JvmField val children: List<Variant<*>>,
-) : Struct()
-
-internal class DbusMenuItemProperties(
-    @field:Position(0) @JvmField val id: Int,
-    @field:Position(1) @JvmField val properties: Map<String, Variant<*>>,
-) : Struct()
-
-// dbus-java reads the types of a multi-value reply from the type arguments of its Tuple.
-internal class DbusMenuLayout<Revision, Root>(
-    @field:Position(0) @JvmField val revision: Revision,
-    @field:Position(1) @JvmField val root: Root,
-) : Tuple()
-
-@DBusInterfaceName("com.canonical.dbusmenu")
-internal interface DbusMenuInterface : DBusInterface {
-    fun GetLayout(parentId: Int, recursionDepth: Int, propertyNames: Array<String>): DbusMenuLayout<UInt32, DbusMenuNode>
-    fun GetGroupProperties(ids: IntArray, propertyNames: Array<String>): List<DbusMenuItemProperties>
-    fun GetProperty(id: Int, name: String): Variant<*>
-    fun Event(id: Int, eventId: String, data: Variant<*>, timestamp: UInt32)
-    fun AboutToShow(id: Int): Boolean
-
-
-    class LayoutUpdated(path: String, revision: UInt32, parent: Int) : DBusSignal(path, revision, parent)
-}
-
-private class DbusMenuObject(private val menu: DesktopStatusNotifierMenu) : ReadOnlyProperties("com.canonical.dbusmenu"), DbusMenuInterface {
-    override fun values(): Map<String, Variant<*>> = mapOf(
-        "Version" to Variant(UInt32(3)),
-        "TextDirection" to Variant("ltr"),
-        "Status" to Variant("normal"),
-        "IconThemePath" to Variant(emptyArray<String>()),
-    )
-
-    private fun propertiesOf(entry: DesktopStatusNotifierMenuEntry): Map<String, Variant<*>> =
-        if (entry.label == null) mapOf("type" to Variant("separator"))
-        else mapOf("label" to Variant(entry.label), "enabled" to Variant(true), "visible" to Variant(true))
-
-    override fun GetLayout(parentId: Int, recursionDepth: Int, propertyNames: Array<String>): DbusMenuLayout<UInt32, DbusMenuNode> {
-        val revision = UInt32(menu.revision.toLong())
-        val root = if (parentId == 0 && recursionDepth != 0) {
-            val children = menu.entries.map { entry ->
-                Variant(DbusMenuNode(entry.id, propertiesOf(entry), emptyList()), "(ia{sv}av)")
-            }
-            DbusMenuNode(0, mapOf("children-display" to Variant("submenu")), children)
-        } else if (parentId == 0) {
-            DbusMenuNode(0, mapOf("children-display" to Variant("submenu")), emptyList())
-        } else {
-            val entry = menu.entries.firstOrNull { it.id == parentId }
-            DbusMenuNode(parentId, entry?.let(::propertiesOf).orEmpty(), emptyList())
-        }
-        return DbusMenuLayout(revision, root)
-    }
-
-    override fun GetGroupProperties(ids: IntArray, propertyNames: Array<String>): List<DbusMenuItemProperties> {
-        val wanted = menu.entries.filter { ids.isEmpty() || it.id in ids }
-        return wanted.map { DbusMenuItemProperties(it.id, propertiesOf(it)) }
-    }
-
-    override fun GetProperty(id: Int, name: String): Variant<*> =
-        menu.entries.firstOrNull { it.id == id }?.let(::propertiesOf)?.get(name) ?: Variant("")
-
-    // Hovers, opens and closes are not clicks; only a click runs an entry, and on the UI thread.
-    override fun Event(id: Int, eventId: String, data: Variant<*>, timestamp: UInt32) {
-        if (eventId == "clicked") java.awt.EventQueue.invokeLater { menu.click(id) }
-    }
-
-    override fun AboutToShow(id: Int) = false
-
-    override fun isRemote() = false
-    override fun getObjectPath() = "/MenuBar"
 }

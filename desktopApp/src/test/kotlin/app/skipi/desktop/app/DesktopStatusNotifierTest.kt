@@ -23,8 +23,8 @@ import org.freedesktop.dbus.types.Variant
 class DesktopStatusNotifierTest {
     private val pixel = DesktopTrayPixmap(1, 1, intArrayOf(0x80FF8040.toInt()))
 
-    private fun state(tooltip: String = "SKIPI — Disconnected", toggle: String = "Connect") =
-        DesktopStatusNotifierState(tooltip = tooltip, toggleLabel = toggle, exitLabel = "Exit", icons = listOf(pixel))
+    private fun state(tooltip: String = "SKIPI — Disconnected") =
+        DesktopStatusNotifierState(tooltip = tooltip, icons = listOf(pixel))
 
     private class Calls {
         val activations = CopyOnWriteArrayList<String>()
@@ -33,12 +33,11 @@ class DesktopStatusNotifierTest {
     private fun notifier(address: String?, calls: Calls) = DesktopStatusNotifier(
         busAddress = address,
         onActivate = { calls.activations += "activate" },
-        onToggleTunnel = { calls.activations += "toggle" },
-        onExit = { calls.activations += "exit" },
+        onContextMenu = { x, y -> calls.activations += "menu $x,$y" },
     )
 
     @Test
-    fun theItemAndItsMenuAreReadableByAPanel() {
+    fun theItemIsReadableByAPanelAndExportsNoMenuOfItsOwn() {
         val bus = PrivateSessionBus.startOrNull() ?: return
         bus.use {
             val watcher = FakeWatcher(bus.address).also { it.start() }
@@ -54,18 +53,11 @@ class DesktopStatusNotifierTest {
                 assertEquals("""s "SKIPI"""", prop("Title"))
                 assertEquals("""s "ApplicationStatus"""", prop("Category"))
                 assertEquals("""s "Active"""", prop("Status"))
-                assertEquals("""o "/MenuBar"""", prop("Menu"))
+                assertEquals("""o "/NO_DBUSMENU"""", prop("Menu"))
                 assertEquals("b false", prop("ItemIsMenu"))
                 assertEquals("a(iiay) 1 1 1 4 128 255 128 64", prop("IconPixmap"))
                 assertEquals("""(sa(iiay)ss) "" 0 "SKIPI \342\200\224 Disconnected" """"", prop("ToolTip"))
 
-                val layout = busctl(
-                    bus.address, "call", service, "/MenuBar", "com.canonical.dbusmenu", "GetLayout", "iias", "0", "--", "-1", "0",
-                )
-                assertTrue(""""label" s "Connect"""" in layout, layout)
-                assertTrue(""""label" s "Exit"""" in layout, layout)
-                assertTrue(""""type" s "separator"""" in layout, layout)
-                assertTrue(""""children-display" s "submenu"""" in layout, layout)
             } finally {
                 notifier.close()
                 watcher.stop()
@@ -74,7 +66,7 @@ class DesktopStatusNotifierTest {
     }
 
     @Test
-    fun aClickAndTheMenuEntriesReachTheApp() {
+    fun aClickAndAContextMenuRequestReachTheApp() {
         val bus = PrivateSessionBus.startOrNull() ?: return
         bus.use {
             val watcher = FakeWatcher(bus.address).also { it.start() }
@@ -86,12 +78,10 @@ class DesktopStatusNotifierTest {
                 val service = watcher.registrations.single()
 
                 busctl(bus.address, "call", service, "/StatusNotifierItem", "org.kde.StatusNotifierItem", "Activate", "ii", "0", "0")
-                busctl(bus.address, "call", service, "/MenuBar", "com.canonical.dbusmenu", "Event", "isvu", "1", "clicked", "s", "", "0")
-                busctl(bus.address, "call", service, "/MenuBar", "com.canonical.dbusmenu", "Event", "isvu", "1", "hovered", "s", "", "0")
-                busctl(bus.address, "call", service, "/MenuBar", "com.canonical.dbusmenu", "Event", "isvu", "3", "clicked", "s", "", "0")
+                busctl(bus.address, "call", service, "/StatusNotifierItem", "org.kde.StatusNotifierItem", "ContextMenu", "ii", "40", "50")
 
-                assertTrue(eventually { calls.activations.size >= 3 }, calls.activations.toString())
-                assertEquals(listOf("activate", "toggle", "exit"), calls.activations.toList())
+                assertTrue(eventually { calls.activations.size >= 2 }, calls.activations.toString())
+                assertEquals(listOf("activate", "menu 40,50"), calls.activations.toList())
             } finally {
                 notifier.close()
                 watcher.stop()
@@ -100,7 +90,7 @@ class DesktopStatusNotifierTest {
     }
 
     @Test
-    fun anUpdateChangesTooltipIconAndLabelsAndTellsThePanel() {
+    fun anUpdateChangesTooltipAndIconAndTellsThePanel() {
         val bus = PrivateSessionBus.startOrNull() ?: return
         bus.use {
             val watcher = FakeWatcher(bus.address).also { it.start() }
@@ -112,7 +102,7 @@ class DesktopStatusNotifierTest {
                 val service = watcher.registrations.single()
 
                 val green = DesktopTrayPixmap(1, 1, intArrayOf(0xFF00FF00.toInt()))
-                notifier.update(state(tooltip = "SKIPI — Connected", toggle = "Disconnect").copy(icons = listOf(green)))
+                notifier.update(state(tooltip = "SKIPI — Connected").copy(icons = listOf(green)))
 
                 assertEquals(
                     """(sa(iiay)ss) "" 0 "SKIPI \342\200\224 Connected" """"",
@@ -122,9 +112,7 @@ class DesktopStatusNotifierTest {
                     "a(iiay) 1 1 1 4 255 0 255 0",
                     busctl(bus.address, "get-property", service, "/StatusNotifierItem", "org.kde.StatusNotifierItem", "IconPixmap"),
                 )
-                val layout = busctl(bus.address, "call", service, "/MenuBar", "com.canonical.dbusmenu", "GetLayout", "iias", "0", "--", "-1", "0")
-                assertTrue(""""label" s "Disconnect"""" in layout, layout)
-                assertTrue(monitor.sawAll("NewIcon", "NewToolTip", "LayoutUpdated"), monitor.lines.toString())
+                assertTrue(monitor.sawAll("NewIcon", "NewToolTip"), monitor.lines.toString())
             } finally {
                 monitor.close()
                 notifier.close()
@@ -146,7 +134,7 @@ class DesktopStatusNotifierTest {
 
                 notifier.update(state())
 
-                assertFalse(monitor.sawAny("NewIcon", "NewToolTip", "LayoutUpdated"), monitor.lines.toString())
+                assertFalse(monitor.sawAny("NewIcon", "NewToolTip"), monitor.lines.toString())
             } finally {
                 monitor.close()
                 notifier.close()
@@ -309,7 +297,6 @@ internal class SignalMonitor(address: String) : AutoCloseable {
     val lines = CopyOnWriteArrayList<String>()
     private val process = ProcessBuilder(
         "dbus-monitor", "--address", address, "type='signal',interface='org.kde.StatusNotifierItem'",
-        "type='signal',interface='com.canonical.dbusmenu'",
     ).redirectErrorStream(true).start()
     private val reader = Thread { process.inputStream.bufferedReader().forEachLine { lines += it } }.apply {
         isDaemon = true
