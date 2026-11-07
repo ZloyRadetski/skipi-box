@@ -53,7 +53,7 @@ interface ProxyServer<T : ProxyServer<T>> {
                 return server
             }
 
-            val url = Url(value)
+            val url = Url(value.moveHysteriaPortListToQuery())
             val server = when (url.protocol.name) {
                 ProxyServerConstants.PROTOCOL_HTTP -> HTTP().parse(url)
                 ProxyServerConstants.PROTOCOL_SOCKS,
