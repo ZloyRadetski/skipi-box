@@ -169,11 +169,15 @@ compose.desktop {
         // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
         // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
         if (isLinuxHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
-        // The UI and its services use ~40 MB of Java heap, but G1 is allowed a quarter of RAM and keeps whatever
-        // a burst made it commit. Cap it, run a GC when idle and give back what stays free (a 200 MB burst: 852 -> 13 MB).
+        // The UI and its services use ~40 MB of Java heap. G1 spends ~65 MB of native memory on its own bookkeeping
+        // however small the heap is (the serial collector: 0.2 MB, ~100 MB less resident in all), so use the serial
+        // one and cap the heap. It keeps what a burst made it commit until a full collection, so the app runs one
+        // once a minute while a lot is free (DesktopHeapTrim); without ShrinkHeapInSteps that single collection
+        // gives all of it back (a 200 MB burst: 225 -> 7 MB).
         jvmArgs += listOf(
             "-Xmx512m",
-            "-XX:G1PeriodicGCInterval=60000",
+            "-XX:+UseSerialGC",
+            "-XX:-ShrinkHeapInSteps",
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
         )

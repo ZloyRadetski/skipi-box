@@ -166,6 +166,7 @@ fun main(args: Array<String>) {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String>) = application {
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
+    LaunchedEffect(Unit) { runDesktopHeapTrim() }
     val coreController = remember { DesktopCoreController() }
     // Load the Core library while the window opens instead of during the first Connect.
     LaunchedEffect(coreController) {
