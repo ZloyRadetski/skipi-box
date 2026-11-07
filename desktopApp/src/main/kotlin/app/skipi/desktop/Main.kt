@@ -1697,6 +1697,15 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     Unit
                                 }
                             },
+                            onHomeLeftColumnExtraChange = { extraDp ->
+                                subscriptionScope.launch {
+                                    homeSortSaveMutex.withLock {
+                                        val updated = desktopSettings.copy(homeLeftColumnExtraDp = extraDp)
+                                        withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) }
+                                            .onSuccess { desktopSettings = updated }
+                                    }
+                                }
+                            },
                             onHomeSortModeChange = { mode ->
                                 subscriptionScope.launch {
                                     homeSortSaveMutex.withLock {

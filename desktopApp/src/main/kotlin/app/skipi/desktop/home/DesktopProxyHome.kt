@@ -171,6 +171,7 @@ internal fun DesktopProxyHome(
     onMoveGroup: suspend (Int, Int) -> Unit,
     onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     onHomeSortModeChange: (ProxyHomeSortMode) -> Unit = {},
+    onHomeLeftColumnExtraChange: (Float) -> Unit = {},
 ) {
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
@@ -619,6 +620,8 @@ internal fun DesktopProxyHome(
                 floatingNavigationBottomInset = contentPadding.calculateBottomPadding(),
                 topContentPadding = DesktopProxyHomeTopContentPadding,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                leftColumnExtra = androidx.compose.ui.unit.Dp(desktopSettings.homeLeftColumnExtraDp),
+                onLeftColumnExtraChange = { extra -> onHomeLeftColumnExtraChange(extra.value) },
                 wideSidePanel = connectionLog?.let { log ->
                     { panelModifier ->
                         val logState by log.state.collectAsState()

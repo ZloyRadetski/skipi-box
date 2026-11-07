@@ -45,6 +45,9 @@ private val SidebarWidth = 196.dp
 /** Width of the collapsed sidebar: the icons only. */
 private val CollapsedSidebarWidth = 68.dp
 
+/** The width from which the labels start to fade in while the sidebar opens: past the icon and its padding. */
+private val LabelFadeStart = 110.dp
+
 /**
  * The desktop navigation: a full-height column at the window's left edge with one row per destination
  * (icon and label), the selected one on an accent pill and the one under the pointer lightly tinted.
@@ -62,6 +65,13 @@ fun SkipiSidebarNavigation(
 ) {
     val width by animateDpAsState(if (expanded) SidebarWidth else CollapsedSidebarWidth)
     val borderColor = if (colors.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+    // The labels follow the animated width, not the target: they fade in as the sidebar opens and are gone
+    // as soon as it starts to close, so they are never squeezed into a half-open column.
+    val labelAlpha = if (expanded) {
+        ((width - LabelFadeStart) / (SidebarWidth - LabelFadeStart)).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
     Row(modifier = modifier.fillMaxHeight()) {
         Column(
             modifier = Modifier
@@ -76,7 +86,7 @@ fun SkipiSidebarNavigation(
                 SidebarItem(
                     item = item,
                     selected = item.destination == selectedDestination,
-                    expanded = expanded,
+                    labelAlpha = labelAlpha,
                     colors = colors,
                     onClick = { onSelect(item.destination) },
                 )
@@ -94,7 +104,7 @@ fun SkipiSidebarNavigation(
 private fun SidebarItem(
     item: SkipiNavigationItem,
     selected: Boolean,
-    expanded: Boolean,
+    labelAlpha: Float,
     colors: SkipiExpressiveNavigationColors,
     onClick: () -> Unit,
 ) {
@@ -127,10 +137,10 @@ private fun SidebarItem(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(imageVector = item.icon, contentDescription = item.label, tint = content, modifier = Modifier.size(22.dp))
-        if (expanded) {
+        if (labelAlpha > 0f) {
             Text(
                 text = item.label,
-                color = content,
+                color = content.copy(alpha = content.alpha * labelAlpha),
                 fontSize = 14.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 maxLines = 1,

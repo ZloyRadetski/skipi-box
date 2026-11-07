@@ -241,6 +241,8 @@ fun ProxyHomeScreen(
     topContentPadding: Dp? = 40.dp,
     containerColor: Color = SkipiTheme.colors.background,
     wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
+    leftColumnExtra: Dp = 0.dp,
+    onLeftColumnExtraChange: (Dp) -> Unit = {},
 ) {
     val state by store.uiState.collectAsState()
 
@@ -253,6 +255,8 @@ fun ProxyHomeScreen(
         topContentPadding = topContentPadding,
         containerColor = containerColor,
         wideSidePanel = wideSidePanel,
+        leftColumnExtra = leftColumnExtra,
+        onLeftColumnExtraChange = onLeftColumnExtraChange,
     )
 }
 
@@ -270,6 +274,9 @@ fun ProxyHomeScreenContent(
     topContentPadding: Dp? = 40.dp,
     containerColor: Color = SkipiTheme.colors.background,
     wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
+    /** How much wider than its base the wide Home's left column starts; the host saves what [onLeftColumnExtraChange] reports. */
+    leftColumnExtra: Dp = 0.dp,
+    onLeftColumnExtraChange: (Dp) -> Unit = {},
 ) {
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
@@ -609,7 +616,8 @@ fun ProxyHomeScreenContent(
                 } else {
                     // The left column starts as wide as the button needs; dragging the divider widens it.
                     // Read only while measuring, so a drag relayouts the row and never recomposes the screen.
-                    val leftColumnExtra = remember { mutableStateOf(0.dp) }
+                    val leftColumnExtraState = remember { mutableStateOf(leftColumnExtra) }
+                    val latestOnLeftColumnExtraChange by rememberUpdatedState(onLeftColumnExtraChange)
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     val leftColumnBase = maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false))
                     val leftColumnMax = maxOf(leftColumnBase, this@BoxWithConstraints.maxWidth * 0.6f)
@@ -618,7 +626,7 @@ fun ProxyHomeScreenContent(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .layout { measurable, constraints ->
-                                    val width = (leftColumnBase + leftColumnExtra.value)
+                                    val width = (leftColumnBase + leftColumnExtraState.value)
                                         .coerceIn(leftColumnBase, leftColumnMax)
                                         .roundToPx()
                                     val placeable = measurable.measure(
@@ -660,9 +668,10 @@ fun ProxyHomeScreenContent(
                         }
                         SkipiPaneDivider(
                             onDrag = { delta ->
-                                leftColumnExtra.value = (leftColumnExtra.value + delta)
+                                leftColumnExtraState.value = (leftColumnExtraState.value + delta)
                                     .coerceIn(0.dp, leftColumnMax - leftColumnBase)
                             },
+                            onDragStopped = { latestOnLeftColumnExtraChange(leftColumnExtraState.value) },
                             width = SkipiTheme.spacing.large,
                         )
                         wideList(Modifier.weight(1f))

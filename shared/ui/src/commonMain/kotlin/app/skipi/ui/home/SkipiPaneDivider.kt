@@ -40,9 +40,12 @@ fun SkipiPaneDivider(
     onDrag: (Dp) -> Unit,
     modifier: Modifier = Modifier,
     width: Dp = 16.dp,
+    /** Called once when the pointer lets go, for a host that saves where the divider ended up. */
+    onDragStopped: () -> Unit = {},
 ) {
     val density = LocalDensity.current
     val latestOnDrag by rememberUpdatedState(onDrag)
+    val latestOnDragStopped by rememberUpdatedState(onDragStopped)
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val dragged by interaction.collectIsDraggedAsState()
@@ -58,6 +61,7 @@ fun SkipiPaneDivider(
                 orientation = Orientation.Horizontal,
                 interactionSource = interaction,
                 state = rememberDraggableState { pixels -> latestOnDrag(with(density) { pixels.toDp() }) },
+                onDragStopped = { latestOnDragStopped() },
             ),
         contentAlignment = Alignment.Center,
     ) {

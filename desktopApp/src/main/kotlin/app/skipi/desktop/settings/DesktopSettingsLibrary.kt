@@ -88,6 +88,8 @@ data class DesktopAppSettings(
     val navigationStyle: Int = 0,
     /** The sidebar shows only its icons. */
     val sidebarCollapsed: Boolean = false,
+    /** How much wider than its base the Home's left column is, in dp, as the user dragged its divider. */
+    val homeLeftColumnExtraDp: Float = 0f,
     val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
