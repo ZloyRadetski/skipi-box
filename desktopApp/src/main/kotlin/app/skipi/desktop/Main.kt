@@ -1056,9 +1056,14 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 val trayStatusText = stringResource(
                     if (tunnel.coreState.isRunning) Res.string.connection_status_connected else Res.string.connection_status_disconnected,
                 )
+                val trayServerName = remember(serverLibrary.selectedServerId, serverLibrary.servers) {
+                    serverLibrary.servers.firstOrNull { it.id == serverLibrary.selectedServerId }
+                        ?.decode()?.getOrNull()?.getInfo()?.remarks?.takeIf(String::isNotBlank)
+                }
                 DesktopTrayIcon(
                     connected = tunnel.coreState.isRunning,
-                    tooltip = "SKIPI — $trayStatusText",
+                    tooltip = desktopTrayTooltip(trayStatusText, trayServerName),
+                    serverName = trayServerName,
                     toggleLabel = when (desktopTrayToggle(tunnel.coreState.isRunning)) {
                         DesktopTrayToggle.Connect -> trayConnectText
                         DesktopTrayToggle.Disconnect -> trayDisconnectText

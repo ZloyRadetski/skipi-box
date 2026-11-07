@@ -24,6 +24,28 @@ class DesktopTrayMenuTest {
         assertEquals(DesktopTrayMenuSize(width = 220 + 2 * 12, height = menu.height + 2 * 12), window)
     }
 
+    @Test
+    fun theActiveServerIsAnInfoLineWithItsOwnSeparatorAboveTheActions() {
+        val withServer = desktopTrayMenuEntries("Frankfurt 1", "Connect", "Exit", {}, {})
+
+        assertEquals(5, withServer.size)
+        assertEquals("Frankfurt 1", (withServer[0] as DesktopTrayMenuEntry.Info).label)
+        assertEquals(DesktopTrayMenuEntry.Separator, withServer[1])
+        assertEquals(DesktopTrayMenuSize(width = 220, height = 12 + 36 + 9 + 36 + 9 + 36), desktopTrayMenuSize(withServer))
+    }
+
+    @Test
+    fun withoutAServerTheMenuIsJustTheActions() {
+        assertEquals(3, desktopTrayMenuEntries(null, "Connect", "Exit", {}, {}).size)
+        assertEquals(3, desktopTrayMenuEntries("  ", "Connect", "Exit", {}, {}).size)
+    }
+
+    @Test
+    fun theTooltipNamesTheServerWhenThereIsOne() {
+        assertEquals("SKIPI — Connected · Frankfurt 1", desktopTrayTooltip("Connected", "Frankfurt 1"))
+        assertEquals("SKIPI — Connected", desktopTrayTooltip("Connected", null))
+    }
+
     private val screen = DesktopTrayScreenArea(x = 0, y = 0, width = 1920, height = 1040)
     private val window = DesktopTrayMenuSize(width = 244, height = 117)
 

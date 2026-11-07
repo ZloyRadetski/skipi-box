@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.theme.SkipiTheme
@@ -31,6 +32,10 @@ import top.yukonga.miuix.kmp.basic.Text
 /** What the tray menu lists, in order. */
 internal sealed interface DesktopTrayMenuEntry {
     class Action(val label: String, val onClick: () -> Unit) : DesktopTrayMenuEntry
+
+    /** A line of text that is not clickable, e.g. the active server. */
+    class Info(val label: String) : DesktopTrayMenuEntry
+
     data object Separator : DesktopTrayMenuEntry
 }
 
@@ -58,7 +63,7 @@ internal fun desktopTrayMenuSize(entries: List<DesktopTrayMenuEntry>): DesktopTr
         width = MenuWidth,
         height = 2 * MenuVerticalPadding + entries.sumOf { entry ->
             when (entry) {
-                is DesktopTrayMenuEntry.Action -> RowHeight
+                is DesktopTrayMenuEntry.Action, is DesktopTrayMenuEntry.Info -> RowHeight
                 DesktopTrayMenuEntry.Separator -> SeparatorHeight
             }
         },
@@ -114,6 +119,20 @@ internal fun DesktopTrayMenuContent(entries: List<DesktopTrayMenuEntry>, onDismi
                     is DesktopTrayMenuEntry.Action -> DesktopTrayMenuRow(entry.label) {
                         onDismiss()
                         entry.onClick()
+                    }
+
+                    is DesktopTrayMenuEntry.Info -> Box(
+                        Modifier.padding(horizontal = 6.dp).fillMaxWidth().height(RowHeight.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Text(
+                            text = entry.label,
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            fontSize = 13.sp,
+                            color = colors.onSurface.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
 
                     DesktopTrayMenuEntry.Separator -> Box(

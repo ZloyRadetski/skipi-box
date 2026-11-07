@@ -58,6 +58,27 @@ internal enum class DesktopTrayToggle { Connect, Disconnect }
 internal fun desktopTrayToggle(tunnelRunning: Boolean): DesktopTrayToggle =
     if (tunnelRunning) DesktopTrayToggle.Disconnect else DesktopTrayToggle.Connect
 
+/** The server (when one is selected) with a separator under it, then connect or disconnect, a separator and exit. */
+internal fun desktopTrayMenuEntries(
+    serverName: String?,
+    toggleLabel: String,
+    exitLabel: String,
+    onToggleTunnel: () -> Unit,
+    onExit: () -> Unit,
+): List<DesktopTrayMenuEntry> = buildList {
+    if (!serverName.isNullOrBlank()) {
+        add(DesktopTrayMenuEntry.Info(serverName))
+        add(DesktopTrayMenuEntry.Separator)
+    }
+    add(DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel))
+    add(DesktopTrayMenuEntry.Separator)
+    add(DesktopTrayMenuEntry.Action(exitLabel, onExit))
+}
+
+/** The tooltip: the app and its state, then the active server. */
+internal fun desktopTrayTooltip(status: String, serverName: String?): String =
+    if (serverName.isNullOrBlank()) "SKIPI — $status" else "SKIPI — $status · $serverName"
+
 internal enum class DesktopTrayWindowStep { Show, HideToBackground, Minimize }
 
 /**
@@ -130,6 +151,8 @@ internal fun ApplicationScope.DesktopTrayIcon(
     tooltip: String,
     toggleLabel: String,
     exitLabel: String,
+    /** The active server's name, shown at the top of the menu; null when none is selected. */
+    serverName: String?,
     statusNotifier: DesktopStatusNotifier?,
     statusNotifierShown: Boolean,
     actions: DesktopTrayActions,
@@ -155,11 +178,7 @@ internal fun ApplicationScope.DesktopTrayIcon(
         }
     }
     menuClick?.let { click ->
-        val entries = listOf(
-            DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel),
-            DesktopTrayMenuEntry.Separator,
-            DesktopTrayMenuEntry.Action(exitLabel, onExit),
-        )
+        val entries = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, onToggleTunnel, onExit)
         key(click) {
             DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
         }
