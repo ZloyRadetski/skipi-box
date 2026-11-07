@@ -7,6 +7,7 @@ androidx-room = "2.8.4"
 androidx-work = "2.11.2"
 compose = "1.11.1"
 coil = "3.5.0"
+dbus-java = "5.0.0"
 kotlin = "2.4.10"
 kotlinx-serialization-json = "1.11.0"
 ksp = "2.3.11"
@@ -32,6 +33,8 @@ compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", v
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
 coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+dbus-java-core = { module = "com.github.hypfvieh:dbus-java-core", version.ref = "dbus-java" }
+dbus-java-transport-native-unixsocket = { module = "com.github.hypfvieh:dbus-java-transport-native-unixsocket", version.ref = "dbus-java" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
