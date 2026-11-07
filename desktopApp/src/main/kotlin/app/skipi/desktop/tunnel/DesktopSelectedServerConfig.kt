@@ -8,6 +8,13 @@ import engine.xray.CustomXrayDnsRewriteRequest
 import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayTags
+import engine.xray.CustomSkipiRouting
+import engine.xray.XrayRouteTarget
+import engine.xray.XrayRouteTargetKind
+import engine.xray.XrayRoutingRequest
+import engine.xray.planXrayRouting
+import engine.xray.toXrayRoutingDomainStrategy
+import engine.xray.trafficProfileRulesForRawServer
 import engine.xray.buildFreedomOutbound
 import engine.xray.rewriteCustomXrayDnsConfig
 import engine.xray.xrayDirectOutboundDomainStrategy
@@ -90,6 +97,11 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                     options = options,
                     dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns),
                     sniffing = profileRuntime?.sniffingOptions(),
+                    skipiRouting = customServerSkipiRouting(
+                        profile = configLibrary.activeProfile,
+                        profileDomainStrategy = profileRuntime?.settings?.routeDomainStrategy,
+                        routing = routing,
+                    ),
                 ),
             )
         }
@@ -153,6 +165,8 @@ internal fun buildDesktopCustomXrayConfig(
     /** False for a latency probe, which must not listen: its ports would collide with a running tunnel's. */
     listeners: Boolean = true,
     log: JsonObject = options.buildLogJson(),
+    /** The rules SKIPI applies when the server overrides inbound and DNS; null keeps the JSON's own routing. */
+    skipiRouting: CustomSkipiRouting? = null,
 ): String {
     val customJson = parseCustomXrayConfigJsonObject(server.configJson)
     val inbounds = if (!listeners) emptyList() else buildList {
@@ -186,6 +200,7 @@ internal fun buildDesktopCustomXrayConfig(
                     domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
                     tcpSockopt = options.tcpSockopt,
                 ),
+                skipiRouting = skipiRouting,
             ),
         )
     } else {
@@ -210,4 +225,47 @@ internal fun buildDesktopCustomXrayConfig(
 internal fun DesktopServerLibrary.selectedServerJsonAuth(): LocalProxyJsonAuth? {
     val selected = selectedServerId?.let { id -> servers.firstOrNull { it.id == id } }?.decode()?.getOrNull()
     return (selected as? Custom)?.let { custom -> LocalProxyAuth.readJsonAuth(custom.configJson) }
+}
+
+/**
+ * The routing SKIPI puts in a raw server that overrides inbound and DNS: the active profile's rules, or the
+ * global routing rules when there is no profile. With neither, the JSON keeps the routing it came with.
+ */
+internal fun customServerSkipiRouting(
+    profile: DesktopStoredConfig?,
+    profileDomainStrategy: Int?,
+    routing: RoutingConfigRecord,
+): CustomSkipiRouting? = when {
+    profile != null -> CustomSkipiRouting(
+        domainStrategy = profileDomainStrategy?.toXrayRoutingDomainStrategy(),
+        rules = { proxyTag ->
+            trafficProfileRulesForRawServer(profile.content, proxyTag, DesktopTrafficProfileXrayCapabilities)
+        },
+    )
+
+    routing.rules.any { rule -> rule.enabled } -> CustomSkipiRouting(
+        domainStrategy = routing.domainStrategy.toXrayRoutingDomainStrategy(),
+        rules = { proxyTag ->
+            planXrayRouting(
+                request = XrayRoutingRequest(
+                    routeDomainStrategy = routing.domainStrategy,
+                    routeRules = routing.rules,
+                    defaultRouteOutboundTag = routing.defaultOutboundTag,
+                    routeTargets = mapOf(
+                        XrayTags.PROXY to XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound),
+                        XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound),
+                        XrayTags.BLOCK to XrayRouteTarget(XrayTags.BLOCK, XrayRouteTargetKind.Outbound),
+                    ),
+                    balancers = emptyList(),
+                    enableLocalDns = false,
+                    routeProxyDns = false,
+                    routeDirectDns = false,
+                    dnsHijackInboundTags = emptyList(),
+                ),
+                ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
+            ).rules.map { rule -> rule as JsonObject }
+        },
+    )
+
+    else -> null
 }

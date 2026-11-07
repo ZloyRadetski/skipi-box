@@ -16,11 +16,23 @@ data class CustomXrayDnsRewriteRequest(
     val enableLocalDns: Boolean,
     val dnsHijackInboundTags: List<String>,
     val directOutbound: JsonObject,
+    /** SKIPI's own rules for the raw server; without them its original user routing stays. */
+    val skipiRouting: CustomSkipiRouting? = null,
+)
+
+/**
+ * The routing SKIPI applies to a raw server that overrides inbound and DNS ("automatic rule override"):
+ * [rules] get the tag of the server's proxy outbound and replace the rules written in its JSON.
+ */
+class CustomSkipiRouting(
+    val domainStrategy: String?,
+    val rules: (proxyOutboundTag: String) -> List<JsonObject>,
 )
 
 /**
  * Replaces the inbound, DNS, fixed outbounds, and DNS routing of a raw custom
- * profile while retaining its proxy outbounds and original user routing.
+ * profile while retaining its proxy outbounds and, unless [CustomXrayDnsRewriteRequest.skipiRouting]
+ * replaces them, its original user routing.
  */
 fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject {
     val outboundsRewrite = request.config.rewriteCustomDnsOutbounds(
@@ -35,14 +47,26 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
             routeProxyDns = request.dnsPlan.routingOptions.routeProxyDns,
             routeDirectDns = request.dnsPlan.routingOptions.routeDirectDns,
             proxyDnsOutboundTag = outboundsRewrite.proxyOutboundTag,
+            skipiRouting = request.skipiRouting,
         ),
     )
+    // SKIPI's rules may send traffic to "block"; a raw server does not always carry that outbound.
+    val skipiRulesNeedBlock = request.skipiRouting != null && outboundsRewrite.proxyOutboundTag != null &&
+        outboundsRewrite.outbounds.none { (it as? JsonObject)?.stringValue("tag") == XrayTags.BLOCK }
+    val outbounds = if (skipiRulesNeedBlock) {
+        buildJsonArray {
+            outboundsRewrite.outbounds.forEach(::add)
+            add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
+        }
+    } else {
+        outboundsRewrite.outbounds
+    }
 
     return request.config.updatedWithout(setOf("fakedns", "fakeDns") + UntrustedCustomTopLevelKeys) {
         put("inbounds", request.inbounds.toJsonObjectArray())
         put("dns", buildXrayDnsConfig(request.dnsPlan))
         putIfNotNull("fakeDns", request.dnsPlan.fakeDns)
-        put("outbounds", outboundsRewrite.outbounds)
+        put("outbounds", outbounds)
         put("routing", routing)
     }
 }
@@ -124,12 +148,18 @@ private data class CustomDnsRoutingPlan(
     val routeProxyDns: Boolean,
     val routeDirectDns: Boolean,
     val proxyDnsOutboundTag: String?,
+    val skipiRouting: CustomSkipiRouting? = null,
 )
 
 private fun JsonObject.rewriteCustomDnsRouting(plan: CustomDnsRoutingPlan): JsonObject {
     val routing = objectValue("routing") ?: buildJsonObject {}
-    val existingRules = routing.arrayValue("rules") ?: buildJsonArray {}
+    val skipiRules = plan.skipiRouting?.let { skipi ->
+        plan.proxyDnsOutboundTag?.takeIf(String::isNotBlank)?.let { proxyTag -> skipi.rules(proxyTag) }
+    }
+    val existingRules = skipiRules?.let { rules -> buildJsonArray { rules.forEach(::add) } }
+        ?: routing.arrayValue("rules") ?: buildJsonArray {}
     return routing.updated {
+        if (skipiRules != null) plan.skipiRouting?.domainStrategy?.let { strategy -> put("domainStrategy", strategy) }
         put(
             "rules",
             buildJsonArray {

@@ -148,7 +148,7 @@ class DesktopGlobalRoutingResourceValidationTest {
     }
 
     @Test
-    fun activeProfileAndRawCustomKeepTheirExistingRoutingAndAssetPrecedence() = withTempRoot { root ->
+    fun anActiveProfileRoutesAnOverriddenRawCustomAndLeavesOneWithoutTheOverrideAlone() = withTempRoot { root ->
         val globalAssets = root.resolve("global-assets").toFile().apply { mkdirs() }
         writeGeoDat(File(globalAssets, "geosite.dat"), "global-tag")
         val xrayRoot = root.resolve("xray").toFile().apply { mkdirs() }
@@ -204,9 +204,32 @@ class DesktopGlobalRoutingResourceValidationTest {
                 routingDataDirectory = globalAssets.toPath(),
             ),
         ).getOrThrow()
-        assertTrue(customConfig.contains("custom-only.example"))
-        assertFalse(customConfig.contains("profile-only.example"))
+        // The raw entry overrides inbound and DNS by default ("automatic rule override"), so the active
+        // profile's rules replace the routing written in its JSON.
+        assertFalse(customConfig.contains("custom-only.example"))
+        assertTrue(customConfig.contains("profile-only.example"))
         assertFalse(customConfig.contains("global-only.example"))
+
+        // Without the override the JSON keeps its own routing, whatever profile is active.
+        val untouched = assertNotNull(
+            buildDesktopSelectedServerConfig(
+                serverLibrary = DesktopServerLibrary(
+                    selectedServerId = 8,
+                    servers = listOf(
+                        DesktopStoredProxyServer(8, custom.copy(overrideInboundAndDns = false).encodePersistedProxyServer()),
+                    ),
+                ),
+                configLibrary = ConfigProfileLibrary(selectedConfigId = profile.id, configs = listOf(profile)),
+                routing = globalSettings.toRoutingConfigRecord(),
+                options = options(),
+                trafficConfigContentById = mapOf(profile.id to profile.content),
+                subscriptionPingUrl = "http://127.0.0.1:18086/probe",
+                latencyByServerId = emptyMap(),
+                routingDataDirectory = globalAssets.toPath(),
+            ),
+        ).getOrThrow()
+        assertTrue(untouched.contains("custom-only.example"))
+        assertFalse(untouched.contains("profile-only.example"))
     }
 
     @Test

@@ -259,7 +259,7 @@ private const val BlockTag = "block"
 private const val DefaultProbeUrl = "https://www.gstatic.com/generate_204"
 private const val DefaultProbeInterval = "10s"
 
-private val DesktopTrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(
+internal val DesktopTrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(
     supportsIpAsnRules = false,
     supportedExternalRuleSetFiles = setOf("geosite.dat", "geoip.dat"),
     unsupportedIpAsnMessage = { value ->

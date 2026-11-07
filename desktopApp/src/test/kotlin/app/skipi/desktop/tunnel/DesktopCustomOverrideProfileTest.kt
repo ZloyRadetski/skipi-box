@@ -32,13 +32,13 @@ class DesktopCustomOverrideProfileTest {
         }
     """.trimIndent()
 
-    private fun build(profile: String?): JsonObject {
+    private fun build(profile: String?, rawJson: String = raw): JsonObject {
         val library = DesktopServerLibrary(
             selectedServerId = 41,
             servers = listOf(
                 DesktopStoredProxyServer(
                     id = 41,
-                    serverJson = Custom(remarks = "Raw", overrideInboundAndDns = true, configJson = raw)
+                    serverJson = Custom(remarks = "Raw", overrideInboundAndDns = true, configJson = rawJson)
                         .encodePersistedProxyServer(),
                 ),
             ),
@@ -93,7 +93,56 @@ class DesktopCustomOverrideProfileTest {
         assertEquals("UseIPv4", root.directStrategy())
     }
 
+    @Test
+    fun theActiveProfilesRulesReplaceTheRoutingOfTheOverriddenCustomConfig() {
+        val root = build(ROUTING_PROFILE, rawJson = RAW_WITH_OWN_ROUTING)
+        val routing = root.getValue("routing").jsonObject
+        val rules = routing.getValue("rules").jsonArray.map { it.jsonObject }
+
+        // The rules written in the raw JSON are gone; the profile's decide.
+        assertEquals(null, rules.firstOrNull { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "domain:ru" } == true })
+        val discord = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:discord" } == true }
+        assertEquals("direct", discord.getValue("outboundTag").jsonPrimitive.content)
+        val ads = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:category-ads-all" } == true }
+        assertEquals("block", ads.getValue("outboundTag").jsonPrimitive.content)
+        // FINAL,PROXY goes to the raw server's own proxy outbound.
+        assertEquals("my-proxy", rules.last().getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("AsIs", routing.getValue("domainStrategy").jsonPrimitive.content)
+        val tags = root.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
+        assertEquals(1, tags.count { it == "block" })
+    }
+
+    @Test
+    fun withoutProfileRulesTheRawRoutingStaysWhenTheGlobalRoutingIsEmpty() {
+        val root = build(null, rawJson = RAW_WITH_OWN_ROUTING)
+        val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
+        assertEquals(true, rules.any { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "domain:ru" } == true })
+    }
+
     private companion object {
+        val RAW_WITH_OWN_ROUTING = """
+            {
+              "outbounds": [
+                {"tag": "my-proxy", "protocol": "vless", "settings": {"vnext": [{"address": "edge.example", "port": 443,
+                  "users": [{"id": "00000000-0000-0000-0000-000000000000", "encryption": "none"}]}]}},
+                {"tag": "direct", "protocol": "freedom"}
+              ],
+              "routing": {"domainStrategy": "IPIfNonMatch", "rules": [
+                {"domain": ["domain:ru"], "outboundTag": "direct"}
+              ]}
+            }
+        """.trimIndent()
+
+        val ROUTING_PROFILE = """
+            [Rule]
+            DOMAIN-SET,geosite:category-ads-all,REJECT
+            DOMAIN-SET,geosite:discord,DIRECT
+            FINAL,PROXY
+
+            [SKIPI]
+            route-domain-strategy = AsIs
+        """.trimIndent() + "\n"
+
         val PROFILE = """
             [General]
             dns-server = 1.1.1.1

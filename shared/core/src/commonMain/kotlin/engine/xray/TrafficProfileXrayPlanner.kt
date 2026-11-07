@@ -239,6 +239,40 @@ object TrafficProfileXrayPlanner {
     }
 }
 
+/**
+ * The rules of [profileContent] for a raw server that keeps its own proxy outbound, [proxyTag]. Direct and
+ * block policies keep their meaning; every other policy (a proxy group or a server name) goes to that outbound,
+ * the only one a raw server has. FINAL closes the list, as in a generated profile.
+ */
+fun trafficProfileRulesForRawServer(
+    profileContent: String,
+    proxyTag: String,
+    capabilities: TrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(),
+): List<JsonObject> {
+    val analysis = profileContent.analyzeShadowrocketConfig()
+    analysis.diagnostics.firstOrNull { it.severity.name == "Error" }?.let { diagnostic ->
+        error("Active profile has an error: ${diagnostic.message}")
+    }
+    fun target(policy: String): XrayRouteTarget {
+        val normalized = policy.trim()
+        return when {
+            normalized.equals("DIRECT", ignoreCase = true) -> XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
+            normalized.equals("BLOCK", ignoreCase = true) || normalized.startsWith("REJECT", ignoreCase = true) ->
+                XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
+            else -> XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
+        }
+    }
+    return buildList {
+        analysis.rules.filterNot(ShadowrocketRule::isFinal)
+            .flatMap { rule -> rule.toTrafficProfileXrayRules(::target, capabilities) }
+            .forEach(::add)
+        val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
+            ?.let { rule -> target(rule.policy) }
+            ?: XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
+        add(finalTarget.toFinalTrafficProfileRule())
+    }
+}
+
 private fun JsonObject.isDirectRule(): Boolean =
     (this["outboundTag"] as? JsonPrimitive)?.content?.trim().equals(DirectTag, ignoreCase = true)
 

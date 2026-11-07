@@ -71,7 +71,12 @@ object DesktopSelectedServerXrayConfigFactory {
             LocalProxyXrayConfigFactory.validateOptions(options)
             validateServer(selectedServer)
             if (selectedServer is Custom) {
-                return@mapCatching DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(selectedServer, options))
+                return@mapCatching DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(
+                        selectedServer,
+                        options,
+                        skipiRouting = customServerSkipiRouting(profile = null, profileDomainStrategy = null, routing = routing),
+                    ),
+                )
             }
             routingDataDirectory?.let { dataDirectory ->
                 validateXrayExternalDomainResources(routing.rules) { fileName ->
