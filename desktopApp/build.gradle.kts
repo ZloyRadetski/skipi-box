@@ -141,6 +141,8 @@ dependencies {
     implementation(compose.materialIconsExtended)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.zxing.core)
+    implementation(libs.dbus.java.core)
+    implementation(libs.dbus.java.transport.native.unixsocket)
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
@@ -184,7 +186,7 @@ compose.desktop {
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
-            modules("java.net.http")
+            modules("java.net.http", "jdk.net", "jdk.security.auth")
             // Installers: MSI on Windows, deb and rpm on Linux (the AppImage is made from the app image by
             // packaging/linux/build-appimage.sh), dmg on macOS. The portable images come from createDistributable.
             targetFormats(
