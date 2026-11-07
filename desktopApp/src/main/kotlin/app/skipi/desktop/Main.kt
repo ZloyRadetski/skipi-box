@@ -1068,6 +1068,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     },
                     onToggleTunnel = desktopToggleTunnel,
                     onExit = { tunnel.closeRequested = true },
+                    theme = { content ->
+                        CompositionLocalProvider(
+                            LocalDesktopThemeMode provides desktopSettings.themeMode,
+                            LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
+                        ) { DesktopAppTheme(content) }
+                    },
                 )
                 // skipi:// links from the command line and from later starts (see main).
                 LaunchedEffect(desktopTunnelController) {
