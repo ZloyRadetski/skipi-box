@@ -161,7 +161,23 @@ fun main(args: Array<String>) {
     instance?.listen { link -> incomingLinks.trySend(link) }
     instance?.let { channel -> Runtime.getRuntime().addShutdownHook(Thread { channel.close() }) }
     if (relaunchElevatedForSavedTunMode(args.toList(), launch)) return
+    moveAutostartToElevatedTask()
     runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks)
+}
+
+/**
+ * An elevated copy with TUN mode on and start at login wanted replaces the login entry with a logon
+ * task that has the highest rights, so the next login starts elevated without a UAC prompt.
+ */
+private fun moveAutostartToElevatedTask() {
+    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return
+    val settings = DesktopSettingsLibraries.loadDefault().getOrNull() ?: return
+    if (!shouldRegisterElevatedAutostart(settings.launchOnLogin, settings.enableTunMode, isWindowsElevated())) return
+    val launcher = resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null)).getOrNull() ?: return
+    Thread {
+        desktopAutostartFor().apply(enabled = true, launcher = launcher)
+            .onFailure { error -> DesktopLogger.warn("Autostart", "The elevated logon task could not be registered", error) }
+    }.apply { isDaemon = true }.start()
 }
 
 /**
