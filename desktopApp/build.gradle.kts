@@ -282,3 +282,48 @@ tasks.withType<Test>().configureEach {
     systemProperty("user.home", testHome.absolutePath)
     environment("APPDATA", testHome.absolutePath)
 }
+
+// The packaged runtime ships without a class-data-sharing archive, so every start loads and verifies the JDK's
+// classes and the application's own from scratch. Two archives fix that: the JDK's (made through the launcher
+// with -Xshare:dump, which makes the JVM write it and exit) and the application's (a training start that exits
+// by itself and lets the JVM record what it loaded). The launcher is pointed at the second one afterwards,
+// because the JVM refuses a training run while the archive it should write is already named. The archives
+// belong to this exact copy of the jars, so they are made last, in place; an installer builds its own image.
+val trainStartupArchives = tasks.register("trainStartupArchives") {
+    onlyIf { isWindowsHost }
+    val image = layout.buildDirectory.dir("compose/binaries/main/app/${ProjectConfig.PROJECT_NAME}")
+    doLast {
+        val directory = image.get().asFile
+        val launcher = directory.resolve("${ProjectConfig.PROJECT_NAME}.exe")
+        val config = directory.resolve("app/${ProjectConfig.PROJECT_NAME}.cfg")
+        val appArchive = directory.resolve("app/skipi.jsa")
+        val scratch = temporaryDir.resolve("run")
+        fun launch(javaToolOptions: String): Int {
+            scratch.deleteRecursively()
+            scratch.resolve("appdata").mkdirs()
+            scratch.resolve("run").mkdirs()
+            val process = ProcessBuilder(launcher.absolutePath)
+                .directory(directory)
+                .redirectErrorStream(true)
+                .apply {
+                    environment()["JAVA_TOOL_OPTIONS"] = javaToolOptions
+                    // A machine may mark the launcher "run as administrator"; a build must not ask for that.
+                    environment()["__COMPAT_LAYER"] = "RunAsInvoker"
+                    // The training start must not touch the real settings or hand itself to a running SKIPI.
+                    environment()["APPDATA"] = scratch.resolve("appdata").absolutePath
+                    environment()["XDG_RUNTIME_DIR"] = scratch.resolve("run").absolutePath
+                }
+                .start()
+            process.inputStream.readBytes()
+            return process.waitFor()
+        }
+        launch("-Xshare:dump")
+        check(directory.resolve("runtime/bin/server/classes.jsa").isFile) { "The JDK class-data-sharing archive was not written" }
+        appArchive.delete()
+        launch("-XX:ArchiveClassesAtExit=${appArchive.absolutePath} -Dskipi.exitAfterMillis=12000")
+        check(appArchive.isFile) { "The application class-data-sharing archive was not written" }
+        val option = "java-options=-XX:SharedArchiveFile=\$APPDIR/skipi.jsa"
+        if (option !in config.readText()) config.appendText("\n$option\n")
+    }
+}
+tasks.matching { it.name == "createDistributable" }.configureEach { finalizedBy(trainStartupArchives) }

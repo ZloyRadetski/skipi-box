@@ -137,6 +137,7 @@ import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
 fun main(args: Array<String>) {
+    scheduleTrainingExit()
     val launch = parseDesktopLaunchArgs(args.toList())
     // An elevated relaunch starts while the instance that asked for it is still shutting down; claiming
     // the single-instance channel before it left would hand this start's request to that dying instance.
