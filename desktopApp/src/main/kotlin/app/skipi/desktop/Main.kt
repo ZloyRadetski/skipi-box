@@ -160,7 +160,25 @@ fun main(args: Array<String>) {
     launch.links.forEach { link -> incomingLinks.trySend(link) }
     instance?.listen { link -> incomingLinks.trySend(link) }
     instance?.let { channel -> Runtime.getRuntime().addShutdownHook(Thread { channel.close() }) }
+    if (relaunchElevatedForSavedTunMode(args.toList(), launch)) return
     runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks)
+}
+
+/**
+ * TUN mode saved as on needs administrator rights on Windows, and a start from the login entry has
+ * none. Hands over to an elevated copy (one UAC prompt) and reports true when it is on its way. A
+ * declined prompt leaves the setting alone: the app runs on, and Connect says why TUN cannot start.
+ */
+private fun relaunchElevatedForSavedTunMode(args: List<String>, launch: DesktopLaunchRequest): Boolean {
+    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return false
+    val tunModeEnabled = DesktopSettingsLibraries.loadDefault().getOrNull()?.enableTunMode == true
+    if (!tunModeEnabled || !shouldRelaunchElevatedAtStart(tunModeEnabled, !isWindowsElevated(), launch.waitForPid != null)) return false
+    val launcher = ProcessHandle.current().info().command().orElse(null) ?: return false
+    // The elevated copy waits for this process to exit before it claims the single-instance channel.
+    val arguments = args.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
+    return relaunchElevated(launcher, arguments, exitDelaySeconds = 0)
+        .onFailure { error -> DesktopLogger.warn("Instance", "TUN mode needs administrator rights and the prompt was declined", error) }
+        .isSuccess
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

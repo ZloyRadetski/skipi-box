@@ -38,4 +38,20 @@ class DesktopTunSwitchTest {
         assertEquals(true, tunSwitchChecked(available = true, enabled = true))
         assertEquals(false, tunSwitchChecked(available = true, enabled = false))
     }
+
+    @Test
+    fun aSavedTunSettingStillShowsOnWhenOnlyAdministratorRightsAreMissing() {
+        assertEquals(true, tunSwitchChecked(available = false, enabled = true, needsElevation = true))
+        assertEquals(false, tunSwitchChecked(available = false, enabled = false, needsElevation = true))
+        assertEquals(false, tunSwitchChecked(available = false, enabled = true, needsElevation = false))
+    }
+
+    @Test
+    fun aStartWithTunOnAndNoAdministratorRightsAsksForThemOnce() {
+        assertEquals(true, shouldRelaunchElevatedAtStart(tunModeEnabled = true, needsElevation = true, alreadyRelaunched = false))
+        assertEquals(false, shouldRelaunchElevatedAtStart(tunModeEnabled = false, needsElevation = true, alreadyRelaunched = false))
+        assertEquals(false, shouldRelaunchElevatedAtStart(tunModeEnabled = true, needsElevation = false, alreadyRelaunched = false))
+        // The relaunched copy never asks again, even if the elevation check misreports: no UAC loop.
+        assertEquals(false, shouldRelaunchElevatedAtStart(tunModeEnabled = true, needsElevation = true, alreadyRelaunched = true))
+    }
 }

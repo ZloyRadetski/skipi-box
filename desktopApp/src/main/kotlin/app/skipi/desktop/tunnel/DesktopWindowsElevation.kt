@@ -44,6 +44,17 @@ internal fun relaunchElevated(
     run: (List<String>) -> Result<Unit> = ::runWindowsCommand,
 ): Result<Unit> = run(windowsElevatedRelaunchCommand(launcher, arguments, exitDelaySeconds))
 
+/**
+ * Whether a start should hand over to an elevated copy: TUN mode is saved as on, this process lacks
+ * administrator rights, and it is not itself the copy that was started for that. The relaunched copy
+ * never asks again, so a wrong elevation check cannot loop on UAC prompts.
+ */
+internal fun shouldRelaunchElevatedAtStart(
+    tunModeEnabled: Boolean,
+    needsElevation: Boolean,
+    alreadyRelaunched: Boolean,
+): Boolean = tunModeEnabled && needsElevation && !alreadyRelaunched
+
 /** Whether this process runs with an elevated administrator token. */
 internal fun isWindowsElevated(): Boolean = runCatching {
     val linker = Linker.nativeLinker()

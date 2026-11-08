@@ -49,7 +49,12 @@ internal fun tunSwitchChange(enabled: Boolean, needsElevation: Boolean): TunSwit
 internal fun tunSwitchEnabled(available: Boolean, enabled: Boolean, needsElevation: Boolean): Boolean =
     available || enabled || needsElevation
 
-internal fun tunSwitchChecked(available: Boolean, enabled: Boolean): Boolean = enabled && available
+/**
+ * A saved TUN setting stays on screen when the only thing missing is administrator rights: they are
+ * asked for at the next start, and showing the switch off would read as the setting having been lost.
+ */
+internal fun tunSwitchChecked(available: Boolean, enabled: Boolean, needsElevation: Boolean = false): Boolean =
+    enabled && (available || needsElevation)
 
 @Composable
 internal fun DesktopVpnSettings(
@@ -134,7 +139,7 @@ internal fun DesktopVpnSettings(
                 sectionTitle = tunModeTitle,
                 title = tunModeTitle,
                 summary = tunModeSummary,
-                checked = tunSwitchChecked(tunAvailable, settings.enableTunMode),
+                checked = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
                 enabled = tunSwitchEnabled(tunAvailable, settings.enableTunMode, tunNeedsElevation),
                 onCheckedChange = { enabled ->
                     when (tunSwitchChange(enabled, tunNeedsElevation)) {
