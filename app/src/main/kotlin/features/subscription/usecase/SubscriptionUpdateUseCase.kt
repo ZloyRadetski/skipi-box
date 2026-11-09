@@ -3,6 +3,7 @@
 
 package features.subscription.usecase
 
+import features.subscription.subscriptionFailureMessage
 import features.subscription.resolveSubscriptionDeviceHeaders
 
 import app.AppState
@@ -310,20 +311,8 @@ internal fun subscriptionUpdateMessage(
     )
 }
 
-internal fun formatSubscriptionErrorMessage(error: Throwable): String {
-    val unwrapped = generateSequence(error) { it.cause }.lastOrNull() ?: error
-    return when {
-        error is features.subscription.SubscriptionHttpException -> error.message.orEmpty()
-        unwrapped is features.subscription.SubscriptionHttpException -> unwrapped.message.orEmpty()
-        unwrapped is java.net.UnknownHostException -> "DNS error: ${unwrapped.message ?: "Unknown host"}"
-        unwrapped is java.net.SocketTimeoutException -> "Timeout connecting to server"
-        unwrapped is java.net.ConnectException -> "Connection failed: ${unwrapped.message ?: "Refused"}"
-        unwrapped is java.net.SocketException -> "Network error: ${unwrapped.message ?: "Socket exception"}"
-        error.message?.contains("imported no proxy servers", ignoreCase = true) == true -> "Subscription returned empty list"
-        error.message?.isNotBlank() == true -> error.message.orEmpty()
-        else -> unwrapped.localizedMessage ?: "Unknown error"
-    }
-}
+internal fun formatSubscriptionErrorMessage(error: Throwable): String =
+    subscriptionFailureMessage(error) { it is features.subscription.SubscriptionHttpException }
 
 private fun SubscriptionGroupState.logIdentity(): String {
     return "groupId=$id groupName=${name.ifBlank { "<blank>" }} " +
