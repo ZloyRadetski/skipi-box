@@ -1735,18 +1735,28 @@ private fun ServerListItem(
                                 },
                             )
                         }
-                        // Up and down sit side by side instead of taking a row each.
+                        // Up and down sit side by side. Arrows alone: two labelled items never fit the menu's width.
                         if (moves.isNotEmpty()) {
-                            Row {
+                            Row(modifier = Modifier.fillMaxWidth()) {
                                 moves.forEach { actionId ->
-                                    DropdownMenuItem(
-                                        text = { Text(serverMenuActionTitle(actionId)) },
-                                        colors = skipiHomeDropdownItemColors(),
-                                        onClick = {
-                                            menuExpanded = false
-                                            handleServerMenuAction(actionId, server, onAction)
-                                        },
-                                    )
+                                    val title = serverMenuActionTitle(actionId)
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                            .clickable {
+                                                menuExpanded = false
+                                                handleServerMenuAction(actionId, server, onAction)
+                                            }
+                                            .semantics { contentDescription = title },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = if (actionId == "move-up") "↑" else "↓",
+                                            color = SkipiTheme.colors.onSurface,
+                                            style = SkipiTheme.typography.titleMedium,
+                                        )
+                                    }
                                 }
                             }
                         }
