@@ -121,6 +121,7 @@ import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.text.formatTemplate
 import utils.encodeBase64
+import utils.runCatchingCancellable
 
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -186,7 +187,7 @@ fun TrafficConfigPage(
     fun importConfigFromClipboard() {
         services.appScope.launch {
             val text = clipboard.getPlainText().orEmpty().trim()
-            runCatching {
+            runCatchingCancellable {
                 require(text.isNotBlank()) { context.getString(R.string.common_clipboard_empty) }
                 val isHttpUrl = text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true)
                 val content = if (isHttpUrl) {
@@ -216,7 +217,7 @@ fun TrafficConfigPage(
     fun importConfigFromUrl(url: String) {
         services.appScope.launch {
             val normalizedUrl = url.trim()
-            runCatching {
+            runCatchingCancellable {
                 require(normalizedUrl.isNotBlank()) { context.getString(R.string.configs_source_url_empty) }
                 services.tipNotifier.show(context.getString(R.string.configs_updating))
                 val fetched = services.subscriptionFetcher.fetch(
@@ -250,7 +251,7 @@ fun TrafficConfigPage(
             val url = config.sourceUrl.trim()
             updatingConfigIds = updatingConfigIds + config.id
             try {
-                runCatching {
+                runCatchingCancellable {
                     require(url.isNotBlank()) { context.getString(R.string.configs_source_url_empty) }
                     services.tipNotifier.show(context.getString(R.string.configs_updating))
                     val fetched = services.subscriptionFetcher.fetch(

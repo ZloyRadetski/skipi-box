@@ -143,6 +143,7 @@ import java.time.Duration
 import java.util.Date
 import features.config.ConfigProfile
 import app.skipi.ui.theme.SkipiTheme
+import utils.runCatchingCancellable
 
 private val ConfigBackground: Color
     @Composable get() = DesktopContentBackground
@@ -376,7 +377,7 @@ internal fun DesktopConfigsScreen(
             message = "Загрузка конфига…"
             updatingConfigId?.let { updatingConfigIds = updatingConfigIds + it }
             try {
-                val fetched = runCatching { fetchDocument(normalizedUrl) }
+                val fetched = runCatchingCancellable { fetchDocument(normalizedUrl) }
                 fetched.onSuccess { content -> onSuccess(normalizedUrl, content) }
                     .onFailure { error -> message = "Не удалось загрузить конфиг: ${error.message.orEmpty()}" }
             } finally {

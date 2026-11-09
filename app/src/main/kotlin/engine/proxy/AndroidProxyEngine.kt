@@ -32,6 +32,7 @@ import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.usecase.ProxyServerLatencyTracker
+import utils.runCatchingCancellable
 
 /** VPN-only runtime for SKIPI. ROOT runtimes intentionally are not linked here. */
 class AndroidProxyEngine(
@@ -202,7 +203,7 @@ class AndroidProxyEngine(
             ).withTrafficStatsRuntime(
                 startupStrategyMemberId = startupMemberId,
             )
-            val startResult = runCatching {
+            val startResult = runCatchingCancellable {
                 vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService)
             }
             startResult.onSuccess { status ->

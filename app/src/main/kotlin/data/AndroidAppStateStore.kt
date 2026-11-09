@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import utils.runCatchingCancellable
 
 class AndroidAppStateStore private constructor(
     context: Context,
@@ -134,7 +135,7 @@ class AndroidAppStateStore private constructor(
 
     private fun loadInitialState(): LoadedAppState {
         return runBlocking(Dispatchers.IO) {
-            val persistedState = runCatching {
+            val persistedState = runCatchingCancellable {
                 dao.loadState()
             }.onFailure { error ->
                 AppLog.error(LogTag, "Failed to load app state", error)
@@ -165,7 +166,7 @@ class AndroidAppStateStore private constructor(
                     nextState = nextState,
                     hasPersistedRoomState = hasPersistedState.get(),
                 )
-                runCatching {
+                runCatchingCancellable {
                     settingsPreferences.save(plan.nextState)
                     dao.saveState(
                         previousState = plan.previousState,
@@ -177,7 +178,7 @@ class AndroidAppStateStore private constructor(
                 }.onFailure { error ->
                     AppLog.error(LogTag, "Failed to persist app state", error)
                     resetDatabase()
-                    runCatching {
+                    runCatchingCancellable {
                         settingsPreferences.save(nextState)
                         dao.saveState(
                             previousState = AppState(),

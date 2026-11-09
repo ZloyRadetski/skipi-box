@@ -62,6 +62,7 @@ import system.openBatteryOptimizationSettings
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
 import java.util.Locale
+import utils.runCatchingCancellable
 
 @Composable
 fun OnboardingPage(
@@ -115,7 +116,7 @@ fun OnboardingPage(
 
         val installConfig = trimmed.toSubscriptionInstallConfigOrNull()
         if (installConfig != null) {
-            runCatching {
+            runCatchingCancellable {
                 SubscriptionInstallConfigUseCase(
                     stateStore = stateStore,
                     subscriptionFetcher = services.subscriptionFetcher,
@@ -126,7 +127,7 @@ fun OnboardingPage(
             return
         }
 
-        val imported = runCatching {
+        val imported = runCatchingCancellable {
             importProxyServersFromText(trimmed, ProxyServerImportSource.Clipboard)
         }.getOrNull()
         if (imported != null && imported.servers.isNotEmpty()) {
@@ -182,7 +183,7 @@ fun OnboardingPage(
                 val intent = VpnService.prepare(context)
                 if (intent == null) vpnGranted = true
                 else {
-                    runCatching { services.requestVpnPermission(intent) }
+                    runCatchingCancellable { services.requestVpnPermission(intent) }
                     vpnGranted = VpnService.prepare(context) == null
                 }
             }
@@ -195,9 +196,9 @@ fun OnboardingPage(
             runCatching { context.startActivity(intent) }
         },
         onOpenBatterySettings = { openBatteryOptimizationSettings(context) },
-        onReadClipboard = { runCatching { clipboard.getPlainText() }.getOrNull() },
+        onReadClipboard = { runCatchingCancellable { clipboard.getPlainText() }.getOrNull() },
         onImportText = ::importRawText,
-        onScanQr = { runCatching { services.qrScanner() }.getOrNull() },
+        onScanQr = { runCatchingCancellable { services.qrScanner() }.getOrNull() },
     )
 
     SkipiOnboardingScreen(

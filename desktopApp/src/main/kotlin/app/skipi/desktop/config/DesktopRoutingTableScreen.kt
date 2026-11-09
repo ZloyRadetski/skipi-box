@@ -41,6 +41,7 @@ import java.awt.datatransfer.DataFlavor
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import utils.runCatchingCancellable
 
 /** Where the table reads a v2rayN rule export from: null means nothing was chosen or there was nothing to read. */
 internal class DesktopRoutingImportSources(
@@ -100,12 +101,12 @@ internal fun DesktopRoutingTableScreen(
         when (source) {
             RoutingImportSource.Url -> urlDialog = true
             RoutingImportSource.File -> scope.launch {
-                runCatching { sources.readFile() }
+                runCatchingCancellable { sources.readFile() }
                     .onSuccess { text -> if (text != null) offer(text) }
                     .onFailure { error -> if (error is CancellationException) throw error else failed(error) }
             }
             RoutingImportSource.Clipboard -> scope.launch {
-                runCatching { sources.readClipboard() }
+                runCatchingCancellable { sources.readClipboard() }
                     .onSuccess(::offer)
                     .onFailure { error -> if (error is CancellationException) throw error else failed(error) }
             }
@@ -157,7 +158,7 @@ internal fun DesktopRoutingTableScreen(
             urlDialog = false
             url = ""
             scope.launch {
-                runCatching { sources.fetchUrl(address.trim()) }
+                runCatchingCancellable { sources.fetchUrl(address.trim()) }
                     .onSuccess(::offer)
                     .onFailure { error -> if (error is CancellationException) throw error else failed(error) }
             }

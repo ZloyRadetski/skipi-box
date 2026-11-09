@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
+import utils.runCatchingCancellable
 
 /** Android's speed test parameters; tests shrink them to keep runs instantaneous. */
 data class SpeedTestConfig(
@@ -92,11 +93,11 @@ class SpeedTestRunner(
         onState(SpeedTestState(phase = SpeedTestPhase.Ping))
         // Warm-up request: establishes DNS, TCP and TLS so the measured samples reflect pure
         // round-trip time, not the handshake.
-        runCatching { transport.roundTripMillis(downloadUrl(bytes = 0)) }
+        runCatchingCancellable { transport.roundTripMillis(downloadUrl(bytes = 0)) }
         val samples = mutableListOf<Double>()
         repeat(config.pingSamples) { index ->
             currentCoroutineContext().ensureActive()
-            runCatching { transport.roundTripMillis(downloadUrl(bytes = 0)) }
+            runCatchingCancellable { transport.roundTripMillis(downloadUrl(bytes = 0)) }
                 .getOrNull()
                 ?.takeIf { it > 0.0 }
                 ?.let(samples::add)
@@ -155,7 +156,7 @@ class SpeedTestRunner(
                         currentCoroutineContext().ensureActive()
                         // Sleep only after a failure: pausing between successful chunks would
                         // cut the measured throughput by the idle fraction of every cycle.
-                        if (runCatching { chunk(transferred) }.isFailure) delay(config.retryDelayMillis)
+                        if (runCatchingCancellable { chunk(transferred) }.isFailure) delay(config.retryDelayMillis)
                     }
                 }
             }

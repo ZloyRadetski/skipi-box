@@ -43,6 +43,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
+import utils.runCatchingCancellable
 
 class NetworkAutomationMonitor(
     context: Context,
@@ -221,9 +222,9 @@ class NetworkAutomationMonitor(
 
     private suspend fun reconcile(capabilities: NetworkCapabilities?) {
         operationMutex.withLock {
-            runCatching {
+            runCatchingCancellable {
                 val state = stateStore.state.value
-                if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) return@withLock
+                if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) return@runCatchingCancellable
                 val enabledRules = state.networkAutomationRules.filter { it.enabled }
                 val includeWifiSsid = NetworkAutomationEvaluator.requiresWifiSsid(enabledRules) &&
                     hasFineLocationPermission()
@@ -247,7 +248,7 @@ class NetworkAutomationMonitor(
                 // or switch a VPN.
                 if (currentNetworkId == NetworkAutomationPolicy.DisconnectedNetworkIdentifier) {
                     AppLog.info(LogTag, "Network automation: physical network unavailable; waiting for an observed upstream")
-                    return@withLock
+                    return@runCatchingCancellable
                 }
 
                 val isRunning = SkipiVpnService.isRunning()

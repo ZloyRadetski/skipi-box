@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ui.clipboard.setPlainText
+import utils.runCatchingCancellable
 
 @Composable
 fun CoreLogsPage(
@@ -119,7 +120,7 @@ private fun LogViewerPage(
         onExport = { exportEntries, exportTitle ->
             scope.launch {
                 val uri = logFileCreator(logExportFileName(exportTitle)) ?: return@launch
-                runCatching {
+                runCatchingCancellable {
                     context.exportLogEntries(uri, exportEntries, showLogMetadata)
                 }.onSuccess {
                     tipNotifier.show(exportedMessage)

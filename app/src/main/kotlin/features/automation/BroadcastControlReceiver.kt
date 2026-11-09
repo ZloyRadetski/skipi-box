@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.cancellation.CancellationException
+import utils.runCatchingCancellable
 
 class BroadcastControlReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -103,7 +104,7 @@ private class BroadcastControlHandler(
 
     private suspend fun syncProxyRunningState(runMode: Int): Boolean {
         val currentState = stateStore.state.value
-        val running = runCatching { proxyEngine.status(runMode, currentState).running }
+        val running = runCatchingCancellable { proxyEngine.status(runMode, currentState).running }
             .onFailure { error ->
                 AppLog.warn(LogTag, "Failed to read proxy status for external control", error)
             }

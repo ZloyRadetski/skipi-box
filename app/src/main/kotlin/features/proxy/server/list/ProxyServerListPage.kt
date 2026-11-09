@@ -138,6 +138,7 @@ import app.proxyServerIdFromOutboundTag
 import app.navigation.TrafficConfigEditorSection
 import ui.clipboard.setPlainText
 import java.net.URI
+import utils.runCatchingCancellable
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
 
@@ -171,7 +172,7 @@ fun ProxyServerListPage(
             captureGroups = { stateStore.state.value.subscriptionGroups },
             onBeforeEligibility = {
                 services.appScope.launch(Dispatchers.IO) {
-                    runCatching { services.appUpdateCheckCoordinator.checkLatestRelease() }
+                    runCatchingCancellable { services.appUpdateCheckCoordinator.checkLatestRelease() }
                 }
             },
             fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
@@ -678,7 +679,7 @@ fun ProxyServerListPage(
     var measuredTunnelSnapshot by remember { mutableStateOf(TunnelSnapshot()) }
     LaunchedEffect(tunnelController, proxyRunning, serviceOperationInProgress) {
         do {
-            measuredTunnelSnapshot = runCatching { tunnelController.snapshot() }
+            measuredTunnelSnapshot = runCatchingCancellable { tunnelController.snapshot() }
                 .getOrElse { failure ->
                     TunnelSnapshot(
                         phase = TunnelPhase.Failed,

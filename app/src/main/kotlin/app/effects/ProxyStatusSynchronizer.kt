@@ -25,6 +25,7 @@ import engine.stats.ProxyTrafficStatsRuntimeStore
 import engine.stats.ProxyTrafficStatsService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import utils.runCatchingCancellable
 
 @Composable
 internal fun ProxyStatusSynchronizer(
@@ -47,7 +48,7 @@ internal fun ProxyStatusSynchronizer(
     LaunchedEffect(stateStore, proxyEngine, foregroundSyncGeneration) {
         observeProxyStatus(
             states = stateStore.state,
-            readStatus = { snapshot -> runCatching { proxyEngine.status(appState = snapshot) }.getOrNull() },
+            readStatus = { snapshot -> runCatchingCancellable { proxyEngine.status(appState = snapshot) }.getOrNull() },
             updateAppState = updateAppState,
         )
     }

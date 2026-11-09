@@ -69,6 +69,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import system.getInstalledApplicationsCompat
+import utils.runCatchingCancellable
 import utils.toTrimmedNonEmptyDistinctList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
@@ -171,7 +172,7 @@ class SkipiVpnService : VpnService() {
                     var failed = false
                     operationMutex.withLock startLock@{
                         if (!isLatestOperation(operationId)) return@startLock
-                        runCatching {
+                        runCatchingCancellable {
                             startVpn(config)
                         }.onSuccess {
                             if (isLatestOperation(operationId)) {
@@ -213,7 +214,7 @@ class SkipiVpnService : VpnService() {
             var failed = false
             operationMutex.withLock {
                 if (running) return@withLock
-                runCatching {
+                runCatchingCancellable {
                     val resolvedState = stateStore.currentState
                         .resolveActiveNetworkConfig(applicationContext)
                         .withActiveTrafficConfigApplied()
@@ -254,7 +255,7 @@ class SkipiVpnService : VpnService() {
     override fun onDestroy() {
         invalidateCurrentOperation()
         serviceScope.launch {
-            runCatching {
+            runCatchingCancellable {
                 operationMutex.withLock {
                     stopVpn(ForegroundNotificationDisposition.Remove)
                 }
@@ -270,7 +271,7 @@ class SkipiVpnService : VpnService() {
         invalidateCurrentOperation()
         running = false
         serviceScope.launch {
-            runCatching {
+            runCatchingCancellable {
                 operationMutex.withLock {
                     stopVpn(ForegroundNotificationDisposition.Remove)
                 }
@@ -801,7 +802,7 @@ class SkipiVpnService : VpnService() {
         network: Network,
     ) {
         AppLog.info(LogTag, "Physical network changed to $network; recreating TUN and proxy runtime")
-        runCatching {
+        runCatchingCancellable {
             runCatching { hevTunRuntime?.stop() }
                 .onFailure { error -> AppLog.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
             runCatching { SkipiCoreRuntime.stop() }

@@ -20,6 +20,7 @@ import engine.proxy.AndroidProxyEngine
 import engine.stats.toTrafficSizeString
 import features.logs.AppLog
 import features.proxy.server.display.displayName
+import utils.runCatchingCancellable
 
 /** Builds and pushes RemoteViews for every placed SKIPI home screen widget. */
 internal object SkipiWidgetRenderer {
@@ -91,7 +92,7 @@ internal object SkipiWidgetRenderer {
         appContext: Context,
         state: AppState,
     ): Boolean {
-        return runCatching {
+        return runCatchingCancellable {
             AndroidProxyEngine(appContext, requestVpnPermission = { false })
                 .status(appState = state)
                 .running

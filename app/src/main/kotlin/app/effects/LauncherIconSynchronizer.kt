@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import utils.runCatchingCancellable
 
 @Composable
 internal fun LauncherIconSynchronizer(
@@ -40,7 +41,7 @@ internal fun LauncherIconSynchronizer(
             .map { state -> resolvedLauncherActivityName(state) }
             .distinctUntilChanged()
             .collect { targetActivityName ->
-                runCatching {
+                runCatchingCancellable {
                     withContext(Dispatchers.IO) {
                         appContext.setLauncherIcon(targetActivityName)
                     }

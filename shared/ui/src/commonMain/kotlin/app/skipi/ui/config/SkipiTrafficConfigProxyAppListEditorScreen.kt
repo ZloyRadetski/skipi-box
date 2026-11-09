@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import utils.runCatchingCancellable
 
 private enum class ProxyAppListMoreAction {
     ToggleSystemApps,
@@ -131,7 +132,7 @@ fun SkipiTrafficConfigProxyAppListEditorScreen(
                     when (action) {
                         ProxyAppListMoreAction.ToggleSystemApps -> onToggleSystemApps?.invoke()
                         ProxyAppListMoreAction.ImportClipboard -> actionScope.launch {
-                            val decoded = runCatching {
+                            val decoded = runCatchingCancellable {
                                 decodeProxyAppListFromClipboard(
                                     text = readClipboardText().orEmpty(),
                                     currentUserId = currentUserId ?: 0,

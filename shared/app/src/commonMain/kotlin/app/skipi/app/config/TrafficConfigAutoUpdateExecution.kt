@@ -47,6 +47,8 @@ public suspend fun executeTrafficConfigAutoUpdate(
         return TrafficConfigAutoUpdateExecutionResult.Success
     }
 
+    // Cancellation is deliberately captured too: a worker stopped half way must report Retry so the work is
+    // run again, and the contract tests pin that (plain runCatching, not runCatchingCancellable).
     return runCatching {
         val url = profile.sourceUrl.trim()
         val fetched = fetch(profile, url)

@@ -11,6 +11,7 @@ import features.resources.resourceFileUpdateOptions
 import features.resources.resourceFileUpdateSource
 import features.resources.runtime.AndroidResourceFileRepository
 import features.resources.runtime.XrayResourceFileScope
+import utils.runCatchingCancellable
 
 internal class ResourceAutoUpdateWorker(
     appContext: Context,
@@ -26,7 +27,7 @@ internal class ResourceAutoUpdateWorker(
         if (!config.resourceSettings.autoUpdate) {
             return Result.success()
         }
-        return runCatching {
+        return runCatchingCancellable {
             val resourceSettings = config.resourceSettings
             val scope = XrayResourceFileScope(
                 trafficConfigId = config.id,

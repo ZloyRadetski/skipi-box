@@ -25,8 +25,10 @@ import app.skipi.ui.settings.BackupResetSettingsLabels
 import app.skipi.ui.settings.SkipiBackupResetSettingsScreen
 import data.backup.AppBackupRestorePreview
 import features.proxy.server.usecase.ProxyServiceResult
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
 import app.skipi.ui.components.WarningConfirmDialog
+import utils.runCatchingCancellable
 
 @Composable
 fun SettingsBackupResetPage(
@@ -90,7 +92,7 @@ fun SettingsBackupResetPage(
                     backupRestoreInProgress = true
                     scope.launch {
                         try {
-                            runCatching { appBackupUseCase.export(currentState) }
+                            runCatchingCancellable { appBackupUseCase.export(currentState) }
                                 .onSuccess { exported -> if (exported) tipNotifier.show(backupExportedMessage) }
                                 .onFailure { error -> tipNotifier.showError(error, backupExportFailedMessage) }
                         } finally {
@@ -104,7 +106,7 @@ fun SettingsBackupResetPage(
                     backupRestoreInProgress = true
                     scope.launch {
                         try {
-                            runCatching { appBackupUseCase.readRestorePreview() }
+                            runCatchingCancellable { appBackupUseCase.readRestorePreview() }
                                 .onSuccess { preview -> pendingRestorePreview = preview }
                                 .onFailure { error -> tipNotifier.showError(error, restoreReadFailedMessage) }
                         } finally {
@@ -140,6 +142,8 @@ fun SettingsBackupResetPage(
                                     updateAppState { restorePreview.restoredState }
                                     pendingRestorePreview = null
                                     tipNotifier.show(restoreCompletedMessage)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
                                 } catch (error: Throwable) {
                                     tipNotifier.showError(error, restoreFailedMessage)
                                 } finally {
@@ -169,6 +173,8 @@ fun SettingsBackupResetPage(
                                         }
                                         is ProxyServiceResult.Failed -> tipNotifier.showError(result.error, tunnelResetFailedMessage)
                                     }
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
                                 } catch (error: Throwable) {
                                     tipNotifier.showError(error, tunnelResetFailedMessage)
                                 } finally {
@@ -200,6 +206,8 @@ fun SettingsBackupResetPage(
                                     }
                                     updateAppState { state -> state.withVpnSettingsReset() }
                                     tipNotifier.show(vpnResetCompletedMessage)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
                                 } catch (error: Throwable) {
                                     tipNotifier.showError(error, resetFailedMessage)
                                 } finally {
@@ -231,6 +239,8 @@ fun SettingsBackupResetPage(
                                     }
                                     stateStore.resetToStockState()
                                     tipNotifier.show(appResetCompletedMessage)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
                                 } catch (error: Throwable) {
                                     tipNotifier.showError(error, resetFailedMessage)
                                 } finally {

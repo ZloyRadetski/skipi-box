@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import platform.CoreTrafficBytes
+import utils.runCatchingCancellable
 
 /**
  * Keeps home screen widgets in sync while the app process is alive:
@@ -51,7 +52,7 @@ internal class ProxyWidgetRuntime(
                     isScreenInteractive = true
                     scope.launch(Dispatchers.IO) {
                         if (hasWidgets()) {
-                            runCatching { SkipiWidgetRenderer.renderAll(this@ProxyWidgetRuntime.context) }
+                            runCatchingCancellable { SkipiWidgetRenderer.renderAll(this@ProxyWidgetRuntime.context) }
                                 .onFailure { error ->
                                     AppLog.warn(LogTag, "Failed to refresh widgets after screen-on", error)
                                 }
@@ -94,7 +95,7 @@ internal class ProxyWidgetRuntime(
                         pollingJob = null
                         if (!key.running) WidgetSpeedStore.clear(context)
                     }
-                    runCatching { SkipiWidgetRenderer.renderAll(context) }.onFailure { error ->
+                    runCatchingCancellable { SkipiWidgetRenderer.renderAll(context) }.onFailure { error ->
                         AppLog.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
                     }
                     if (key.running && hasWidgets()) startPolling()

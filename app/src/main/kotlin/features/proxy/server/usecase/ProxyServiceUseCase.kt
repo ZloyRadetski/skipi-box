@@ -9,6 +9,7 @@ import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.ProxyEngineStatus
 import kotlin.coroutines.cancellation.CancellationException
+import utils.runCatchingCancellable
 
 /** Start and stop the single VPN runtime used by SKIPI. */
 internal class ProxyServiceUseCase(
@@ -28,21 +29,21 @@ internal class ProxyServiceUseCase(
     suspend fun restart(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
         ProxyServerLatencyTracker.cancelAll()
         val server = selectedServer ?: return ProxyServiceResult.MissingServer
-        return runCatching { proxyEngine.restart(ProxyEngineStartRequest(state, server)) }.toResult()
+        return runCatchingCancellable { proxyEngine.restart(ProxyEngineStartRequest(state, server)) }.toResult()
     }
 
     suspend fun start(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
         ProxyServerLatencyTracker.cancelAll()
         val server = selectedServer ?: return ProxyServiceResult.MissingServer
-        return runCatching { proxyEngine.start(ProxyEngineStartRequest(state, server)) }.toResult()
+        return runCatchingCancellable { proxyEngine.start(ProxyEngineStartRequest(state, server)) }.toResult()
     }
 
-    suspend fun stop(runMode: Int): ProxyServiceResult = runCatching { proxyEngine.stop(runMode) }.toResult()
+    suspend fun stop(runMode: Int): ProxyServiceResult = runCatchingCancellable { proxyEngine.stop(runMode) }.toResult()
 
     suspend fun shutdown(runMode: Int): ProxyServiceResult = stop(runMode)
 
     /** Stops a tunnel recovery path without waiting for a concurrent startup operation. */
-    suspend fun forceShutdown(): ProxyServiceResult = runCatching { proxyEngine.forceStop() }.toResult()
+    suspend fun forceShutdown(): ProxyServiceResult = runCatchingCancellable { proxyEngine.forceStop() }.toResult()
 
     private fun Result<ProxyEngineStatus>.toResult(): ProxyServiceResult = fold(
         onSuccess = { status -> ProxyServiceResult.Success(status.running, status.appState) },

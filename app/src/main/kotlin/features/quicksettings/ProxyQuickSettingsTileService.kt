@@ -40,6 +40,7 @@ import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
+import utils.runCatchingCancellable
 
 class ProxyQuickSettingsTileService : TileService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -305,7 +306,7 @@ class ProxyQuickSettingsTileService : TileService() {
             context: Context,
             finalRunning: Boolean?,
         ) {
-            runCatching {
+            runCatchingCancellable {
                 val tileService = activeService?.get() ?: this
                 if (finalRunning != null) {
                     tileService.updateTile(running = finalRunning)

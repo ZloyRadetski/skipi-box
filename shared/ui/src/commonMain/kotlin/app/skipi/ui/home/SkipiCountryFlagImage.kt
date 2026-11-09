@@ -13,13 +13,14 @@ import androidx.compose.ui.layout.ContentScale
 import app.skipi.ui.resources.Res
 import app.skipi.ui.server.display.CountryFlagUtils
 import org.jetbrains.compose.resources.decodeToImageBitmap
+import utils.runCatchingCancellable
 
 /** Decoded flag bitmaps by ISO code; a null value remembers a code that has no bundled flag. */
 private val flagBitmapCache = HashMap<String, ImageBitmap?>()
 
 private suspend fun loadFlagBitmap(code: String): ImageBitmap? {
     if (flagBitmapCache.containsKey(code)) return flagBitmapCache[code]
-    val bitmap = runCatching { Res.readBytes("files/flags/$code.png").decodeToImageBitmap() }.getOrNull()
+    val bitmap = runCatchingCancellable { Res.readBytes("files/flags/$code.png").decodeToImageBitmap() }.getOrNull()
     flagBitmapCache[code] = bitmap
     return bitmap
 }

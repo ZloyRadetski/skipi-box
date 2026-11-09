@@ -106,6 +106,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import platform.TunnelPhase
 import platform.TunnelSnapshot
+import utils.runCatchingCancellable
 
 /**
  * Desktop adaptation of ProxyServerListPage using the shared adaptive ProxyHomeScreenContent.
@@ -510,7 +511,7 @@ internal fun DesktopProxyHome(
         onConfirmToolDeletion = { tool -> pendingToolDeletion = tool },
         onSetSubscriptionEnabled = { id, enabled ->
             scope.launch {
-                runCatching { onSetSubscriptionEnabled(id, enabled) }
+                runCatchingCancellable { onSetSubscriptionEnabled(id, enabled) }
                     .onFailure { error -> localMessage = error.message ?: "Не удалось изменить группу." }
             }
             Result.success(Unit)
@@ -585,7 +586,7 @@ internal fun DesktopProxyHome(
                 selectedGroupId = homeUiState.selectedGroupId,
                 requestDelete = {
                     scope.launch {
-                        runCatching { onDeleteSubscription(id) }
+                        runCatchingCancellable { onDeleteSubscription(id) }
                             .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
                     }
                 },
@@ -594,7 +595,7 @@ internal fun DesktopProxyHome(
         },
         onMoveGroup = { id, offset ->
             scope.launch {
-                runCatching { onMoveGroup(id, offset) }
+                runCatchingCancellable { onMoveGroup(id, offset) }
                     .onFailure { error -> localMessage = error.message ?: "Не удалось переместить группу." }
             }
             Result.success(Unit)
@@ -842,7 +843,7 @@ internal fun DesktopProxyHome(
                     selectedGroupId = homeUiState.selectedGroupId,
                     requestDelete = {
                         scope.launch {
-                            runCatching { onDeleteSubscription(subscriptionId) }
+                            runCatchingCancellable { onDeleteSubscription(subscriptionId) }
                                 .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
                         }
                     },
@@ -889,7 +890,7 @@ internal fun DesktopProxyHome(
         onSave = { draft, isNew ->
             val refreshWhenPreviouslyManual = editingSubscriptionGroup?.url.isNullOrBlank()
             scope.launch {
-                runCatching { onSaveSubscriptionGroup(draft, isNew, refreshWhenPreviouslyManual) }
+                runCatchingCancellable { onSaveSubscriptionGroup(draft, isNew, refreshWhenPreviouslyManual) }
                     .onSuccess { result ->
                         val saved = result.savedSubscription
                         if (result.shouldStartRefresh && saved != null) {
@@ -908,7 +909,7 @@ internal fun DesktopProxyHome(
                 selectedGroupId = homeUiState.selectedGroupId,
                 requestDelete = {
                     scope.launch {
-                        runCatching { onDeleteSubscription(group.id) }
+                        runCatchingCancellable { onDeleteSubscription(group.id) }
                             .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
                     }
                 },

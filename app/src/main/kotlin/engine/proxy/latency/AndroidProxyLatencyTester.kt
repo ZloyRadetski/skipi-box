@@ -43,6 +43,7 @@ import engine.vpn.toTunOptions
 import engine.vpn.withNativeRunnerEndpointResolved
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -73,6 +74,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
+import utils.runCatchingCancellable
 
 private val dnsDispatcher = Dispatchers.IO.limitedParallelism(32)
 // Bounded thread pool: avoids spinning up thousands of native threads when
@@ -314,7 +316,7 @@ internal class AndroidProxyLatencyTester(
                 val remaining = AtomicInteger(candidates.size)
                 candidates.forEach { candidate ->
                     launch {
-                        val verifiedMillis = runCatching {
+                        val verifiedMillis = runCatchingCancellable {
                             verifyTcpStartupCandidate(candidate)
                         }.getOrDefault(FailedDelayMillis)
                         val result = if (verifiedMillis >= 0) {
@@ -560,6 +562,8 @@ internal class AndroidProxyLatencyTester(
                 outboundPlan = updatedPlan,
             )
             executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Throwable) {
             AppLog.warn(LogTag, "Standalone AmneziaWG latency test failed: ${error.logSummary()}")
             FailedDelayMillis

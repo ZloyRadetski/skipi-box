@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 import ui.clipboard.getPlainText
 import ui.feedback.AndroidToastTipNotifier
 import app.skipi.ui.text.formatTemplate
+import utils.runCatchingCancellable
 
 internal val ProxyServerListToolAction.isDeletion: Boolean
     get() = when (this) {
@@ -82,7 +83,7 @@ internal fun handleProxyServerListAddAction(
     when (action) {
         ProxyServerListAddAction.ScanQrCode -> {
             scope.launch {
-                runCatching { qrScanner() }
+                runCatchingCancellable { qrScanner() }
                     .onSuccess { scanText ->
                         if (scanText.isNullOrBlank()) return@onSuccess
                         importProxyServersInBackground(
@@ -120,7 +121,7 @@ internal fun handleProxyServerListAddAction(
 
         ProxyServerListAddAction.File -> {
             scope.launch {
-                runCatching { proxyServerImportFileUseCase.readText() }
+                runCatchingCancellable { proxyServerImportFileUseCase.readText() }
                     .onSuccess { text ->
                         text?.let {
                             importProxyServersInBackground(
@@ -171,7 +172,7 @@ private fun importProxyServersInBackground(
     messages: ProxyServerListMessages,
 ) {
     backgroundScope.launch {
-        runCatching {
+        runCatchingCancellable {
             if (
                 installSubscriptionFromText(
                     text = text,
@@ -181,7 +182,7 @@ private fun importProxyServersInBackground(
                     messages = messages,
                 )
             ) {
-                return@runCatching
+                return@runCatchingCancellable
             }
             val appState = stateStore.state.value
             importProxyServers(
@@ -207,7 +208,7 @@ private suspend fun installSubscriptionFromText(
     messages: ProxyServerListMessages,
 ): Boolean {
     val config = text.toSubscriptionInstallConfigOrNull() ?: return false
-    runCatching {
+    runCatchingCancellable {
         SubscriptionInstallConfigUseCase(
             stateStore = stateStore,
             subscriptionFetcher = subscriptionFetcher,

@@ -59,6 +59,7 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import java.text.DateFormat
 import java.util.Date
+import utils.runCatchingCancellable
 
 /** The user-data operations Desktop's backup page needs from the application. */
 internal interface DesktopBackupHost {
@@ -118,7 +119,7 @@ internal fun DesktopBackupResetSettings(
             runExclusive {
                 val target = chooseDesktopBackupTarget(exportTitle) ?: return@runExclusive
                 val data = host.currentUserData()
-                runCatching {
+                runCatchingCancellable {
                     withContext(Dispatchers.IO) {
                         writeDesktopBackup(
                             target,
@@ -133,7 +134,7 @@ internal fun DesktopBackupResetSettings(
             runExclusive {
                 val source = chooseDesktopBackupSource(restoreTitle) ?: return@runExclusive
                 val current = host.currentUserData()
-                runCatching {
+                runCatchingCancellable {
                     withContext(Dispatchers.IO) { readDesktopBackup(source).toDesktopRestorePreview(current) }
                 }.onSuccess { pendingRestore = it }
                     .onFailure { onMessage("${getString(Res.string.settings_restore_read_failed)}: ${it.message.orEmpty()}") }

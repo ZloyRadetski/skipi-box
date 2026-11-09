@@ -86,6 +86,7 @@ import features.resources.resourceFileUpdateSource
 import features.resources.selectResourceFileSource
 import features.resources.ResourceFileSourceDraft
 import features.subscription.sanitizeSubscriptionIntervalInput
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -155,6 +156,8 @@ fun ResourceManagementScreen(
                     }
                     successMessage?.let { message -> onTip(message) }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Throwable) {
                 onError(error)
             } finally {

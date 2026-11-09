@@ -11,6 +11,7 @@ import app.activeTrafficConfig
 import features.logs.AppLog
 import features.resources.ResourceFileUseCase
 import features.resources.runtime.XrayResourceFileScope
+import utils.runCatchingCancellable
 
 @Composable
 internal fun ResourceFileSynchronizer(
@@ -18,7 +19,7 @@ internal fun ResourceFileSynchronizer(
     stateStore: AppStateStore,
 ) {
     LaunchedEffect(resourceFileUseCase, stateStore) {
-        runCatching {
+        runCatchingCancellable {
             val activeConfig = stateStore.state.value.activeTrafficConfig()
             resourceFileUseCase.synchronizeBundledFilesAfterPackageUpdate(
                 scope = XrayResourceFileScope(

@@ -13,6 +13,7 @@ import features.updater.AppUpdateDownloader
 import features.updater.AppUpdateNotifier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
+import utils.runCatchingCancellable
 
 private const val LogTag = "AppUpdateDownloadWorker"
 
@@ -79,7 +80,7 @@ internal class AppUpdateDownloadWorker(
         downloadedBytes: Long,
         totalBytes: Long,
     ) {
-        runCatching {
+        runCatchingCancellable {
             setForeground(AppUpdateNotifier.foregroundInfo(applicationContext, update, downloadedBytes, totalBytes))
         }.onFailure { error ->
             // A notification restriction must not discard an already resumable APK transfer.

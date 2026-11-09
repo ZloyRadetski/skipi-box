@@ -28,6 +28,7 @@ import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
 import features.proxy.app.model.ProxyAppListUserSpace
 import ui.feedback.AndroidToastTipNotifier
+import utils.runCatchingCancellable
 
 @Composable
 internal fun rememberProxyAppListPageState(): ProxyAppListPageState {
@@ -200,7 +201,7 @@ private fun ProxyAppListPackageEffect(
 }
 
 private suspend fun AndroidUserSpaceProvider.fallbackCurrentUserSpace(): ProxyAppListUserSpace {
-    return runCatching {
+    return runCatchingCancellable {
         currentAndroidUserSpace()
     }.getOrElse {
         ProxyAppListUserSpace(id = 0, name = "User 0")
@@ -211,10 +212,10 @@ private suspend fun loadProxyAppListUserSpaces(
     userSpaces: AndroidUserSpaceProvider,
     fallbackCurrentUser: ProxyAppListUserSpace,
 ): List<ProxyAppListUserSpace> {
-    return runCatching {
+    return runCatchingCancellable {
         userSpaces.listAndroidUsers().map { user -> user.toAndroidUserSpace() }
     }.getOrElse {
-        runCatching {
+        runCatchingCancellable {
             userSpaces.listAndroidUserSpaces()
         }.getOrElse {
             listOf(fallbackCurrentUser)

@@ -54,6 +54,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import ui.feedback.AndroidToastTipNotifier
+import utils.runCatchingCancellable
 
 class MainActivity : ComponentActivity() {
     private val vpnPermissionRequester = AndroidVpnPermissionRequester {
@@ -267,7 +268,7 @@ class MainActivity : ComponentActivity() {
         val state = application.stateStore.state.value
         if (!state.autoConnectOnAppOpen || state.proxyRunning) return
         application.appScope.launch(Dispatchers.IO) {
-            val running = runCatching { deepLinkProxyEngine.status(state.runMode, state).running }
+            val running = runCatchingCancellable { deepLinkProxyEngine.status(state.runMode, state).running }
                 .getOrElse { state.proxyRunning }
             if (running) return@launch
 
@@ -316,7 +317,7 @@ class MainActivity : ComponentActivity() {
             if (!confirmExternalImport(config.url.substringAfter("://").substringBefore('/').substringBefore('?').substringAfterLast('@').substringBefore(':'))) {
                 return@launch
             }
-            runCatching {
+            runCatchingCancellable {
                 subscriptionInstallConfigUseCase.install(config)
             }.onSuccess { result ->
                 tipNotifier.show(
@@ -374,7 +375,7 @@ class MainActivity : ComponentActivity() {
         }
         when (link) {
             is SkipiDeepLink.Subscription -> {
-                runCatching {
+                runCatchingCancellable {
                     subscriptionInstallConfigUseCase.install(
                         features.subscription.SubscriptionInstallConfig(
                             name = getString(R.string.skipi_imported_subscription),
@@ -397,7 +398,7 @@ class MainActivity : ComponentActivity() {
             }
 
             is SkipiDeepLink.ManualServer -> {
-                runCatching {
+                runCatchingCancellable {
                     application.stateStore.proxyServerRepository.updateCatalog { catalog ->
                         catalog.withImportedSkipiServer(link.url)
                     }
@@ -409,7 +410,7 @@ class MainActivity : ComponentActivity() {
             }
 
             is SkipiDeepLink.TrafficConfig -> {
-                runCatching {
+                runCatchingCancellable {
                     val isHttpUrl = link.content.startsWith("http://", ignoreCase = true) || link.content.startsWith("https://", ignoreCase = true)
                     val content = if (isHttpUrl) {
                         application.subscriptionFetcher.fetch(
@@ -480,7 +481,7 @@ class MainActivity : ComponentActivity() {
         application: SkipiApplication,
     ) {
         val state = application.stateStore.state.value
-        val running = runCatching { deepLinkProxyEngine.status(state.runMode, state).running }
+        val running = runCatchingCancellable { deepLinkProxyEngine.status(state.runMode, state).running }
             .getOrElse { state.proxyRunning }
         val selectedServer = state.proxyServers.firstOrNull { it.id == state.selectedProxyServerId }
         val result = when (link) {

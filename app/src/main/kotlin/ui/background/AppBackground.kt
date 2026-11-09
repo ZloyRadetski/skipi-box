@@ -54,6 +54,7 @@ import android.graphics.ImageDecoder
 import android.media.ExifInterface
 import android.os.Build
 import android.os.PowerManager
+import utils.runCatchingCancellable
 
 private const val BackgroundPhotoFileName = "custom_background.jpg"
 private const val MaxPhotoDimension = 2560
@@ -95,8 +96,8 @@ fun loadCustomBackgroundBitmap(context: Context): ImageBitmap? {
 
 suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
     withContext(Dispatchers.IO) {
-        runCatching {
-            val bitmap = decodeBitmapFromUri(context, uri) ?: return@runCatching false
+        runCatchingCancellable {
+            val bitmap = decodeBitmapFromUri(context, uri) ?: return@runCatchingCancellable false
             val targetFile = customBackgroundPhotoFile(context)
             val tempFile = File(context.filesDir, "custom_background_tmp.jpg")
             FileOutputStream(tempFile).use { output ->

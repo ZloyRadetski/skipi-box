@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
+import utils.runCatchingCancellable
 
 /**
  * Base provider for both home screen variants. It serializes all widget-driven
@@ -88,7 +89,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         val result = goAsync()
         operationScope.launch {
             try {
-                runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
+                runCatchingCancellable { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
                     AppLog.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
                 }
             } finally {
@@ -129,7 +130,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
             } finally {
                 try {
                     delay(WidgetRenderSettleDelayMillis.milliseconds)
-                    runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
+                    runCatchingCancellable { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
                         AppLog.warn(LogTag, "Failed to refresh SKIPI home screen widgets", error)
                     }
                 } finally {
@@ -351,7 +352,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
     ): Boolean {
         val currentState = stateStore.state.value
         val running =
-            runCatching { proxyEngine.status(appState = currentState).running }
+            runCatchingCancellable { proxyEngine.status(appState = currentState).running }
                 .onFailure { error ->
                     AppLog.warn(LogTag, "Failed to read proxy status from home screen widget", error)
                 }

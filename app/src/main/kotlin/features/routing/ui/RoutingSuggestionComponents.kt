@@ -56,6 +56,7 @@ import app.skipi.ui.components.AppWindowDialog
 import app.skipi.ui.text.themedFontWeight
 import features.proxy.app.model.AppPackageEntry
 import features.proxy.app.model.loadProxyAppListPackages
+import utils.runCatchingCancellable
 
 @Composable
 fun GeoAssetPickerDialog(
@@ -90,7 +91,7 @@ fun ProcessAppPickerDialog(
         if (show) {
             loading = true
             apps = withContext(Dispatchers.IO) {
-                runCatching {
+                runCatchingCancellable {
                     packageCatalog.loadProxyAppListPackages(
                         showSystemApps = false,
                         currentUserOnly = true,
