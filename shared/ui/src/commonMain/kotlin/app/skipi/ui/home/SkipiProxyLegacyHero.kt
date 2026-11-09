@@ -295,7 +295,7 @@ fun SkipiProxyHeroLegacyCard(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = state.sessionDuration?.value.orEmpty(),
+                                text = state.sessionDuration.value.orEmpty(),
                                 fontSize = 13.sp,
                                 fontWeight = typography.body,
                                 color = colors.mutedText,

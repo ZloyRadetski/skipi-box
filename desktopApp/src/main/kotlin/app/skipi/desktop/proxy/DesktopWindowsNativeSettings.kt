@@ -108,7 +108,8 @@ class NativeDesktopWindowsRegistry : DesktopWindowsRegistry {
 
     override fun write(key: String, valueName: String, value: DesktopWindowsRegistryValue): Result<Unit> = runCatching {
         Arena.ofConfined().use { arena ->
-            val hKey = openKey(arena, key, Win32.KEY_WRITE_ACCESS, create = true)!!
+            val hKey = openKey(arena, key, Win32.KEY_WRITE_ACCESS, create = true)
+                ?: error("Could not open the registry key $key for writing")
             try {
                 val (type, bytes) = when (value.type) {
                     DesktopWindowsRegistryValueType.String ->

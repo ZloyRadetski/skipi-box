@@ -109,9 +109,9 @@ fun SkipiRoutingOutboundGroupHeader(
                     }
                 }
             }
-            if (expanded && !details?.announcement.isNullOrBlank()) {
+            details?.announcement?.takeIf { expanded && it.isNotBlank() }?.let { announcement ->
                 Spacer(Modifier.height(12.dp))
-                Text(details!!.announcement, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                Text(announcement, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
             }
             details?.updatedLabel?.let {
                 Spacer(Modifier.height(10.dp))

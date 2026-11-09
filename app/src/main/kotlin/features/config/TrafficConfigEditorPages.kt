@@ -207,7 +207,6 @@ fun TrafficConfigRawEditorPage(
     val editor = rememberTrafficConfigEditorController(updateAppState)
     val onBack: () -> Unit = {
         editor.leaveRaw(config.id, rawEditorState.snapshotText()) { navigator.pop() }
-        Unit
     }
 
     TrafficConfigFullScreenScaffold(
@@ -310,7 +309,7 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
     val editor = rememberTrafficConfigEditorController(updateAppState)
-    val onBack: () -> Unit = { navigator.pop(); Unit }
+    val onBack: () -> Unit = { navigator.pop() }
     SkipiTrafficConfigTunnelEditorScreen(
         title = stringResource(R.string.configs_android_title),
         padding = padding,
@@ -331,7 +330,7 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
     val editor = rememberTrafficConfigEditorController(updateAppState)
-    val onBack: () -> Unit = { navigator.pop(); Unit }
+    val onBack: () -> Unit = { navigator.pop() }
     SkipiTrafficConfigNetworkActivationEditorScreen(
         title = stringResource(R.string.configs_network_title),
         padding = padding,

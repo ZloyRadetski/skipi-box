@@ -96,9 +96,9 @@ fun SkipiServerPickerGroupHeader(
                     }
                 }
             }
-            if (expanded && !summary?.announce.isNullOrBlank()) {
+            summary?.announce?.takeIf { expanded && it.isNotBlank() }?.let { announce ->
                 Spacer(Modifier.height(12.dp))
-                Text(summary!!.announce!!, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                Text(announce, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
             }
             summary?.lastUpdated?.let { Spacer(Modifier.height(10.dp)); Text(it, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }

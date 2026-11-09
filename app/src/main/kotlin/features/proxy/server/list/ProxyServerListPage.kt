@@ -1019,7 +1019,6 @@ fun ProxyServerListPage(
                         val serverId = when (effect) {
                             is ProxyHomeEffect.ShowServerQr -> effect.id
                             is ProxyHomeEffect.CopyServer -> effect.id
-                            else -> error("Unreachable copy effect")
                         }.toIntOrNull() ?: return@ProxyHomeEffectHandler Result.failure(
                             IllegalArgumentException("Invalid server ID."),
                         )
@@ -1028,7 +1027,6 @@ fun ProxyServerListPage(
                         val format = when (effect) {
                             is ProxyHomeEffect.ShowServerQr -> ProxyHomeCopyFormat.QrCode
                             is ProxyHomeEffect.CopyServer -> effect.format
-                            else -> error("Unreachable copy effect")
                         }
                         val issues = server.server.validateBasic()
                         if (issues.isNotEmpty()) {

@@ -138,7 +138,7 @@ internal class AndroidTunnelController(
 
     override suspend fun snapshot(): TunnelSnapshot {
         val state = readState()
-        val profileId = state.selectedProxyServerId?.toString()
+        val profileId = state.selectedProxyServerId.toString()
         val status = readStatus(state).getOrElse { error ->
             return failedSnapshot(error, TunnelOperationStage.ReadStatus, profileId)
         }

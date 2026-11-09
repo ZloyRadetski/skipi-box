@@ -159,7 +159,7 @@ private fun JsonObject.rewriteCustomDnsRouting(plan: CustomDnsRoutingPlan): Json
     val existingRules = skipiRules?.let { rules -> buildJsonArray { rules.forEach(::add) } }
         ?: routing.arrayValue("rules") ?: buildJsonArray {}
     return routing.updated {
-        if (skipiRules != null) plan.skipiRouting?.domainStrategy?.let { strategy -> put("domainStrategy", strategy) }
+        if (skipiRules != null) plan.skipiRouting.domainStrategy?.let { strategy -> put("domainStrategy", strategy) }
         put(
             "rules",
             buildJsonArray {

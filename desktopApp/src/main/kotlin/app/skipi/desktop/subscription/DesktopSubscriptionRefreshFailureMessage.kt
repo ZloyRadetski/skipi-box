@@ -20,7 +20,7 @@ internal fun desktopSubscriptionRefreshFailureMessage(error: Throwable): String 
         unwrapped is SocketException -> "Network error: ${unwrapped.message ?: "Socket exception"}"
         error.message?.contains("imported no proxy servers", ignoreCase = true) == true ->
             "Subscription returned empty list"
-        !error.message.isNullOrBlank() -> error.message!!
+        error.message?.isNotBlank() == true -> error.message.orEmpty()
         else -> unwrapped.localizedMessage ?: "Unknown error"
     }
 }

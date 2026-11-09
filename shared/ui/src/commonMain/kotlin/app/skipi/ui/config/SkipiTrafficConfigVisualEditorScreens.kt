@@ -69,7 +69,6 @@ fun SkipiTrafficConfigBasicsEditorScreen(
     }
     val saveAndBack: () -> Unit = {
         controller.saveBasicsThenNavigate(profile, draft, onBack)
-        Unit
     }
     platformBackHandler(saveAndBack)
     val listState = rememberLazyListState()
@@ -113,7 +112,6 @@ fun SkipiTrafficConfigBasicsEditorScreen(
                         summary = section.summary,
                         onClick = {
                             controller.saveBasicsThenNavigate(profile, draft, section.onNavigate)
-                            Unit
                         },
                     )
                 }
@@ -153,7 +151,6 @@ fun SkipiTrafficConfigGeneralEditorScreen(
     }
     val saveAndBack: () -> Unit = {
         controller.saveGeneralThenNavigate(profile.id, ipv6, preferIpv6, onBack)
-        Unit
     }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
@@ -198,7 +195,6 @@ fun SkipiTrafficConfigDnsEditorScreen(
     var settings by remember(profile.id) { mutableStateOf(profile.androidSettings) }
     val saveAndBack: () -> Unit = {
         controller.saveDnsThenNavigate(profile.id, settings, onBack)
-        Unit
     }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
@@ -241,7 +237,6 @@ fun SkipiTrafficConfigTunnelEditorScreen(
     var muxConcurrency by remember(profile.id) { mutableStateOf(settings.muxConcurrency) }
     val saveAndBack: () -> Unit = {
         controller.saveTunnelThenNavigate(profile.id, settings, muxConcurrency, onBack)
-        Unit
     }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
@@ -288,7 +283,6 @@ fun SkipiTrafficConfigNetworkActivationEditorScreen(
     }
     val saveAndBack: () -> Unit = {
         controller.saveNetworkActivationThenNavigate(profile.id, enabled, transport, onBack)
-        Unit
     }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(

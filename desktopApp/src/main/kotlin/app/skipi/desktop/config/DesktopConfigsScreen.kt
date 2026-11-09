@@ -755,9 +755,10 @@ internal fun DesktopConfigsScreen(
         visualEditor = null
     }
 
-    if (editorDraft != null) {
+    val openDraft = editorDraft
+    if (openDraft != null) {
         DesktopConfigEditor(
-            draft = editorDraft!!,
+            draft = openDraft,
             contentPadding = contentPadding,
             statusMessage = editorSaveError,
             onBack = { content ->

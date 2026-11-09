@@ -317,8 +317,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                     lease.copy(phase = DesktopWindowsSystemProxyLeasePhase.Active),
                 ).getOrThrow()
             }
-            if (applied.isFailure) {
-                val originalFailure = applied.exceptionOrNull()!!
+            applied.exceptionOrNull()?.let { originalFailure ->
                 val rollback = restoreOwnedLease(lease)
                 if (rollback.isFailure) {
                     error(

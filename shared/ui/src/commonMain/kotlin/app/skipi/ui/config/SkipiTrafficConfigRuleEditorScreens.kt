@@ -254,7 +254,6 @@ fun SkipiTrafficConfigRuleEditorScreen(
             ),
             onNavigate = onBack,
         )
-        Unit
     }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(

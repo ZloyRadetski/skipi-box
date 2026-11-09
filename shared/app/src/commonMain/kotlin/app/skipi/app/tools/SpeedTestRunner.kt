@@ -144,7 +144,7 @@ class SpeedTestRunner(
                         total.toFloat() / byteBudget,
                         (now - started).inWholeMilliseconds.toFloat() / maxDurationMillis,
                     ).coerceIn(0f, 1f)
-                    onSample(progress, emaMbps ?: 0.0)
+                    onSample(progress, emaMbps)
                 }
             }
             // Wait for the transfer loops before stopping the sampler, otherwise the UI would

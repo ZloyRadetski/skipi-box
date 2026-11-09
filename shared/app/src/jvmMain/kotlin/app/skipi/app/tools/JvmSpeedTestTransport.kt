@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import kotlin.random.Random
@@ -46,7 +47,7 @@ class JvmSpeedTestTransport(
             target.requestMethod = "GET"
         }
         try {
-            connection.inputStream.use { input -> while (input.read() != -1) Unit }
+            connection.inputStream.use { input -> input.copyTo(OutputStream.nullOutputStream()) }
         } finally {
             runCatching { connection.inputStream?.close() }
         }
