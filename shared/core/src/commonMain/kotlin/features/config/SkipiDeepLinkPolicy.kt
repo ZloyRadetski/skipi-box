@@ -18,6 +18,7 @@ fun SkipiDeepLink.gate(): DeepLinkGate = when (this) {
     is SkipiDeepLink.Subscription,
     is SkipiDeepLink.ManualServer,
     is SkipiDeepLink.TrafficConfig,
+    is SkipiDeepLink.Theme,
     -> DeepLinkGate.NeedsConfirmation
 
     SkipiDeepLink.Connect,
@@ -35,6 +36,7 @@ fun SkipiDeepLink.confirmationTarget(): String = when (this) {
     is SkipiDeepLink.Subscription -> url.hostOrEmpty()
     is SkipiDeepLink.ManualServer -> url.hostOrEmpty()
     is SkipiDeepLink.TrafficConfig -> content.takeIf { it.contains("://") && !it.contains('\n') }.orEmpty().hostOrEmpty()
+    is SkipiDeepLink.Theme -> theme.name
     else -> ""
 }
 

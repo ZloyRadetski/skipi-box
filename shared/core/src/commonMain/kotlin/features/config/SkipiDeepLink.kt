@@ -15,6 +15,9 @@ sealed interface SkipiDeepLink {
         val sourceUrl: String = "",
     ) : SkipiDeepLink
 
+    /** A colour theme to add to the user's themes once they approve it. */
+    data class Theme(val theme: CustomThemeShare) : SkipiDeepLink
+
     data object Connect : SkipiDeepLink
     data object Open : SkipiDeepLink
     data object Disconnect : SkipiDeepLink
@@ -38,6 +41,7 @@ fun parseSkipiDeepLinkOrNull(rawUri: String): SkipiDeepLink? {
             ?.toSkipiSubscriptionOrServerLink()
 
         "routing", "conf" -> rawUri.toSkipiTrafficConfigDeepLinkOrNull()
+        "theme" -> parseCustomThemeCodeOrNull(rawUri)?.let(SkipiDeepLink::Theme)
         "connect" -> SkipiDeepLink.Connect
         "open" -> SkipiDeepLink.Open
         "disconnect" -> SkipiDeepLink.Disconnect

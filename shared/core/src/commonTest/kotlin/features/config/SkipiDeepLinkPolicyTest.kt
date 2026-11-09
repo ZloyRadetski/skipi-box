@@ -62,4 +62,23 @@ class SkipiDeepLinkPolicyTest {
             SkipiDeepLink.TrafficConfig(content = "{\"rules\":[]}", activate = true).confirmationTarget(),
         )
     }
+
+    @Test
+    fun aThemeLinkNeedsConfirmationAndNamesTheThemeNotAHost() {
+        val link = SkipiDeepLink.Theme(
+            CustomThemeShare(
+                name = "Night harbour",
+                dark = true,
+                accent = 0xFF3B82F6,
+                background = 0xFF081427,
+                surface = 0xFF102443,
+                surfaceVariant = 0xFF18345E,
+                text = 0xFFE7F1FF,
+                textSecondary = 0xFFB2C8EA,
+            ),
+        )
+
+        assertEquals(DeepLinkGate.NeedsConfirmation, link.gate())
+        assertEquals("Night harbour", link.confirmationTarget())
+    }
 }

@@ -62,4 +62,27 @@ class SkipiDeepLinkTest {
         assertEquals("[Rule]\nFINAL,PROXY", "W1J1bGVdCkZJTkFMLFBST1hZ".decodeSkipiPayload())
         assertNull("https://example.test/not-base64".decodeSkipiPayload())
     }
+
+    @Test
+    fun parses_a_theme_link_into_the_shared_theme() {
+        val theme = CustomThemeShare(
+            name = "Night harbour",
+            dark = true,
+            accent = 0xFF3B82F6,
+            background = 0xFF081427,
+            surface = 0xFF102443,
+            surfaceVariant = 0xFF18345E,
+            text = 0xFFE7F1FF,
+            textSecondary = 0xFFB2C8EA,
+        )
+
+        assertEquals(SkipiDeepLink.Theme(theme), parseSkipiDeepLinkOrNull(theme.toLink()))
+        assertEquals(SkipiDeepLink.Theme(theme), parseSkipiDeepLinkOrNull("SKIPI://THEME/${theme.toCode()}"))
+    }
+
+    @Test
+    fun a_theme_link_with_a_damaged_payload_is_ignored() {
+        assertNull(parseSkipiDeepLinkOrNull("skipi://theme/"))
+        assertNull(parseSkipiDeepLinkOrNull("skipi://theme/not-a-theme"))
+    }
 }
