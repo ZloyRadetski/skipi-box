@@ -100,6 +100,21 @@ class DesktopBackupTest {
     }
 
     @Test
+    fun theUpdateChannelAndTheAutomaticCheckSurviveBackupAndRestore() {
+        val chosen = userData().copy(
+            settings = userData().settings.copy(
+                appUpdateChannelId = features.updater.AppUpdateChannel.Nightly.id,
+                autoCheckAppUpdates = false,
+            ),
+        )
+
+        val restored = roundTrip(chosen).userData.settings
+
+        assertEquals(features.updater.AppUpdateChannel.Nightly, restored.appUpdateChannel)
+        assertFalse(restored.autoCheckAppUpdates)
+    }
+
+    @Test
     fun exportMapsDesktopGroupsToAndroidGroupIds() {
         val backup = userData().toAppBackupFile(createdAtMillis = 5L, appVersionName = "0.4.1", appVersionCode = 180)
 

@@ -30,6 +30,12 @@ import features.proxy.server.model.decodeProxyServer
 import features.proxy.server.model.toPersistedProxyServer
 import features.routing.model.RouteRule
 import features.subscription.DefaultSubscriptionGroupId
+import app.modes.BottomBarSizeLarge
+import app.modes.BottomBarSizeSmall
+import app.modes.ClassicButtonSizeGiant
+import app.modes.ClassicButtonSizeSmall
+import features.subscription.DefaultSubscriptionUserAgent
+import features.updater.AppUpdateChannel
 import features.backup.AppBackupCustomResourceFile
 import features.backup.AppBackupData
 import features.backup.AppBackupFile
@@ -126,6 +132,16 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
         localProxyAuthMode = localProxyAuthMode.name,
+        appUpdateChannel = appUpdateChannel.id,
+        autoCheckAppUpdates = autoCheckAppUpdates,
+        autoInstallAppUpdatesAtNight = autoInstallAppUpdatesAtNight,
+        bottomBarSize = bottomBarSize,
+        classicButtonSize = classicButtonSize,
+        fakeDnsIpPool = fakeDnsIpPool,
+        fakeDnsPoolSize = fakeDnsPoolSize,
+        hevTcpReadWriteTimeoutMillis = hevTcpReadWriteTimeoutMillis,
+        // The default names the running host ("SKIPI/x/Desktop"), so it stays "use this host's default".
+        resourceFileUserAgent = resourceFileUserAgent.takeUnless { it == DefaultSubscriptionUserAgent }.orEmpty(),
         enableLocalHttpProxy = enableLocalHttpProxy,
         localHttpProxyPort = localHttpProxyPort,
         enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
@@ -351,6 +367,18 @@ private fun AppBackupData.toAppState(): AppState {
         localProxyUsername = settings.localProxyUsername.ifEmpty { defaults.localProxyUsername },
         localProxyPassword = settings.localProxyPassword.ifEmpty { defaults.localProxyPassword },
         localProxyAuthMode = parseLocalProxyAuthMode(settings.localProxyAuthMode, defaults.localProxyAuthMode),
+        appUpdateChannel = AppUpdateChannel.fromId(settings.appUpdateChannel),
+        autoCheckAppUpdates = settings.autoCheckAppUpdates,
+        autoInstallAppUpdatesAtNight = settings.autoInstallAppUpdatesAtNight,
+        bottomBarSize = settings.bottomBarSize.takeIf { it in BottomBarSizeSmall..BottomBarSizeLarge }
+            ?: defaults.bottomBarSize,
+        classicButtonSize = settings.classicButtonSize.takeIf { it in ClassicButtonSizeSmall..ClassicButtonSizeGiant }
+            ?: defaults.classicButtonSize,
+        fakeDnsIpPool = settings.fakeDnsIpPool.ifBlank { defaults.fakeDnsIpPool },
+        fakeDnsPoolSize = settings.fakeDnsPoolSize.takeIf { it > 0 } ?: defaults.fakeDnsPoolSize,
+        hevTcpReadWriteTimeoutMillis = settings.hevTcpReadWriteTimeoutMillis.takeIf { it > 0 }
+            ?: defaults.hevTcpReadWriteTimeoutMillis,
+        resourceFileUserAgent = settings.resourceFileUserAgent.ifBlank { defaults.resourceFileUserAgent },
         enableLocalHttpProxy = settings.enableLocalHttpProxy,
         localHttpProxyPort = settings.localHttpProxyPort.ifBlank { defaults.localHttpProxyPort },
         enableLocalHttpProxyAuth = settings.enableLocalHttpProxyAuth,

@@ -52,6 +52,15 @@ private object BackupDefaults {
     const val localProxyUsername = ""
     const val localProxyPassword = ""
     const val localProxyAuthMode = "Auto"
+    const val appUpdateChannel = "stable"
+    const val autoCheckAppUpdates = true
+    const val autoInstallAppUpdatesAtNight = true
+    const val bottomBarSize = 2
+    const val classicButtonSize = 1
+    const val fakeDnsIpPool = "198.18.0.0/15"
+    const val fakeDnsPoolSize = 65535
+    const val hevTcpReadWriteTimeoutMillis = 300_000
+    const val resourceFileUserAgent = ""
     const val enableLocalHttpProxy = false
     const val localHttpProxyPort = "10809"
     const val enableLocalHttpProxyAuth = false
@@ -238,6 +247,16 @@ data class AppBackupSettings(
     val subscriptionUserAgents: List<String> = emptyList(),
     val enableSubscriptionDeviceHeaders: Boolean = BackupDefaults.enableSubscriptionDeviceHeaders,
     val subscriptionFetchTimeoutSeconds: Int = BackupDefaults.subscriptionFetchTimeoutSeconds,
+    /** [features.updater.AppUpdateChannel.id]; an unknown value means the default channel. */
+    val appUpdateChannel: String = BackupDefaults.appUpdateChannel,
+    val autoCheckAppUpdates: Boolean = BackupDefaults.autoCheckAppUpdates,
+    val autoInstallAppUpdatesAtNight: Boolean = BackupDefaults.autoInstallAppUpdatesAtNight,
+    val bottomBarSize: Int = BackupDefaults.bottomBarSize,
+    val classicButtonSize: Int = BackupDefaults.classicButtonSize,
+    val fakeDnsIpPool: String = BackupDefaults.fakeDnsIpPool,
+    val fakeDnsPoolSize: Int = BackupDefaults.fakeDnsPoolSize,
+    val hevTcpReadWriteTimeoutMillis: Int = BackupDefaults.hevTcpReadWriteTimeoutMillis,
+    val resourceFileUserAgent: String = BackupDefaults.resourceFileUserAgent,
     val routeDomainStrategy: Int = BackupDefaults.routeDomainStrategy,
     val defaultRouteOutboundTag: String = BackupDefaults.defaultRouteOutboundTag,
     val coreLogLevel: Int = BackupDefaults.coreLogLevel,

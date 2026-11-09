@@ -30,6 +30,7 @@ import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.toPersistedProxyServer
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.StoredSubscription
+import features.updater.AppUpdateChannel
 import features.subscription.StoredSubscriptionMetadata
 import features.subscription.SubscriptionProviderLibrary
 import platform.DefaultLocalHttpProxyPort
@@ -306,6 +307,8 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
         localProxyAuthMode = localProxyAuthMode.name,
+        appUpdateChannel = appUpdateChannel.id,
+        autoCheckAppUpdates = autoCheckAppUpdates,
         enableLocalHttpProxy = enableLocalHttpProxy,
         localHttpProxyPort = localHttpProxyPort.toString(),
         enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
@@ -405,6 +408,8 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
         localProxyAuthMode = parseLocalProxyAuthMode(localProxyAuthMode),
+        appUpdateChannelId = AppUpdateChannel.fromId(appUpdateChannel).id,
+        autoCheckAppUpdates = autoCheckAppUpdates,
         enableLocalHttpProxy = enableLocalHttpProxy,
         localHttpProxyPort = localHttpProxyPort.toIntOrNull()?.takeIf { it in 1..65_535 } ?: DefaultLocalHttpProxyPort,
         enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,

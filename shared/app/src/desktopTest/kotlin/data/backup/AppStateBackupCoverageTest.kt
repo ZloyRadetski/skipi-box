@@ -49,22 +49,13 @@ class AppStateBackupCoverageTest {
     )
 
     /**
-     * Real settings a restore does not bring back today. Listed so that the gap is visible and a new one cannot
-     * join it unnoticed; adding one of these to the backup is an optional new field, which older apps ignore.
+     * Settings tied to the device on purpose: a restore on another phone or computer must not switch the app on
+     * at boot or change how it runs there (a restore always starts in VPN mode).
      */
-    private val knownGaps = setOf(
-        "appUpdateChannel",
-        "autoCheckAppUpdates",
+    private val deviceBound = setOf(
         "autoConnectOnAppOpen",
         "autoConnectOnBoot",
-        "autoInstallAppUpdatesAtNight",
-        "bottomBarSize",
-        "classicButtonSize",
-        "fakeDnsIpPool",
-        "fakeDnsPoolSize",
-        "hevTcpReadWriteTimeoutMillis",
         "runMode",
-        "resourceFileUserAgent",
     )
 
     /** Backup settings that are not plain state fields: the state derives them (the category icon colours). */
@@ -90,7 +81,7 @@ class AppStateBackupCoverageTest {
 
     @Test
     fun everyStateFieldIsBackedUpOrNamedWithItsReason() {
-        val declared = runtimeOnly + derivedOnRestore + ownSection + knownGaps
+        val declared = runtimeOnly + derivedOnRestore + ownSection + deviceBound
 
         assertEquals(
             emptyList(),
@@ -102,7 +93,7 @@ class AppStateBackupCoverageTest {
 
     @Test
     fun theListsHoldNoFieldThatNoLongerExistsOrIsAlreadyBackedUp() {
-        val declared = runtimeOnly + derivedOnRestore + ownSection + knownGaps
+        val declared = runtimeOnly + derivedOnRestore + ownSection + deviceBound
 
         assertEquals(emptyList(), (declared - stateFields).sorted(), "named here but gone from AppState")
         assertEquals(emptyList(), declared.intersect(backupFields).sorted(), "named here but stored by the backup")
