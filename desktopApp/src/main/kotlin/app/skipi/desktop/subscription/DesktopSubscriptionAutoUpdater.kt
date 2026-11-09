@@ -15,6 +15,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import features.subscription.runtime.recordAttemptResult
 
 /** In-process Desktop owner for independent periodic subscription refresh jobs. */
 internal class DesktopSubscriptionAutoUpdater(

@@ -5,6 +5,7 @@ package features.subscription.runtime
 
 import features.subscription.SubscriptionSchedule
 import features.subscription.parseSubscriptionSchedule
+import features.work.PeriodicWorkSpec
 
 /**
  * Platform-neutral fields required to schedule one subscription refresh.
@@ -64,11 +65,11 @@ enum class SubscriptionExistingWorkPolicy {
 data class SubscriptionWorkSpec(
     val groupId: Int,
     val uniqueName: String,
-    val repeatIntervalMillis: Long,
+    override val repeatIntervalMillis: Long,
     val requiresConnectedNetwork: Boolean,
     val policy: SubscriptionExistingWorkPolicy,
-    val backoffMillis: Long,
-)
+    override val backoffMillis: Long,
+) : PeriodicWorkSpec
 
 /** Platform gateway for persistent periodic subscription work. */
 interface SubscriptionScheduleGateway {

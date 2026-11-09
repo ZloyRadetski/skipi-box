@@ -15,6 +15,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import features.config.runtime.recordAttemptResult
+import features.config.runtime.profileId
 
 /** In-process Desktop owner for independent periodic profile refresh jobs. */
 internal class DesktopTrafficConfigAutoUpdater(

@@ -19,6 +19,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.net.NetworkInterface
 import java.net.SocketException
+import features.config.runtime.profileId
 
 /**
  * App-lifetime Desktop host for Android's periodic and active-profile geo refresh requests.
