@@ -35,9 +35,9 @@ class ServerRowMenuTest {
     )
 
     @Test
-    fun middleRowOffersCopyQrEditDeleteAndBothMoves() {
+    fun middleRowOffersCopyOneQrEditDeleteAndBothMoves() {
         assertEquals(
-            listOf("copy:Url", "copy:QrCode", "show-qr", "edit", "delete", "move-up", "move-down"),
+            listOf("copy:Url", "show-qr", "edit", "delete", "move-up", "move-down"),
             serverMenuActionIds(server, context(), serverIndex = 1, totalServers = 3),
         )
     }

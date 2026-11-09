@@ -50,9 +50,9 @@ internal fun serverMenuActionIds(
         context.canUse(ProxyHomeActionId.MoveServer)
     return buildList {
         if (context.canUse(ProxyHomeActionId.CopyServer)) {
-            server.availableCopyFormats.intersect(context.availableCopyFormats).forEach { format ->
-                add("copy:" + format.name)
-            }
+            // The QR code has its own "show-qr" entry; offering it here too listed it twice.
+            (server.availableCopyFormats.intersect(context.availableCopyFormats) - ProxyHomeCopyFormat.QrCode)
+                .forEach { format -> add("copy:" + format.name) }
         }
         if (
             context.canUse(ProxyHomeActionId.ShowServerQr) &&

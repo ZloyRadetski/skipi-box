@@ -1724,7 +1724,8 @@ private fun ServerListItem(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
-                        menuActions.forEach { actionId ->
+                        val moves = menuActions.filter { it == "move-up" || it == "move-down" }
+                        (menuActions - moves.toSet()).forEach { actionId ->
                             DropdownMenuItem(
                                 text = { Text(serverMenuActionTitle(actionId)) },
                                 colors = skipiHomeDropdownItemColors(),
@@ -1733,6 +1734,21 @@ private fun ServerListItem(
                                     handleServerMenuAction(actionId, server, onAction)
                                 },
                             )
+                        }
+                        // Up and down sit side by side instead of taking a row each.
+                        if (moves.isNotEmpty()) {
+                            Row {
+                                moves.forEach { actionId ->
+                                    DropdownMenuItem(
+                                        text = { Text(serverMenuActionTitle(actionId)) },
+                                        colors = skipiHomeDropdownItemColors(),
+                                        onClick = {
+                                            menuExpanded = false
+                                            handleServerMenuAction(actionId, server, onAction)
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
