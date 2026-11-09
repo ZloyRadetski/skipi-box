@@ -105,16 +105,7 @@ internal class AppUpdateDownloadCoordinator(
     private val workManager = WorkManager.getInstance(appContext)
 
     fun enqueue(update: AppUpdateInfo, automatic: Boolean) {
-        val current = stateStore.currentState
-        if (
-            current.availableAppUpdate?.isSameReleaseAs(update) == true &&
-            current.appUpdateDownloadStatus in setOf(
-                AppUpdateDownloadStatus.QUEUED,
-                AppUpdateDownloadStatus.DOWNLOADING,
-            )
-        ) {
-            return
-        }
+        if (!stateStore.currentState.appUpdateState().needsDownloadWork(update, automatic)) return
 
         stateStore.update { state -> state.updatingAppUpdate { withQueuedDownload(update, automatic) } }
         enqueueWork(update, automatic, ExistingWorkPolicy.REPLACE)

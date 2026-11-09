@@ -130,4 +130,27 @@ class AppUpdateStateTest {
             AppUpdateState(availableUpdate = update, status = AppUpdateDownloadStatus.FAILED).restoreAction(false),
         )
     }
+
+    @Test
+    fun aRunningTransferOfTheSameReleaseIsNotStartedAgain() {
+        val running = AppUpdateState().withQueuedDownload(update, automatic = false)
+
+        assertFalse(running.needsDownloadWork(update, automatic = false))
+        assertFalse(running.needsDownloadWork(update, automatic = true))
+    }
+
+    @Test
+    fun aTapOnDownloadTakesOverAnAutomaticTransferWaitingForWifiAndCharger() {
+        val waiting = AppUpdateState().withQueuedDownload(update, automatic = true)
+
+        assertTrue(waiting.needsDownloadWork(update, automatic = false))
+    }
+
+    @Test
+    fun aNewReleaseOrAnIdleStateAlwaysStartsWork() {
+        val running = AppUpdateState().withQueuedDownload(update, automatic = false)
+
+        assertTrue(AppUpdateState().needsDownloadWork(update, automatic = false))
+        assertTrue(running.needsDownloadWork(update.copy(versionCode = 124, versionName = "1.2.4"), automatic = false))
+    }
 }

@@ -31,6 +31,17 @@ data class AppUpdateState(
 
     fun cleared(): AppUpdateState = AppUpdateState()
 
+    /**
+     * Whether asking for a download of [update] must start work. The same release already queued or
+     * downloading needs nothing, except that the user's tap takes over an automatic transfer: that one waits
+     * for an unmetered network and a charger, and ignoring the tap would leave the banner at 0% for good.
+     */
+    fun needsDownloadWork(update: AppUpdateInfo, automatic: Boolean): Boolean {
+        val inFlight = status == AppUpdateDownloadStatus.QUEUED || status == AppUpdateDownloadStatus.DOWNLOADING
+        if (!matches(update) || !inFlight) return true
+        return isAutomatic && !automatic
+    }
+
     fun withQueuedDownload(update: AppUpdateInfo, automatic: Boolean): AppUpdateState = copy(
         availableUpdate = update,
         dismissedVersion = if (matches(update)) dismissedVersion else "",
