@@ -15,6 +15,8 @@ data class AppearanceSettingsState(
     val connectionDisplayMode: Int = 1,
     val customAccentColor: Long? = null,
     val customBackgroundColor: Long? = null,
+    /** Saved colour themes, one theme code per line. */
+    val customThemes: String = "",
     val customCategoryIconColor: Long? = null,
     val customMaterialYouSeed: Long? = null,
     val customPingFastColor: Long? = null,

@@ -117,6 +117,8 @@ fun SkipiAppearanceSettingsScreen(
     onRemoveBackgroundPhoto: () -> Unit,
     onRequestAppIconSelection: () -> Unit,
     onColorsReset: (String) -> Unit,
+    /** Puts text on the host's clipboard and tells the user [confirmation]; used to copy a theme link. */
+    onCopyText: (text: String, confirmation: String) -> Unit = { _, _ -> },
     capabilities: AppearanceSettingsCapabilities = AppearanceSettingsCapabilities(),
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
@@ -416,6 +418,16 @@ fun SkipiAppearanceSettingsScreen(
                                 }
                             }
                         }
+                    }
+                }
+
+                if (capabilities.customColors) item(key = "appearance_custom_themes") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        CustomThemesSection(
+                            state = appState,
+                            onSettingsChange = updateAppState,
+                            onCopyText = onCopyText,
+                        )
                     }
                 }
 

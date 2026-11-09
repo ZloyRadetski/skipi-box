@@ -334,12 +334,15 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private suspend fun confirmExternalImport(target: String): Boolean = suspendCancellableCoroutine { continuation ->
+    private suspend fun confirmExternalImport(
+        target: String,
+        messageRes: Int = R.string.external_import_confirm_message,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
         runOnUiThread {
             val shownTarget = target.ifBlank { getString(R.string.external_import_inline_content) }
             val dialog = AlertDialog.Builder(this)
                 .setTitle(R.string.external_import_confirm_title)
-                .setMessage(getString(R.string.external_import_confirm_message, shownTarget))
+                .setMessage(getString(messageRes, shownTarget))
                 .setPositiveButton(R.string.external_import_confirm_accept) { _, _ ->
                     if (continuation.isActive) continuation.resume(true)
                 }
@@ -359,7 +362,11 @@ class MainActivity : ComponentActivity() {
         // approval and tunnel control honours the external-control setting.
         when (link.gate()) {
             DeepLinkGate.Allowed -> Unit
-            DeepLinkGate.NeedsConfirmation -> if (!confirmExternalImport(link.confirmationTarget())) return
+            DeepLinkGate.NeedsConfirmation -> if (!confirmExternalImport(
+                    target = link.confirmationTarget(),
+                    messageRes = if (link is SkipiDeepLink.Theme) R.string.external_theme_confirm_message else R.string.external_import_confirm_message,
+                )
+            ) return
             DeepLinkGate.NeedsAutomationEnabled -> if (!application.stateStore.state.value.enableBroadcastControl) {
                 tipNotifier.show(getString(R.string.external_control_disabled))
                 return
@@ -439,6 +446,24 @@ class MainActivity : ComponentActivity() {
                 }.onFailure { error ->
                     tipNotifier.showError(error, getString(R.string.skipi_import_failed))
                 }
+            }
+
+            is SkipiDeepLink.Theme -> {
+                var outcome = features.config.CustomThemeImport.Added
+                application.stateStore.update { state ->
+                    val result = features.config.importCustomTheme(state.customThemes, link.theme)
+                    outcome = result.outcome
+                    state.copy(customThemes = result.storage)
+                }
+                tipNotifier.show(
+                    getString(
+                        when (outcome) {
+                            features.config.CustomThemeImport.Added -> R.string.skipi_imported_theme
+                            features.config.CustomThemeImport.AlreadySaved -> R.string.skipi_imported_theme_existing
+                            features.config.CustomThemeImport.LibraryFull -> R.string.skipi_imported_theme_full
+                        },
+                    ),
+                )
             }
 
             SkipiDeepLink.Open -> Unit

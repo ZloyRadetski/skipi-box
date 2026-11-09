@@ -467,6 +467,7 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
         classicButtonSize = classicButtonSize,
+        customThemes = customThemes,
     )
 
 private fun DesktopAppSettings.toPersistedSettings(
@@ -528,6 +529,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     backgroundStyle = backgroundStyle ?: AppearanceSettingValues.BackgroundStyleClassic,
     bottomBarSize = bottomBarSize ?: 1,
     classicButtonSize = classicButtonSize ?: AppearanceSettingValues.ClassicButtonSizeMedium,
+    customThemes = customThemes,
     classicShowFloatingPowerButton = classicShowFloatingPowerButton,
     colorMode = when (themeMode) {
         DesktopThemeMode.Dark -> AppearanceSettingValues.ColorModeDark
@@ -683,6 +685,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         backgroundPhotoDimPercent = state.backgroundPhotoDimPercent,
         bottomBarSize = state.bottomBarSize,
         classicButtonSize = state.classicButtonSize,
+        customThemes = state.customThemes,
         seedIndex = state.seedIndex,
         customMaterialYouSeed = state.customMaterialYouSeed,
     )
@@ -739,6 +742,7 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
         backgroundPhotoDimPercent = appearance.backgroundPhotoDimPercent,
         bottomBarSize = appearance.bottomBarSize,
         classicButtonSize = appearance.classicButtonSize,
+        customThemes = appearance.customThemes,
     )
 }
 

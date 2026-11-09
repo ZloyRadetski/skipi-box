@@ -175,6 +175,8 @@ data class AppBackupSettings(
     val customPingMediumColor: Long? = null,
     val customPingSlowColor: Long? = null,
     val customCategoryIconColor: Long? = null,
+    /** Saved colour themes, one theme code per line; absent in backups made before themes existed. */
+    val customThemes: String = "",
     val customCategoryAppearanceColor: Long? = null,
     val customCategoryVpnColor: Long? = null,
     val customCategoryProxyColor: Long? = null,

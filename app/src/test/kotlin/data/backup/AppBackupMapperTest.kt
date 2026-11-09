@@ -37,6 +37,17 @@ class AppBackupMapperTest {
     }
 
     @Test
+    fun backupAndRestore_preservesTheSavedColourThemes() {
+        val state = AppState(customThemes = "first-code\nsecond-code")
+        val backupFile = state.toAppBackupFile(createdAtMillis = 0L, appVersionName = "1.0", appVersionCode = 1)
+
+        assertEquals("first-code\nsecond-code", backupFile.data.settings.customThemes)
+        assertEquals("first-code\nsecond-code", backupFile.toRestorePreview().restoredState.customThemes)
+        // A backup made before themes existed restores to no themes.
+        assertEquals("", AppState().toAppBackupFile(0L, "1.0", 1).toRestorePreview().restoredState.customThemes)
+    }
+
+    @Test
     fun backupAndRestore_preservesTrafficNotificationRefreshInterval() {
         val state = AppState(trafficStatsNotificationRefreshIntervalSeconds = 7)
         val backupFile = state.toAppBackupFile(

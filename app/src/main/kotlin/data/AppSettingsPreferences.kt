@@ -404,6 +404,7 @@ internal class AppSettingsPreferences(
             classicButtonSize = normalizeClassicButtonSize(
                 preferences.getInt(KeyClassicButtonSize, defaults.classicButtonSize),
             ),
+            customThemes = preferences.getString(KeyCustomThemes, null) ?: defaults.customThemes,
             enableHaptics = preferences.getBoolean(
                 KeyEnableHaptics,
                 defaults.enableHaptics,
@@ -599,6 +600,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putInt(KeyClassicButtonSize, state.classicButtonSize)
+            .putString(KeyCustomThemes, state.customThemes)
             .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
@@ -1003,6 +1005,7 @@ private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicButtonSize = "classic_button_size"
+private const val KeyCustomThemes = "custom_themes"
 private const val KeyEnableHaptics = "enable_haptics"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"

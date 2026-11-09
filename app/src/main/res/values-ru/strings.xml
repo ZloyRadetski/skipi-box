@@ -1048,6 +1048,10 @@
     <string name="external_import_confirm_title">Добавить по ссылке?</string>
     <string name="external_import_confirm_message">Другое приложение или веб-страница просит SKIPI добавить сервер или конфиг с %1$s. Продолжайте, только если доверяете источнику.</string>
     <string name="external_import_confirm_accept">Добавить</string>
+    <string name="external_theme_confirm_message">Ссылка просит SKIPI добавить цветовую тему \"%1$s\" в ваши темы. Она меняет только цвета. Продолжайте, только если доверяете источнику.</string>
+    <string name="skipi_imported_theme">Тема добавлена. Примените её в настройках, в разделе «Оформление».</string>
+    <string name="skipi_imported_theme_existing">Эти цвета уже сохранены как тема.</string>
+    <string name="skipi_imported_theme_full">Список тем заполнен. Сначала удалите одну.</string>
     <string name="external_import_inline_content">самой ссылки</string>
     <string name="external_control_disabled">Внешнее управление отключено в настройках</string>
     <string name="skipi_control_missing_server">Сначала добавьте и выберите сервер</string>

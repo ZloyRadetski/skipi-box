@@ -921,6 +921,10 @@
     <string name="external_import_confirm_title">Add from a link?</string>
     <string name="external_import_confirm_message">Another app or web page asks SKIPI to add a server or config from %1$s. Continue only if you trust the source.</string>
     <string name="external_import_confirm_accept">Add</string>
+    <string name="external_theme_confirm_message">A link asks SKIPI to add the color theme \"%1$s\" to your themes. It only changes colors. Continue only if you trust the source.</string>
+    <string name="skipi_imported_theme">Theme added. Apply it in Settings, Appearance.</string>
+    <string name="skipi_imported_theme_existing">These colors are already saved as a theme.</string>
+    <string name="skipi_imported_theme_full">The themes list is full. Delete one first.</string>
     <string name="external_import_inline_content">the link itself</string>
     <string name="external_control_disabled">External control is turned off in settings</string>
     <string name="skipi_control_missing_server">Add and select a server first</string>

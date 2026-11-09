@@ -92,6 +92,7 @@ class DesktopAppearanceAdapterTest {
             backgroundStyle = 1,
             backgroundPhotoDimPercent = 71,
             bottomBarSize = 2,
+            customThemes = "first-code\nsecond-code",
         )
 
         fixture.repository.update { current -> current.copy(appearance = expectedAppearance) }
@@ -127,6 +128,8 @@ class DesktopAppearanceAdapterTest {
         assertEquals(1, settings.backgroundStyle)
         assertEquals(71, settings.backgroundPhotoDimPercent)
         assertEquals(2, settings.bottomBarSize)
+        assertEquals("first-code\nsecond-code", settings.customThemes)
+        assertEquals("first-code\nsecond-code", fixture.repository.state.value.appearance.customThemes)
         assertEquals(expectedAppearance.customProtocolJsonColor, fixture.repository.state.value.appearance.customProtocolJsonColor)
     }
 

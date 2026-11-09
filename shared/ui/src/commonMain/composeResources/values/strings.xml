@@ -1560,4 +1560,25 @@
     <string name="routing_table_import_unwritable">Left out, a profile line cannot hold: {values}</string>
     <string name="routing_table_import_failed">Could not load the rules: {reason}</string>
     <string name="routing_table_apply">Apply</string>
+    <string name="custom_themes_title">My themes</string>
+    <string name="custom_themes_empty">No saved themes yet. Save the colors you see now, or import a theme.</string>
+    <string name="custom_themes_save_current">Save current colors as a theme</string>
+    <string name="custom_themes_import">Import a theme</string>
+    <string name="custom_themes_import_hint">Theme code or skipi://theme link</string>
+    <string name="custom_themes_import_invalid">This is not a SKIPI theme</string>
+    <string name="custom_themes_name">Name</string>
+    <string name="custom_themes_save">Save</string>
+    <string name="custom_themes_add">Add</string>
+    <string name="custom_themes_add_apply">Add and apply</string>
+    <string name="custom_themes_active">In use</string>
+    <string name="custom_themes_options">Theme</string>
+    <string name="custom_themes_copy_link">Copy link</string>
+    <string name="custom_themes_link_copied">Theme link copied</string>
+    <string name="custom_themes_delete">Delete</string>
+    <string name="custom_themes_delete_confirm">Tap again to delete</string>
+    <string name="custom_themes_full">The list is full (30 themes). Delete one first.</string>
+    <string name="custom_themes_already_saved">These colors are already saved.</string>
+    <string name="custom_themes_low_contrast">Some text may be hard to read with these colors.</string>
+    <string name="custom_themes_link_title">Add a color theme?</string>
+    <string name="custom_themes_link_message">A link asks SKIPI to add this theme to your themes. It only changes colors. Continue only if you trust the source.</string>
 </resources>

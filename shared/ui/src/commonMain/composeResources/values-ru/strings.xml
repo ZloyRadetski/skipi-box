@@ -1549,4 +1549,25 @@
     <string name="routing_table_import_unwritable">Пропущено, в строке профиля такое не записать: {values}</string>
     <string name="routing_table_import_failed">Не удалось загрузить правила: {reason}</string>
     <string name="routing_table_apply">Применить</string>
+    <string name="custom_themes_title">Мои темы</string>
+    <string name="custom_themes_empty">Сохранённых тем пока нет. Сохраните текущие цвета или импортируйте тему.</string>
+    <string name="custom_themes_save_current">Сохранить текущие цвета как тему</string>
+    <string name="custom_themes_import">Импортировать тему</string>
+    <string name="custom_themes_import_hint">Код темы или ссылка skipi://theme</string>
+    <string name="custom_themes_import_invalid">Это не тема SKIPI</string>
+    <string name="custom_themes_name">Название</string>
+    <string name="custom_themes_save">Сохранить</string>
+    <string name="custom_themes_add">Добавить</string>
+    <string name="custom_themes_add_apply">Добавить и применить</string>
+    <string name="custom_themes_active">Используется</string>
+    <string name="custom_themes_options">Тема</string>
+    <string name="custom_themes_copy_link">Скопировать ссылку</string>
+    <string name="custom_themes_link_copied">Ссылка на тему скопирована</string>
+    <string name="custom_themes_delete">Удалить</string>
+    <string name="custom_themes_delete_confirm">Нажмите ещё раз, чтобы удалить</string>
+    <string name="custom_themes_full">Список заполнен (30 тем). Сначала удалите одну.</string>
+    <string name="custom_themes_already_saved">Эти цвета уже сохранены.</string>
+    <string name="custom_themes_low_contrast">С такими цветами часть текста может плохо читаться.</string>
+    <string name="custom_themes_link_title">Добавить цветовую тему?</string>
+    <string name="custom_themes_link_message">Ссылка просит SKIPI добавить эту тему в ваши темы. Она меняет только цвета. Продолжайте, только если доверяете источнику.</string>
 </resources>

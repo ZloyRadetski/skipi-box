@@ -196,6 +196,7 @@ class AndroidAppRepositoryMappingTest {
             classicShowFloatingPowerButton = true,
             enableDeletionConfirmation = false,
             showServerSearch = true,
+            customThemes = "first-code\nsecond-code",
         )
 
         val shared = original.toPersistedSettings()
@@ -206,6 +207,8 @@ class AndroidAppRepositoryMappingTest {
         assertEquals(0xFF223344, shared.appearance.customBackgroundColor)
         assertEquals(BackgroundStylePhoto, shared.appearance.backgroundStyle)
         assertEquals(63, shared.appearance.backgroundPhotoDimPercent)
+        assertEquals("first-code\nsecond-code", shared.appearance.customThemes)
+        assertEquals("first-code\nsecond-code", restored.customThemes)
         assertEquals(ConnectionDisplayModeCompact, shared.home.connectionDisplayMode)
         assertTrue(shared.home.pinConnectionPanel)
         assertFalse(shared.home.subscriptionSwipeEnabled)

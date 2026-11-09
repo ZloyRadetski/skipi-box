@@ -55,6 +55,8 @@ data class AppearanceSettings(
     val bottomBarSize: Int? = null,
     /** Classic Home connection button size: 0 small .. 3 giant. Null preserves the host default. */
     val classicButtonSize: Int? = null,
+    /** The saved colour themes, one theme code per line. */
+    val customThemes: String = "",
 )
 
 enum class ThemeMode {

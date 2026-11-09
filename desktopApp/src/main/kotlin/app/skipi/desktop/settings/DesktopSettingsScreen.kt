@@ -646,6 +646,11 @@ private fun DesktopAppearanceSettings(
         onRemoveBackgroundPhoto = { DesktopBackgroundPhoto.clear() },
         onRequestAppIconSelection = {},
         onColorsReset = { message -> onPersist(draft, message) },
+        onCopyText = { text, confirmation ->
+            runCatching {
+                java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(text), null)
+            }.onSuccess { onPersist(draft, confirmation) }
+        },
         capabilities = desktopAppearanceSettingsCapabilities(),
         platformContent = { SkipiSettingsStatusMessage(message) },
     )

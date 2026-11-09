@@ -121,6 +121,7 @@ import app.skipi.ui.resources.notification_vpn_connect_failed
 import app.skipi.ui.resources.notification_vpn_disconnected
 import app.skipi.ui.resources.notification_vpn_connected
 import features.config.parseSkipiDeepLinkOrNull
+import features.config.toCustomThemes
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -240,6 +241,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     val statusNotifierShown by (statusNotifier?.registered ?: remember { MutableStateFlow(false) }).collectAsState()
     val trayAvailable = statusNotifierShown || androidx.compose.ui.window.isTraySupported
     // With the background choice the window, and the GPU and UI memory it holds, exists only while it is shown.
+    var pendingThemeLink by remember { mutableStateOf<features.config.CustomThemeShare?>(null) }
     var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground && trayAvailable)) }
     // A window hidden to the tray would be lost if the tray went away (the panel quit): bring it back.
     LaunchedEffect(trayAvailable) { if (!trayAvailable) windowShown = true }
@@ -1138,6 +1140,13 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 shownWindow?.toFront()
                             }
                             SkipiDeepLink.Close -> tunnel.closeRequested = true
+                            is SkipiDeepLink.Theme -> {
+                                // Any web page can send this link: the colours are shown and nothing is saved until approved.
+                                pendingThemeLink = link.theme
+                                windowShown = true
+                                windowState.isMinimized = false
+                                shownWindow?.toFront()
+                            }
                             SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle -> {
                                 val command = desktopTunnelCommandFor(link, running = tunnel.desiredRunning)
                                 DesktopLogger.info("Links", "$raw -> $command")
@@ -1246,6 +1255,19 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     background = app.skipi.ui.theme.SkipiTheme.colors.background,
                     isDark = app.skipi.ui.theme.SkipiTheme.colors.isDark,
                 )
+                pendingThemeLink?.let { incoming ->
+                    app.skipi.ui.settings.CustomThemeLinkDialog(
+                        theme = incoming,
+                        library = desktopSettings.customThemes.toCustomThemes(),
+                        onAdd = {
+                            val imported = features.config.importCustomTheme(desktopSettings.customThemes, incoming)
+                            val next = desktopSettings.copy(customThemes = imported.storage)
+                            DesktopSettingsLibraries.saveDefault(next).onSuccess { desktopSettings = next }
+                            pendingThemeLink = null
+                        },
+                        onDismiss = { pendingThemeLink = null },
+                    )
+                }
                 DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
                 Surface(
                     modifier = Modifier.fillMaxSize().onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->

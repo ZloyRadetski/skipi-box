@@ -20,7 +20,9 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import androidx.compose.ui.platform.LocalClipboard
 import app.skipi.ui.settings.AppearanceSettingsState
+import ui.clipboard.setPlainText
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import features.settings.sheets.AppIconSelectionBottomSheet
 import features.settings.sheets.appIconDescriptorForMode
@@ -45,6 +47,7 @@ fun SettingsAppearancePage(padding: PaddingValues) {
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboard.current
     var showIconPicker by remember { mutableStateOf(false) }
 
     val appearance = appState.toAppearanceSettingsState()
@@ -80,6 +83,12 @@ fun SettingsAppearancePage(padding: PaddingValues) {
         },
         onRequestAppIconSelection = { showIconPicker = true },
         onColorsReset = { message -> scope.launch { services.tipNotifier.show(message) } },
+        onCopyText = { text, confirmation ->
+            scope.launch {
+                clipboard.setPlainText(text)
+                services.tipNotifier.show(confirmation)
+            }
+        },
     )
 
     AppIconSelectionBottomSheet(
@@ -96,6 +105,7 @@ private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     backgroundStyle = backgroundStyle,
     bottomBarSize = bottomBarSize,
     classicButtonSize = classicButtonSize,
+    customThemes = customThemes,
     classicShowFloatingPowerButton = classicShowFloatingPowerButton,
     colorMode = colorMode,
     connectionDisplayMode = connectionDisplayMode,
@@ -145,6 +155,7 @@ private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsStat
     backgroundStyle = settings.backgroundStyle,
     bottomBarSize = settings.bottomBarSize,
     classicButtonSize = settings.classicButtonSize,
+    customThemes = settings.customThemes,
     classicShowFloatingPowerButton = settings.classicShowFloatingPowerButton,
     colorMode = settings.colorMode,
     connectionDisplayMode = settings.connectionDisplayMode,

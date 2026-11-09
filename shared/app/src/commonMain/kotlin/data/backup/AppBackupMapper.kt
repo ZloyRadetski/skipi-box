@@ -103,6 +103,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         customPingMediumColor = customPingMediumColor,
         customPingSlowColor = customPingSlowColor,
         customCategoryIconColor = customCategoryIconColor,
+        customThemes = customThemes,
         customProtocolVlessColor = customProtocolVlessColor,
         customProtocolVmessColor = customProtocolVmessColor,
         customProtocolHysteria2Color = customProtocolHysteria2Color,
@@ -312,6 +313,7 @@ private fun AppBackupData.toAppState(): AppState {
         customPingFastColor = settings.customPingFastColor,
         customPingMediumColor = settings.customPingMediumColor,
         customPingSlowColor = settings.customPingSlowColor,
+        customThemes = settings.customThemes,
         customCategoryIconColor = settings.customCategoryIconColor
             ?: settings.customCategoryAppearanceColor
             ?: settings.customCategoryVpnColor
