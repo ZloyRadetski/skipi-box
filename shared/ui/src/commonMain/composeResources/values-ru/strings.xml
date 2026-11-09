@@ -1572,4 +1572,5 @@
     <string name="custom_themes_link_message">Ссылка просит SKIPI добавить эту тему в ваши темы. Она меняет только цвета. Продолжайте, только если доверяете источнику.</string>
     <string name="custom_themes_save_title">Сохранить тему</string>
     <string name="custom_themes_new_theme">Новая тема</string>
+    <string name="subscription_advanced">Дополнительно</string>
 </resources>

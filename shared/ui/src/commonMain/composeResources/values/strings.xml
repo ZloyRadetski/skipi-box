@@ -1583,4 +1583,5 @@
     <string name="custom_themes_link_message">A link asks SKIPI to add this theme to your themes. It only changes colors. Continue only if you trust the source.</string>
     <string name="custom_themes_save_title">Save theme</string>
     <string name="custom_themes_new_theme">New theme</string>
+    <string name="subscription_advanced">Advanced</string>
 </resources>

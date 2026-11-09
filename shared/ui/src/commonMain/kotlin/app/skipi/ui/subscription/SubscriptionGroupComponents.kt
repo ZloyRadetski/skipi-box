@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.input.then
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import features.subscription.SubscriptionDeviceHeadersMode
 import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -222,48 +224,120 @@ fun SubscriptionGroupEditorDialog(
         onDismissFinished = onDismissFinished,
     ) {
         key(show, group?.id, builtIn) {
+            var showAdvanced by remember { mutableStateOf(false) }
+            val hasUrl = url.isNotBlank()
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Column(
+                TextField(
+                    state = rememberTextFieldState(initialText = name),
+                    inputTransformation = InputTransformation {
+                        name = asCharSequence().toString()
+                    },
+                    label = stringResource(Res.string.subscription_group_name),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    enabled = !builtIn,
+                )
+                TextField(
+                    state = rememberTextFieldState(initialText = url),
+                    inputTransformation = InputTransformation {
+                        url = asCharSequence().toString()
+                    },
+                    label = stringResource(Res.string.subscription_url),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                )
+                AnimatedVisibility(
+                    visible = hasUrl,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextField(
+                            state = rememberTextFieldState(initialText = interval),
+                            inputTransformation = InputTransformation
+                                .byValue { _, proposed ->
+                                    sanitizeSubscriptionIntervalInput(proposed.toString())
+                                }
+                                .then { interval = asCharSequence().toString() },
+                            label = stringResource(Res.string.subscription_auto_update_interval),
+                            lineLimits = TextFieldLineLimits.SingleLine,
+                        )
+                        SubscriptionOptionsCard {
+                            SwitchPreference(
+                                title = stringResource(Res.string.subscription_update_via_proxy),
+                                summary = stringResource(Res.string.subscription_update_via_proxy_summary),
+                                checked = updateViaProxy,
+                                onCheckedChange = { updateViaProxy = it },
+                            )
+                        }
+                        SubscriptionOptionsCard {
+                            SwitchPreference(
+                                title = stringResource(Res.string.subscription_notify_on_expiry),
+                                summary = stringResource(Res.string.subscription_notify_on_expiry_summary),
+                                checked = notifyOnExpiry,
+                                onCheckedChange = { notifyOnExpiry = it },
+                            )
+                            AnimatedVisibility(
+                                visible = notifyOnExpiry,
+                                enter = fadeIn() + expandVertically(),
+                                exit = shrinkVertically(),
+                            ) {
+                                Column {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.subscription_custom_reminders_toggle),
+                                        summary = stringResource(Res.string.subscription_custom_reminders_toggle_summary),
+                                        checked = useCustomReminders,
+                                        onCheckedChange = { useCustomReminders = it },
+                                    )
+                                    if (useCustomReminders) {
+                                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                            SubscriptionExpiryReminderList(
+                                                reminders = customReminders,
+                                                onRemindersChange = { customReminders = it },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .clickable { showAdvanced = !showAdvanced }
+                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    TextField(
-                        state = rememberTextFieldState(initialText = name),
-                        inputTransformation = InputTransformation {
-                            name = asCharSequence().toString()
-                        },
-                        label = stringResource(Res.string.subscription_group_name),
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        enabled = !builtIn,
-                        modifier = Modifier.padding(bottom = 12.dp),
+                    Text(
+                        text = stringResource(Res.string.subscription_advanced),
+                        style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
-                    TextField(
-                        state = rememberTextFieldState(initialText = url),
-                        inputTransformation = InputTransformation {
-                            url = asCharSequence().toString()
-                        },
-                        label = stringResource(Res.string.subscription_url),
-                        lineLimits = TextFieldLineLimits.SingleLine,
-                        modifier = Modifier.padding(bottom = 12.dp),
+                    Text(
+                        text = if (showAdvanced) "\u25B4" else "\u25BE",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
-                    SwitchPreference(
-                        title = stringResource(Res.string.subscription_auto_override_rules),
-                        summary = stringResource(Res.string.subscription_auto_override_rules_summary),
-                        checked = autoOverrideRules,
-                        onCheckedChange = { autoOverrideRules = it },
-                        modifier = Modifier.padding(bottom = 12.dp),
-                    )
-                    AnimatedVisibility(
-                        visible = url.isNotBlank(),
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically(),
-                    ) {
-                        Column {
+                }
+                AnimatedVisibility(
+                    visible = showAdvanced,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically(),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SubscriptionOptionsCard {
+                            SwitchPreference(
+                                title = stringResource(Res.string.subscription_auto_override_rules),
+                                summary = stringResource(Res.string.subscription_auto_override_rules_summary),
+                                checked = autoOverrideRules,
+                                onCheckedChange = { autoOverrideRules = it },
+                            )
+                        }
+                        if (hasUrl) {
                             TextField(
                                 state = rememberTextFieldState(initialText = ageSecretKey),
                                 inputTransformation = InputTransformation {
@@ -271,24 +345,36 @@ fun SubscriptionGroupEditorDialog(
                                 },
                                 label = stringResource(Res.string.subscription_age_secret_key),
                                 lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.padding(bottom = 12.dp),
                             )
-                            WindowSpinnerPreference(
-                                title = stringResource(Res.string.subscription_user_agent),
-                                summary = resolvedUserAgent,
-                                items = userAgentItems,
-                                selectedIndex = selectedUserAgentIndex,
-                                onSelectedIndexChange = { index ->
-                                    if (index == customUserAgentIndex) {
-                                        customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
-                                            customUserAgent.ifBlank { resolvedUserAgent },
-                                        )
-                                        showCustomUserAgentDialog = true
-                                    } else {
-                                        userAgentIndex = index
-                                    }
-                                },
-                            )
+                            SubscriptionOptionsCard {
+                                WindowSpinnerPreference(
+                                    title = stringResource(Res.string.subscription_user_agent),
+                                    summary = resolvedUserAgent,
+                                    items = userAgentItems,
+                                    selectedIndex = selectedUserAgentIndex,
+                                    onSelectedIndexChange = { index ->
+                                        if (index == customUserAgentIndex) {
+                                            customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                                customUserAgent.ifBlank { resolvedUserAgent },
+                                            )
+                                            showCustomUserAgentDialog = true
+                                        } else {
+                                            userAgentIndex = index
+                                        }
+                                    },
+                                )
+                                WindowSpinnerPreference(
+                                    title = stringResource(Res.string.subscription_device_headers),
+                                    summary = stringResource(Res.string.subscription_device_headers_summary),
+                                    items = SubscriptionDeviceHeadersMode.entries.map { mode ->
+                                        DropdownItem(text = deviceHeadersModeTitle(mode))
+                                    },
+                                    selectedIndex = SubscriptionDeviceHeadersMode.entries.indexOf(deviceHeadersChoice),
+                                    onSelectedIndexChange = { index ->
+                                        deviceHeadersChoice = SubscriptionDeviceHeadersMode.entries[index]
+                                    },
+                                )
+                            }
                             CustomUserAgentDialog(
                                 show = showCustomUserAgentDialog,
                                 state = customUserAgentDraftState,
@@ -300,120 +386,53 @@ fun SubscriptionGroupEditorDialog(
                                     showCustomUserAgentDialog = false
                                 },
                             )
-                            WindowSpinnerPreference(
-                                title = stringResource(Res.string.subscription_device_headers),
-                                summary = stringResource(Res.string.subscription_device_headers_summary),
-                                items = SubscriptionDeviceHeadersMode.entries.map { mode ->
-                                    DropdownItem(text = deviceHeadersModeTitle(mode))
-                                },
-                                selectedIndex = SubscriptionDeviceHeadersMode.entries.indexOf(deviceHeadersChoice),
-                                onSelectedIndexChange = { index ->
-                                    deviceHeadersChoice = SubscriptionDeviceHeadersMode.entries[index]
-                                },
-                            )
-                            SwitchPreference(
-                                title = stringResource(Res.string.subscription_update_via_proxy),
-                                summary = stringResource(Res.string.subscription_update_via_proxy_summary),
-                                checked = updateViaProxy,
-                                onCheckedChange = { updateViaProxy = it },
-                                modifier = Modifier.padding(bottom = 12.dp),
-                            )
-                            TextField(
-                                state = rememberTextFieldState(initialText = interval),
-                                inputTransformation = InputTransformation
-                                    .byValue { _, proposed ->
-                                        sanitizeSubscriptionIntervalInput(proposed.toString())
-                                    }
-                                    .then { interval = asCharSequence().toString() },
-                                label = stringResource(Res.string.subscription_auto_update_interval),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.padding(bottom = 12.dp),
-                            )
-                            SwitchPreference(
-                                title = stringResource(Res.string.subscription_notify_on_expiry),
-                                summary = stringResource(Res.string.subscription_notify_on_expiry_summary),
-                                checked = notifyOnExpiry,
-                                onCheckedChange = { notifyOnExpiry = it },
-                                modifier = Modifier.padding(bottom = 12.dp),
-                            )
-                            AnimatedVisibility(
-                                visible = notifyOnExpiry,
-                                enter = fadeIn() + expandVertically(),
-                                exit = shrinkVertically(),
-                            ) {
-                                Column(modifier = Modifier.padding(bottom = 12.dp)) {
-                                    SwitchPreference(
-                                        title = stringResource(Res.string.subscription_custom_reminders_toggle),
-                                        summary = stringResource(Res.string.subscription_custom_reminders_toggle_summary),
-                                        checked = useCustomReminders,
-                                        onCheckedChange = { useCustomReminders = it },
-                                        modifier = Modifier.padding(bottom = 8.dp),
-                                    )
-                                    if (useCustomReminders) {
-                                        SubscriptionExpiryReminderList(
-                                            reminders = customReminders,
-                                            onRemindersChange = { customReminders = it },
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
                 }
                 if (isEditing && !builtIn && onDelete != null) {
-                    Card(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        colors = CardDefaults.defaultColors(
-                            color = MiuixTheme.colorScheme.error
-                                .copy(alpha = 0.08f),
-                        ),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (confirmDeletion) {
-                                        showDeleteConfirmation = true
-                                    } else {
-                                        onDelete(group)
-                                        onDismissRequest()
-                                    }
+                            .clickable {
+                                if (confirmDeletion) {
+                                    showDeleteConfirmation = true
+                                } else {
+                                    onDelete(group)
+                                    onDismissRequest()
                                 }
-                                .padding(vertical = 12.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = if (isManual) stringResource(Res.string.subscription_delete) else stringResource(Res.string.subscription_delete),
-                                color = MiuixTheme.colorScheme.error,
-                                style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
-                            )
-                        }
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Delete,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.subscription_delete),
+                            color = MiuixTheme.colorScheme.error,
+                            style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
+                        )
                     }
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TextButton(
                         text = stringResource(Res.string.common_cancel),
                         onClick = onDismissRequest,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.width(20.dp))
                     TextButton(
                         text = stringResource(Res.string.common_save),
                         onClick = { saveGroup() },
                         enabled = validateSubscriptionGroupDraft(url.trim(), interval) != SubscriptionGroupDraftIssue.InvalidInterval,
+                        colors = ButtonDefaults.textButtonColorsPrimary(),
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -440,6 +459,16 @@ fun SubscriptionGroupEditorDialog(
         show = showHttpSubscriptionWarning,
         onDismissRequest = { showHttpSubscriptionWarning = false },
         onConfirm = { saveGroup(allowPlainHttp = true) },
+    )
+}
+
+/** Groups related switches and pickers on one quiet surface so the long form reads as a few blocks. */
+@Composable
+private fun SubscriptionOptionsCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+        content = content,
     )
 }
 
