@@ -1,0 +1,1538 @@
+{
+  "format": "skipi-backup",
+  "version": 1,
+  "createdAtMillis": 1794229606629,
+  "appVersionName": "0.5.0",
+  "appVersionCode": 834,
+  "data": {
+    "settings": {
+      "appIcon": 0,
+      "colorMode": 7,
+      "languageMode": 3,
+      "fontFamilyMode": 6,
+      "fontSizeMode": 70,
+      "fontWeightMode": 1,
+      "enableMaterialYou": false,
+      "seedIndex": 0,
+      "customMaterialYouSeed": 4292083893,
+      "enableCustomColors": false,
+      "customAccentColor": null,
+      "customBackgroundColor": null,
+      "customSurfaceColor": null,
+      "customSurfaceVariantColor": null,
+      "customTextColor": null,
+      "customTextSecondaryColor": null,
+      "customStatusRunningColor": null,
+      "customStatusStoppedColor": null,
+      "customPingFastColor": null,
+      "customPingMediumColor": null,
+      "customPingSlowColor": null,
+      "customCategoryIconColor": null,
+      "customCategoryAppearanceColor": null,
+      "customCategoryVpnColor": null,
+      "customCategoryProxyColor": null,
+      "customCategorySubscriptionsColor": null,
+      "customCategoryIntegrationColor": null,
+      "customCategoryLogsColor": null,
+      "customCategoryBackupColor": null,
+      "customCategoryAboutColor": null,
+      "customProtocolVlessColor": null,
+      "customProtocolVmessColor": null,
+      "customProtocolHysteria2Color": null,
+      "customProtocolTrojanColor": null,
+      "customProtocolShadowsocksColor": null,
+      "customProtocolWireguardColor": null,
+      "customProtocolSocksColor": null,
+      "customProtocolHttpColor": null,
+      "customProtocolStrategyColor": null,
+      "customProtocolChainColor": null,
+      "customProtocolJsonColor": null,
+      "enableAllProxyGroup": false,
+      "enableDeletionConfirmation": true,
+      "enableResolveProxyServerDomain": true,
+      "enableVpnLocalDns": true,
+      "localProxyPort": "40315",
+      "enableDynamicLocalProxyPort": true,
+      "localProxyListenAllInterfaces": false,
+      "enableLocalProxyAuth": true,
+      "localProxyUsername": "x-localProxy-487862",
+      "localProxyPassword": "x-localProxy-a5674c",
+      "localProxyAuthMode": "Manual",
+      "enableLocalHttpProxy": false,
+      "localHttpProxyPort": "10809",
+      "enableLocalHttpProxyAuth": false,
+      "localHttpProxyAuthMode": "Auto",
+      "localHttpProxyUsername": "x-localHttpP-6fe8f2",
+      "localHttpProxyPassword": "x-localHttpP-4df988",
+      "enableVpnAppendHttpProxy": false,
+      "enableVpnHevTun": true,
+      "enableKillSwitch": false,
+      "enableStrictFullTunnel": false,
+      "tunMtu": "1500",
+      "tunVpnDns": "8.8.8.8",
+      "tunIpv4Cidr": "172.19.0.1/30",
+      "tunIpv6Cidr": "fdfe:dcba:9876::1/126",
+      "enableWakeLock": false,
+      "enableSeamlessNetworkSwitching": true,
+      "enableNetworkAutomation": false,
+      "enableOnDemandVpn": false,
+      "networkAutomationRules": [
+        {
+          "id": "f8bdff1c-fb84-4041-98bc-5ca016d4ccbe",
+          "type": "CELLULAR",
+          "ssid": null,
+          "action": "SWITCH_SERVER",
+          "targetServerId": 3171,
+          "enabled": true
+        },
+        {
+          "id": "2ee163c5-6db2-4bb1-b876-cab1bb1fbb34",
+          "type": "ANY_WIFI",
+          "ssid": null,
+          "action": "SWITCH_IF_CONNECTED",
+          "targetServerId": 314,
+          "enabled": true
+        }
+      ],
+      "tunTcpKeepAliveInterval": "60",
+      "tunTcpUserTimeout": "10000",
+      "selectedProxyServerId": 7019,
+      "proxyServerListLayout": 1,
+      "proxyServerListSort": 0,
+      "subscriptionPingMode": 1,
+      "subscriptionPingUrl": "http://cp.cloudflare.com/generate_204",
+      "subscriptionPingTimeoutMillis": "7000",
+      "subscriptionPingConcurrency": 32,
+      "subscriptionUserAgents": [
+        "SKIPI/0.5.0/Android",
+        "clash.meta",
+        "FlClash X/v0.4.2 Platform/android",
+        "Mihomo/1.19.0",
+        "ClashForAndroid/2.5.12",
+        "FlClash/0.8.73",
+        "Shadowrocket/2.2.48",
+        "Surfboard/2.23.0",
+        "NekoBoxForAndroid/1.3.9"
+      ],
+      "enableSubscriptionDeviceHeaders": true,
+      "subscriptionFetchTimeoutSeconds": 10,
+      "routeDomainStrategy": 0,
+      "defaultRouteOutboundTag": "proxy",
+      "coreLogLevel": 0,
+      "enableAccessLog": false,
+      "logRetentionDays": 1,
+      "resourceFileSource": 0,
+      "customResourceFileGeoIpUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+      "customResourceFileGeoSiteUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+      "customResourceFileGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+      "customResourceFileDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+      "customResourceFileDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+      "customResourceFiles": [],
+      "enableSniffing": true,
+      "enableSniffingRouteOnly": true,
+      "enableMux": false,
+      "muxConcurrency": "8",
+      "muxXudpConcurrency": "16",
+      "muxXudpProxyUdp443": 0,
+      "enableFragment": false,
+      "fragmentPackets": "tlshello",
+      "fragmentLength": "100-200",
+      "fragmentInterval": "10-20",
+      "enableTrafficStatsNotification": true,
+      "trafficStatsNotificationRefreshIntervalSeconds": 1,
+      "enableResourceFileNotifications": false,
+      "showServerSearch": false,
+      "connectionDisplayMode": 1,
+      "pinConnectionPanelOnHome": false,
+      "enableSubscriptionSwipe": true,
+      "backgroundStyle": 0,
+      "backgroundPhotoDimPercent": 75,
+      "enableHaptics": true,
+      "hasCompletedOnboarding": true,
+      "classicShowFloatingPowerButton": true,
+      "showTunnelMemoryOnHome": true,
+      "showTunnelIpOnHome": true,
+      "maskTunnelIpOnHome": true,
+      "enableBroadcastControl": true,
+      "enableIpv6": false,
+      "enableIpv6Prefer": false,
+      "enableFakeDns": false,
+      "proxyDns": [
+        "https://8.8.8.8/dns-query"
+      ],
+      "directDns": [
+        "https://1.1.1.1/dns-query",
+        "https://8.8.8.8/dns-query"
+      ],
+      "directDnsDomains": [],
+      "enableDirectDnsForProxyServerDomains": true,
+      "dnsHosts": [],
+      "serviceControl": {
+        "enabled": false,
+        "schedule": {
+          "enabled": false,
+          "startCron": "",
+          "stopCron": ""
+        },
+        "wifi": {
+          "enabled": false,
+          "connectStart": {
+            "enabled": false,
+            "ssids": [],
+            "bssids": []
+          },
+          "connectStop": {
+            "enabled": false,
+            "ssids": [],
+            "bssids": []
+          },
+          "disconnectStart": {
+            "enabled": false,
+            "ssids": [],
+            "bssids": []
+          },
+          "disconnectStop": {
+            "enabled": false,
+            "ssids": [],
+            "bssids": []
+          }
+        }
+      },
+      "proxyAppListMode": 2,
+      "enableSubscriptionExpiryNotifications": true,
+      "subscriptionExpiryReminders": [
+        {
+          "value": 3,
+          "unit": "Days"
+        },
+        {
+          "value": 1,
+          "unit": "Days"
+        },
+        {
+          "value": 0,
+          "unit": "AtExpiration"
+        }
+      ]
+    },
+    "subscriptionGroups": [
+      {
+        "id": 1,
+        "name": "默认",
+        "url": "",
+        "userAgent": "SKIPI/0.5.0/Android",
+        "updateInterval": "",
+        "hwid": "",
+        "deviceHeaders": "",
+        "ageSecretKey": "",
+        "updateViaProxy": false,
+        "autoOverrideRules": true,
+        "enabled": true,
+        "builtIn": true,
+        "lastUpdatedAtMillis": 0,
+        "profileTitle": "",
+        "announce": "",
+        "supportUrl": "",
+        "supportEmail": "",
+        "profileWebPageUrl": "",
+        "announceUrl": "",
+        "trafficUploadBytes": -1,
+        "trafficDownloadBytes": -1,
+        "trafficTotalBytes": -1,
+        "trafficExpireAtSeconds": -1,
+        "notifyOnExpiry": true,
+        "customExpiryReminders": null
+      },
+      {
+        "id": 4,
+        "name": "Provider 2",
+        "url": "https://sub2.example.test/url",
+        "userAgent": "SKIPI/0.5.0/Android",
+        "updateInterval": "1",
+        "hwid": "",
+        "deviceHeaders": "",
+        "ageSecretKey": "",
+        "updateViaProxy": true,
+        "autoOverrideRules": true,
+        "enabled": true,
+        "builtIn": false,
+        "lastUpdatedAtMillis": 1794227411562,
+        "profileTitle": "Provider 2 profileTitle",
+        "announce": "Provider 2 announce",
+        "supportUrl": "https://sub2.example.test/supportUrl",
+        "supportEmail": "",
+        "profileWebPageUrl": "https://sub2.example.test/profileWebPageUrl",
+        "announceUrl": "",
+        "trafficUploadBytes": 22369,
+        "trafficDownloadBytes": 42834952130,
+        "trafficTotalBytes": 0,
+        "trafficExpireAtSeconds": 4131259200,
+        "notifyOnExpiry": true,
+        "customExpiryReminders": null
+      },
+      {
+        "id": 16,
+        "name": "Provider 3",
+        "url": "https://sub3.example.test/url",
+        "userAgent": "SKIPI/0.5.0/Android",
+        "updateInterval": "1",
+        "hwid": "",
+        "deviceHeaders": "",
+        "ageSecretKey": "",
+        "updateViaProxy": false,
+        "autoOverrideRules": true,
+        "enabled": true,
+        "builtIn": false,
+        "lastUpdatedAtMillis": 1794227408717,
+        "profileTitle": "Provider 3 profileTitle",
+        "announce": "Provider 3 announce",
+        "supportUrl": "https://sub3.example.test/supportUrl",
+        "supportEmail": "",
+        "profileWebPageUrl": "https://sub3.example.test/profileWebPageUrl",
+        "announceUrl": "",
+        "trafficUploadBytes": 0,
+        "trafficDownloadBytes": 392741360785,
+        "trafficTotalBytes": 0,
+        "trafficExpireAtSeconds": 1795295104,
+        "notifyOnExpiry": true,
+        "customExpiryReminders": null
+      },
+      {
+        "id": 22,
+        "name": "Provider 4",
+        "url": "https://sub4.example.test/url",
+        "userAgent": "SKIPI/0.5.0/Android",
+        "updateInterval": "1",
+        "hwid": "",
+        "deviceHeaders": "",
+        "ageSecretKey": "",
+        "updateViaProxy": false,
+        "autoOverrideRules": true,
+        "enabled": true,
+        "builtIn": false,
+        "lastUpdatedAtMillis": 1794227408205,
+        "profileTitle": "Provider 4 profileTitle",
+        "announce": "",
+        "supportUrl": "",
+        "supportEmail": "",
+        "profileWebPageUrl": "",
+        "announceUrl": "",
+        "trafficUploadBytes": -1,
+        "trafficDownloadBytes": -1,
+        "trafficTotalBytes": -1,
+        "trafficExpireAtSeconds": -1,
+        "notifyOnExpiry": true,
+        "customExpiryReminders": null
+      },
+      {
+        "id": 24,
+        "name": "Provider 5",
+        "url": "https://sub5.example.test/url",
+        "userAgent": "SKIPI/0.5.0/Android",
+        "updateInterval": "",
+        "hwid": "",
+        "deviceHeaders": "",
+        "ageSecretKey": "",
+        "updateViaProxy": false,
+        "autoOverrideRules": true,
+        "enabled": true,
+        "builtIn": false,
+        "lastUpdatedAtMillis": 1793831457978,
+        "profileTitle": "",
+        "announce": "",
+        "supportUrl": "",
+        "supportEmail": "",
+        "profileWebPageUrl": "",
+        "announceUrl": "",
+        "trafficUploadBytes": -1,
+        "trafficDownloadBytes": -1,
+        "trafficTotalBytes": -1,
+        "trafficExpireAtSeconds": -1,
+        "notifyOnExpiry": true,
+        "customExpiryReminders": null
+      }
+    ],
+    "proxyServers": [
+      {
+        "id": 6046,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 1",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6047,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 2",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6048,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 3",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6049,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 4",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6050,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 5",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6051,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 6",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6052,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 7",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6053,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 8",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6054,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 9",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6055,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 10",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6056,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 11",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6057,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 12",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6062,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 13",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6063,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 14",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6064,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 15",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6324,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 16",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6325,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 17",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 6326,
+        "groupId": 4,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 18",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 2552,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 19",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-88ec3a",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "ios",
+            "sni": "x-sni-cef419",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 2553,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 20",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-c99c42",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "edge",
+            "sni": "x-sni-49972e",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-0facc9",
+            "sid": "x-sid-e700de",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7581,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 21",
+          "id": "00000000-0000-4000-8000-fdf03a77a9c5",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "qq",
+            "sni": "x-sni-fe30a0",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-2bce2f",
+            "sid": "x-sid-993c50",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7582,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 22",
+          "id": "00000000-0000-4000-8000-fdf03a77a9c5",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "ios",
+            "sni": "x-sni-fe30a0",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-2bce2f",
+            "sid": "x-sid-993c50",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7583,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 23",
+          "id": "00000000-0000-4000-8000-cc2a4d8eb303",
+          "server": "x-server-b65f52",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "edge",
+            "sni": "x-sni-a8010b",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-e2eaeb",
+            "sid": "x-sid-d995f4",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7584,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 24",
+          "id": "00000000-0000-4000-8000-edff1b53dad1",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "qq",
+            "sni": "x-sni-fe30a0",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-2bce2f",
+            "sid": "x-sid-993c50",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7585,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 25",
+          "id": "00000000-0000-4000-8000-ccab9cc9d49f",
+          "server": "x-server-b65f52",
+          "port": "443",
+          "encryption": "none",
+          "flow": "xtls-rprx-vision",
+          "parms": {
+            "type": "raw",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": null,
+            "mode": null,
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "ios",
+            "sni": "x-sni-a8010b",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-e2eaeb",
+            "sid": "x-sid-d995f4",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7586,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 26",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "edge",
+            "sni": "x-sni-73b165",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7587,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 27",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-b65f52",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "qq",
+            "sni": "x-sni-b2a26e",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7588,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 28",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "ios",
+            "sni": "x-sni-d42c35",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7589,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 29",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-b65f52",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "edge",
+            "sni": "x-sni-6276c0",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 7590,
+        "groupId": 16,
+        "protocol": "vless",
+        "payload": {
+          "remarks": "Server 30",
+          "id": "00000000-0000-4000-8000-fe74da069dfd",
+          "server": "x-server-ba2cc2",
+          "port": "443",
+          "encryption": "none",
+          "flow": "",
+          "parms": {
+            "type": "grpc",
+            "security": "reality",
+            "path": null,
+            "host": null,
+            "headers": null,
+            "mtu": null,
+            "tti": null,
+            "seed": null,
+            "serviceName": "x-serviceNam-2a3263",
+            "mode": "gun",
+            "authority": null,
+            "extra": null,
+            "fm": "{\"tcp\":[{\"type\":\"fragment\",\"settings\":{\"delay\":\"10-20\",\"length\":\"3-5\",\"packets\":\"tlshello\",\"maxSplit\":\"3-6\"}}]}",
+            "fp": "ios",
+            "sni": "x-sni-e18146",
+            "alpn": null,
+            "ech": null,
+            "pcs": null,
+            "vcn": null,
+            "pbk": "x-pbk-ea1226",
+            "sid": "x-sid-418cde",
+            "pqv": null,
+            "spx": null,
+            "headerType": "none"
+          }
+        }
+      },
+      {
+        "id": 4768,
+        "groupId": 24,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 31",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 4769,
+        "groupId": 24,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 32",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 4770,
+        "groupId": 24,
+        "protocol": "custom",
+        "payload": {
+          "remarks": "Custom 33",
+          "overrideInboundAndDns": true,
+          "configJson": "{\n  \"outbounds\": [\n    {\n      \"protocol\": \"vless\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"custom.example.test\",\n            \"port\": 443,\n            \"users\": [\n              {\n                \"id\": \"00000000-0000-4000-8000-000000000001\",\n                \"encryption\": \"none\"\n              }\n            ]\n          }\n        ]\n      },\n      \"streamSettings\": {\n        \"network\": \"tcp\",\n        \"security\": \"tls\"\n      }\n    }\n  ]\n}"
+        }
+      },
+      {
+        "id": 3016,
+        "groupId": -2,
+        "protocol": "strategy-group",
+        "payload": {
+          "remarks": "Group 34",
+          "strategy": "leastPing",
+          "subscriptionGroupId": null,
+          "filter": "",
+          "proxyServerIds": [
+            4768,
+            4769,
+            4770
+          ],
+          "selectedMemberId": null,
+          "displayMode": "always",
+          "showInAutoBalancerList": true,
+          "sourceTrafficConfigId": null,
+          "sourcePolicyGroupName": "",
+          "probeInterval": "1m",
+          "probeUrl": "https://probe.example.test/generate_204",
+          "enableBurstProbe": false,
+          "tolerance": "50ms",
+          "probeTimeout": "5s"
+        }
+      },
+      {
+        "id": 3171,
+        "groupId": -2,
+        "protocol": "strategy-group",
+        "payload": {
+          "remarks": "Group 35",
+          "strategy": "leastLoad",
+          "subscriptionGroupId": null,
+          "filter": "",
+          "proxyServerIds": [
+            6064,
+            6063,
+            6062
+          ],
+          "selectedMemberId": 6064,
+          "displayMode": "always",
+          "showInAutoBalancerList": true,
+          "sourceTrafficConfigId": null,
+          "sourcePolicyGroupName": "",
+          "probeInterval": "5s",
+          "probeUrl": "https://probe.example.test/generate_204",
+          "enableBurstProbe": true,
+          "tolerance": "0ms",
+          "probeTimeout": "16s"
+        }
+      },
+      {
+        "id": 314,
+        "groupId": -2,
+        "protocol": "strategy-group",
+        "payload": {
+          "remarks": "Group 36",
+          "strategy": "leastPing",
+          "subscriptionGroupId": null,
+          "filter": "",
+          "proxyServerIds": [
+            6048,
+            6051,
+            6052
+          ],
+          "selectedMemberId": 6048,
+          "displayMode": "always",
+          "showInAutoBalancerList": true,
+          "sourceTrafficConfigId": null,
+          "sourcePolicyGroupName": "",
+          "probeInterval": "15s",
+          "probeUrl": "https://probe.example.test/generate_204",
+          "enableBurstProbe": false,
+          "tolerance": "0ms",
+          "probeTimeout": "6s"
+        }
+      },
+      {
+        "id": 3012,
+        "groupId": -2,
+        "protocol": "strategy-group",
+        "payload": {
+          "remarks": "Group 37",
+          "strategy": "leastPing",
+          "subscriptionGroupId": null,
+          "filter": "",
+          "proxyServerIds": [
+            6046,
+            6047,
+            6048
+          ],
+          "selectedMemberId": 6046,
+          "displayMode": "always",
+          "showInAutoBalancerList": true,
+          "sourceTrafficConfigId": null,
+          "sourcePolicyGroupName": "",
+          "probeInterval": "60s",
+          "probeUrl": "https://probe.example.test/generate_204",
+          "enableBurstProbe": true,
+          "tolerance": "50ms",
+          "probeTimeout": "5s"
+        }
+      },
+      {
+        "id": 7019,
+        "groupId": -2,
+        "protocol": "strategy-group",
+        "payload": {
+          "remarks": "Group 38",
+          "strategy": "leastPing",
+          "subscriptionGroupId": null,
+          "filter": "",
+          "proxyServerIds": [
+            6324,
+            6325,
+            6326
+          ],
+          "selectedMemberId": 6324,
+          "displayMode": "active_config",
+          "showInAutoBalancerList": true,
+          "sourceTrafficConfigId": null,
+          "sourcePolicyGroupName": "",
+          "probeInterval": "15s",
+          "probeUrl": "https://probe.example.test/generate_204",
+          "enableBurstProbe": false,
+          "tolerance": "50ms",
+          "probeTimeout": "14s"
+        }
+      }
+    ],
+    "routeRules": [
+      {
+        "id": 1,
+        "remarks": "Rule 1",
+        "outboundTag": "block",
+        "domain": [
+          "example1.test"
+        ],
+        "ip": [],
+        "process": [],
+        "port": "",
+        "protocol": "",
+        "network": "",
+        "enabled": false
+      },
+      {
+        "id": 2,
+        "remarks": "Rule 2",
+        "outboundTag": "block",
+        "domain": [],
+        "ip": [],
+        "process": [],
+        "port": "443",
+        "protocol": "",
+        "network": "udp",
+        "enabled": true
+      },
+      {
+        "id": 3,
+        "remarks": "Rule 3",
+        "outboundTag": "proxy",
+        "domain": [
+          "example3.test"
+        ],
+        "ip": [],
+        "process": [],
+        "port": "",
+        "protocol": "",
+        "network": "",
+        "enabled": true
+      },
+      {
+        "id": 4,
+        "remarks": "Rule 4",
+        "outboundTag": "direct",
+        "domain": [
+          "example4.test"
+        ],
+        "ip": [],
+        "process": [],
+        "port": "",
+        "protocol": "",
+        "network": "",
+        "enabled": true
+      },
+      {
+        "id": 5,
+        "remarks": "Rule 5",
+        "outboundTag": "direct",
+        "domain": [],
+        "ip": [
+          "geoip:cn"
+        ],
+        "process": [],
+        "port": "",
+        "protocol": "",
+        "network": "",
+        "enabled": true
+      }
+    ],
+    "proxyAppListSelectedApps": [],
+    "trafficConfigs": [
+      {
+        "id": 3,
+        "name": "Profile 1",
+        "rawConfig": "# SKIPI configuration\n[General]\ndns-server = 1.1.1.1\n[Proxy Group]\n[Rule]\nFINAL,DIRECT\n[URL Rewrite]\nresource-user-agent = SKIPI/0.4.1/Android\n\n[SKIPI]\nprofile-name = Profile 1\nprofile-update-url = https://profile1.example.test/config\nprofile-update-locked = true\nprofile-auto-update = true\nper-app-mode = blacklist\nper-app-package = 0:com.example.app\nsniffing = true\nsniffing-route-only = true\nmux = false\nmux-concurrency = 8\nmux-xudp-concurrency = 16\nmux-udp-443 = 0\nfragment = false\nfragment-packets = tlshello\nfragment-length = 100-200\nfragment-interval = 10-20\nvpn-local-dns = true\nfake-dns = true\nfake-dns-ip-pool = 198.18.0.0/15\nfake-dns-pool-size = 65535\nresolve-proxy-server-domain = true\ndirect-dns-fallback-proxy = true\ntun-dns = 1.1.1.1\nproxy-dns = https://1.1.1.1/dns-query,https://1.0.0.1/dns-query\ndirect-dns = https://1.1.1.1/dns-query,https://8.8.8.8/dns-query\nroute-domain-strategy = AsIs\nnetwork-activation = false\nnetwork-transport = wifi\nresource-source = 3\nresource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat\nresource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat\nresource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat\nresource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt\nresource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt\nresource-user-agent = SKIPI/0.4.1/Android\nresource-auto-update = true\nresource-update-interval = 1\n",
+        "sourceUrl": "https://profile1.example.test/config",
+        "updateLocked": true,
+        "lastUpdatedAtMillis": 1788575699544,
+        "autoUpdate": true,
+        "updateInterval": "",
+        "proxyAppListMode": 0,
+        "proxyAppListSelectedApps": [
+          "0:com.example.app",
+          "0:com.example.app"
+        ],
+        "androidSettings": {
+          "enableSniffing": true,
+          "enableSniffingRouteOnly": true,
+          "enableMux": false,
+          "muxConcurrency": "8",
+          "muxXudpConcurrency": "16",
+          "muxXudpProxyUdp443": 0,
+          "enableFragment": false,
+          "fragmentPackets": "tlshello",
+          "fragmentLength": "100-200",
+          "fragmentInterval": "10-20",
+          "enableVpnLocalDns": true,
+          "enableFakeDns": true,
+          "enableResolveProxyServerDomain": true,
+          "enableDirectDnsForProxyServerDomains": true,
+          "tunVpnDns": "1.1.1.1",
+          "proxyDns": [
+            "https://1.1.1.1/dns-query",
+            "https://1.0.0.1/dns-query"
+          ],
+          "directDns": [
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDnsDomains": [],
+          "dnsHosts": [],
+          "routeDomainStrategy": 0,
+          "fakeDnsIpPool": "198.18.0.0/15",
+          "fakeDnsPoolSize": 65535
+        },
+        "networkActivation": {
+          "enabled": false,
+          "transport": 0
+        },
+        "resourceSettings": {
+          "source": 3,
+          "customGeoIpUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+          "customGeoSiteUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+          "customGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+          "customDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+          "customDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+          "customFiles": [],
+          "nextCustomFileId": 1,
+          "userAgent": "SKIPI/0.4.1/Android",
+          "autoUpdate": true,
+          "updateInterval": "1"
+        }
+      },
+      {
+        "id": 23,
+        "name": "Profile 2",
+        "rawConfig": "# SKIPI configuration\n[General]\ndns-server = 1.1.1.1\n[Proxy Group]\n[Rule]\nFINAL,DIRECT\n[URL Rewrite]\nresource-user-agent = SKIPI/0.4.1/Android\n\n[SKIPI]\nprofile-name = Profile 2\nprofile-update-url = https://profile2.example.test/config\nprofile-update-locked = false\nprofile-auto-update = false\nper-app-mode = global\nsniffing = true\nsniffing-route-only = true\nmux = false\nmux-concurrency = 8\nmux-xudp-concurrency = 16\nmux-udp-443 = 0\nfragment = false\nfragment-packets = tlshello\nfragment-length = 100-200\nfragment-interval = 10-20\nvpn-local-dns = true\nfake-dns = false\nresolve-proxy-server-domain = true\ndirect-dns-fallback-proxy = true\ntun-dns = 8.8.8.8\nproxy-dns = https://8.8.8.8/dns-query\ndirect-dns = https://77.88.8.8/dns-query\ndns-hosts = host1.example.test:192.0.2.1\ndns-hosts = host2.example.test:192.0.2.2\nroute-domain-strategy = IPIfNonMatch\nnetwork-activation = false\nnetwork-transport = wifi\nresource-source = 4\nresource-geoip-url = https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip/release/geoip.dat\nresource-geosite-url = https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geosite/release/geosite.dat\nresource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat\nresource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt\nresource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt\nresource-user-agent = SKIPI/0.4.1/Android\nresource-auto-update = true\nresource-update-interval = 24\n",
+        "sourceUrl": "https://profile2.example.test/config",
+        "updateLocked": false,
+        "lastUpdatedAtMillis": 0,
+        "autoUpdate": false,
+        "updateInterval": "",
+        "proxyAppListMode": 2,
+        "proxyAppListSelectedApps": [],
+        "androidSettings": {
+          "enableSniffing": true,
+          "enableSniffingRouteOnly": true,
+          "enableMux": false,
+          "muxConcurrency": "8",
+          "muxXudpConcurrency": "16",
+          "muxXudpProxyUdp443": 0,
+          "enableFragment": false,
+          "fragmentPackets": "tlshello",
+          "fragmentLength": "100-200",
+          "fragmentInterval": "10-20",
+          "enableVpnLocalDns": true,
+          "enableFakeDns": false,
+          "enableResolveProxyServerDomain": true,
+          "enableDirectDnsForProxyServerDomains": true,
+          "tunVpnDns": "8.8.8.8",
+          "proxyDns": [
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDns": [
+            "https://77.88.8.8/dns-query"
+          ],
+          "directDnsDomains": [],
+          "dnsHosts": [
+            "host1.example.test:192.0.2.1",
+            "host2.example.test:192.0.2.2"
+          ],
+          "routeDomainStrategy": 1,
+          "fakeDnsIpPool": "198.18.0.0/15",
+          "fakeDnsPoolSize": 65535
+        },
+        "networkActivation": {
+          "enabled": false,
+          "transport": 0
+        },
+        "resourceSettings": {
+          "source": 4,
+          "customGeoIpUrl": "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip/release/geoip.dat",
+          "customGeoSiteUrl": "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geosite/release/geosite.dat",
+          "customGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+          "customDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+          "customDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+          "customFiles": [],
+          "nextCustomFileId": 1,
+          "userAgent": "SKIPI/0.4.1/Android",
+          "autoUpdate": true,
+          "updateInterval": "24"
+        }
+      },
+      {
+        "id": 24,
+        "name": "Profile 3",
+        "rawConfig": "# SKIPI configuration\n[General]\ndns-server = 1.1.1.1\n[Proxy Group]\n[Rule]\nFINAL,DIRECT\n[URL Rewrite]\nresource-user-agent = SKIPI/0.4.1/Android\n\n[SKIPI]\nprofile-name = Profile 3\nprofile-update-url = https://profile3.example.test/config\nprofile-update-locked = false\nprofile-auto-update = false\nper-app-mode = global\nsniffing = true\nsniffing-route-only = true\nmux = false\nmux-concurrency = 8\nmux-xudp-concurrency = 16\nmux-udp-443 = 0\nfragment = false\nfragment-packets = tlshello\nfragment-length = 100-200\nfragment-interval = 10-20\nvpn-local-dns = true\nfake-dns = false\nresolve-proxy-server-domain = true\ndirect-dns-fallback-proxy = true\ntun-dns = 8.8.8.8\nproxy-dns = https://8.8.8.8/dns-query\ndirect-dns = https://1.1.1.1/dns-query,https://8.8.8.8/dns-query\nroute-domain-strategy = AsIs\nnetwork-activation = false\nnetwork-transport = wifi\nresource-source = 0\nresource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat\nresource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat\nresource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat\nresource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt\nresource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt\nresource-user-agent = SKIPI/0.4.1/Android\nresource-auto-update = true\nresource-update-interval = 24\n",
+        "sourceUrl": "https://profile3.example.test/config",
+        "updateLocked": false,
+        "lastUpdatedAtMillis": 0,
+        "autoUpdate": false,
+        "updateInterval": "",
+        "proxyAppListMode": 2,
+        "proxyAppListSelectedApps": [],
+        "androidSettings": {
+          "enableSniffing": true,
+          "enableSniffingRouteOnly": true,
+          "enableMux": false,
+          "muxConcurrency": "8",
+          "muxXudpConcurrency": "16",
+          "muxXudpProxyUdp443": 0,
+          "enableFragment": false,
+          "fragmentPackets": "tlshello",
+          "fragmentLength": "100-200",
+          "fragmentInterval": "10-20",
+          "enableVpnLocalDns": true,
+          "enableFakeDns": false,
+          "enableResolveProxyServerDomain": true,
+          "enableDirectDnsForProxyServerDomains": true,
+          "tunVpnDns": "8.8.8.8",
+          "proxyDns": [
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDns": [
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDnsDomains": [],
+          "dnsHosts": [],
+          "routeDomainStrategy": 0,
+          "fakeDnsIpPool": "198.18.0.0/15",
+          "fakeDnsPoolSize": 65535
+        },
+        "networkActivation": {
+          "enabled": false,
+          "transport": 0
+        },
+        "resourceSettings": {
+          "source": 0,
+          "customGeoIpUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+          "customGeoSiteUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+          "customGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+          "customDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+          "customDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+          "customFiles": [],
+          "nextCustomFileId": 1,
+          "userAgent": "SKIPI/0.4.1/Android",
+          "autoUpdate": true,
+          "updateInterval": "24"
+        }
+      },
+      {
+        "id": 25,
+        "name": "Profile 4",
+        "rawConfig": "# SKIPI configuration\n[General]\ndns-server = 1.1.1.1\n[Proxy Group]\n[Rule]\nFINAL,DIRECT\n[URL Rewrite]\nresource-user-agent = SKIPI/0.4.1/Android\n\n[SKIPI]\nprofile-name = Profile 4\nprofile-update-url = https://profile4.example.test/config\nprofile-update-locked = false\nprofile-auto-update = false\nper-app-mode = global\nsniffing = true\nsniffing-route-only = true\nmux = false\nmux-concurrency = 8\nmux-xudp-concurrency = 16\nmux-udp-443 = 0\nfragment = false\nfragment-packets = tlshello\nfragment-length = 100-200\nfragment-interval = 10-20\nvpn-local-dns = true\nfake-dns = false\nresolve-proxy-server-domain = true\ndirect-dns-fallback-proxy = true\ntun-dns = 8.8.8.8\nproxy-dns = https://8.8.8.8/dns-query\ndirect-dns = https://77.88.8.8/dns-query\ndns-hosts = cloudflare-dns.com:1.1.1.1\ndns-hosts = dns.google:8.8.8.8\nroute-domain-strategy = IPIfNonMatch\nnetwork-activation = false\nnetwork-transport = wifi\nresource-source = 0\nresource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat\nresource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat\nresource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat\nresource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt\nresource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt\nresource-user-agent = SKIPI/0.4.1/Android\nresource-auto-update = true\nresource-update-interval = 24\n",
+        "sourceUrl": "https://profile4.example.test/config",
+        "updateLocked": false,
+        "lastUpdatedAtMillis": 0,
+        "autoUpdate": false,
+        "updateInterval": "",
+        "proxyAppListMode": 2,
+        "proxyAppListSelectedApps": [],
+        "androidSettings": {
+          "enableSniffing": true,
+          "enableSniffingRouteOnly": true,
+          "enableMux": false,
+          "muxConcurrency": "8",
+          "muxXudpConcurrency": "16",
+          "muxXudpProxyUdp443": 0,
+          "enableFragment": false,
+          "fragmentPackets": "tlshello",
+          "fragmentLength": "100-200",
+          "fragmentInterval": "10-20",
+          "enableVpnLocalDns": true,
+          "enableFakeDns": false,
+          "enableResolveProxyServerDomain": true,
+          "enableDirectDnsForProxyServerDomains": true,
+          "tunVpnDns": "8.8.8.8",
+          "proxyDns": [
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDns": [
+            "https://77.88.8.8/dns-query"
+          ],
+          "directDnsDomains": [],
+          "dnsHosts": [
+            "cloudflare-dns.com:1.1.1.1",
+            "dns.google:8.8.8.8"
+          ],
+          "routeDomainStrategy": 1,
+          "fakeDnsIpPool": "198.18.0.0/15",
+          "fakeDnsPoolSize": 65535
+        },
+        "networkActivation": {
+          "enabled": false,
+          "transport": 0
+        },
+        "resourceSettings": {
+          "source": 0,
+          "customGeoIpUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+          "customGeoSiteUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+          "customGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+          "customDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+          "customDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+          "customFiles": [],
+          "nextCustomFileId": 1,
+          "userAgent": "SKIPI/0.4.1/Android",
+          "autoUpdate": true,
+          "updateInterval": "24"
+        }
+      },
+      {
+        "id": 27,
+        "name": "Profile 5",
+        "rawConfig": "# SKIPI configuration\n[General]\ndns-server = 1.1.1.1\n[Proxy Group]\n[Rule]\nFINAL,DIRECT\n[URL Rewrite]\nresource-user-agent = SKIPI/0.5.0/Android\n\n[SKIPI]\nprofile-name = Profile 5\nprofile-update-url = \nprofile-update-locked = false\nprofile-auto-update = false\nper-app-mode = global\nsniffing = true\nsniffing-route-only = true\nmux = false\nmux-concurrency = 8\nmux-xudp-concurrency = 16\nmux-udp-443 = 0\nfragment = false\nfragment-packets = tlshello\nfragment-length = 100-200\nfragment-interval = 10-20\nvpn-local-dns = true\nfake-dns = false\nresolve-proxy-server-domain = true\ndirect-dns-fallback-proxy = true\ntun-dns = 8.8.8.8\nproxy-dns = https://8.8.8.8/dns-query\ndirect-dns = https://1.1.1.1/dns-query,https://8.8.8.8/dns-query\nroute-domain-strategy = AsIs\nnetwork-activation = false\nnetwork-transport = wifi\nresource-source = 0\nresource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat\nresource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat\nresource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat\nresource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt\nresource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt\nresource-user-agent = SKIPI/0.5.0/Android\nresource-auto-update = true\nresource-update-interval = 24\n",
+        "sourceUrl": "",
+        "updateLocked": false,
+        "lastUpdatedAtMillis": 0,
+        "autoUpdate": false,
+        "updateInterval": "",
+        "proxyAppListMode": 2,
+        "proxyAppListSelectedApps": [],
+        "androidSettings": {
+          "enableSniffing": true,
+          "enableSniffingRouteOnly": true,
+          "enableMux": false,
+          "muxConcurrency": "8",
+          "muxXudpConcurrency": "16",
+          "muxXudpProxyUdp443": 0,
+          "enableFragment": false,
+          "fragmentPackets": "tlshello",
+          "fragmentLength": "100-200",
+          "fragmentInterval": "10-20",
+          "enableVpnLocalDns": true,
+          "enableFakeDns": false,
+          "enableResolveProxyServerDomain": true,
+          "enableDirectDnsForProxyServerDomains": true,
+          "tunVpnDns": "8.8.8.8",
+          "proxyDns": [
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDns": [
+            "https://1.1.1.1/dns-query",
+            "https://8.8.8.8/dns-query"
+          ],
+          "directDnsDomains": [],
+          "dnsHosts": [],
+          "routeDomainStrategy": 0,
+          "fakeDnsIpPool": "198.18.0.0/15",
+          "fakeDnsPoolSize": 65535
+        },
+        "networkActivation": {
+          "enabled": false,
+          "transport": 0
+        },
+        "resourceSettings": {
+          "source": 0,
+          "customGeoIpUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat",
+          "customGeoSiteUrl": "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat",
+          "customGeoIpOnlyCnPrivateUrl": "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat",
+          "customDirectCidrIpv4Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt",
+          "customDirectCidrIpv6Url": "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt",
+          "customFiles": [],
+          "nextCustomFileId": 1,
+          "userAgent": "SKIPI/0.5.0/Android",
+          "autoUpdate": true,
+          "updateInterval": "24"
+        }
+      }
+    ],
+    "activeTrafficConfigId": 3
+  }
+}
