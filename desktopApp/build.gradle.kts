@@ -164,6 +164,13 @@ val macPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
     if (parts.size == 3 && parts[0] == "0") "1.${parts[1]}.${parts[2]}" else ProjectConfig.VERSION_NAME
 }
 
+// Windows Installer compares only major.minor.build, and every build of one x.y.z (0.5.0-rc.8, 0.5.0-rc.9, 0.5.0)
+// carries the same name, so a new MSI looked like the version already installed and never upgraded it. The commit
+// count is the build number: it only grows, and fits the 65535 the format allows.
+val windowsPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
+    "${parts[0]}.${parts[1]}.${getGitVersionCode().coerceIn(0, 65535)}"
+}
+
 compose.desktop {
     application {
         mainClass = "app.skipi.desktop.MainKt"
@@ -201,6 +208,7 @@ compose.desktop {
             description = "SKIPI desktop proxy client"
             vendor = "Radetski"
             windows {
+                packageVersion = windowsPackageVersion
                 iconFile.set(project.file("packaging/icons/skipi.ico"))
                 menu = true
                 menuGroup = ProjectConfig.PROJECT_NAME
