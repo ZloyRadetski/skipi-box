@@ -1562,9 +1562,9 @@
     <string name="routing_table_apply">Apply</string>
     <string name="custom_themes_title">My themes</string>
     <string name="custom_themes_empty">No saved themes yet. Save the colors you see now, or import a theme.</string>
-    <string name="custom_themes_save_current">Save current colors as a theme</string>
+    <string name="custom_themes_save_current">Save current colors</string>
     <string name="custom_themes_import">Import a theme</string>
-    <string name="custom_themes_import_hint">Theme code or skipi://theme link</string>
+    <string name="custom_themes_import_hint">Theme code or link</string>
     <string name="custom_themes_import_invalid">This is not a SKIPI theme</string>
     <string name="custom_themes_name">Name</string>
     <string name="custom_themes_save">Save</string>
@@ -1581,4 +1581,6 @@
     <string name="custom_themes_low_contrast">Some text may be hard to read with these colors.</string>
     <string name="custom_themes_link_title">Add a color theme?</string>
     <string name="custom_themes_link_message">A link asks SKIPI to add this theme to your themes. It only changes colors. Continue only if you trust the source.</string>
+    <string name="custom_themes_save_title">Save theme</string>
+    <string name="custom_themes_new_theme">New theme</string>
 </resources>

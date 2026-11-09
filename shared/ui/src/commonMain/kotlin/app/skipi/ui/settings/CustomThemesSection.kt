@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -30,23 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import app.skipi.ui.theme.LocalAppColors
-import app.skipi.ui.theme.SkipiTheme
-import features.config.CustomThemeNameMaxLength
-import features.config.CustomThemeShare
-import features.config.cleanCustomThemeName
-import features.config.indexOfColours
-import features.config.isFull
-import features.config.parseCustomThemeCodeOrNull
-import features.config.readabilityProblems
-import features.config.toLink
-import features.config.withAdded
-import features.config.withRenamed
-import features.config.withoutIndex
-import org.jetbrains.compose.resources.stringResource
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.custom_themes_active
@@ -66,10 +57,27 @@ import app.skipi.ui.resources.custom_themes_link_message
 import app.skipi.ui.resources.custom_themes_link_title
 import app.skipi.ui.resources.custom_themes_low_contrast
 import app.skipi.ui.resources.custom_themes_name
+import app.skipi.ui.resources.custom_themes_new_theme
 import app.skipi.ui.resources.custom_themes_options
 import app.skipi.ui.resources.custom_themes_save
 import app.skipi.ui.resources.custom_themes_save_current
+import app.skipi.ui.resources.custom_themes_save_title
 import app.skipi.ui.resources.custom_themes_title
+import app.skipi.ui.theme.LocalAppColors
+import app.skipi.ui.theme.SkipiTheme
+import features.config.CustomThemeNameMaxLength
+import features.config.CustomThemeShare
+import features.config.cleanCustomThemeName
+import features.config.contrastRatio
+import features.config.indexOfColours
+import features.config.isFull
+import features.config.parseCustomThemeCodeOrNull
+import features.config.readabilityProblems
+import features.config.toLink
+import features.config.withAdded
+import features.config.withRenamed
+import features.config.withoutIndex
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -135,17 +143,15 @@ internal fun CustomThemesSection(
         null -> Unit
         ThemeDialog.Save -> {
             val current = colors.toCustomTheme(name = "")
+            var name by remember { mutableStateOf("") }
             ThemeDialogFrame(onDismiss = { dialog = null }) {
-                var name by remember { mutableStateOf("") }
-                DialogTitle(stringResource(Res.string.custom_themes_save_current))
-                ThemePreview(current)
-                NameField(name) { name = it }
-                ThemeNotes(theme = current, library = themes)
-                DialogButtons(
+                SaveThemeContent(
+                    current = current,
+                    name = name,
+                    onNameChange = { name = it },
+                    library = themes,
                     onCancel = { dialog = null },
-                    confirmText = stringResource(Res.string.custom_themes_save),
-                    confirmEnabled = !themes.isFull() && themes.indexOfColours(current) < 0,
-                    onConfirm = {
+                    onSave = {
                         save(themes.withAdded(current.copy(name = name)))
                         dialog = null
                     },
@@ -153,62 +159,25 @@ internal fun CustomThemesSection(
             }
         }
 
-        ThemeDialog.Import -> ThemeDialogFrame(onDismiss = { dialog = null }) {
+        ThemeDialog.Import -> {
             var text by remember { mutableStateOf("") }
-            val parsed = remember(text) { parseCustomThemeCodeOrNull(text) }
-            DialogTitle(stringResource(Res.string.custom_themes_import))
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                label = stringResource(Res.string.custom_themes_import_hint),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(12.dp))
-            if (parsed != null) {
-                ThemePreview(parsed)
-                ThemeNotes(theme = parsed, library = themes)
-            } else if (text.isNotBlank()) {
-                Text(
-                    text = stringResource(Res.string.custom_themes_import_invalid),
-                    style = MiuixTheme.textStyles.body2,
-                    color = LocalAppColors.current.error,
-                )
-            }
-            val canAdd = parsed != null && !themes.isFull() && themes.indexOfColours(parsed) < 0
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(text = stringResource(Res.string.common_cancel), onClick = { dialog = null })
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    text = stringResource(Res.string.custom_themes_add),
-                    enabled = canAdd,
-                    onClick = {
-                        if (parsed != null) save(themes.withAdded(parsed))
+            ThemeDialogFrame(onDismiss = { dialog = null }) {
+                ImportThemeContent(
+                    text = text,
+                    onTextChange = { text = it },
+                    library = themes,
+                    onCancel = { dialog = null },
+                    onAdd = { theme ->
+                        save(themes.withAdded(theme))
+                        dialog = null
+                    },
+                    onAddAndApply = { theme ->
+                        // Colours that are already saved are applied without a second copy.
+                        val next = themes.withAdded(theme)
+                        onSettingsChange { it.withCustomThemes(next).withCustomTheme(theme) }
                         dialog = null
                     },
                 )
-                Spacer(Modifier.width(8.dp))
-                Button(
-                    enabled = parsed != null,
-                    onClick = {
-                        if (parsed != null) {
-                            // Already saved colours are applied without a second copy.
-                            val next = themes.withAdded(parsed)
-                            onSettingsChange { it.withCustomThemes(next).withCustomTheme(parsed) }
-                        }
-                        dialog = null
-                    },
-                    colors = ButtonDefaults.buttonColors(color = MiuixTheme.colorScheme.primary),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.custom_themes_add_apply),
-                        color = MiuixTheme.colorScheme.onPrimary,
-                    )
-                }
             }
         }
 
@@ -217,38 +186,20 @@ internal fun CustomThemesSection(
             if (theme == null) {
                 dialog = null
             } else {
+                var name by remember(shown.index) { mutableStateOf(theme.name) }
+                val linkCopied = stringResource(Res.string.custom_themes_link_copied)
                 ThemeDialogFrame(onDismiss = { dialog = null }) {
-                    var name by remember(shown.index) { mutableStateOf(theme.name) }
-                    var confirmDelete by remember(shown.index) { mutableStateOf(false) }
-                    val linkCopied = stringResource(Res.string.custom_themes_link_copied)
-                    DialogTitle(stringResource(Res.string.custom_themes_options))
-                    ThemePreview(theme)
-                    NameField(name) { name = it }
-                    Spacer(Modifier.height(8.dp))
-                    TextButton(
-                        text = stringResource(Res.string.custom_themes_copy_link),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { onCopyText(theme.toLink(), linkCopied) },
-                    )
-                    TextButton(
-                        text = stringResource(
-                            if (confirmDelete) Res.string.custom_themes_delete_confirm else Res.string.custom_themes_delete,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            if (confirmDelete) {
-                                save(themes.withoutIndex(shown.index))
-                                dialog = null
-                            } else {
-                                confirmDelete = true
-                            }
+                    ThemeOptionsContent(
+                        theme = theme,
+                        name = name,
+                        onNameChange = { name = it },
+                        onCopyLink = { onCopyText(theme.toLink(), linkCopied) },
+                        onDelete = {
+                            save(themes.withoutIndex(shown.index))
+                            dialog = null
                         },
-                    )
-                    DialogButtons(
                         onCancel = { dialog = null },
-                        confirmText = stringResource(Res.string.custom_themes_save),
-                        confirmEnabled = name.cleanCustomThemeName().isNotEmpty(),
-                        onConfirm = {
+                        onSave = {
                             save(themes.withRenamed(shown.index, name))
                             dialog = null
                         },
@@ -257,6 +208,129 @@ internal fun CustomThemesSection(
             }
         }
     }
+}
+
+@Composable
+internal fun SaveThemeContent(
+    current: CustomThemeShare,
+    name: String,
+    onNameChange: (String) -> Unit,
+    library: List<CustomThemeShare>,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+) {
+    DialogTitle(stringResource(Res.string.custom_themes_save_title))
+    ThemePreview(current.copy(name = name))
+    Spacer(Modifier.height(12.dp))
+    NameField(name, onNameChange)
+    ThemeNotes(theme = current, library = library)
+    Spacer(Modifier.height(20.dp))
+    ButtonPair(
+        cancelText = stringResource(Res.string.common_cancel),
+        onCancel = onCancel,
+        confirmText = stringResource(Res.string.custom_themes_save),
+        confirmEnabled = !library.isFull() && library.indexOfColours(current) < 0,
+        onConfirm = onSave,
+    )
+}
+
+@Composable
+internal fun ImportThemeContent(
+    text: String,
+    onTextChange: (String) -> Unit,
+    library: List<CustomThemeShare>,
+    onCancel: () -> Unit,
+    onAdd: (CustomThemeShare) -> Unit,
+    onAddAndApply: (CustomThemeShare) -> Unit,
+) {
+    val parsed = remember(text) { parseCustomThemeCodeOrNull(text) }
+    DialogTitle(stringResource(Res.string.custom_themes_import))
+    TextField(
+        value = text,
+        onValueChange = onTextChange,
+        label = stringResource(Res.string.custom_themes_import_hint),
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = false,
+        maxLines = 4,
+    )
+    if (parsed != null) {
+        Spacer(Modifier.height(12.dp))
+        ThemePreview(parsed)
+        ThemeNotes(theme = parsed, library = library)
+    } else if (text.isNotBlank()) {
+        Text(
+            text = stringResource(Res.string.custom_themes_import_invalid),
+            modifier = Modifier.padding(top = 8.dp),
+            style = MiuixTheme.textStyles.body2,
+            color = LocalAppColors.current.error,
+        )
+    }
+    Spacer(Modifier.height(20.dp))
+    Button(
+        modifier = Modifier.fillMaxWidth(),
+        enabled = parsed != null,
+        colors = ButtonDefaults.buttonColorsPrimary(),
+        onClick = { if (parsed != null) onAddAndApply(parsed) },
+    ) {
+        Text(
+            text = stringResource(Res.string.custom_themes_add_apply),
+            color = readableOn(MiuixTheme.colorScheme.primary),
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            text = stringResource(Res.string.common_cancel),
+            modifier = Modifier.weight(1f),
+            onClick = onCancel,
+        )
+        Spacer(Modifier.width(8.dp))
+        TextButton(
+            text = stringResource(Res.string.custom_themes_add),
+            modifier = Modifier.weight(1f),
+            enabled = parsed != null && !library.isFull() && library.indexOfColours(parsed) < 0,
+            onClick = { if (parsed != null) onAdd(parsed) },
+        )
+    }
+}
+
+@Composable
+internal fun ThemeOptionsContent(
+    theme: CustomThemeShare,
+    name: String,
+    onNameChange: (String) -> Unit,
+    onCopyLink: () -> Unit,
+    onDelete: () -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    DialogTitle(stringResource(Res.string.custom_themes_options))
+    ThemePreview(theme.copy(name = name))
+    Spacer(Modifier.height(12.dp))
+    NameField(name, onNameChange)
+    Spacer(Modifier.height(8.dp))
+    TextButton(
+        text = stringResource(Res.string.custom_themes_copy_link),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onCopyLink,
+    )
+    Spacer(Modifier.height(8.dp))
+    TextButton(
+        text = stringResource(
+            if (confirmDelete) Res.string.custom_themes_delete_confirm else Res.string.custom_themes_delete,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { if (confirmDelete) onDelete() else confirmDelete = true },
+    )
+    Spacer(Modifier.height(20.dp))
+    ButtonPair(
+        cancelText = stringResource(Res.string.common_cancel),
+        onCancel = onCancel,
+        confirmText = stringResource(Res.string.custom_themes_save),
+        confirmEnabled = name.cleanCustomThemeName().isNotEmpty(),
+        onConfirm = onSave,
+    )
 }
 
 @Composable
@@ -270,7 +344,7 @@ private fun ThemeRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onApply)
-            .padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Swatches(theme)
@@ -280,6 +354,8 @@ private fun ThemeRow(
                 text = theme.name,
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             if (active) {
                 Text(
@@ -289,11 +365,24 @@ private fun ThemeRow(
                 )
             }
         }
-        TextButton(text = "⋯", onClick = onOptions)
+        Spacer(Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onOptions),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "⋯",
+                fontSize = 22.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
     }
 }
 
-/** Background, surface, accent and text of a theme as four small squares. */
+/** Background, surface, accent and text of a theme as four small bars. */
 @Composable
 private fun Swatches(theme: CustomThemeShare) {
     val shape = RoundedCornerShape(8.dp)
@@ -308,39 +397,74 @@ private fun Swatches(theme: CustomThemeShare) {
     }
 }
 
+/** A small mock of the app in the theme's own colours: a card with the power button and a server line. */
 @Composable
 private fun ThemePreview(theme: CustomThemeShare) {
-    val shape = RoundedCornerShape(12.dp)
+    val outer = RoundedCornerShape(16.dp)
+    val inner = RoundedCornerShape(12.dp)
+    val title = theme.name.ifBlank { stringResource(Res.string.custom_themes_new_theme) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clip(shape)
+            .clip(outer)
             .background(Color(theme.background))
-            .border(1.dp, MiuixTheme.colorScheme.dividerLine, shape)
+            .border(1.dp, Color(theme.textSecondary).copy(alpha = 0.35f), outer)
             .padding(12.dp),
     ) {
-        Column {
-            Box(
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(inner)
                     .background(Color(theme.surface))
-                    .padding(10.dp),
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
-                    Text(text = theme.name.ifEmpty { "…" }, color = Color(theme.text))
-                    Text(text = "SKIPI", color = Color(theme.textSecondary), style = MiuixTheme.textStyles.body2)
+                Box(
+                    modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(theme.accent)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(16.dp).border(2.dp, Color(theme.text), CircleShape))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        color = Color(theme.text),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "vless · 42 ms",
+                        color = Color(theme.textSecondary),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(theme.accent))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Text(text = "●", color = Color(theme.text))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(inner)
+                        .background(Color(theme.surfaceVariant))
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "SKIPI", color = Color(theme.textSecondary), fontSize = 12.sp)
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(inner)
+                        .background(Color(theme.accent))
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "SKIPI", color = Color(theme.text), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -367,7 +491,7 @@ private fun ThemeNotes(theme: CustomThemeShare, library: List<CustomThemeShare>)
     notes.forEach { note ->
         Text(
             text = note,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = 8.dp),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
@@ -378,35 +502,40 @@ private fun ThemeNotes(theme: CustomThemeShare, library: List<CustomThemeShare>)
 private fun DialogTitle(text: String) {
     Text(
         text = text,
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         style = MiuixTheme.textStyles.title3,
         color = MiuixTheme.colorScheme.onSurface,
     )
 }
 
+/** Cancel on the left, the main action on the right; both share the width so neither text is squeezed. */
 @Composable
-private fun DialogButtons(
+private fun ButtonPair(
+    cancelText: String,
     onCancel: () -> Unit,
     confirmText: String,
     confirmEnabled: Boolean,
     onConfirm: () -> Unit,
 ) {
-    Spacer(Modifier.height(16.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(text = stringResource(Res.string.common_cancel), onClick = onCancel)
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        TextButton(text = cancelText, modifier = Modifier.weight(1f), onClick = onCancel)
         Spacer(Modifier.width(8.dp))
         Button(
+            modifier = Modifier.weight(1.2f),
             enabled = confirmEnabled,
+            colors = ButtonDefaults.buttonColorsPrimary(),
             onClick = onConfirm,
-            colors = ButtonDefaults.buttonColors(color = MiuixTheme.colorScheme.primary),
         ) {
-            Text(text = confirmText, color = MiuixTheme.colorScheme.onPrimary)
+            Text(text = confirmText, color = readableOn(MiuixTheme.colorScheme.primary))
         }
     }
+}
+
+/** Black or white, whichever reads better on [background]; the host's own on-accent colour can be dark on dark. */
+private fun readableOn(background: Color): Color {
+    val light = contrastRatio(0xFFFFFFFF, background.toArgb().toLong() and 0xFFFFFFFFL)
+    val dark = contrastRatio(0xFF000000, background.toArgb().toLong() and 0xFFFFFFFFL)
+    return if (light >= dark) Color.White else Color.Black
 }
 
 @Composable
@@ -453,9 +582,12 @@ fun CustomThemeLinkDialog(
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
+        Spacer(Modifier.height(12.dp))
         ThemePreview(theme)
         ThemeNotes(theme = theme, library = library)
-        DialogButtons(
+        Spacer(Modifier.height(20.dp))
+        ButtonPair(
+            cancelText = stringResource(Res.string.common_cancel),
             onCancel = onDismiss,
             confirmText = stringResource(Res.string.custom_themes_add),
             confirmEnabled = !library.isFull() && library.indexOfColours(theme) < 0,
