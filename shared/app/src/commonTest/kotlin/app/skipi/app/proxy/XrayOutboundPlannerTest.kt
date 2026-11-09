@@ -437,6 +437,98 @@ class XrayOutboundPlannerTest {
         assertTrue(plan.observatorySelectors.contains("$groupTag-policy-"))
     }
 
+    @Test
+    fun aLatencyBalancerProbesOnlyTheBestMembersSoAHugeSubscriptionDoesNotStormTheProbe() {
+        val selected = node(1, "Selected", "selected.example")
+        // Latencies 300 down to 1: the lowest ids are the slowest.
+        val members = (10..49).map { id -> node(id, "N$id", "n$id.example", latency = "${500 - id}ms") }
+        val dead = node(60, "Dead", "dead.example", latency = "Timeout")
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Auto",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = (members + dead).map { it.id },
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group) + members + dead, listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        val memberTags = plan.proxyOutbounds.map { it.tag }.filter { it.startsWith("100-policy-") }
+        assertEquals(BalancerProbeMemberLimit, memberTags.size)
+        // The fastest known members win: ids 49 down to 34.
+        assertEquals((34..49).map { "100-policy-$it" }.toSet(), memberTags.toSet())
+        assertEquals("100-policy-49", plan.balancers.single().fallbackTag)
+    }
+
+    @Test
+    fun theMemberTheUserChoseStaysInACappedBalancerEvenWhenItIsSlow() {
+        val selected = node(1, "Selected", "selected.example")
+        val members = (10..49).map { id -> node(id, "N$id", "n$id.example", latency = "${500 - id}ms") }
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Auto",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = members.map { it.id },
+                selectedMemberId = 10,
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group) + members, listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        val memberTags = plan.proxyOutbounds.map { it.tag }.filter { it.startsWith("100-policy-") }
+        assertEquals(BalancerProbeMemberLimit, memberTags.size)
+        assertTrue("100-policy-10" in memberTags)
+        assertEquals("100-policy-10", plan.balancers.single().fallbackTag)
+    }
+
+    @Test
+    fun spreadingBalancersKeepEveryMember() {
+        val selected = node(1, "Selected", "selected.example")
+        val members = (10..49).map { id -> node(id, "N$id", "n$id.example", latency = "${id}ms") }
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Spread",
+                strategy = StrategyGroupConstants.TYPE_ROUND_ROBIN,
+                proxyServerIds = members.map { it.id },
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group) + members, listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        assertEquals(members.size, plan.proxyOutbounds.count { it.tag.startsWith("100-policy-") })
+    }
+
+    @Test
+    fun aBalancerWithoutAnIntervalProbesEveryFifteenSecondsSoADeadMemberIsFoundQuickly() {
+        val selected = node(1, "Selected", "selected.example")
+        val a = node(10, "A", "a.example")
+        val b = node(20, "B", "b.example")
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Auto",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10, 20),
+                probeInterval = "",
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group, a, b), listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        assertEquals("15s", plan.observatoryProbeInterval)
+    }
+
     private fun input(
         selected: ProxyServerRecord,
         servers: List<ProxyServerRecord>,

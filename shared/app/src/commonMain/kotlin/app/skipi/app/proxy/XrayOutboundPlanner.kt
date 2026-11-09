@@ -68,7 +68,8 @@ object XrayOutboundPlanner {
                 routeTargets = routeTargets,
                 dnsHostServers = dnsHostServers.distinct(),
                 observatoryProbeUrl = observatoryProbeUrl,
-                observatoryProbeInterval = observatoryProbeInterval,
+                observatoryProbeInterval = observatoryProbeInterval
+                    ?: DefaultBalancerProbeInterval.takeIf { balancers.isNotEmpty() },
                 observatoryProbeTimeout = observatoryProbeTimeout,
             )
         }
@@ -130,55 +131,22 @@ object XrayOutboundPlanner {
                 }
 
                 "url-test", "fallback", "leastping", "load-balance", "random", "round-robin", "roundrobin", "least-load", "leastload" -> {
-                    val selector = "$tag-policy-"
-                    val memberTags = members.map { member -> "$selector${member.id}" }
-                    members.zip(memberTags).forEach { (member, memberTag) ->
-                        addNormalOutbound(tag = memberTag, server = member)
-                    }
-                    val strategy = group.type.toXrayBalancerStrategy()
-                    val customProbeUrl = matchingStrategy?.probeUrl?.trim()?.takeIf(String::isNotEmpty)
-                        ?: group.url.trim().takeIf(String::isNotEmpty)
-                        ?: input.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
-                    val customProbeInterval = matchingStrategy?.probeInterval?.trim()?.takeIf(String::isNotEmpty)
-                        ?: group.intervalSeconds?.let { "${it}s" }
-                    val customProbeTimeout = matchingStrategy?.probeTimeout?.trim()?.takeIf(String::isNotEmpty)
-                        ?: group.timeoutSeconds?.let { "${it}s" }
-                    if (customProbeUrl != null && observatoryProbeUrl == null) {
-                        observatoryProbeUrl = customProbeUrl
-                    }
-                    observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, customProbeInterval)
-                    if (customProbeTimeout != null && observatoryProbeTimeout == null) {
-                        observatoryProbeTimeout = customProbeTimeout
-                    }
-                    val selectedTag = matchingStrategy?.selectedMemberId?.let { selectedId ->
-                        members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
-                    }
-                    val bestFallbackTag = selectedTag ?: members.zip(memberTags)
-                        .filter { (member, _) ->
-                            val lat = member.latency.trim()
-                            lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
-                        }
-                        .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                        ?.second
-                        ?: members.zip(memberTags)
-                            .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                            ?.second
-                        ?: memberTags.first()
-
-                    // leastPing only consumes the regular Observatory. Burst
-                    // Observatory schedules its initial probes randomly, so it
-                    // can leave the balancer without a target despite a verified
-                    // startup fallback. The regular Observatory probes all
-                    // members concurrently and lets fallbackTag carry traffic
-                    // until it has its first result.
-                    observatorySelectors += selector
-                    balancers += XrayBalancerPlan(
+                    addBalancer(
                         tag = tag,
-                        selector = selector,
-                        strategy = strategy,
-                        fallbackTag = bestFallbackTag,
+                        strategy = group.type.toXrayBalancerStrategy(),
+                        members = members,
+                        selectedMemberId = matchingStrategy?.selectedMemberId,
+                        keepsOrder = group.type.equals("fallback", ignoreCase = true),
+                        probe = BalancerProbe(
+                            url = matchingStrategy?.probeUrl?.trim()?.takeIf(String::isNotEmpty)
+                                ?: group.url.trim().takeIf(String::isNotEmpty)
+                                ?: input.subscriptionPingUrl.trim().takeIf(String::isNotEmpty),
+                            interval = matchingStrategy?.probeInterval?.trim()?.takeIf(String::isNotEmpty)
+                                ?: group.intervalSeconds?.let { "${it}s" },
+                            timeout = matchingStrategy?.probeTimeout?.trim()?.takeIf(String::isNotEmpty)
+                                ?: group.timeoutSeconds?.let { "${it}s" },
+                        ),
                     )
-                    routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
                 }
 
                 else -> addNormalOutbound(tag = tag, server = members.first())
@@ -248,61 +216,52 @@ object XrayOutboundPlanner {
                 routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
                 return
             }
+            addBalancer(
+                tag = tag,
+                strategy = strategyGroup.strategy.toXrayBalancerStrategy(),
+                members = members,
+                selectedMemberId = strategyGroup.selectedMemberId,
+                // A verified startup member is carried in selectedMemberId only for this generated
+                // config; for an ordered fallback it must also be Xray's real fallbackTag.
+                keepsOrder = strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK,
+                probe = BalancerProbe(
+                    url = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
+                        ?: input.subscriptionPingUrl.trim().takeIf(String::isNotEmpty),
+                    interval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty),
+                    timeout = strategyGroup.probeTimeout.trim().takeIf(String::isNotEmpty),
+                ),
+            )
+        }
+
+        /**
+         * One balancer over [members]. A latency-driven strategy probes its members every round, so only the
+         * best [BalancerProbeMemberLimit] join it: probing a whole subscription at once saturates the link,
+         * times the probes out and marks healthy servers dead. A leastPing balancer only consumes the regular
+         * Observatory, which probes members concurrently and lets fallbackTag carry traffic until its first result.
+         */
+        private fun addBalancer(
+            tag: String,
+            strategy: String,
+            members: List<ProxyServerRecord>,
+            selectedMemberId: Int?,
+            keepsOrder: Boolean,
+            probe: BalancerProbe,
+        ) {
             val selector = "$tag-policy-"
-            val memberTags = members.map { member -> "$selector${member.id}" }
-            members.zip(memberTags).forEach { (member, memberTag) ->
-                addNormalOutbound(
-                    tag = memberTag,
-                    server = member,
-                )
-            }
-            val balancerStrategy = strategyGroup.strategy.toXrayBalancerStrategy()
-            val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
-                members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
-            }
-            val bestFallbackTag = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK) {
-                // A verified startup member is carried in selectedMemberId only for
-                // this generated config. It must also be Xray's real fallbackTag:
-                // otherwise the UI reports the verified member while initial
-                // traffic still goes to the first configured server.
-                selectedTag ?: memberTags.first()
-            } else {
-                selectedTag ?: members.zip(memberTags)
-                    .filter { (member, _) ->
-                        val lat = member.latency.trim()
-                        lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
-                    }
-                    .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                    ?.second
-                    ?: members.zip(memberTags)
-                        .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                        ?.second
-                    ?: memberTags.first()
-            }
+            val joined = if (strategy.isLatencyDriven()) members.fastestFirst(selectedMemberId, BalancerProbeMemberLimit) else members
+            joined.forEach { member -> addNormalOutbound(tag = "$selector${member.id}", server = member) }
 
-            val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
-                ?: input.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
-            val customProbeInterval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty)
-            val customProbeTimeout = strategyGroup.probeTimeout.trim().takeIf(String::isNotEmpty)
-            if (customProbeUrl != null && observatoryProbeUrl == null) {
-                observatoryProbeUrl = customProbeUrl
-            }
-            observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, customProbeInterval)
-            if (customProbeTimeout != null && observatoryProbeTimeout == null) {
-                observatoryProbeTimeout = customProbeTimeout
-            }
-
-            // enableBurstProbe controls SKIPI's pre-start verification. Xray's
-            // running leastPing balancer must use the standard, concurrent
-            // Observatory; a Burst Observatory has no deterministic first probe
-            // and is not a supported leastPing strategy setting.
+            val fallbackMember = joined.firstOrNull { it.id == selectedMemberId }
+                ?: if (keepsOrder) joined.first() else joined.minBy { it.latency.latencySortKey() }
+            observatoryProbeUrl = observatoryProbeUrl ?: probe.url
+            observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, probe.interval)
+            observatoryProbeTimeout = observatoryProbeTimeout ?: probe.timeout
             observatorySelectors += selector
-
             balancers += XrayBalancerPlan(
                 tag = tag,
                 selector = selector,
-                strategy = balancerStrategy,
-                fallbackTag = bestFallbackTag,
+                strategy = strategy,
+                fallbackTag = "$selector${fallbackMember.id}",
             )
             routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
         }
@@ -348,6 +307,31 @@ object XrayOutboundPlanner {
                 stripLeadingFlag = input.stripLeadingFlag,
             ).mapNotNull { resolved -> input.servers.firstOrNull { it.id == resolved.id } }
     }
+}
+
+/** How many members a latency-driven balancer probes; the rest of a large subscription stays out of it. */
+internal const val BalancerProbeMemberLimit = 16
+
+/**
+ * A dead member stays out of rotation until the next probe round, so a long default leaves every new
+ * connection waiting on it. Used when no group asks for its own interval.
+ */
+private const val DefaultBalancerProbeInterval = "15s"
+
+private class BalancerProbe(val url: String?, val interval: String?, val timeout: String?)
+
+private fun String.isLatencyDriven(): Boolean =
+    this == StrategyGroupConstants.TYPE_LEAST_PING || this == StrategyGroupConstants.TYPE_LEAST_LOAD
+
+/**
+ * At most [limit] members, the fastest known first. The member the user chose always stays; members never
+ * measured keep their order behind the measured ones, and failed ones come last.
+ */
+private fun List<ProxyServerRecord>.fastestFirst(selectedMemberId: Int?, limit: Int): List<ProxyServerRecord> {
+    if (size <= limit) return this
+    val chosen = firstOrNull { it.id == selectedMemberId }
+    val ranked = sortedBy { it.latency.latencySortKey() }.filter { it !== chosen }
+    return (listOfNotNull(chosen) + ranked).take(limit)
 }
 
 /**
