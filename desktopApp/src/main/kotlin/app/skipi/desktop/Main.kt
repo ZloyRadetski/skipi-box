@@ -953,24 +953,28 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     // One run uses the mode and URL captured when it starts.
                     val httpPingMode = desktopSettings.subscriptionPingMode == app.modes.SubscriptionPingModeHttp
                     val httpPingUrl = resolveProxyHomeLatencyUrl(desktopSettings.subscriptionPingUrl)
+                    // Decoded once per run, and only when a balancer is pinged: every balancer of the run reads the
+                    // same library, and decoding all of it again for each one made a big library slow to ping.
+                    val libraryRecords by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+                        serverLibrary.servers.mapNotNull { stored ->
+                            stored.decode().getOrNull()?.let { decoded ->
+                                ProxyServerRecord(
+                                    id = stored.id,
+                                    groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                                    server = decoded,
+                                )
+                            }
+                        }
+                    }
                     val runner = DesktopProxyHomeLatencyRunner(
                         scope = subscriptionScope,
                         subscriptionPingConcurrency = desktopSettings.subscriptionPingConcurrency,
                         // A strategy group is measured through its members, as on Android.
                         tcpTester = DesktopStrategyGroupAwareTester(
                             members = { group ->
-                                val records = serverLibrary.servers.mapNotNull { stored ->
-                                    stored.decode().getOrNull()?.let { decoded ->
-                                        ProxyServerRecord(
-                                            id = stored.id,
-                                            groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
-                                            server = decoded,
-                                        )
-                                    }
-                                }
                                 resolveStrategyGroupMembers(
                                     strategyGroup = group,
-                                    servers = records,
+                                    servers = libraryRecords,
                                     trafficConfigContentById = trafficConfigContentById,
                                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
                                 ).map { record -> record.server }

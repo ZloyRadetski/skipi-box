@@ -8,6 +8,7 @@ import android.os.SystemClock
 import app.AppState
 import app.ProxyServerState
 import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
+import app.skipi.app.home.strategyGroupLatency
 import app.activeTrafficConfig
 import features.logs.AppLog
 import engine.xray.XrayConfigRequest
@@ -182,34 +183,21 @@ internal class AndroidProxyLatencyTester(
             return@coroutineScope ProxyServerLatencyTestResult.Failed
         }
 
-        val results = members.map { member ->
-            async {
-                test(
-                    appState = appState,
-                    server = member,
-                    mode = mode,
-                    sessionCache = sessionCache,
-                    semaphore = semaphore,
-                    dnsCache = dnsCache,
-                    failedDnsCache = failedDnsCache,
-                )
-            }
-        }.awaitAll()
+        // The best member's answer is the group's; a member still silent after it has been outrun is not waited
+        // for (see strategyGroupLatency). The shared [semaphore] still bounds the probes on the network.
+        val best = strategyGroupLatency(members, concurrency = members.size) { member ->
+            test(
+                appState = appState,
+                server = member,
+                mode = mode,
+                sessionCache = sessionCache,
+                semaphore = semaphore,
+                dnsCache = dnsCache,
+                failedDnsCache = failedDnsCache,
+            ).elapsedMillis.takeIf { it >= 0 }
+        } ?: return@coroutineScope ProxyServerLatencyTestResult.Failed
 
-        val validResults = results.filter { it.elapsedMillis >= 0 }
-        if (validResults.isEmpty()) {
-            return@coroutineScope ProxyServerLatencyTestResult.Failed
-        }
-
-        val chosenDelay = when (strategyGroup.strategy) {
-            StrategyGroupConstants.TYPE_LEAST_PING -> validResults.minOf { it.elapsedMillis }
-            StrategyGroupConstants.TYPE_ROUND_ROBIN,
-            StrategyGroupConstants.TYPE_RANDOM,
-            StrategyGroupConstants.TYPE_LEAST_LOAD -> validResults.minOf { it.elapsedMillis }
-            else -> validResults.minOf { it.elapsedMillis }
-        }
-
-        ProxyServerLatencyTestResult(chosenDelay)
+        ProxyServerLatencyTestResult(best)
     }
 
     private suspend fun measureServerLatency(
