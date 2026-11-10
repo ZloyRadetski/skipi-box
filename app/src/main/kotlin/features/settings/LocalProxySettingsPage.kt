@@ -22,6 +22,7 @@ import app.skipi.app.settings.localNetworkIpAddresses
 import app.skipi.ui.settings.rememberLocalProxySettingsLabels
 import app.skipi.ui.settings.LocalProxySettingsState
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
+import app.skipi.ui.settings.SkipiSettingsSwitchRow
 import app.skipi.ui.settings.isValidLocalProxyPort
 import engine.vpn.VpnDefaults
 import app.httpProxyInboundEnabled
@@ -121,5 +122,14 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
             scope.launch { tipNotifier.show(generatedToast) }
         },
         onCopy = ::copyText,
+        // The VPN's own HTTP proxy needs the inbound, so it sits in the HTTP card instead of being a second switch for it.
+        httpPlatformContent = {
+            SkipiSettingsSwitchRow(
+                title = stringResource(R.string.configs_append_http_proxy),
+                summary = stringResource(R.string.configs_append_http_proxy_summary),
+                checked = appState.enableVpnAppendHttpProxy,
+                onCheckedChange = { enabled -> updateAppState { it.copy(enableVpnAppendHttpProxy = enabled) } },
+            )
+        },
     )
 }

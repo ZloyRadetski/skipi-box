@@ -32,7 +32,6 @@ fun SettingsSubscriptionsPage(padding: PaddingValues) {
         state = SubscriptionSettingsState(
             fetchTimeoutSeconds = appState.subscriptionFetchTimeoutSeconds,
             deviceHeadersEnabled = appState.enableSubscriptionDeviceHeaders,
-            deletionConfirmationEnabled = appState.enableDeletionConfirmation,
             expiryNotificationsEnabled = appState.enableSubscriptionExpiryNotifications,
             expiryReminders = appState.subscriptionExpiryReminders,
             pingSummary = subscriptionPingSettingsSummary(
@@ -47,7 +46,6 @@ fun SettingsSubscriptionsPage(padding: PaddingValues) {
         onFetchTimeoutChange = { seconds -> updateAppState { it.copy(subscriptionFetchTimeoutSeconds = seconds) } },
         onOpenUserAgents = { navigator.push(Route.SubscriptionUserAgents) },
         onDeviceHeadersChange = { enabled -> updateAppState { it.copy(enableSubscriptionDeviceHeaders = enabled) } },
-        onDeletionConfirmationChange = { enabled -> updateAppState { it.copy(enableDeletionConfirmation = enabled) } },
         onExpiryNotificationsChange = { enabled -> updateAppState { it.copy(enableSubscriptionExpiryNotifications = enabled) } },
         onExpiryRemindersChange = { reminders -> updateAppState { it.copy(subscriptionExpiryReminders = reminders) } },
         onOpenPingSettings = { navigator.push(Route.SubscriptionPingSettings) },

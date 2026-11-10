@@ -35,9 +35,6 @@ sealed interface Route : NavKey {
     data object SettingsSubscriptions : Route
 
     @Serializable
-    data object SettingsIntegration : Route
-
-    @Serializable
     data object SettingsLogs : Route
 
     @Serializable

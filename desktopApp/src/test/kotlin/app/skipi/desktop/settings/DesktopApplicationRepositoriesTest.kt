@@ -766,7 +766,8 @@ class DesktopApplicationRepositoriesTest {
         val subscriptions = original.toSubscriptionSettingsState()
         assertEquals(30, subscriptions.fetchTimeoutSeconds)
         assertTrue(subscriptions.deviceHeadersEnabled)
-        assertFalse(subscriptions.deletionConfirmationEnabled)
+        // The deletion confirmation lives on the General page only; the subscription page must not touch it.
+        assertFalse(original.withSubscriptionSettingsState(subscriptions).confirmDeletion)
         assertEquals(45, original.withSubscriptionSettingsState(subscriptions.copy(fetchTimeoutSeconds = 45)).subscriptionFetchTimeoutSeconds)
 
         assertEquals(8, shared.colorMode)

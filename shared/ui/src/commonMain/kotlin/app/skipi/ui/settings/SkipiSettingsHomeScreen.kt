@@ -52,8 +52,6 @@ import app.skipi.ui.resources.settings_category_ip_info
 import app.skipi.ui.resources.settings_category_ip_info_summary
 import app.skipi.ui.resources.settings_category_local_proxy
 import app.skipi.ui.resources.settings_category_local_proxy_summary
-import app.skipi.ui.resources.settings_category_integration
-import app.skipi.ui.resources.settings_category_integration_summary
 import app.skipi.ui.resources.settings_category_logs
 import app.skipi.ui.resources.settings_category_logs_summary
 import app.skipi.ui.resources.settings_category_subscriptions
@@ -86,7 +84,6 @@ enum class SkipiSettingsDestination {
     DnsLeakTest,
     IpInfo,
     Logs,
-    Integration,
     About,
 }
 
@@ -98,7 +95,7 @@ data class SkipiSettingsHomeState(
     val categoryIconColor: Color,
     val visibleDestinations: Set<SkipiSettingsDestination> =
         SkipiSettingsDestination.entries
-            .filter { it != SkipiSettingsDestination.Integration && it != SkipiSettingsDestination.NetworkAutomation }
+            .filter { it != SkipiSettingsDestination.NetworkAutomation }
             .toSet(),
 )
 
@@ -267,18 +264,6 @@ fun SkipiSettingsHomeScreen(
                         summary = stringResource(Res.string.settings_category_logs_summary),
                         value = state.coreLogLevel,
                         onClick = { onNavigate(SkipiSettingsDestination.Logs) },
-                    )
-                }
-            }
-            if (SkipiSettingsDestination.Integration in visible) item(key = "section_integration") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_general))
-                SkipiSettingsCategoryGroupCard {
-                    SettingsItem(
-                        icon = Icons.Filled.Link,
-                        iconBackgroundColor = categoryIconColor,
-                        title = stringResource(Res.string.settings_category_integration),
-                        summary = stringResource(Res.string.settings_category_integration_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.Integration) },
                     )
                 }
             }

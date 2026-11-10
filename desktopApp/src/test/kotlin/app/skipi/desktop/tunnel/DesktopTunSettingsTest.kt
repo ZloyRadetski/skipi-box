@@ -343,7 +343,6 @@ class DesktopTunSettingsTest {
 
         assertTrue(capabilities.autoConnectOnBoot)
         assertFalse(capabilities.hevTun)
-        assertFalse(capabilities.appendHttpProxy)
         assertTrue(capabilities.strictFullTunnel)
         assertFalse(capabilities.killSwitch)
         assertFalse(capabilities.systemVpnSettings)

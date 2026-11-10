@@ -94,7 +94,6 @@ internal fun DesktopVpnSettings(
             showVpnDns = false,
         ),
         hevTunEnabled = true,
-        appendHttpProxyEnabled = false,
         strictFullTunnelEnabled = settings.enableStrictFullTunnel,
         autoConnectOnAppOpen = settings.autoConnectOnAppOpen,
         autoConnectOnBoot = settings.launchOnLogin,
@@ -115,7 +114,6 @@ internal fun DesktopVpnSettings(
             showTunSheet = true
         },
         onHevTunChange = {},
-        onAppendHttpProxyChange = {},
         onStrictFullTunnelChange = { enabled -> onPersist(settings.copy(enableStrictFullTunnel = enabled), saved) },
         onAutoConnectOnOpenChange = { enabled -> onPersist(settings.copy(autoConnectOnAppOpen = enabled), saved) },
         onAutoConnectOnBootChange = { enabled ->

@@ -14,7 +14,6 @@ class VpnSettingsCapabilitiesTest {
         assertTrue(
             listOf(
                 capabilities.hevTun,
-                capabilities.appendHttpProxy,
                 capabilities.strictFullTunnel,
                 capabilities.autoConnectOnBoot,
                 capabilities.killSwitch,

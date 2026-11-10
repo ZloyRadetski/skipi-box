@@ -60,7 +60,6 @@ fun SettingsPage(
                 SkipiSettingsDestination.DnsLeakTest -> Route.DnsLeakTest
                 SkipiSettingsDestination.IpInfo -> Route.IpInfo
                 SkipiSettingsDestination.Logs -> Route.SettingsLogs
-                SkipiSettingsDestination.Integration -> Route.SettingsIntegration
                 SkipiSettingsDestination.About -> Route.About
             }
             navigator.push(route)

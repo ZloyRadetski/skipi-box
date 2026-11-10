@@ -89,7 +89,6 @@ import features.settings.LocalProxySettingsPage
 import features.settings.SettingsAppearancePage
 import features.settings.SettingsBackupResetPage
 import features.settings.SettingsGeneralPage
-import features.settings.SettingsIntegrationPage
 import features.settings.SettingsLogsPage
 import features.settings.SettingsPage
 import features.settings.SettingsSubscriptionsPage
@@ -249,11 +248,6 @@ fun AppContent(
                 appEntry<Route.SettingsSubscriptions> {
                     key(languageMode) {
                         SettingsSubscriptionsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsIntegration> {
-                    key(languageMode) {
-                        SettingsIntegrationPage(padding = padding)
                     }
                 }
                 appEntry<Route.SettingsLogs> {

@@ -40,12 +40,6 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_back
-import app.skipi.ui.resources.settings_broadcast_control
-import app.skipi.ui.resources.settings_broadcast_control_summary
-import app.skipi.ui.resources.settings_category_integration
-import app.skipi.ui.resources.settings_header_integration
-import app.skipi.ui.resources.settings_url_schemes
-import app.skipi.ui.resources.settings_url_schemes_summary
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -82,94 +76,6 @@ internal fun settingsPageContentPadding(
         end = inner.calculateEndPadding(direction) + outer.calculateEndPadding(direction),
         bottom = inner.calculateBottomPadding() + outer.calculateBottomPadding() + 12.dp,
     )
-}
-
-data class IntegrationSettingsState(val broadcastControlEnabled: Boolean)
-
-data class IntegrationSettingsLabels(
-    val screenTitle: String,
-    val sectionTitle: String,
-    val urlSchemesTitle: String,
-    val urlSchemesSummary: String,
-    val broadcastControlTitle: String,
-    val broadcastControlSummary: String,
-)
-
-/** Localized integration labels shared by every host. */
-@Composable
-fun rememberIntegrationSettingsLabels(): IntegrationSettingsLabels = IntegrationSettingsLabels(
-    screenTitle = stringResource(Res.string.settings_category_integration),
-    sectionTitle = stringResource(Res.string.settings_header_integration),
-    urlSchemesTitle = stringResource(Res.string.settings_url_schemes),
-    urlSchemesSummary = stringResource(Res.string.settings_url_schemes_summary),
-    broadcastControlTitle = stringResource(Res.string.settings_broadcast_control),
-    broadcastControlSummary = stringResource(Res.string.settings_broadcast_control_summary),
-)
-
-data class IntegrationSettingsCapabilities(
-    val urlSchemes: Boolean = true,
-    val broadcastControl: Boolean = true,
-)
-
-/** Shared integration settings page. Navigation and persistence are supplied by the platform host. */
-@OptIn(ExperimentalScrollBarApi::class)
-@Composable
-fun SkipiIntegrationSettingsScreen(
-    state: IntegrationSettingsState,
-    labels: IntegrationSettingsLabels,
-    padding: PaddingValues,
-    isWideScreen: Boolean,
-    onBack: () -> Unit,
-    onOpenUrlSchemes: () -> Unit,
-    onBroadcastControlChange: (Boolean) -> Unit,
-    capabilities: IntegrationSettingsCapabilities = IntegrationSettingsCapabilities(),
-    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
-) {
-    val listState = rememberLazyListState()
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            key(labels.screenTitle) {
-                SettingsBackTopBar(labels.screenTitle, isWideScreen, onBack)
-            }
-        },
-    ) { innerPadding ->
-        val contentPadding = settingsPageContentPadding(innerPadding, padding, isWideScreen)
-        Box(Modifier.fillMaxSize()) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
-                contentPadding = contentPadding.withTopBarGap(),
-            ) {
-                item(key = "integration_settings") {
-                    SmallTitle(text = labels.sectionTitle)
-                    SkipiSettingsSectionCard {
-                        if (capabilities.urlSchemes) {
-                            ArrowPreference(
-                                title = labels.urlSchemesTitle,
-                                summary = labels.urlSchemesSummary,
-                                onClick = onOpenUrlSchemes,
-                            )
-                        }
-                        if (capabilities.broadcastControl) {
-                            SwitchPreference(
-                                title = labels.broadcastControlTitle,
-                                summary = labels.broadcastControlSummary,
-                                checked = state.broadcastControlEnabled,
-                                onCheckedChange = onBroadcastControlChange,
-                            )
-                        }
-                    }
-                }
-                platformContent?.let { content -> item(key = "integration_platform_extension") { Column(content = content) } }
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(listState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-            )
-        }
-    }
 }
 
 data class LogsSettingsState(

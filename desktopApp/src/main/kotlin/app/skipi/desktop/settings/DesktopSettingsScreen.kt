@@ -107,9 +107,6 @@ import app.skipi.ui.settings.AppearanceSettingsCapabilities
 import app.skipi.ui.settings.GeneralSettingsCapabilities
 import app.skipi.ui.settings.GeneralSettingsState
 import app.skipi.ui.settings.GeneralSettingsValues
-import app.skipi.ui.settings.IntegrationSettingsCapabilities
-import app.skipi.ui.settings.IntegrationSettingsLabels
-import app.skipi.ui.settings.IntegrationSettingsState
 import app.skipi.ui.settings.LocalProxySettingsCapabilities
 import app.skipi.ui.settings.LocalProxySettingsLabels
 import app.skipi.ui.settings.LogsSettingsCapabilities
@@ -124,10 +121,8 @@ import app.skipi.ui.settings.SkipiUrlSchemesScreen
 import app.skipi.ui.settings.rememberAboutSettingsLabels
 import app.skipi.ui.settings.rememberLocalProxySettingsLabels
 import app.skipi.ui.settings.rememberSubscriptionSettingsLabels
-import app.skipi.ui.settings.rememberIntegrationSettingsLabels
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import app.skipi.ui.settings.SkipiGeneralSettingsScreen
-import app.skipi.ui.settings.SkipiIntegrationSettingsScreen
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
 import app.skipi.ui.settings.SkipiLogsSettingsScreen
 import app.skipi.ui.settings.SkipiSettingsDestination
@@ -736,22 +731,27 @@ private fun DesktopLocalProxySettings(
             credentials = true,
             lanEndpoints = true,
         ),
+        // The system proxy points at the HTTP inbound, so it is offered inside the HTTP card, where the inbound is on.
+        httpPlatformContent = if (supportsSystemProxy) {
+            {
+                SkipiSettingsSwitchRow(
+                    title = "Использовать системный прокси",
+                    summary = "SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.",
+                    checked = settings.useSystemProxy,
+                    onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
+                )
+            }
+        } else {
+            null
+        },
         platformContent = {
-            if (supportsSystemProxy) {
+            if (supportsSystemProxy && onClearSystemProxy != null) {
                 SkipiSettingsGroup(title = "СИСТЕМНЫЙ ПРОКСИ") {
-                    SkipiSettingsSwitchRow(
-                        title = "Использовать системный прокси",
-                        summary = "SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.",
-                        checked = settings.useSystemProxy,
-                        onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
+                    SkipiSettingsActionRow(
+                        title = "Сбросить системный прокси",
+                        summary = "Вернуть прежние настройки прокси Windows.",
+                        onClick = onClearSystemProxy,
                     )
-                    if (onClearSystemProxy != null) {
-                        SkipiSettingsActionRow(
-                            title = "Сбросить системный прокси",
-                            summary = "Вернуть прежние настройки прокси Windows.",
-                            onClick = onClearSystemProxy,
-                        )
-                    }
                 }
             }
             SkipiSettingsStatusMessage(feedbackMessage)
@@ -789,11 +789,6 @@ private fun DesktopSubscriptionSettings(
             draft = next
             onPersist(next, "Параметры подписок сохранены.")
         },
-        onDeletionConfirmationChange = { enabled ->
-            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deletionConfirmationEnabled = enabled))
-            draft = next
-            onPersist(next, "Параметры подписок сохранены.")
-        },
         onExpiryNotificationsChange = { enabled ->
             val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryNotificationsEnabled = enabled))
             draft = next
@@ -809,7 +804,6 @@ private fun DesktopSubscriptionSettings(
             fetchTimeout = true,
             userAgents = true,
             deviceHeaders = true,
-            deletionConfirmation = true,
             expiryNotifications = false,
             pingSettings = true,
         ),

@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.configs_append_http_proxy
-import app.skipi.ui.resources.configs_append_http_proxy_summary
 import app.skipi.ui.resources.configs_hevtun
 import app.skipi.ui.resources.configs_hevtun_summary
 import app.skipi.ui.resources.settings_auto_connect_on_app_open_summary
@@ -58,7 +56,6 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 data class VpnSettingsState(
     val tunSummary: String,
     val hevTunEnabled: Boolean,
-    val appendHttpProxyEnabled: Boolean,
     val strictFullTunnelEnabled: Boolean,
     val autoConnectOnAppOpen: Boolean,
     val autoConnectOnBoot: Boolean,
@@ -74,8 +71,6 @@ data class VpnSettingsLabels(
     val tunTitle: String,
     val hevTunTitle: String,
     val hevTunSummary: String,
-    val appendHttpTitle: String,
-    val appendHttpSummary: String,
     val strictFullTunnelTitle: String,
     val strictFullTunnelSummary: String,
     val autoConnectSectionTitle: String,
@@ -106,7 +101,6 @@ data class VpnSettingsLabels(
  */
 data class VpnSettingsCapabilities(
     val hevTun: Boolean = true,
-    val appendHttpProxy: Boolean = true,
     val strictFullTunnel: Boolean = true,
     val autoConnectOnBoot: Boolean = true,
     val killSwitch: Boolean = true,
@@ -123,8 +117,6 @@ fun rememberVpnSettingsLabels(): VpnSettingsLabels = VpnSettingsLabels(
     tunTitle = stringResource(Res.string.settings_tun),
     hevTunTitle = stringResource(Res.string.configs_hevtun),
     hevTunSummary = stringResource(Res.string.configs_hevtun_summary),
-    appendHttpTitle = stringResource(Res.string.configs_append_http_proxy),
-    appendHttpSummary = stringResource(Res.string.configs_append_http_proxy_summary),
     strictFullTunnelTitle = stringResource(Res.string.settings_strict_full_tunnel),
     strictFullTunnelSummary = stringResource(Res.string.settings_strict_full_tunnel_summary),
     autoConnectSectionTitle = stringResource(Res.string.settings_auto_connect_title),
@@ -160,7 +152,6 @@ fun SkipiVpnSettingsScreen(
     onBack: () -> Unit,
     onOpenTunSettings: () -> Unit,
     onHevTunChange: (Boolean) -> Unit,
-    onAppendHttpProxyChange: (Boolean) -> Unit,
     onStrictFullTunnelChange: (Boolean) -> Unit,
     onAutoConnectOnOpenChange: (Boolean) -> Unit,
     onAutoConnectOnBootChange: (Boolean) -> Unit,
@@ -204,12 +195,6 @@ fun SkipiVpnSettingsScreen(
                             summary = labels.hevTunSummary,
                             checked = state.hevTunEnabled,
                             onCheckedChange = onHevTunChange,
-                        )
-                        if (capabilities.appendHttpProxy) SwitchPreference(
-                            title = labels.appendHttpTitle,
-                            summary = labels.appendHttpSummary,
-                            checked = state.appendHttpProxyEnabled,
-                            onCheckedChange = onAppendHttpProxyChange,
                         )
                         if (capabilities.strictFullTunnel) SwitchPreference(
                             title = labels.strictFullTunnelTitle,

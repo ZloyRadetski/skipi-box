@@ -67,7 +67,6 @@ internal fun desktopTunStartRequest(
  */
 internal fun desktopVpnSettingsCapabilities() = VpnSettingsCapabilities(
     hevTun = false,
-    appendHttpProxy = false,
     strictFullTunnel = true,
     autoConnectOnBoot = true,
     killSwitch = false,

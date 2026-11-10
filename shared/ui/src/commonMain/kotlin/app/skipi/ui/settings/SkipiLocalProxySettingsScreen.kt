@@ -123,6 +123,11 @@ fun SkipiLocalProxySettingsScreen(
     onGenerateHttpCredentials: () -> Unit,
     onCopy: (text: String, label: String) -> Unit,
     capabilities: LocalProxySettingsCapabilities = LocalProxySettingsCapabilities(),
+    /**
+     * Host rows that only make sense with the HTTP inbound running (Android's VPN HTTP proxy, Desktop's system
+     * proxy). They sit inside the HTTP card, below its switch, so the inbound has one switch and these use it.
+     */
+    httpPlatformContent: (@Composable ColumnScope.() -> Unit)? = null,
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
@@ -232,6 +237,7 @@ fun SkipiLocalProxySettingsScreen(
                                                 )
                                             }
                                         }
+                                        httpPlatformContent?.invoke(this)
                                     }
                                 }
                             }

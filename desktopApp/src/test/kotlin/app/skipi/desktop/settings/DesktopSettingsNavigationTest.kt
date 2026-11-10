@@ -39,7 +39,7 @@ class DesktopSettingsNavigationTest {
                     Box(Modifier.fillMaxSize().background(colors.background)) {
                         SkipiVpnSettingsScreen(
                             state = VpnSettingsState(
-                                tunSummary = "", hevTunEnabled = true, appendHttpProxyEnabled = false,
+                                tunSummary = "", hevTunEnabled = true,
                                 strictFullTunnelEnabled = false, autoConnectOnAppOpen = false, autoConnectOnBoot = false,
                                 killSwitchEnabled = false, batteryOptimizationUnrestricted = true, wakeLockEnabled = false,
                                 seamlessNetworkSwitchingEnabled = false,
@@ -48,7 +48,7 @@ class DesktopSettingsNavigationTest {
                             padding = PaddingValues(),
                             isWideScreen = true,
                             onBack = {},
-                            onOpenTunSettings = {}, onHevTunChange = {}, onAppendHttpProxyChange = {},
+                            onOpenTunSettings = {}, onHevTunChange = {},
                             onStrictFullTunnelChange = {}, onAutoConnectOnOpenChange = {}, onAutoConnectOnBootChange = {},
                             onKillSwitchChange = {}, onBatteryOptimizationChange = {}, onWakeLockChange = {},
                             onSeamlessSwitchingChange = {}, onOpenSystemVpnSettings = {}, onOpenNetworkAutomation = {},

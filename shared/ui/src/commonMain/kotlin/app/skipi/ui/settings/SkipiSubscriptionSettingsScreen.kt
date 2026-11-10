@@ -7,8 +7,6 @@ import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.settings_category_subscriptions
-import app.skipi.ui.resources.settings_deletion_confirmation
-import app.skipi.ui.resources.settings_deletion_confirmation_summary
 import app.skipi.ui.resources.settings_header_subscriptions
 import app.skipi.ui.resources.settings_subscription_device_headers
 import app.skipi.ui.resources.settings_subscription_device_headers_disable_action
@@ -72,7 +70,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 data class SubscriptionSettingsState(
     val fetchTimeoutSeconds: Int,
     val deviceHeadersEnabled: Boolean,
-    val deletionConfirmationEnabled: Boolean,
     val expiryNotificationsEnabled: Boolean,
     val expiryReminders: List<SubscriptionExpiryReminder>,
     val pingSummary: String,
@@ -88,8 +85,6 @@ data class SubscriptionSettingsLabels(
     val userAgentsSummary: String,
     val deviceHeadersTitle: String,
     val deviceHeadersSummary: String,
-    val deletionConfirmationTitle: String,
-    val deletionConfirmationSummary: String,
     val expirySectionTitle: String,
     val expiryEnabledTitle: String,
     val expiryEnabledSummary: String,
@@ -107,7 +102,6 @@ data class SubscriptionSettingsCapabilities(
     val fetchTimeout: Boolean = true,
     val userAgents: Boolean = true,
     val deviceHeaders: Boolean = true,
-    val deletionConfirmation: Boolean = true,
     val expiryNotifications: Boolean = true,
     val pingSettings: Boolean = true,
 )
@@ -124,7 +118,6 @@ fun SkipiSubscriptionSettingsScreen(
     onFetchTimeoutChange: (Int) -> Unit,
     onOpenUserAgents: () -> Unit,
     onDeviceHeadersChange: (Boolean) -> Unit,
-    onDeletionConfirmationChange: (Boolean) -> Unit,
     onExpiryNotificationsChange: (Boolean) -> Unit,
     onExpiryRemindersChange: (List<SubscriptionExpiryReminder>) -> Unit,
     onOpenPingSettings: () -> Unit,
@@ -179,14 +172,6 @@ fun SkipiSubscriptionSettingsScreen(
                                 onCheckedChange = { enabled ->
                                     if (enabled) onDeviceHeadersChange(true) else showDisableHeadersConfirmation = true
                                 },
-                            )
-                        }
-                        if (capabilities.deletionConfirmation) {
-                            SwitchPreference(
-                                title = labels.deletionConfirmationTitle,
-                                summary = labels.deletionConfirmationSummary,
-                                checked = state.deletionConfirmationEnabled,
-                                onCheckedChange = onDeletionConfirmationChange,
                             )
                         }
                     }
@@ -284,8 +269,6 @@ fun rememberSubscriptionSettingsLabels(userAgentCount: Int): SubscriptionSetting
         userAgentsSummary = stringResource(Res.string.settings_user_agents_summary, userAgentCount),
         deviceHeadersTitle = stringResource(Res.string.settings_subscription_device_headers),
         deviceHeadersSummary = stringResource(Res.string.settings_subscription_device_headers_summary),
-        deletionConfirmationTitle = stringResource(Res.string.settings_deletion_confirmation),
-        deletionConfirmationSummary = stringResource(Res.string.settings_deletion_confirmation_summary),
         expirySectionTitle = stringResource(Res.string.subscription_expiry_notifications_section),
         expiryEnabledTitle = stringResource(Res.string.subscription_expiry_notifications_enable),
         expiryEnabledSummary = stringResource(Res.string.subscription_expiry_notifications_enable_summary),

@@ -612,7 +612,6 @@ internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsS
 internal fun DesktopAppSettings.toSubscriptionSettingsState(): SubscriptionSettingsState = SubscriptionSettingsState(
     fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
     deviceHeadersEnabled = sendDeviceHeaders,
-    deletionConfirmationEnabled = confirmDeletion,
     expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
     expiryReminders = subscriptionExpiryReminders,
     pingSummary = "${if (subscriptionPingMode == app.modes.SubscriptionPingModeHttp) "HTTP" else "TCP"} · $subscriptionPingUrl · ${subscriptionPingTimeoutMillis} ms",
@@ -621,7 +620,6 @@ internal fun DesktopAppSettings.toSubscriptionSettingsState(): SubscriptionSetti
 internal fun DesktopAppSettings.withSubscriptionSettingsState(state: SubscriptionSettingsState): DesktopAppSettings = copy(
     subscriptionFetchTimeoutSeconds = state.fetchTimeoutSeconds,
     sendDeviceHeaders = state.deviceHeadersEnabled,
-    confirmDeletion = state.deletionConfirmationEnabled,
     enableSubscriptionExpiryNotifications = state.expiryNotificationsEnabled,
     subscriptionExpiryReminders = state.expiryReminders,
 )
