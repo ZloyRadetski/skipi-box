@@ -306,6 +306,8 @@ internal fun HomeGroupSelector(
 internal fun HomeProxyGroupCard(
     groupId: String,
     header: ProxyHomeGroupHeader,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
     onAction: (ProxyHomeAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -331,7 +333,6 @@ internal fun HomeProxyGroupCard(
             canRefresh = false,
             canPingAction = canPing,
             canEdit = false,
-            expandable = false,
         ),
         actions = SkipiSubscriptionSummaryActions(
             onRefresh = {},
@@ -346,7 +347,8 @@ internal fun HomeProxyGroupCard(
             mutedText = SkipiTheme.colors.onSurfaceVariant,
             enabled = SkipiTheme.colorScheme.success,
         ),
-        expanded = false,
+        expanded = expanded,
+        onToggleExpanded = onToggleExpanded,
         modifier = modifier,
         embeddedInPanel = true,
     )

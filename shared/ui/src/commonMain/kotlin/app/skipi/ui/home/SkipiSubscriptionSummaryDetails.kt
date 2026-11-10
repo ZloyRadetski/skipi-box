@@ -180,3 +180,16 @@ private fun SubscriptionMetadataLink(
         )
     }
 }
+
+/** A header with nothing to unfold, such as a proxy group's, must not reserve an empty gap when it is open. */
+internal fun SkipiSubscriptionSummaryState.hasDetails(): Boolean =
+    trafficProgress != null || listOf(
+        statusText,
+        trafficText,
+        expiryText,
+        description,
+        announcementText,
+        supportLabel,
+        siteLabel,
+        updatedText,
+    ).any { text -> !text.isNullOrBlank() }

@@ -758,7 +758,7 @@ private fun PageServerGrid(
     // Manual servers, the user's proxy groups and balancers get a subscription's panel with a ping-only header.
     val groupHeader = state.groupHeader(page)
     val panelGroup = (subscriptionGroup && subscription != null) || groupHeader != null
-    val panelExpanded = if (subscriptionGroup) page.subscriptionExpanded else true
+    val panelExpanded = page.subscriptionExpanded
     val providerSurface = SkipiTheme.colors.surface
     val providerBorder = Color.Transparent
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
@@ -840,6 +840,8 @@ private fun PageServerGrid(
                         HomeProxyGroupCard(
                             groupId = page.group.id,
                             header = groupHeader,
+                            expanded = panelExpanded,
+                            onToggleExpanded = { onAction(ProxyHomeAction.ToggleSubscriptionExpanded(page.group.id)) },
                             onAction = onAction,
                         )
                     } else if (subscription != null) {

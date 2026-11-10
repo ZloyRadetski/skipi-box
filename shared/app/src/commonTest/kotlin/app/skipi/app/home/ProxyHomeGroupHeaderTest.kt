@@ -83,6 +83,21 @@ class ProxyHomeGroupHeaderTest {
         assertNull(state.groupHeader(state.pages.single())?.pingAction)
     }
 
+    @Test
+    fun aManualGroupAndABalancerFoldAndUnfoldLikeASubscription() {
+        listOf(ProxyHomeGroupKind.Manual, ProxyHomeGroupKind.AutoBalancer).forEach { kind ->
+            lateinit var store: ProxyHomeStore
+            val initial = stateOf(kind = kind) { store = it }
+            assertEquals(true, initial.pages.single().subscriptionExpanded, kind.name)
+
+            store.dispatch(ProxyHomeAction.ToggleSubscriptionExpanded("g"))
+            assertEquals(false, store.uiState.value.pages.single().subscriptionExpanded, kind.name)
+
+            store.dispatch(ProxyHomeAction.ToggleSubscriptionExpanded("g"))
+            assertEquals(true, store.uiState.value.pages.single().subscriptionExpanded, kind.name)
+        }
+    }
+
     private fun stateOf(
         kind: ProxyHomeGroupKind,
         servers: List<String> = listOf("a", "b"),
@@ -90,6 +105,7 @@ class ProxyHomeGroupHeaderTest {
         testingLatency: Boolean = false,
         enabled: Boolean = true,
         available: Set<ProxyHomeActionId> = setOf(ProxyHomeActionId.TestGroup, ProxyHomeActionId.CancelLatencyTests),
+        onStore: (ProxyHomeStore) -> Unit = {},
     ): ProxyHomeUiState = ProxyHomeStore(
         initialInput = ProxyHomeInput(
             groups = listOf(
@@ -116,5 +132,5 @@ class ProxyHomeGroupHeaderTest {
         ),
         scope = CoroutineScope(Dispatchers.Unconfined),
         effectHandler = ProxyHomeEffectHandler { Result.success(Unit) },
-    ).uiState.value
+    ).also(onStore).uiState.value
 }

@@ -60,26 +60,19 @@ internal fun SubscriptionSummaryCardContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .then(
-                    if (state.expandable) {
-                        Modifier
-                            .onSecondaryClick(enabled = state.canEdit) { actions.onEdit() }
-                            .combinedClickable(
-                                role = Role.Button,
-                                onClick = onToggleExpanded,
-                                onLongClick = if (state.canEdit) actions.onEdit else null,
-                            )
-                            .semantics {
-                                stateDescription = if (isExpanded) {
-                                    labels.detailsExpandedDescription
-                                } else {
-                                    labels.detailsCollapsedDescription
-                                }
-                            }
-                    } else {
-                        Modifier
-                    },
+                .onSecondaryClick(enabled = state.canEdit) { actions.onEdit() }
+                .combinedClickable(
+                    role = Role.Button,
+                    onClick = onToggleExpanded,
+                    onLongClick = if (state.canEdit) actions.onEdit else null,
                 )
+                .semantics {
+                    stateDescription = if (isExpanded) {
+                        labels.detailsExpandedDescription
+                    } else {
+                        labels.detailsCollapsedDescription
+                    }
+                }
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -107,7 +100,7 @@ internal fun SubscriptionSummaryCardContent(
             SubscriptionHeaderActions(state = state, actions = actions, labels = labels, colors = colors)
         }
 
-        if (isExpanded) {
+        if (isExpanded && state.hasDetails()) {
             SubscriptionSummaryDetails(state = state, actions = actions, colors = colors)
         }
     }
