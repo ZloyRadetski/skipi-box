@@ -98,4 +98,27 @@ class ProxyServerCollectionOperationsTest {
 
         assertEquals(listOf(1, 11, 2, 10), moved.map(Group::id))
     }
+
+    @Test
+    fun aGroupMovesAmongItsOwnKindBecauseHomeListsProxyGroupsBeforeSubscriptions() {
+        data class Group(val id: Int, val remote: Boolean)
+        val groups = listOf(Group(10, false), Group(11, true), Group(12, false), Group(13, true))
+
+        fun move(groupId: Int, offset: Int) = moveSubscriptionGroup(
+            groups = groups,
+            groupId = groupId,
+            offset = offset,
+            idOf = Group::id,
+            isBuiltIn = { false },
+            fixedGroupId = null,
+            sectionOf = Group::remote,
+        ).map(Group::id)
+
+        // Home shows 10, 12 | 11, 13, so "up" for 12 swaps it with 10, never with the subscription stored between them.
+        assertEquals(listOf(12, 11, 10, 13), move(12, -1))
+        assertEquals(listOf(10, 13, 12, 11), move(11, 1))
+        // The first of its kind cannot move up past the other kind.
+        assertEquals(listOf(10, 11, 12, 13), move(10, -1))
+        assertEquals(listOf(10, 11, 12, 13), move(13, 1))
+    }
 }

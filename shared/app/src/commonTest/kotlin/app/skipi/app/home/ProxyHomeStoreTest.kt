@@ -700,29 +700,6 @@ class ProxyHomeStoreTest {
     }
 
     @Test
-    fun displayOptionsRequestedColumnsAreNormalizedOnUiStateBoundary() {
-        val storeZero = createStore(
-            ProxyHomeInput(displayOptions = ProxyHomeDisplayOptions(requestedColumns = 0)),
-        )
-        assertEquals(1, storeZero.uiState.value.displayOptions.requestedColumns)
-
-        val storeNegative = createStore(
-            ProxyHomeInput(displayOptions = ProxyHomeDisplayOptions(requestedColumns = -5)),
-        )
-        assertEquals(1, storeNegative.uiState.value.displayOptions.requestedColumns)
-
-        val storeTwo = createStore(
-            ProxyHomeInput(displayOptions = ProxyHomeDisplayOptions(requestedColumns = 2)),
-        )
-        assertEquals(2, storeTwo.uiState.value.displayOptions.requestedColumns)
-
-        val storeFive = createStore(
-            ProxyHomeInput(displayOptions = ProxyHomeDisplayOptions(requestedColumns = 5)),
-        )
-        assertEquals(3, storeFive.uiState.value.displayOptions.requestedColumns)
-    }
-
-    @Test
     fun proxyGroupSummaryKindDefaultsToOther() {
         val grp = group("g1", "Group")
         assertEquals(ProxyHomeGroupKind.Other, grp.kind)

@@ -16,6 +16,7 @@ fun AppState.withMovedSubscriptionGroup(groupId: Int, offset: Int): AppState {
         idOf = { it.id },
         isBuiltIn = { it.builtIn },
         fixedGroupId = DefaultSubscriptionGroupId,
+        sectionOf = { it.url.isNotBlank() },
     )
     return if (reordered == subscriptionGroups) this else copy(subscriptionGroups = reordered)
 }

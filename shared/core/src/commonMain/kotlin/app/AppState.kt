@@ -15,7 +15,6 @@ import app.modes.FontWeightModeDefault
 import app.modes.LanguageModeSystem
 import app.modes.ConnectionDisplayModeClassic
 import app.modes.ProxyAppListModeGlobal
-import app.modes.ProxyServerListLayoutSingle
 import app.modes.ProxyServerListSortDefault
 import app.modes.RunModeVpnService
 import app.modes.SubscriptionPingModeHttp
@@ -146,7 +145,6 @@ data class AppState(
     val proxyServers: List<ProxyServerState> = emptyList(),
     val nextProxyServerId: Int = 10,
     val selectedProxyServerId: Int = 1,
-    val proxyServerListLayout: Int = ProxyServerListLayoutSingle,
     val proxyServerListSort: Int = ProxyServerListSortDefault,
     val subscriptionPingMode: Int = SubscriptionPingModeHttp,
     val subscriptionPingUrl: String = NetworkDefaults.CONNECTIVITY_CHECK_URL,

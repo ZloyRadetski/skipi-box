@@ -82,7 +82,6 @@ private object BackupDefaults {
     const val tunTcpKeepAliveInterval = "60"
     const val tunTcpUserTimeout = "10000"
     const val selectedProxyServerId = 1
-    const val proxyServerListLayout = 1
     const val proxyServerListSort = 0
     const val subscriptionPingMode = 1
     val subscriptionPingUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
@@ -238,7 +237,6 @@ data class AppBackupSettings(
     val tunTcpKeepAliveInterval: String = BackupDefaults.tunTcpKeepAliveInterval,
     val tunTcpUserTimeout: String = BackupDefaults.tunTcpUserTimeout,
     val selectedProxyServerId: Int = BackupDefaults.selectedProxyServerId,
-    val proxyServerListLayout: Int = BackupDefaults.proxyServerListLayout,
     val proxyServerListSort: Int = BackupDefaults.proxyServerListSort,
     val subscriptionPingMode: Int = BackupDefaults.subscriptionPingMode,
     val subscriptionPingUrl: String = BackupDefaults.subscriptionPingUrl,

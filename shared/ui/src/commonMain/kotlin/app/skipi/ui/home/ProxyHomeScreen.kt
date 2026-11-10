@@ -72,6 +72,7 @@ import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.compactPingAction
+import app.skipi.app.home.groupHeader
 import app.skipi.ui.components.longPressReorderDragHandle
 import app.skipi.ui.components.rememberReorderableGridStateByKey
 import app.skipi.ui.components.rememberReorderableScrollThresholdPadding
@@ -157,7 +158,6 @@ fun ProxyHomeScreenContent(
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
     val isCompact = windowClass == SkipiWindowClass.Compact
-    val columns = proxyHomeResolveColumns(state.displayOptions.requestedColumns)
     // One instance for the whole screen: a lambda capturing `state` is new on every emission and
     // would recompose every visible server row (each latency result, each tunnel status change).
     val sendState by rememberUpdatedState(state)
@@ -448,7 +448,6 @@ fun ProxyHomeScreenContent(
                         PageServerGrid(
                             page = wideSelectedPage,
                             state = state,
-                            columns = columns,
                             contentPadding = PaddingValues(bottom = listBottomPadding),
                             pullRefreshController = pullRefreshController,
                             pullRefreshPresentation = pullRefreshPresentation,
@@ -605,7 +604,6 @@ fun ProxyHomeScreenContent(
                         PageServerGrid(
                             page = fallbackPage,
                             state = state,
-                            columns = columns,
                             modifier = phoneListModifier,
                             contentPadding = phoneListPadding,
                             pullRefreshController = pullRefreshController,
@@ -658,7 +656,6 @@ fun ProxyHomeScreenContent(
                             PageServerGrid(
                                 page = page,
                                 state = state,
-                                columns = columns,
                                 contentPadding = phoneListPadding,
                                 pullRefreshController = pullRefreshController,
                                 pullRefreshPresentation = pullRefreshPresentation,
@@ -747,7 +744,6 @@ private fun LazyGridScope.proxyHomeGroupSection(
 private fun PageServerGrid(
     page: ProxyHomePageUiState,
     state: ProxyHomeUiState,
-    columns: Int,
     contentPadding: PaddingValues,
     pullRefreshController: SkipiPullToRefreshController?,
     pullRefreshPresentation: SkipiPullRefreshPresentation,
@@ -759,6 +755,10 @@ private fun PageServerGrid(
     val pageServers = page.servers
     val subscription = page.subscription
     val subscriptionGroup = page.group.kind == ProxyHomeGroupKind.Subscription
+    // Manual servers, the user's proxy groups and balancers get a subscription's panel with a ping-only header.
+    val groupHeader = state.groupHeader(page)
+    val panelGroup = (subscriptionGroup && subscription != null) || groupHeader != null
+    val panelExpanded = if (subscriptionGroup) page.subscriptionExpanded else true
     val providerSurface = SkipiTheme.colors.surface
     val providerBorder = Color.Transparent
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
@@ -773,7 +773,6 @@ private fun PageServerGrid(
         state.displayOptions,
     ) { state.toServerRowContext() }
     val reorderEnabled = proxyHomeCanReorderServers(
-        columns = columns,
         sortMode = state.sortMode,
         searchQuery = state.searchQuery,
         visibleServerCount = pageServers.size,
@@ -797,7 +796,7 @@ private fun PageServerGrid(
     }
     Box(modifier = modifier.fillMaxSize()) {
       LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Fixed(1),
         state = gridState,
         modifier = Modifier.fillMaxSize()
             .then(pullRefreshController?.let { controller ->
@@ -824,11 +823,11 @@ private fun PageServerGrid(
                 }
             }
         }
-        if (subscriptionGroup && subscription != null) {
+        if (panelGroup) {
             proxyHomeGroupSection(groupSelector)
-            item(key = "subscription-${subscription.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription") {
+            item(key = "group-header-${page.group.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription") {
                 SkipiSubscriptionServerPanelSegment(
-                    segment = if (page.subscriptionExpanded) {
+                    segment = if (panelExpanded) {
                         SkipiSubscriptionPanelSegment.ExpandedHeader
                     } else {
                         SkipiSubscriptionPanelSegment.CollapsedHeader
@@ -837,18 +836,26 @@ private fun PageServerGrid(
                     borderColor = providerBorder,
                     dividerColor = providerDivider,
                 ) {
-                    HomeSubscriptionCard(
-                        subscription = subscription,
-                        expanded = page.subscriptionExpanded,
-                        onToggleExpanded = { onAction(ProxyHomeAction.ToggleSubscriptionExpanded(page.group.id)) },
-                        context = rowContext,
-                        onAction = onAction,
-                    )
+                    if (groupHeader != null) {
+                        HomeProxyGroupCard(
+                            groupId = page.group.id,
+                            header = groupHeader,
+                            onAction = onAction,
+                        )
+                    } else if (subscription != null) {
+                        HomeSubscriptionCard(
+                            subscription = subscription,
+                            expanded = page.subscriptionExpanded,
+                            onToggleExpanded = { onAction(ProxyHomeAction.ToggleSubscriptionExpanded(page.group.id)) },
+                            context = rowContext,
+                            onAction = onAction,
+                        )
+                    }
                 }
             }
-            if (page.subscriptionExpanded) {
+            if (panelExpanded) {
                 if (pageServers.isEmpty()) {
-                    item(key = "subscription-empty-${subscription.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription_empty") {
+                    item(key = "subscription-empty-${page.group.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription_empty") {
                         SkipiSubscriptionServerPanelSegment(
                             segment = SkipiSubscriptionPanelSegment.LastBody,
                             surfaceColor = providerSurface,
@@ -900,7 +907,6 @@ private fun PageServerGrid(
                                     context = rowContext,
                                     serverIndex = serverIndex,
                                     totalServers = pageServers.size,
-                                    columns = columns,
                                     inSubscriptionGroup = true,
                                     isDragging = isDragging && reorderEnabled,
                                     dragModifier = dragModifier,
@@ -963,7 +969,6 @@ private fun PageServerGrid(
                             context = rowContext,
                             serverIndex = serverIndex,
                             totalServers = pageServers.size,
-                            columns = columns,
                             onAction = onAction,
                             inSubscriptionGroup = subscriptionGroup,
                             isDragging = isDragging && reorderEnabled,

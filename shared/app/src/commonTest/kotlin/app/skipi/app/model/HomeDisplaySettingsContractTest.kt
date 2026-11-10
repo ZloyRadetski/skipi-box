@@ -20,13 +20,11 @@ class HomeDisplaySettingsContractTest {
         sortValues.forEach { sort ->
             val settings = HomeDisplaySettings(
                 proxyServerListSort = sort,
-                proxyServerListLayout = 3,
                 enableAllProxyGroup = true,
                 showTunnelMemoryOnHome = true,
             )
 
             assertEquals(sort, settings.proxyServerListSort)
-            assertEquals(3, settings.proxyServerListLayout)
             assertEquals(true, settings.enableAllProxyGroup)
             assertEquals(true, settings.showTunnelMemoryOnHome)
         }
@@ -37,7 +35,6 @@ class HomeDisplaySettingsContractTest {
         val settings = HomeDisplaySettings()
 
         assertNull(settings.proxyServerListSort)
-        assertNull(settings.proxyServerListLayout)
         assertNull(settings.enableAllProxyGroup)
         assertNull(settings.showTunnelMemoryOnHome)
     }

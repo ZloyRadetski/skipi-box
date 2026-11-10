@@ -11,6 +11,8 @@ data class ProxyServerGroupInput(
     val name: String,
     val enabled: Boolean,
     val builtIn: Boolean = false,
+    /** Backed by a subscription link. Home lists these after every group the user keeps by hand. */
+    val remote: Boolean = false,
 )
 
 /** Platform-neutral projection of a server used by Home grouping and search. */
@@ -106,7 +108,12 @@ fun groupProxyServersForHome(request: ProxyServerGroupingRequest): ProxyServerGr
     val visibleManualGroup = manualGroup?.takeIf { group ->
         request.servers.any { server -> server.groupId == group.id }
     }
-    val visibleGroups = listOfNotNull(autoBalancerGroup) + visibleSubscriptionGroups + listOfNotNull(visibleManualGroup)
+    // Fixed groups first (manual servers, auto balancers), then the user's own proxy groups, then
+    // subscriptions, each in stored order: the groups a user keeps by hand never sink below providers.
+    val visibleGroups = listOfNotNull(visibleManualGroup) +
+        listOfNotNull(autoBalancerGroup) +
+        visibleSubscriptionGroups.filterNot(ProxyServerGroupInput::remote) +
+        visibleSubscriptionGroups.filter(ProxyServerGroupInput::remote)
     val showGroupTabs = visibleGroups.size > 1
     val showAllProxyGroup = request.enableAllGroup && showGroupTabs
     val selectedGroup = visibleGroups.firstOrNull { it.id == request.selectedGroupId }

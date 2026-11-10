@@ -10,10 +10,10 @@ internal object ProxyServerGroupingAndroidContractFixture {
     val request = ProxyServerGroupingRequest(
         groups = listOf(
             group(id = 1, name = "Manual", enabled = true, builtIn = true),
-            group(id = 8, name = "Later subscription", enabled = true),
-            group(id = 3, name = "Disabled subscription", enabled = false),
-            group(id = 4, name = "Empty subscription", enabled = true),
-            group(id = 2, name = "Earlier subscription", enabled = true),
+            group(id = 8, name = "Later subscription", enabled = true, remote = true),
+            group(id = 3, name = "Disabled subscription", enabled = false, remote = true),
+            group(id = 4, name = "Empty subscription", enabled = true, remote = true),
+            group(id = 2, name = "Earlier subscription", enabled = true, remote = true),
         ),
         servers = listOf(
             server(id = 10, groupId = 1, remarks = "🇺🇸 Manual node"),
@@ -73,8 +73,8 @@ internal object ProxyServerGroupingAndroidContractFixture {
         allGroupId = 0,
     )
 
-    private fun group(id: Int, name: String, enabled: Boolean, builtIn: Boolean = false) =
-        ProxyServerGroupInput(id = id, name = name, enabled = enabled, builtIn = builtIn)
+    private fun group(id: Int, name: String, enabled: Boolean, builtIn: Boolean = false, remote: Boolean = false) =
+        ProxyServerGroupInput(id = id, name = name, enabled = enabled, builtIn = builtIn, remote = remote)
 
     private fun server(
         id: Int,

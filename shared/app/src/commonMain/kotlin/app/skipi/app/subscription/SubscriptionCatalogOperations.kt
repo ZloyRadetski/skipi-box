@@ -128,6 +128,7 @@ object SubscriptionCatalogOperations {
             idOf = SubscriptionRecord::id,
             isBuiltIn = SubscriptionRecord::builtIn,
             fixedGroupId = fixedGroupId,
+            sectionOf = { it.url.isNotBlank() },
         ),
     )
 

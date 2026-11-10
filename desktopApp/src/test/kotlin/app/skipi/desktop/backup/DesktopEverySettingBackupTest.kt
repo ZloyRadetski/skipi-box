@@ -38,7 +38,6 @@ class DesktopEverySettingBackupTest {
         "localProxyPortRaw" to JsonPrimitive("12345"),
         "localHttpProxyPort" to JsonPrimitive(12_346),
         "logRetentionDays" to JsonPrimitive(30),
-        "proxyServerListColumns" to JsonPrimitive(3),
         "tunIpv4Cidr" to JsonPrimitive("10.20.0.1/30"),
         "tunIpv6Cidr" to JsonPrimitive("fd00:20::1/126"),
         "tunVpnDns" to JsonPrimitive("1.1.1.1"),
@@ -71,7 +70,6 @@ class DesktopEverySettingBackupTest {
         "sidebarCollapsed" to "window layout",
         "showConnectionLog" to "Home layout",
         "navigationStyle" to "window layout",
-        "proxyServerListColumns" to "Desktop list layout; the backup holds only Android's proxyServerListLayout",
     )
 
     private val nullStrings = mutableSetOf<String>()

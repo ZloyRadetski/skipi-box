@@ -102,18 +102,6 @@ class DesktopSettingsLibraryTest {
                     DesktopAppSettings(localProxyListenAddress = "   "),
                 ).isFailure,
             )
-            assertTrue(
-                DesktopSettingsLibraries.save(
-                    path,
-                    DesktopAppSettings(proxyServerListColumns = 0),
-                ).isFailure,
-            )
-            assertTrue(
-                DesktopSettingsLibraries.save(
-                    path,
-                    DesktopAppSettings(proxyServerListColumns = 4),
-                ).isFailure,
-            )
         } finally {
             deleteTree(directory)
         }
@@ -219,35 +207,31 @@ class DesktopSettingsLibraryTest {
     }
 
     @Test
-    fun roundTripsHomeDisplayOptionsWithNonDefaultValuesAndCustomColumns() {
+    fun roundTripsHomeDisplayOptionsWithNonDefaultValues() {
         val directory = Files.createTempDirectory("skipi-settings-home-")
         try {
             val path = directory.resolve("settings.json")
-            for (columns in listOf(2, 3)) {
-                val settings = DesktopAppSettings(
-                    compactHome = true,
-                    showTunnelMemory = false,
-                    pinConnectionPanelOnHome = true,
-                    classicShowFloatingPowerButton = true,
-                    enableAllProxyGroup = true,
-                    showServerSearch = true,
-                    enableSubscriptionSwipe = false,
-                    proxyServerListColumns = columns,
-                )
+            val settings = DesktopAppSettings(
+                compactHome = true,
+                showTunnelMemory = false,
+                pinConnectionPanelOnHome = true,
+                classicShowFloatingPowerButton = true,
+                enableAllProxyGroup = true,
+                showServerSearch = true,
+                enableSubscriptionSwipe = false,
+            )
 
-                DesktopSettingsLibraries.save(path, settings).getOrThrow()
-                val loaded = DesktopSettingsLibraries.load(path).getOrThrow()
+            DesktopSettingsLibraries.save(path, settings).getOrThrow()
+            val loaded = DesktopSettingsLibraries.load(path).getOrThrow()
 
-                assertTrue(loaded.compactHome)
-                assertFalse(loaded.showTunnelMemory)
-                assertTrue(loaded.pinConnectionPanelOnHome)
-                assertTrue(loaded.classicShowFloatingPowerButton)
-                assertTrue(loaded.enableAllProxyGroup)
-                assertTrue(loaded.showServerSearch)
-                assertFalse(loaded.enableSubscriptionSwipe)
-                assertEquals(columns, loaded.proxyServerListColumns)
-                assertEquals(settings, loaded)
-            }
+            assertTrue(loaded.compactHome)
+            assertFalse(loaded.showTunnelMemory)
+            assertTrue(loaded.pinConnectionPanelOnHome)
+            assertTrue(loaded.classicShowFloatingPowerButton)
+            assertTrue(loaded.enableAllProxyGroup)
+            assertTrue(loaded.showServerSearch)
+            assertFalse(loaded.enableSubscriptionSwipe)
+            assertEquals(settings, loaded)
         } finally {
             deleteTree(directory)
         }
@@ -331,7 +315,6 @@ class DesktopSettingsLibraryTest {
             assertFalse(loaded.enableAllProxyGroup)
             assertFalse(loaded.showServerSearch)
             assertTrue(loaded.enableSubscriptionSwipe)
-            assertEquals(1, loaded.proxyServerListColumns)
 
             Files.writeString(
                 path,
@@ -350,30 +333,19 @@ class DesktopSettingsLibraryTest {
             assertFalse(loadedClassic.enableAllProxyGroup)
             assertFalse(loadedClassic.showServerSearch)
             assertTrue(loadedClassic.enableSubscriptionSwipe)
-            assertEquals(1, loadedClassic.proxyServerListColumns)
         } finally {
             deleteTree(directory)
         }
     }
 
     @Test
-    fun validatesProxyServerListColumnsOnSaveAndNormalizesOnLoad() {
+    fun aSettingsFileFromBeforeTheColumnsSettingWasRemovedStillLoads() {
         val directory = Files.createTempDirectory("skipi-settings-columns-")
         try {
             val path = directory.resolve("settings.json")
 
-            assertTrue(DesktopSettingsLibraries.save(path, DesktopAppSettings(proxyServerListColumns = 0)).isFailure)
-            assertTrue(DesktopSettingsLibraries.save(path, DesktopAppSettings(proxyServerListColumns = 4)).isFailure)
-            assertTrue(DesktopSettingsLibraries.save(path, DesktopAppSettings(proxyServerListColumns = -1)).isFailure)
-
-            Files.writeString(path, """{"proxyServerListColumns": 0}""")
-            assertEquals(1, DesktopSettingsLibraries.load(path).getOrThrow().proxyServerListColumns)
-
-            Files.writeString(path, """{"proxyServerListColumns": 4}""")
-            assertEquals(3, DesktopSettingsLibraries.load(path).getOrThrow().proxyServerListColumns)
-
-            Files.writeString(path, """{"proxyServerListColumns": -5}""")
-            assertEquals(1, DesktopSettingsLibraries.load(path).getOrThrow().proxyServerListColumns)
+            Files.writeString(path, """{"proxyServerListColumns": 3, "compactHome": true}""")
+            assertTrue(DesktopSettingsLibraries.load(path).getOrThrow().compactHome)
         } finally {
             deleteTree(directory)
         }

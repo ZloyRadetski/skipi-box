@@ -137,12 +137,21 @@ class ProxyServerListGroupsCompatibilityTest {
             autoBalancerGroupName = "Auto balancers",
         )
 
-        assertEquals(listOf(AutoBalancerGroupId, 2, 4, DefaultSubscriptionGroupId), result.visibleGroups.map { it.id })
-        assertEquals(listOf(AllProxyGroupId, AutoBalancerGroupId, 2, 4, DefaultSubscriptionGroupId), result.groupTabs.map { it.id })
-        assertEquals(AutoBalancerGroupId, result.selectedGroup.id)
-        assertEquals(AutoBalancerGroupId, result.selectedTabId)
+        assertEquals(listOf(DefaultSubscriptionGroupId, AutoBalancerGroupId, 2, 4), result.visibleGroups.map { it.id })
+        assertEquals(listOf(AllProxyGroupId, DefaultSubscriptionGroupId, AutoBalancerGroupId, 2, 4), result.groupTabs.map { it.id })
+        assertEquals(DefaultSubscriptionGroupId, result.selectedGroup.id)
+        assertEquals(DefaultSubscriptionGroupId, result.selectedTabId)
         assertEquals(listOf(10, 20, 30, 33, 32), result.visibleServers.map { it.id })
-        assertEquals(listOf(30, 33), result.currentFilteredServers.map { it.id })
+        assertEquals(emptyList<Int>(), result.currentFilteredServers.map { it.id })
+        val balancers = proxyServerListGroups(
+            state = state.toProxyServerListState(),
+            selectedGroupId = AutoBalancerGroupId,
+            searchValue = " CONFIG ",
+            allGroupName = "All",
+            defaultGroupName = "Default group",
+            autoBalancerGroupName = "Auto balancers",
+        )
+        assertEquals(listOf(30, 33), balancers.currentFilteredServers.map { it.id })
         assertEquals("Default group", result.groupNames[DefaultSubscriptionGroupId])
         assertEquals("Auto balancers", result.groupNames[AutoBalancerGroupId])
         assertTrue(result.visibleGroupIds.contains(2))

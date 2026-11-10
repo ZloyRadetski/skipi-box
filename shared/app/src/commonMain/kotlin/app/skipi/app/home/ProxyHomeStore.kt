@@ -46,7 +46,6 @@ data class ProxyHomeDisplayOptions(
     val pinConnectionPanel: Boolean = false,
     val classicFloatingPowerButton: Boolean = false,
     val classicButtonSize: ProxyHomeButtonSize = ProxyHomeButtonSize.Medium,
-    val requestedColumns: Int = 1,
     val showAllGroup: Boolean = false,
     val showTunnelMemory: Boolean = false,
     /** Show the tunnel's public IP tile in the connection panel. */
@@ -648,10 +647,6 @@ class ProxyHomeStore(
             else -> source.selectedServerTitle
         }
 
-        val normalizedDisplayOptions = source.displayOptions.copy(
-            requestedColumns = source.displayOptions.requestedColumns.coerceIn(1, 3),
-        )
-
         return ProxyHomeUiState(
             tunnelSnapshot = source.tunnelSnapshot,
             connectedSince = source.connectedSince,
@@ -672,7 +667,7 @@ class ProxyHomeStore(
             isSearchVisible = source.searchEnabled,
             searchEnabled = source.searchEnabled,
             subscriptionSwipeEnabled = source.subscriptionSwipeEnabled,
-            displayOptions = normalizedDisplayOptions,
+            displayOptions = source.displayOptions,
             sortMode = source.sortMode,
             runtimeOutboundMetric = source.runtimeOutboundMetric,
             tunnelIp = source.tunnelIp,

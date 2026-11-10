@@ -41,17 +41,6 @@ class ProxyHomeLayoutTest {
     }
 
     @Test
-    fun theColumnsSettingIsHonouredOnEveryWindowLikeOnAndroid() {
-        // Android always laid the list out in the chosen number of columns, phones included;
-        // forcing one column on compact windows made the setting do nothing on a phone.
-        assertEquals(1, proxyHomeResolveColumns(1))
-        assertEquals(2, proxyHomeResolveColumns(2))
-        assertEquals(3, proxyHomeResolveColumns(3))
-        assertEquals(1, proxyHomeResolveColumns(0))
-        assertEquals(3, proxyHomeResolveColumns(7))
-    }
-
-    @Test
     fun floatingNavigationInsetMovesFromViewportToScrollableClearance() {
         val treatment = proxyHomeBottomInsetTreatment(
             contentPadding = PaddingValues(start = 8.dp, top = 4.dp, end = 12.dp, bottom = 76.dp),

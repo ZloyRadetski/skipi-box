@@ -47,7 +47,6 @@ data class AppearanceSettingsState(
     val fontSizeMode: Int = 100,
     val fontWeightMode: Int = 0,
     val pinConnectionPanelOnHome: Boolean = true,
-    val proxyServerListLayout: Int = 1,
     val seedIndex: Int = 0,
     val showServerSearch: Boolean = false,
     val showTunnelMemoryOnHome: Boolean = false,
@@ -108,10 +107,6 @@ object AppearanceSettingValues {
     const val ConnectionDisplayModeCompact = 0
     const val ConnectionDisplayModeClassic = 1
     const val ConnectionDisplayModeLegacy = 2
-
-    const val ProxyServerListLayoutSingle = 1
-    const val ProxyServerListLayoutDouble = 2
-    const val ProxyServerListLayoutMultiple = 3
 
     const val FontSizeModeTiny = 55
     const val FontSizeModeExtraLarge = 145

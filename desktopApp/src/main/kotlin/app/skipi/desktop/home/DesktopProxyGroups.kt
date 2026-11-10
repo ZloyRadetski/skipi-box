@@ -123,6 +123,7 @@ object DesktopProxyGroups {
                 id = subscription.id,
                 name = subscription.name.trim().ifBlank { subscription.url },
                 enabled = options.subscriptionEnabledById[subscription.id] ?: subscription.enabled,
+                remote = subscription.url.isNotBlank(),
             )
         }
         val servers = serverLibrary.servers

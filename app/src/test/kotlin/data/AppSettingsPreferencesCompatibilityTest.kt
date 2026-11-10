@@ -12,8 +12,6 @@ import app.localProxyHttpAuthMode
 import app.localProxySocksAuthMode
 import platform.LocalProxyAuthMode
 import app.modes.ConnectionDisplayModeCompact
-import app.modes.ProxyServerListLayoutDouble
-import app.modes.ProxyServerListLayoutMultiple
 import features.config.TrafficConfigState
 import features.updater.AppUpdateChannel
 import features.subscription.DefaultSubscriptionUserAgent
@@ -55,7 +53,6 @@ class AppSettingsPreferencesCompatibilityTest {
 
         assertEquals(52, state.selectedProxyServerId)
         assertEquals(2, state.nextProxyServerId)
-        assertEquals(3, state.proxyServerListLayout)
         assertEquals(4, state.proxyServerListSort)
         assertEquals(0x11223344L, state.customCategoryIconColor)
         assertEquals(
@@ -79,7 +76,6 @@ class AppSettingsPreferencesCompatibilityTest {
         val state = AppState(
             selectedProxyServerId = 73,
             nextProxyServerId = 74,
-            proxyServerListLayout = 2,
             proxyServerListSort = 1,
             customCategoryIconColor = 0x55667788L,
             subscriptionUserAgents = listOf("First", "Second"),
@@ -108,7 +104,6 @@ class AppSettingsPreferencesCompatibilityTest {
         val restored = store.load()
         assertEquals(73, restored.selectedProxyServerId)
         assertEquals(74, restored.nextProxyServerId)
-        assertEquals(2, restored.proxyServerListLayout)
         assertEquals(1, restored.proxyServerListSort)
         assertEquals(0x55667788L, restored.customCategoryIconColor)
         assertEquals(
@@ -126,7 +121,6 @@ class AppSettingsPreferencesCompatibilityTest {
             seedInt("connection_display_mode", ConnectionDisplayModeCompact)
             seedBoolean("pin_connection_panel_on_home", true)
             seedBoolean("classic_show_floating_power_button", true)
-            seedInt("proxy_server_list_layout", ProxyServerListLayoutMultiple)
             seedBoolean("enable_subscription_swipe", false)
             seedBoolean("show_server_search", true)
             seedBoolean("enable_all_proxy_group", true)
@@ -138,7 +132,6 @@ class AppSettingsPreferencesCompatibilityTest {
         assertEquals(ConnectionDisplayModeCompact, state.connectionDisplayMode)
         assertTrue(state.pinConnectionPanelOnHome)
         assertTrue(state.classicShowFloatingPowerButton)
-        assertEquals(ProxyServerListLayoutMultiple, state.proxyServerListLayout)
         assertFalse(state.enableSubscriptionSwipe)
         assertTrue(state.showServerSearch)
         assertTrue(state.enableAllProxyGroup)
@@ -146,60 +139,39 @@ class AppSettingsPreferencesCompatibilityTest {
     }
 
     @Test
-    fun savesAndReloadsLegacyHomeSettingsAcrossTwoAndThreeColumnLayouts() {
+    fun savesAndReloadsLegacyHomeSettings() {
         val preferences = InMemorySharedPreferences()
         val context = TestContext(preferences)
         val store = AppSettingsPreferences(context)
 
-        val nonDefaultStateTwoColumns = AppState(
+        val nonDefaultState = AppState(
             connectionDisplayMode = ConnectionDisplayModeCompact,
             pinConnectionPanelOnHome = true,
             classicShowFloatingPowerButton = true,
-            proxyServerListLayout = ProxyServerListLayoutDouble,
             enableSubscriptionSwipe = false,
             showServerSearch = true,
             enableAllProxyGroup = true,
             showTunnelMemoryOnHome = true,
         )
 
-        store.save(nonDefaultStateTwoColumns)
+        store.save(nonDefaultState)
 
         assertEquals(ConnectionDisplayModeCompact, preferences.getInt("connection_display_mode", -1))
         assertTrue(preferences.getBoolean("pin_connection_panel_on_home", false))
         assertTrue(preferences.getBoolean("classic_show_floating_power_button", false))
-        assertEquals(ProxyServerListLayoutDouble, preferences.getInt("proxy_server_list_layout", -1))
         assertFalse(preferences.getBoolean("enable_subscription_swipe", true))
         assertTrue(preferences.getBoolean("show_server_search", false))
         assertTrue(preferences.getBoolean("enable_all_proxy_group", false))
         assertTrue(preferences.getBoolean("show_tunnel_memory_on_home", false))
 
-        val restoredTwoColumns = store.load()
-        assertEquals(ConnectionDisplayModeCompact, restoredTwoColumns.connectionDisplayMode)
-        assertTrue(restoredTwoColumns.pinConnectionPanelOnHome)
-        assertTrue(restoredTwoColumns.classicShowFloatingPowerButton)
-        assertEquals(ProxyServerListLayoutDouble, restoredTwoColumns.proxyServerListLayout)
-        assertFalse(restoredTwoColumns.enableSubscriptionSwipe)
-        assertTrue(restoredTwoColumns.showServerSearch)
-        assertTrue(restoredTwoColumns.enableAllProxyGroup)
-        assertTrue(restoredTwoColumns.showTunnelMemoryOnHome)
-
-        val nonDefaultStateThreeColumns = restoredTwoColumns.copy(
-            proxyServerListLayout = ProxyServerListLayoutMultiple,
-        )
-
-        store.save(nonDefaultStateThreeColumns)
-
-        assertEquals(ProxyServerListLayoutMultiple, preferences.getInt("proxy_server_list_layout", -1))
-
-        val restoredThreeColumns = store.load()
-        assertEquals(ProxyServerListLayoutMultiple, restoredThreeColumns.proxyServerListLayout)
-        assertEquals(ConnectionDisplayModeCompact, restoredThreeColumns.connectionDisplayMode)
-        assertTrue(restoredThreeColumns.pinConnectionPanelOnHome)
-        assertTrue(restoredThreeColumns.classicShowFloatingPowerButton)
-        assertFalse(restoredThreeColumns.enableSubscriptionSwipe)
-        assertTrue(restoredThreeColumns.showServerSearch)
-        assertTrue(restoredThreeColumns.enableAllProxyGroup)
-        assertTrue(restoredThreeColumns.showTunnelMemoryOnHome)
+        val restored = store.load()
+        assertEquals(ConnectionDisplayModeCompact, restored.connectionDisplayMode)
+        assertTrue(restored.pinConnectionPanelOnHome)
+        assertTrue(restored.classicShowFloatingPowerButton)
+        assertFalse(restored.enableSubscriptionSwipe)
+        assertTrue(restored.showServerSearch)
+        assertTrue(restored.enableAllProxyGroup)
+        assertTrue(restored.showTunnelMemoryOnHome)
     }
 
     @Test

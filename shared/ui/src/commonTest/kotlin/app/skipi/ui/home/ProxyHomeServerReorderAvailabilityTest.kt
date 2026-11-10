@@ -9,16 +9,15 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Android filters page rows by search before rendering, then enables drag only for one column,
+ * Android filters page rows by search before rendering, then enables drag only for the
  * default sort, and more than one visible row. Search itself does not disable drag. This does not
  * characterize the separate shared move-up/down card-menu interaction.
  */
 class ProxyHomeServerReorderAvailabilityTest {
     @Test
-    fun androidReorderAvailabilityRequiresSingleColumnAndDefaultSortButAllowsSearch() {
+    fun androidReorderAvailabilityRequiresDefaultSortButAllowsSearch() {
         assertTrue(
             proxyHomeCanReorderServers(
-                columns = 1,
                 sortMode = ProxyHomeSortMode.Default,
                 searchQuery = "matching server",
                 visibleServerCount = 2,
@@ -26,15 +25,6 @@ class ProxyHomeServerReorderAvailabilityTest {
         )
         assertFalse(
             proxyHomeCanReorderServers(
-                columns = 2,
-                sortMode = ProxyHomeSortMode.Default,
-                searchQuery = "",
-                visibleServerCount = 2,
-            ),
-        )
-        assertFalse(
-            proxyHomeCanReorderServers(
-                columns = 1,
                 sortMode = ProxyHomeSortMode.Name,
                 searchQuery = "",
                 visibleServerCount = 2,
@@ -42,7 +32,6 @@ class ProxyHomeServerReorderAvailabilityTest {
         )
         assertFalse(
             proxyHomeCanReorderServers(
-                columns = 1,
                 sortMode = ProxyHomeSortMode.Latency,
                 searchQuery = "matching server",
                 visibleServerCount = 2,
@@ -50,7 +39,6 @@ class ProxyHomeServerReorderAvailabilityTest {
         )
         assertFalse(
             proxyHomeCanReorderServers(
-                columns = 1,
                 sortMode = ProxyHomeSortMode.Default,
                 searchQuery = "",
                 visibleServerCount = 1,

@@ -253,10 +253,6 @@ internal class AppSettingsPreferences(
             ) ?: defaults.tunTcpUserTimeout,
             nextProxyServerId = preferences.getInt(KeyNextProxyServerId, defaults.nextProxyServerId),
             selectedProxyServerId = preferences.getInt(KeySelectedProxyServerId, defaults.selectedProxyServerId),
-            proxyServerListLayout = preferences.getInt(
-                KeyProxyServerListLayout,
-                defaults.proxyServerListLayout,
-            ),
             proxyServerListSort = preferences.getInt(KeyProxyServerListSort, defaults.proxyServerListSort),
             subscriptionPingMode = preferences.getInt(KeySubscriptionPingMode, defaults.subscriptionPingMode),
             subscriptionPingUrl = preferences.getString(KeySubscriptionPingUrl, defaults.subscriptionPingUrl)
@@ -548,7 +544,6 @@ internal class AppSettingsPreferences(
             .putString(KeyTunTcpUserTimeout, state.tunTcpUserTimeout)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
             .putInt(KeySelectedProxyServerId, state.selectedProxyServerId)
-            .putInt(KeyProxyServerListLayout, state.proxyServerListLayout)
             .putInt(KeyProxyServerListSort, state.proxyServerListSort)
             .putInt(KeySubscriptionPingMode, state.subscriptionPingMode)
             .putString(KeySubscriptionPingUrl, state.subscriptionPingUrl)
@@ -956,7 +951,6 @@ private const val KeyTunTcpKeepAliveInterval = "tun_tcp_keep_alive_interval"
 private const val KeyTunTcpUserTimeout = "tun_tcp_user_timeout"
 private const val KeyNextProxyServerId = "next_proxy_server_id"
 private const val KeySelectedProxyServerId = "selected_proxy_server_id"
-private const val KeyProxyServerListLayout = "proxy_server_list_layout"
 private const val KeyProxyServerListSort = "proxy_server_list_sort"
 private const val KeySubscriptionPingMode = "subscription_ping_mode"
 private const val KeySubscriptionPingUrl = "subscription_ping_url"

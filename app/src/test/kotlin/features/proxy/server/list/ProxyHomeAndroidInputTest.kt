@@ -9,7 +9,6 @@ import app.ProxyServerLatencyTesting
 import app.SubscriptionGroupState
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.ConnectionDisplayModeLegacy
-import app.modes.ProxyServerListLayoutMultiple
 import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
@@ -294,7 +293,7 @@ class ProxyHomeAndroidInputTest {
 
         // Legacy name sorting compares raw remarks, including the flag prefix.
         assertEquals(listOf("20", "10"), input.servers.map { it.id })
-        assertEquals(listOf("0", "2", DefaultSubscriptionGroupId.toString()), input.groups.map { it.id })
+        assertEquals(listOf("0", DefaultSubscriptionGroupId.toString(), "2"), input.groups.map { it.id })
         val alphaSummary = input.servers.first { it.id == "10" }
         val zuluSummary = input.servers.first { it.id == "20" }
         assertEquals("Alpha", alphaSummary.title)
@@ -649,7 +648,6 @@ class ProxyHomeAndroidInputTest {
             connectionDisplayMode = ConnectionDisplayModeCompact,
             pinConnectionPanelOnHome = true,
             classicShowFloatingPowerButton = true,
-            proxyServerListLayout = ProxyServerListLayoutMultiple,
             enableAllProxyGroup = true,
             showTunnelMemoryOnHome = true,
             showServerSearch = false,
@@ -675,7 +673,6 @@ class ProxyHomeAndroidInputTest {
         assertEquals(ProxyHomeConnectionMode.Compact, input.displayOptions.connectionMode)
         assertTrue(input.displayOptions.pinConnectionPanel)
         assertTrue(input.displayOptions.classicFloatingPowerButton)
-        assertEquals(3, input.displayOptions.requestedColumns)
         assertEquals(ProxyHomeButtonSize.Giant, input.displayOptions.classicButtonSize)
         assertTrue(input.displayOptions.showAllGroup)
         assertTrue(input.displayOptions.showTunnelMemory)

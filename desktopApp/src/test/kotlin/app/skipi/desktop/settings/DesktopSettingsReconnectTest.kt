@@ -57,7 +57,7 @@ class DesktopSettingsReconnectTest {
     @Test
     fun appearanceAndOtherSettingsTheCoreNeverSeesDoNotReconnect() {
         assertFalse(desktopSettingsNeedReconnect(base, base.copy(themeMode = DesktopThemeMode.Light)))
-        assertFalse(desktopSettingsNeedReconnect(base, base.copy(compactHome = true, proxyServerListColumns = 2)))
+        assertFalse(desktopSettingsNeedReconnect(base, base.copy(compactHome = true)))
         assertFalse(desktopSettingsNeedReconnect(base, base.copy(confirmDeletion = false, languageTag = "ru")))
         assertFalse(desktopSettingsNeedReconnect(base, base.copy(autoConnectOnAppOpen = true, launchOnLogin = true)))
         assertFalse(desktopSettingsNeedReconnect(base, base))

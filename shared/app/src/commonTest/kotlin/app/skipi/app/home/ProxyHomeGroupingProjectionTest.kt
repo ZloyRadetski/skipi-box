@@ -21,11 +21,11 @@ class ProxyHomeGroupingProjectionTest {
         assertEquals(
             listOf(
                 ProxyHomeGroupMembership(id = 0, title = "All", serverIds = listOf(10, 20, 21, 40)),
+                ProxyHomeGroupMembership(id = 1, title = "Default group", serverIds = listOf(10)),
                 ProxyHomeGroupMembership(id = -2, title = "Auto balancers", serverIds = listOf(40, 50, 52)),
                 ProxyHomeGroupMembership(id = 8, title = "Later subscription", serverIds = listOf(20)),
                 ProxyHomeGroupMembership(id = 4, title = "Empty subscription", serverIds = emptyList()),
                 ProxyHomeGroupMembership(id = 2, title = "Earlier subscription", serverIds = listOf(21)),
-                ProxyHomeGroupMembership(id = 1, title = "Default group", serverIds = listOf(10)),
             ),
             proxyHomeGroupMemberships(request, grouping),
         )
@@ -69,14 +69,14 @@ class ProxyHomeGroupingProjectionTest {
         assertEquals(
             listOf(
                 ProxyHomeGroupMembership(id = 0, title = "All", serverIds = listOf(10, 11, 20)),
+                ProxyHomeGroupMembership(id = 1, title = "Manual", serverIds = listOf(10)),
                 ProxyHomeGroupMembership(id = -2, title = "Auto balancers", serverIds = listOf(20, 21)),
                 ProxyHomeGroupMembership(id = 2, title = "Work", serverIds = listOf(11)),
                 ProxyHomeGroupMembership(id = 4, title = "Empty", serverIds = emptyList()),
-                ProxyHomeGroupMembership(id = 1, title = "Manual", serverIds = listOf(10)),
             ),
             memberships,
         )
-        assertEquals(listOf(3, 2, 1, 0, 1), memberships.map { it.serverCount })
+        assertEquals(listOf(3, 1, 2, 1, 0), memberships.map { it.serverCount })
     }
 
     @Test

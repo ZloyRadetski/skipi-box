@@ -5,8 +5,6 @@ package data.backup
 
 import app.AppState
 import app.modes.ConnectionDisplayModeCompact
-import app.modes.ProxyServerListLayoutDouble
-import app.modes.ProxyServerListLayoutMultiple
 import features.proxy.server.model.HTTP
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonArray
@@ -29,7 +27,6 @@ class AppBackupCompatibilityTest {
         val restored = preview.restoredState
         assertEquals(1, preview.backup.version)
         assertEquals(52, restored.selectedProxyServerId)
-        assertEquals(3, restored.proxyServerListLayout)
         assertTrue(restored.enableLocalProxyAuth)
         assertEquals("Work subscription", restored.subscriptionGroups.single().name)
         assertEquals("Work profile", restored.subscriptionGroups.single().profileTitle)
@@ -72,7 +69,6 @@ class AppBackupCompatibilityTest {
         assertEquals(restored.subscriptionGroups.single(), roundTrip.subscriptionGroups.single())
         assertEquals(restored.activeTrafficConfigId, roundTrip.activeTrafficConfigId)
         assertEquals(restored.trafficConfigs.single().id, roundTrip.trafficConfigs.single().id)
-        assertEquals(restored.proxyServerListLayout, roundTrip.proxyServerListLayout)
     }
 
     @Test
@@ -88,7 +84,6 @@ class AppBackupCompatibilityTest {
         assertEquals(defaults.connectionDisplayMode, preview.restoredState.connectionDisplayMode)
         assertEquals(defaults.pinConnectionPanelOnHome, preview.restoredState.pinConnectionPanelOnHome)
         assertEquals(defaults.classicShowFloatingPowerButton, preview.restoredState.classicShowFloatingPowerButton)
-        assertEquals(defaults.proxyServerListLayout, preview.restoredState.proxyServerListLayout)
         assertEquals(defaults.enableSubscriptionSwipe, preview.restoredState.enableSubscriptionSwipe)
         assertEquals(defaults.showServerSearch, preview.restoredState.showServerSearch)
         assertEquals(defaults.enableAllProxyGroup, preview.restoredState.enableAllProxyGroup)
@@ -113,7 +108,6 @@ class AppBackupCompatibilityTest {
             connectionDisplayMode = ConnectionDisplayModeCompact,
             pinConnectionPanelOnHome = true,
             classicShowFloatingPowerButton = true,
-            proxyServerListLayout = ProxyServerListLayoutDouble,
             enableSubscriptionSwipe = false,
             showServerSearch = true,
             enableAllProxyGroup = true,
@@ -133,7 +127,7 @@ class AppBackupCompatibilityTest {
         assertEquals(ConnectionDisplayModeCompact, settings.getValue("connectionDisplayMode").jsonPrimitive.content.toInt())
         assertTrue(settings.getValue("pinConnectionPanelOnHome").jsonPrimitive.content.toBoolean())
         assertTrue(settings.getValue("classicShowFloatingPowerButton").jsonPrimitive.content.toBoolean())
-        assertEquals(ProxyServerListLayoutDouble, settings.getValue("proxyServerListLayout").jsonPrimitive.content.toInt())
+        assertFalse(settings.containsKey("proxyServerListLayout"))
         assertFalse(settings.getValue("enableSubscriptionSwipe").jsonPrimitive.content.toBoolean())
         assertTrue(settings.getValue("showServerSearch").jsonPrimitive.content.toBoolean())
         assertTrue(settings.getValue("enableAllProxyGroup").jsonPrimitive.content.toBoolean())
@@ -144,30 +138,9 @@ class AppBackupCompatibilityTest {
         assertEquals(ConnectionDisplayModeCompact, restoredState.connectionDisplayMode)
         assertTrue(restoredState.pinConnectionPanelOnHome)
         assertTrue(restoredState.classicShowFloatingPowerButton)
-        assertEquals(ProxyServerListLayoutDouble, restoredState.proxyServerListLayout)
         assertFalse(restoredState.enableSubscriptionSwipe)
         assertTrue(restoredState.showServerSearch)
         assertTrue(restoredState.enableAllProxyGroup)
         assertTrue(restoredState.showTunnelMemoryOnHome)
-
-        val originalStateThreeColumns = originalState.copy(
-            proxyServerListLayout = ProxyServerListLayoutMultiple,
-        )
-        val encodedThreeColumns = encodeAppBackup(
-            originalStateThreeColumns.toAppBackupFile(
-                createdAtMillis = 1720000000000L,
-                appVersionName = "1.8.0",
-                appVersionCode = 10800,
-            ),
-        )
-        val restoredThreeColumns = decodeAppBackup(encodedThreeColumns).toRestorePreview().restoredState
-        assertEquals(ProxyServerListLayoutMultiple, restoredThreeColumns.proxyServerListLayout)
-        assertEquals(ConnectionDisplayModeCompact, restoredThreeColumns.connectionDisplayMode)
-        assertTrue(restoredThreeColumns.pinConnectionPanelOnHome)
-        assertTrue(restoredThreeColumns.classicShowFloatingPowerButton)
-        assertFalse(restoredThreeColumns.enableSubscriptionSwipe)
-        assertTrue(restoredThreeColumns.showServerSearch)
-        assertTrue(restoredThreeColumns.enableAllProxyGroup)
-        assertTrue(restoredThreeColumns.showTunnelMemoryOnHome)
     }
 }

@@ -51,10 +51,10 @@ class DesktopProxyGroupsTest {
         assertEquals(
             listOf(
                 DesktopProxyGroupIds.All,
+                DesktopProxyGroupIds.Manual,
                 DesktopProxyGroupIds.AutoBalancers,
                 DesktopProxyGroupIds.subscription(2),
                 DesktopProxyGroupIds.subscription(4),
-                DesktopProxyGroupIds.Manual,
             ),
             catalog.groups.map(DesktopProxyGroup::id),
         )
@@ -67,7 +67,7 @@ class DesktopProxyGroupsTest {
         assertNull(catalog.group(DesktopProxyGroupIds.subscription(3)))
         assertEquals(0, catalog.group(DesktopProxyGroupIds.subscription(4))?.serverCount)
         assertEquals(listOf(10), catalog.group(DesktopProxyGroupIds.Manual)?.serverIds)
-        assertEquals(DesktopProxyGroupIds.AutoBalancers, catalog.select("missing").group?.id)
+        assertEquals(DesktopProxyGroupIds.Manual, catalog.select("missing").group?.id)
         assertEquals(listOf(10, 11, 20), catalog.select(DesktopProxyGroupIds.All).serverIds)
 
         assertEquals(
@@ -244,9 +244,9 @@ class DesktopProxyGroupsTest {
             assertEquals(
                 listOf(
                     DesktopProxyGroupIds.All,
+                    DesktopProxyGroupIds.Manual,
                     DesktopProxyGroupIds.subscription(9),
                     DesktopProxyGroupIds.subscription(2),
-                    DesktopProxyGroupIds.Manual,
                 ),
                 catalog.groups.map(DesktopProxyGroup::id),
             )

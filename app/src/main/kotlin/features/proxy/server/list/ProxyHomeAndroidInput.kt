@@ -145,7 +145,6 @@ internal fun AppState.toProxyHomeInput(
             pinConnectionPanel = pinConnectionPanelOnHome,
             classicFloatingPowerButton = classicShowFloatingPowerButton,
             classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize),
-            requestedColumns = proxyServerListLayout.resolvedProxyServerListColumns(),
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,
             showTunnelIp = showTunnelIpOnHome,

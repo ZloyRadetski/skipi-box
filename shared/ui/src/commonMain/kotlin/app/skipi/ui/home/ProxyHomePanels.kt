@@ -13,7 +13,9 @@ import app.skipi.app.home.ProxyConnectionPhase
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.app.home.ProxyHomeGroupHeader
 import app.skipi.app.home.ProxyHomeGroupKind
+import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.ui.resources.Res
@@ -253,10 +255,12 @@ internal fun HomeGroupSelector(
                 add(SkipiProxyGroupPickerAction("delete", deleteLabel))
             }
             if (group.canMove && canUseHomeAction(state, ProxyHomeActionId.MoveGroup)) {
-                if (state.groups.getOrNull(groupIndex - 1)?.canMove == true) {
+                // Proxy groups and subscriptions are listed apart, so a group only trades places with its own kind.
+                val movesWith = { other: ProxyGroupSummary? -> other?.canMove == true && other.kind == group.kind }
+                if (movesWith(state.groups.getOrNull(groupIndex - 1))) {
                     add(SkipiProxyGroupPickerAction("move-up", stringResource(Res.string.home_move_up)))
                 }
-                if (state.groups.getOrNull(groupIndex + 1)?.canMove == true) {
+                if (movesWith(state.groups.getOrNull(groupIndex + 1))) {
                     add(SkipiProxyGroupPickerAction("move-down", stringResource(Res.string.home_move_down)))
                 }
             }
@@ -294,6 +298,57 @@ internal fun HomeGroupSelector(
             }
         },
         modifier = modifier,
+    )
+}
+
+/** A subscription's header for the groups the user keeps by hand: title, count and the group's ping. */
+@Composable
+internal fun HomeProxyGroupCard(
+    groupId: String,
+    header: ProxyHomeGroupHeader,
+    onAction: (ProxyHomeAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val canPing = header.pingAction != null
+    SkipiSubscriptionSummaryCard(
+        state = SkipiSubscriptionSummaryState(
+            id = groupId,
+            title = header.title,
+            serverCountText = stringResource(Res.string.home_server_count, header.serverCount),
+            canPing = canPing,
+            enabled = true,
+            refreshing = false,
+            pinging = header.pinging,
+            statusText = "",
+            trafficText = null,
+            trafficProgress = null,
+            expiryText = null,
+            description = null,
+            announcementText = null,
+            supportLabel = null,
+            siteLabel = null,
+            updatedText = null,
+            canRefresh = false,
+            canPingAction = canPing,
+            canEdit = false,
+            expandable = false,
+        ),
+        actions = SkipiSubscriptionSummaryActions(
+            onRefresh = {},
+            onPing = { header.pingAction?.let(onAction) },
+            onEdit = {},
+        ),
+        colors = SkipiSubscriptionSummaryColors(
+            surface = SkipiTheme.colors.surface,
+            raisedSurface = SkipiTheme.colors.surfaceVariant,
+            border = SkipiTheme.colors.surfaceVariant,
+            text = SkipiTheme.colors.onSurface,
+            mutedText = SkipiTheme.colors.onSurfaceVariant,
+            enabled = SkipiTheme.colorScheme.success,
+        ),
+        expanded = false,
+        modifier = modifier,
+        embeddedInPanel = true,
     )
 }
 

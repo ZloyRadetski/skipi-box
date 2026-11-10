@@ -138,11 +138,6 @@
     <string name="settings_connection_display_mode_classic">Classic</string>
     <string name="settings_pin_connection_panel">Pin connection panel</string>
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
-    <string name="settings_proxy_server_list_columns">Server list columns</string>
-    <string name="settings_proxy_server_list_columns_summary">Number of columns for proxy servers on the home screen</string>
-    <string name="settings_proxy_server_list_columns_single">1 column</string>
-    <string name="settings_proxy_server_list_columns_double">2 columns</string>
-    <string name="settings_proxy_server_list_columns_triple">3 columns</string>
     <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>
     <string name="settings_enable_subscription_swipe_summary">Allow switching subscriptions by swiping left and right</string>
     <string name="settings_font_family">Interface font</string>

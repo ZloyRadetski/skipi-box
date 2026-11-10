@@ -9,9 +9,6 @@ const val ProxyAppListModeBlacklist = 0
 const val ProxyAppListModeWhitelist = 1
 const val ProxyAppListModeGlobal = 2
 
-const val ProxyServerListLayoutSingle = 1
-const val ProxyServerListLayoutDouble = 2
-const val ProxyServerListLayoutMultiple = 3
 
 const val ProxyServerListSortDefault = 0
 const val ProxyServerListSortName = 1

@@ -49,7 +49,7 @@ class BackupFixtureCompatibilityTest {
             }
             before is JsonArray -> out += "$path: list vanished"
             before == null || before is JsonNull -> Unit
-            isHostRewritten(path) -> Unit
+            isHostRewritten(path) || isRetired(path) -> Unit
             before is JsonPrimitive && after is JsonPrimitive && sameContent(path, before, after) -> Unit
             else -> out += "$path: ${before.toString().take(50)} became ${after.toString().take(50)}"
         }
@@ -58,6 +58,14 @@ class BackupFixtureCompatibilityTest {
     /** The user agent names the running app and host, so a restore on another host legitimately rewrites it. */
     private fun isHostRewritten(path: String): Boolean =
         Regex("""\.subscriptionGroups\[\d+]\.userAgent$""").containsMatchIn(path)
+
+    /** Settings the app no longer has: an old file may hold them, a new export does not write them. */
+    private fun isRetired(path: String): Boolean = path in retiredSettings
+
+    private val retiredSettings = setOf(
+        // The server list columns setting was removed: the list is always one column.
+        ".data.settings.proxyServerListLayout",
+    )
 
     private fun sameContent(path: String, before: JsonPrimitive, after: JsonPrimitive): Boolean {
         val a = before.contentOrNull

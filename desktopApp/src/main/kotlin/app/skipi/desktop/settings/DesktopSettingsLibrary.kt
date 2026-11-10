@@ -96,7 +96,6 @@ data class DesktopAppSettings(
     val enableAllProxyGroup: Boolean = false,
     val showServerSearch: Boolean = false,
     val enableSubscriptionSwipe: Boolean = true,
-    val proxyServerListColumns: Int = 1,
     val proxyServerListSort: Int = ProxyHomeSortMode.Default.toAndroidValue(),
     val confirmDeletion: Boolean = true,
     val sendDeviceHeaders: Boolean = true,
@@ -248,7 +247,6 @@ internal fun DesktopAppSettings.normalized(
         require(coreLogLevel.trim().lowercase() in DesktopCoreLogLevels) {
             "Xray log level must be one of: ${DesktopCoreLogLevels.joinToString()}"
         }
-        require(proxyServerListColumns in 1..3) { "Proxy server list columns must be in 1..3" }
     }
     val normalizedSocksPort = localProxyPortRaw
         ?.toIntOrNull()
@@ -275,7 +273,6 @@ internal fun DesktopAppSettings.normalized(
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "error",
         subscriptionUserAgents = normalizeSkipiUserAgents(subscriptionUserAgents.ifEmpty { DefaultSubscriptionUserAgents }),
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
-        proxyServerListColumns = proxyServerListColumns.coerceIn(1, 3),
         logRetentionDays = logRetentionDays.takeIf { it in DesktopLogRetentionDays } ?: DefaultLogRetentionDays,
         sendDeviceHeaders = sendDeviceHeaders,
         installationUuid = installationUuid.trim(),

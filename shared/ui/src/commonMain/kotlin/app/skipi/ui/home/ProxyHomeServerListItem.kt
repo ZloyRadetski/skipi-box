@@ -81,7 +81,6 @@ internal fun ServerListItem(
     context: ServerRowContext,
     serverIndex: Int,
     totalServers: Int,
-    columns: Int,
     onAction: (ProxyHomeAction) -> Unit,
     inSubscriptionGroup: Boolean = false,
     isDragging: Boolean = false,

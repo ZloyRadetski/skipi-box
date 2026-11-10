@@ -20,14 +20,12 @@ class DesktopSettingsRepositoryParityTest {
         val fixture = Fixture(
             settings = DesktopAppSettings(
                 proxyServerListSort = 4,
-                proxyServerListColumns = 2,
                 enableAllProxyGroup = true,
                 showTunnelMemory = false,
             ),
         )
 
         assertEquals(4, fixture.repository.state.value.home.proxyServerListSort)
-        assertEquals(2, fixture.repository.state.value.home.proxyServerListLayout)
         assertEquals(true, fixture.repository.state.value.home.enableAllProxyGroup)
         assertEquals(false, fixture.repository.state.value.home.showTunnelMemoryOnHome)
 
@@ -35,7 +33,6 @@ class DesktopSettingsRepositoryParityTest {
             current.copy(
                 home = current.home.copy(
                     proxyServerListSort = 2,
-                    proxyServerListLayout = 3,
                     enableAllProxyGroup = false,
                     showTunnelMemoryOnHome = true,
                 ),
@@ -43,7 +40,6 @@ class DesktopSettingsRepositoryParityTest {
         }
 
         assertEquals(2, fixture.settings.proxyServerListSort)
-        assertEquals(3, fixture.settings.proxyServerListColumns)
         assertFalse(fixture.settings.enableAllProxyGroup)
         assertTrue(fixture.settings.showTunnelMemory)
     }
@@ -53,7 +49,6 @@ class DesktopSettingsRepositoryParityTest {
         val fixture = Fixture(
             settings = DesktopAppSettings(
                 proxyServerListSort = 4,
-                proxyServerListColumns = 2,
                 enableAllProxyGroup = true,
                 showTunnelMemory = false,
             ),
@@ -63,7 +58,6 @@ class DesktopSettingsRepositoryParityTest {
             current.copy(
                 home = current.home.copy(
                     proxyServerListSort = null,
-                    proxyServerListLayout = null,
                     enableAllProxyGroup = null,
                     showTunnelMemoryOnHome = null,
                 ),
@@ -72,7 +66,6 @@ class DesktopSettingsRepositoryParityTest {
         }
 
         assertEquals(4, fixture.settings.proxyServerListSort)
-        assertEquals(2, fixture.settings.proxyServerListColumns)
         assertTrue(fixture.settings.enableAllProxyGroup)
         assertFalse(fixture.settings.showTunnelMemory)
         assertTrue(fixture.settings.customColorsEnabled)

@@ -1406,11 +1406,6 @@
     <string name="widget_config_changed">پیکربندی: %1$s</string>
     <string name="widget_server_changed">سرور: %1$s</string>
     <string name="widget_no_config">پیکربندی وجود ندارد</string>
-    <string name="settings_proxy_server_list_columns">ستون‌های لیست سرورها</string>
-    <string name="settings_proxy_server_list_columns_summary">تعداد ستون‌های سرورهای پروکسی در صفحه اصلی</string>
-    <string name="settings_proxy_server_list_columns_single">۱ ستون</string>
-    <string name="settings_proxy_server_list_columns_double">۲ ستون</string>
-    <string name="settings_proxy_server_list_columns_triple">۳ ستون</string>
     <string name="settings_local_proxy_http_inbound">ورودی پروکسی HTTP</string>
     <string name="settings_local_proxy_http_inbound_summary">اجرای پروکسی HTTP در کنار SOCKS5 برای مرورگرها، پروکسی سیستم و سایر کلاینت‌های HTTP</string>
     <string name="settings_local_proxy_http_port">پورت پروکسی HTTP</string>

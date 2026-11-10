@@ -45,6 +45,8 @@ data class SkipiSubscriptionSummaryState(
     val canPingAction: Boolean = true,
     val canEdit: Boolean = true,
     val canToggleEnabled: Boolean = false,
+    /** False for a header with nothing to fold, such as a proxy group's: its title row is then not a button. */
+    val expandable: Boolean = true,
     val pinging: Boolean = false,
 )
 

@@ -155,7 +155,11 @@ private fun selectedServerIdAfterDeletion(
     selectedServerId
 }
 
-/** Reorders only real subscription groups while preserving fixed and built-in slots. */
+/**
+ * Reorders only real subscription groups while preserving fixed and built-in slots. Home lists the
+ * kinds apart (proxy groups, then subscriptions), so [sectionOf] keeps a move among groups of the
+ * moved group's own kind: a step is always a visible step.
+ */
 fun <T> moveSubscriptionGroup(
     groups: List<T>,
     groupId: Int,
@@ -163,9 +167,11 @@ fun <T> moveSubscriptionGroup(
     idOf: (T) -> Int,
     isBuiltIn: (T) -> Boolean,
     fixedGroupId: Int?,
+    sectionOf: (T) -> Any? = { null },
 ): List<T> {
     if (offset == 0 || groupId == fixedGroupId) return groups
-    val movable = groups.filter { idOf(it) != fixedGroupId && !isBuiltIn(it) }
+    val moved = groups.firstOrNull { idOf(it) == groupId } ?: return groups
+    val movable = groups.filter { idOf(it) != fixedGroupId && !isBuiltIn(it) && sectionOf(it) == sectionOf(moved) }
     val sourceIndex = movable.indexOfFirst { idOf(it) == groupId }
     if (sourceIndex < 0) return groups
     val targetIndex = (sourceIndex + offset).coerceIn(0, movable.lastIndex)

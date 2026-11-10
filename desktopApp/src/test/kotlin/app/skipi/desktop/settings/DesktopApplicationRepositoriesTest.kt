@@ -745,7 +745,6 @@ class DesktopApplicationRepositoriesTest {
             enableAllProxyGroup = true,
             showServerSearch = true,
             enableSubscriptionSwipe = false,
-            proxyServerListColumns = 3,
             confirmDeletion = false,
             customColorsEnabled = true,
             customAccentColor = 0xFF123456,
@@ -773,7 +772,6 @@ class DesktopApplicationRepositoriesTest {
         assertEquals(8, shared.colorMode)
         assertEquals(0, shared.connectionDisplayMode)
         assertEquals(0, shared.classicButtonSize)
-        assertEquals(3, shared.proxyServerListLayout)
         assertFalse(shared.enableMaterialYou)
 
         assertEquals(3, original.withAppearanceState(shared.copy(classicButtonSize = 3)).classicButtonSize)

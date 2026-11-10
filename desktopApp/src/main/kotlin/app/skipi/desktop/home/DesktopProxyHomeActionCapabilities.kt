@@ -126,7 +126,6 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
     // The floating button is a phone layout feature: a value saved or restored earlier must not show it here.
     classicFloatingPowerButton = false,
     classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 1),
-    requestedColumns = proxyServerListColumns,
     showAllGroup = enableAllProxyGroup,
     showTunnelMemory = showTunnelMemory,
     showTunnelIp = showTunnelIp,

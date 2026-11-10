@@ -123,6 +123,7 @@ private fun SubscriptionGroupState.toGroupingInput() = ProxyServerGroupInput(
     name = name,
     enabled = enabled,
     builtIn = builtIn,
+    remote = url.isNotBlank(),
 )
 
 private fun ProxyServerState.toGroupingInput(): ProxyServerGroupServerInput {

@@ -5,18 +5,8 @@ package features.proxy.server.list
 
 import app.ProxyServerLatencyTesting
 import app.ProxyServerState
-import app.modes.ProxyServerListLayoutDouble
-import app.modes.ProxyServerListLayoutMultiple
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
-
-fun Int.resolvedProxyServerListColumns(): Int {
-    return when (this) {
-        ProxyServerListLayoutDouble -> 2
-        ProxyServerListLayoutMultiple -> 3
-        else -> 1
-    }
-}
 
 fun List<ProxyServerState>.sortedForProxyServerList(
     sort: Int,

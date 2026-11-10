@@ -523,20 +523,6 @@ internal fun AppearanceLayoutSection(
         stringResource(Res.string.settings_connection_display_mode_legacy),
     )
 
-    val proxyServerListLayoutOptions = listOf(
-        stringResource(Res.string.settings_proxy_server_list_columns_single),
-        stringResource(Res.string.settings_proxy_server_list_columns_double),
-        stringResource(Res.string.settings_proxy_server_list_columns_triple),
-    )
-
-    val proxyServerListLayoutModes = remember {
-        listOf(
-            AppearanceSettingValues.ProxyServerListLayoutSingle,
-            AppearanceSettingValues.ProxyServerListLayoutDouble,
-            AppearanceSettingValues.ProxyServerListLayoutMultiple,
-        )
-    }
-
     SmallTitle(text = stringResource(Res.string.settings_header_layout))
     SkipiSettingsSectionCard {
         if (capabilities.navigationStyle) {
@@ -618,16 +604,6 @@ internal fun AppearanceLayoutSection(
             checked = appState.pinConnectionPanelOnHome,
             onCheckedChange = { enabled ->
                 updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
-            },
-        )
-        AppOverlayDropdownPreference(
-            title = stringResource(Res.string.settings_proxy_server_list_columns),
-            summary = stringResource(Res.string.settings_proxy_server_list_columns_summary),
-            items = proxyServerListLayoutOptions,
-            selectedIndex = proxyServerListLayoutModes.indexOf(appState.proxyServerListLayout).coerceAtLeast(0),
-            onSelectedIndexChange = { index ->
-                val layout = proxyServerListLayoutModes.getOrElse(index) { AppearanceSettingValues.ProxyServerListLayoutSingle }
-                updateAppState { it.copy(proxyServerListLayout = layout) }
             },
         )
         if (capabilities.subscriptionSwipe) {

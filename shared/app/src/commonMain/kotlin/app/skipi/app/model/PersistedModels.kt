@@ -100,8 +100,6 @@ data class HomeDisplaySettings(
     val showServerSearch: Boolean = false,
     /** Raw Android numeric setting; null preserves the host's current value. */
     val proxyServerListSort: Int? = null,
-    /** Raw Android numeric setting; null preserves the host's current value. */
-    val proxyServerListLayout: Int? = null,
     val enableAllProxyGroup: Boolean? = null,
     val showTunnelMemoryOnHome: Boolean? = null,
     val showTunnelIpOnHome: Boolean? = null,

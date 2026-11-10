@@ -130,11 +130,6 @@
     <string name="settings_connection_display_mode_summary">بین ویجت اتصال فشرده و کلاسیک در صفحه اصلی انتخاب کنید</string>
     <string name="settings_connection_display_mode_compact">فشرده</string>
     <string name="settings_connection_display_mode_classic">کلاسیک</string>
-    <string name="settings_proxy_server_list_columns">ستون‌های لیست سرورها</string>
-    <string name="settings_proxy_server_list_columns_summary">تعداد ستون‌های سرورهای پروکسی در صفحه اصلی</string>
-    <string name="settings_proxy_server_list_columns_single">۱ ستون</string>
-    <string name="settings_proxy_server_list_columns_double">۲ ستون</string>
-    <string name="settings_proxy_server_list_columns_triple">۳ ستون</string>
     <string name="settings_bottom_bar_size">اندازه نوار پایین</string>
     <string name="settings_bottom_bar_size_summary">تنظیم ارتفاع، آیکون‌ها و اندازه متن نوار شناور پایین</string>
     <string name="settings_bottom_bar_size_small">کوچک</string>
