@@ -71,7 +71,7 @@ import app.skipi.ui.navigation.LocalNavigationReselectToken
 import app.skipi.ui.navigation.SkipiSidebarNavigation
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.logs.CoreLogTailerPollingPolicy
-import features.updater.AppUpdateState
+import features.updater.AppUpdateDownloadStatus
 import features.updater.bannerModel
 import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
@@ -399,24 +399,42 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     )
                 }
 
-                var appUpdateState by remember { mutableStateOf(AppUpdateState()) }
-                val appUpdateChecker = remember { DesktopAppUpdateChecker() }
-                suspend fun checkForAppUpdate(): DesktopAppUpdateCheck {
-                    val outcome = appUpdateChecker.check(desktopSettings.appUpdateChannel)
-                    when (outcome) {
-                        is DesktopAppUpdateCheck.Available ->
-                            appUpdateState = appUpdateState.applyCheckedRelease(outcome.update).state
-                        DesktopAppUpdateCheck.UpToDate -> appUpdateState = appUpdateState.applyCheckedRelease(null).state
-                        DesktopAppUpdateCheck.Failed -> Unit
-                    }
-                    return outcome
+                val appUpdateScope = rememberCoroutineScope()
+                val appUpdater = remember {
+                    val checker = DesktopAppUpdateChecker()
+                    val downloader = DesktopUpdateDownloader()
+                    DesktopAppUpdater(
+                        scope = appUpdateScope,
+                        updatesRoot = desktopUpdatesDirectory(),
+                        checkRelease = { channel, pkg -> checker.check(channel, pkg) },
+                        downloadFile = downloader::download,
+                    )
                 }
+                val appUpdateState by appUpdater.state.collectAsState()
+                suspend fun checkForAppUpdate(): DesktopAppUpdateCheck = appUpdater.check(desktopSettings.appUpdateChannel)
                 // An offer found on another channel is not valid on this one (a pre-release after leaving Nightly).
                 LaunchedEffect(desktopSettings.appUpdateChannel) {
-                    appUpdateState = AppUpdateState()
+                    appUpdater.reset()
                 }
                 LaunchedEffect(desktopSettings.autoCheckAppUpdates, desktopSettings.appUpdateChannel) {
                     if (desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
+                }
+                fun runAppUpdateAction() {
+                    val update = appUpdateState.availableUpdate ?: return
+                    when {
+                        !update.canDownload -> browse(update.downloadUrl) { tunnel.coreMessage = it }
+                        appUpdateState.status == AppUpdateDownloadStatus.READY_TO_INSTALL -> appUpdateScope.launch {
+                            when (val result = appUpdater.install()) {
+                                // The tunnel is stopped the usual way first; the helper waits for this process to end.
+                                DesktopUpdateInstallResult.Restarting -> tunnel.closeRequested = true
+                                DesktopUpdateInstallResult.HandedOver ->
+                                    tunnel.coreMessage = "Установщик открыт: завершите обновление в нём."
+                                is DesktopUpdateInstallResult.Failed ->
+                                    tunnel.coreMessage = "Не удалось установить обновление: ${result.message}"
+                            }
+                        }
+                        else -> appUpdater.download()
+                    }
                 }
 
                 val stopSelectedSubscriptionServer = remember { DesktopSubscriptionServerStopAction() }
@@ -1381,8 +1399,9 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 {
                                     SkipiAppUpdateBanner(
                                         banner = banner,
-                                        onDismiss = { appUpdateState = appUpdateState.dismissed() },
-                                        onPrimaryAction = { browse(banner.update.downloadUrl) { tunnel.coreMessage = it } },
+                                        onDismiss = appUpdater::dismiss,
+                                        onPrimaryAction = ::runAppUpdateAction,
+                                        primaryActionLabel = desktopUpdateActionLabel(banner, appUpdater.installedPackage),
                                     )
                                 }
                             },
@@ -1856,6 +1875,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                         SkipiMainDestination.Settings -> DesktopSettingsScreen(
                             appUpdateState = appUpdateState,
                             onCheckForAppUpdate = ::checkForAppUpdate,
+                            onAppUpdateAction = ::runAppUpdateAction,
                             settings = desktopSettings,
                             diagnostics = desktopDiagnostics,
                             coreLogs = desktopCoreLogs,

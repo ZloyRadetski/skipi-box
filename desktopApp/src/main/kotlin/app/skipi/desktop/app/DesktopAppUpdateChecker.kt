@@ -7,6 +7,7 @@ import app.ProjectInfo
 import features.updater.AppUpdateChannel
 import features.updater.AppUpdateInfo
 import features.updater.CurrentAppVersion
+import features.updater.DesktopUpdatePackage
 import features.updater.GitHubReleaseParser
 import java.net.URI
 import java.net.http.HttpClient
@@ -24,19 +25,22 @@ internal sealed interface DesktopAppUpdateCheck {
 }
 
 /**
- * Asks GitHub for the newest release of an [AppUpdateChannel] and offers it through its public page;
- * Desktop installs nothing itself. A transport or parse failure is never reported as "up to date".
+ * Asks GitHub for the newest release of an [AppUpdateChannel] and offers it with the installer of the given package;
+ * a release without that installer is offered through its public page. A transport or parse failure is never "up to date".
  */
 internal class DesktopAppUpdateChecker(
     private val current: CurrentAppVersion = CurrentAppVersion(ProjectInfo.VERSION_NAME, ProjectInfo.VERSION_CODE),
     private val fetchReleaseBody: suspend (AppUpdateChannel) -> String = ::fetchReleasesFromGitHub,
 ) {
-    suspend fun check(channel: AppUpdateChannel = AppUpdateChannel.Stable): DesktopAppUpdateCheck = try {
+    suspend fun check(
+        channel: AppUpdateChannel = AppUpdateChannel.Stable,
+        desktopPackage: DesktopUpdatePackage? = null,
+    ): DesktopAppUpdateCheck = try {
         val body = fetchReleaseBody(channel)
         if (!GitHubReleaseParser.isReleaseBody(body, channel)) {
             DesktopAppUpdateCheck.Failed
         } else {
-            GitHubReleaseParser.parseAvailability(body, current, channel)
+            GitHubReleaseParser.parseAvailability(body, current, channel, desktopPackage)
                 ?.let(DesktopAppUpdateCheck::Available)
                 ?: DesktopAppUpdateCheck.UpToDate
         }

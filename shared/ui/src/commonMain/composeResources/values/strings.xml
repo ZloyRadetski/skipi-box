@@ -1161,6 +1161,10 @@
     <string name="app_update_changelog_action">Changelog</string>
     <string name="app_update_downloading_action">Downloading…</string>
     <string name="app_update_install_action">Update</string>
+    <string name="app_update_download_action">Download</string>
+    <string name="app_update_restart_action">Restart and update</string>
+    <string name="app_update_open_installer_action">Open installer</string>
+    <string name="app_update_open_page_action">Open release page</string>
     <string name="settings_updates_title">Updates</string>
     <string name="settings_auto_check_updates_title">Check for updates</string>
     <string name="settings_auto_check_updates_summary">Periodically check GitHub for new SKIPI versions</string>

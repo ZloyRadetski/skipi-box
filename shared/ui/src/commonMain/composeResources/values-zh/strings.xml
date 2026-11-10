@@ -1068,6 +1068,10 @@
     <string name="app_update_changelog_action">更新日志</string>
     <string name="app_update_downloading_action">正在下载…</string>
     <string name="app_update_install_action">更新</string>
+    <string name="app_update_download_action">下载</string>
+    <string name="app_update_restart_action">重启并更新</string>
+    <string name="app_update_open_installer_action">打开安装程序</string>
+    <string name="app_update_open_page_action">打开发布页面</string>
     <string name="settings_updates_title">更新</string>
     <string name="settings_auto_check_updates_title">检查更新</string>
     <string name="settings_auto_check_updates_summary">定期在 GitHub 上检查 SKIPI 的新版本</string>

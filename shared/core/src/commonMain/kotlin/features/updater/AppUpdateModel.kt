@@ -18,7 +18,10 @@ data class AppUpdateInfo(
     val publishedAt: String,
     /** SHA-256 published by GitHub, when the release API provides one. */
     val assetSha256: String? = null,
-)
+) {
+    /** The offer names a file to download; without one it is only a link to the release page. */
+    val canDownload: Boolean get() = assetName.isNotBlank()
+}
 
 /** Durable state exposed by the UI while WorkManager owns the transfer. */
 enum class AppUpdateDownloadStatus {

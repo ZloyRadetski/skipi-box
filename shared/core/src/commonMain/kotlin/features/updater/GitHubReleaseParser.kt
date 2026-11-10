@@ -84,17 +84,19 @@ object GitHubReleaseParser {
     }
 
     /**
-     * Availability-only variant for hosts that cannot install an APK (Desktop): a newer release is
-     * offered through its public page. Null for malformed bodies, releases without a page, or
+     * Availability for hosts that do not install an APK (Desktop): a newer release is
+     * offered with the asset of [desktopPackage] when the release has it, otherwise through its public
+     * page. Null for malformed bodies, releases without a page, or
      * releases that are not newer than [current].
      */
     fun parseAvailability(
         body: String,
         current: CurrentAppVersion,
         channel: AppUpdateChannel = AppUpdateChannel.Stable,
-    ): AppUpdateInfo? = parseChannel(body, channel) { root -> parseAvailability(root, current) }
+        desktopPackage: DesktopUpdatePackage? = null,
+    ): AppUpdateInfo? = parseChannel(body, channel) { root -> parseAvailability(root, current, desktopPackage) }
 
-    private fun parseAvailability(root: JsonObject, current: CurrentAppVersion): AppUpdateInfo? {
+    private fun parseAvailability(root: JsonObject, current: CurrentAppVersion, desktopPackage: DesktopUpdatePackage?): AppUpdateInfo? {
         val tagName = root.string("tag_name").trim()
         val remoteVersionName = tagName.removePrefix("v").trim()
         val pageUrl = root.string("html_url").takeIf(String::isNotBlank) ?: return null
@@ -108,15 +110,24 @@ object GitHubReleaseParser {
             remoteVersionCode = remoteVersionCode,
         )
         if (!isNewer) return null
+        val asset = desktopPackage?.let { wanted ->
+            (root["assets"] as? JsonArray)?.mapNotNull { it as? JsonObject }?.firstOrNull { it.string("name") == wanted.assetName }
+        }
+        val assetUrl = asset?.string("browser_download_url")?.takeIf(String::isNotBlank)
         return AppUpdateInfo(
             versionName = remoteVersionName,
             versionCode = remoteVersionCode ?: (current.code + 1),
             releaseTitle = root.string("name").ifBlank { tagName },
             changelog = changelog,
-            downloadUrl = pageUrl,
-            assetName = "",
-            apkSizeBytes = 0L,
+            downloadUrl = assetUrl ?: pageUrl,
+            assetName = if (assetUrl != null) asset.string("name") else "",
+            apkSizeBytes = if (assetUrl != null) asset["size"]?.jsonPrimitive?.longOrNull ?: 0L else 0L,
             publishedAt = root.string("published_at"),
+            assetSha256 = if (assetUrl != null) {
+                asset["digest"]?.jsonPrimitive?.contentOrNull?.takeIf { it.startsWith("sha256:", ignoreCase = true) }
+            } else {
+                null
+            },
         )
     }
 

@@ -1150,6 +1150,10 @@
     <string name="app_update_changelog_action">Что нового</string>
     <string name="app_update_downloading_action">Скачивание…</string>
     <string name="app_update_install_action">Обновить</string>
+    <string name="app_update_download_action">Скачать</string>
+    <string name="app_update_restart_action">Перезапустить и обновить</string>
+    <string name="app_update_open_installer_action">Открыть установщик</string>
+    <string name="app_update_open_page_action">Открыть страницу релиза</string>
     <string name="settings_updates_title">Обновления</string>
     <string name="settings_auto_check_updates_title">Проверка обновлений</string>
     <string name="settings_auto_check_updates_summary">Периодически проверять наличие новых версий SKIPI на GitHub</string>

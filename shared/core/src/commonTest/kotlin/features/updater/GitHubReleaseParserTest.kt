@@ -222,3 +222,101 @@ class GitHubNightlyChannelTest {
         assertNull(GitHubReleaseParser.parseAvailability(body, current, AppUpdateChannel.Stable))
     }
 }
+
+class GitHubDesktopReleaseTest {
+    private val current = CurrentAppVersion(name = "0.4.1", code = 180)
+
+    private fun asset(name: String, size: Long = 100, digest: String? = null) =
+        """{"name": "$name", "browser_download_url": "https://example.invalid/dl/$name", "size": $size""" +
+            (digest?.let { """, "digest": "$it"""" } ?: "") + "}"
+
+    private fun release(tag: String, vararg assets: String, code: Int = 190) =
+        """{"tag_name": "$tag", "name": "Title", "body": "Version code: $code", "html_url": "https://example.invalid/page/$tag",
+            "published_at": "2026-10-01T00:00:00Z", "assets": [${assets.joinToString(",")}]}"""
+
+    @Test
+    fun theInstallerOfTheRunningBuildIsOfferedWithItsSizeAndHash() {
+        val body = release(
+            "v0.5.0",
+            asset("SKIPI-universal.apk"),
+            asset("SKIPI-windows-x64.msi", size = 1234, digest = "sha256:ABCDEF"),
+            asset("SKIPI-windows-x64-portable.zip"),
+        )
+
+        val update = GitHubReleaseParser.parseAvailability(body, current, desktopPackage = DesktopUpdatePackage.WindowsMsi)
+
+        assertEquals("0.5.0", update?.versionName)
+        assertEquals("https://example.invalid/dl/SKIPI-windows-x64.msi", update?.downloadUrl)
+        assertEquals("SKIPI-windows-x64.msi", update?.assetName)
+        assertEquals(1234L, update?.apkSizeBytes)
+        assertEquals("sha256:ABCDEF", update?.assetSha256)
+    }
+
+    @Test
+    fun aPortableBuildGetsThePortableArchive() {
+        val body = release("v0.5.0", asset("SKIPI-windows-x64.msi"), asset("SKIPI-windows-x64-portable.zip"))
+
+        val update = GitHubReleaseParser.parseAvailability(body, current, desktopPackage = DesktopUpdatePackage.WindowsPortable)
+
+        assertEquals("SKIPI-windows-x64-portable.zip", update?.assetName)
+    }
+
+    @Test
+    fun aReleaseWithoutThatInstallerIsStillOfferedByItsPage() {
+        // The Desktop jobs upload after the APK job, so a release can be public before its installers are.
+        val body = release("v0.5.0", asset("SKIPI-universal.apk"), asset("SKIPI-linux-x64.deb"))
+
+        val update = GitHubReleaseParser.parseAvailability(body, current, desktopPackage = DesktopUpdatePackage.WindowsMsi)
+
+        assertEquals("https://example.invalid/page/v0.5.0", update?.downloadUrl)
+        assertEquals("", update?.assetName)
+        assertEquals(false, update?.canDownload)
+    }
+
+    @Test
+    fun onlyAnExactAssetNameMatches() {
+        val body = release(
+            "v0.5.0",
+            asset("SKIPI-windows-x64.msi.sha256"),
+            asset("old-SKIPI-windows-x64.msi"),
+            asset("skipi-windows-x64.MSI"),
+        )
+
+        val update = GitHubReleaseParser.parseAvailability(body, current, desktopPackage = DesktopUpdatePackage.WindowsMsi)
+
+        assertEquals("", update?.assetName)
+    }
+
+    @Test
+    fun withoutAnInstallerKindTheOfferStaysAPageLink() {
+        val body = release("v0.5.0", asset("SKIPI-windows-x64.msi"))
+
+        val update = GitHubReleaseParser.parseAvailability(body, current)
+
+        assertEquals("https://example.invalid/page/v0.5.0", update?.downloadUrl)
+        assertEquals("", update?.assetName)
+    }
+
+    @Test
+    fun nightlyOffersTheNewestReleaseWithItsOwnInstaller() {
+        val body = "[" + listOf(
+            release("v0.5.1-rc.1", asset("SKIPI-linux-x64.AppImage"), code = 585),
+            release("v0.5.1-rc.2", asset("SKIPI-linux-x64.AppImage"), code = 590),
+        ).joinToString(",") + "]"
+
+        val update = GitHubReleaseParser.parseAvailability(
+            body, current, AppUpdateChannel.Nightly, DesktopUpdatePackage.LinuxAppImage,
+        )
+
+        assertEquals("0.5.1-rc.2", update?.versionName)
+        assertEquals("https://example.invalid/dl/SKIPI-linux-x64.AppImage", update?.downloadUrl)
+    }
+
+    @Test
+    fun everyInstallerHasItsOwnReleaseAsset() {
+        val names = DesktopUpdatePackage.entries.map(DesktopUpdatePackage::assetName)
+
+        assertEquals(names.size, names.toSet().size)
+        assertEquals("SKIPI-macos-arm64.dmg", DesktopUpdatePackage.MacDmg.assetName)
+    }
+}

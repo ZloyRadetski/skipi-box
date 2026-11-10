@@ -12,6 +12,7 @@ import app.skipi.ui.resources.common_copied
 import app.skipi.ui.resources.app_update_available_title
 import app.skipi.ui.resources.app_update_check_failed
 import app.skipi.ui.resources.app_update_checking
+import app.skipi.ui.resources.app_update_downloading_action
 import app.skipi.ui.resources.app_update_already_latest
 import app.skipi.ui.resources.network_automation_no_wifi_detected
 import app.skipi.ui.settings.AppearanceSettingValues
@@ -186,6 +187,7 @@ internal fun DesktopSettingsScreen(
     escapeHandler: DesktopEscapeHandler = DesktopEscapeHandler(),
     appUpdateState: AppUpdateState = AppUpdateState(),
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck = { DesktopAppUpdateCheck.Failed },
+    onAppUpdateAction: () -> Unit = {},
     onClearSystemProxy: (() -> Unit)? = null,
     onExitApplication: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -455,6 +457,7 @@ internal fun DesktopSettingsScreen(
             settings = currentSettings,
             appUpdateState = appUpdateState,
             onCheckForAppUpdate = onCheckForAppUpdate,
+            onAppUpdateAction = onAppUpdateAction,
             onAutoCheckChange = { enabled -> persist(currentSettings.copy(autoCheckAppUpdates = enabled), "") },
             onUpdateChannelChange = { channel -> persist(currentSettings.copy(appUpdateChannelId = channel.id), "") },
             onReplayOnboarding = { persist(currentSettings.copy(onboardingCompleted = false), "") },
@@ -1028,6 +1031,7 @@ private fun DesktopAboutSettings(
     settings: DesktopAppSettings,
     appUpdateState: AppUpdateState,
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck,
+    onAppUpdateAction: () -> Unit,
     onAutoCheckChange: (Boolean) -> Unit,
     onUpdateChannelChange: (AppUpdateChannel) -> Unit,
     onBack: () -> Unit,
@@ -1062,7 +1066,10 @@ private fun DesktopAboutSettings(
             val latestText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_already_latest)
             val failedText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_check_failed)
             val availableText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_available_title)
+            val downloadingText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_downloading_action)
+            val installedPackage = remember { detectDesktopUpdatePackage(DesktopRuntimeFacts.current()) }
             val known0 = appUpdateState.availableUpdate
+            val actionText = known0?.let { desktopUpdateActionLabel(it, appUpdateState.status == features.updater.AppUpdateDownloadStatus.READY_TO_INSTALL, installedPackage) }
             SkipiAppUpdatesSettingsCard(
                 autoCheckEnabled = settings.autoCheckAppUpdates,
                 onAutoCheckChange = onAutoCheckChange,
@@ -1075,7 +1082,16 @@ private fun DesktopAboutSettings(
                 },
                 checkSummary = when {
                     checking -> checkingText
-                    known0 != null -> "$availableText v${known0.versionName}"
+                    known0 != null -> when (appUpdateState.status) {
+                        features.updater.AppUpdateDownloadStatus.QUEUED,
+                        features.updater.AppUpdateDownloadStatus.DOWNLOADING -> {
+                            val percent = if (appUpdateState.totalBytes > 0L) " ${appUpdateState.downloadedBytes * 100 / appUpdateState.totalBytes}%" else ""
+                            "$downloadingText$percent"
+                        }
+                        features.updater.AppUpdateDownloadStatus.FAILED ->
+                            "$availableText v${known0.versionName}: ${appUpdateState.error.orEmpty()}"
+                        else -> "$availableText v${known0.versionName} · $actionText"
+                    }
                     result == DesktopAppUpdateCheck.UpToDate -> latestText
                     result == DesktopAppUpdateCheck.Failed -> failedText
                     else -> null
@@ -1083,7 +1099,7 @@ private fun DesktopAboutSettings(
                 onCheckNow = {
                     val known = appUpdateState.availableUpdate
                     if (known != null) {
-                        browse(known.downloadUrl, onMessage)
+                        onAppUpdateAction()
                     } else if (!checking) {
                         checking = true
                         scope.launch {

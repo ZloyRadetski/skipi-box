@@ -1046,6 +1046,10 @@
     <string name="app_update_changelog_action">تغییرات</string>
     <string name="app_update_downloading_action">در حال دانلود…</string>
     <string name="app_update_install_action">به‌روزرسانی</string>
+    <string name="app_update_download_action">دانلود</string>
+    <string name="app_update_restart_action">راه‌اندازی مجدد و به‌روزرسانی</string>
+    <string name="app_update_open_installer_action">باز کردن نصب‌کننده</string>
+    <string name="app_update_open_page_action">باز کردن صفحه نسخه</string>
     <string name="settings_updates_title">به‌روزرسانی‌ها</string>
     <string name="settings_auto_check_updates_title">بررسی به‌روزرسانی‌ها</string>
     <string name="settings_auto_check_updates_summary">بررسی دوره‌ای نسخه جدید SKIPI در GitHub</string>
