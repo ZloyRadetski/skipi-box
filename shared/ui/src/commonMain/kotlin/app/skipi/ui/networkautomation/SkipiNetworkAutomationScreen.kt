@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.components.AppWindowDialog
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.layout.pageContentPaddingWithCutout
@@ -366,7 +366,7 @@ private fun NetworkAutomationRuleDialog(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
             ) {
-                AppWindowDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.network_automation_rule_type),
                     items = typeOptions,
                     selectedIndex = selectedTypeIndex.coerceIn(typeOptions.indices),
@@ -424,14 +424,14 @@ private fun NetworkAutomationRuleDialog(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
             ) {
-                AppWindowDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.network_automation_rule_action),
                     items = actionOptions,
                     selectedIndex = selectedActionIndex.coerceIn(actionOptions.indices),
                     onSelectedIndexChange = { selectedActionIndex = it },
                 )
                 if (requiresServer && servers.isNotEmpty()) {
-                    AppWindowDropdownPreference(
+                    SkipiDropdownPreference(
                         title = stringResource(Res.string.network_automation_server_label),
                         items = serverNames,
                         selectedIndex = selectedServerIndex.coerceIn(0, serverNames.lastIndex),

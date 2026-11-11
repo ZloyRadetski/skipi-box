@@ -7,7 +7,7 @@ import engine.xray.XrayRouteTarget
 import engine.xray.XrayRouteTargetKind
 import engine.xray.startupProxyServerDnsDomains
 import app.skipi.app.model.RoutingConfigRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import engine.xray.XrayOutboundRenderingOptions
@@ -99,7 +99,7 @@ object DesktopSelectedServerXrayConfigFactory {
                 } else {
                     stored.decode().getOrNull()
                 } ?: return@mapNotNull null
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = stored.id,
                     groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                     server = server,

@@ -5,7 +5,7 @@ package app.skipi.ui.settings
 
 import app.skipi.ui.resources.*
 import androidx.compose.animation.AnimatedVisibility
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.components.ColorPickerDialog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.theme.SkipiTheme
@@ -96,7 +96,7 @@ internal fun AppearanceThemeSection(
 
     SmallTitle(text = stringResource(Res.string.settings_theme))
     SkipiSettingsSectionCard {
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.settings_color_mode),
             summary = if (isNamedThemeSelected) {
                 stringResource(Res.string.settings_theme_preset_summary)
@@ -112,7 +112,7 @@ internal fun AppearanceThemeSection(
             },
         )
         if (capabilities.fonts) {
-            AppOverlayDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.settings_font_family),
                 items = fontFamilyOptions,
                 selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
@@ -129,7 +129,7 @@ internal fun AppearanceThemeSection(
                 enter = fadeIn() + expandVertically(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.settings_font_weight),
                     items = fontWeightOptions,
                     selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
@@ -162,7 +162,7 @@ internal fun AppearanceThemeSection(
             exit = shrinkVertically() + fadeOut(),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.settings_theme_color),
                     items = keyColorOptions,
                     selectedIndex = appState.seedIndex.coerceIn(0, keyColorOptions.lastIndex),
@@ -229,7 +229,7 @@ internal fun AppearanceBackgroundSection(
 
     SmallTitle(text = stringResource(Res.string.settings_background_title))
     SkipiSettingsSectionCard {
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.settings_background_style),
             items = backgroundStyleOptions,
             selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
@@ -251,7 +251,7 @@ internal fun AppearanceBackgroundSection(
                     title = stringResource(Res.string.settings_background_photo_pick),
                     onClick = onChooseBackgroundPhoto,
                 )
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.settings_background_dim),
                     items = backgroundDimLabels,
                     selectedIndex = backgroundDimOptions.indexOf(appState.backgroundPhotoDimPercent).coerceIn(0, backgroundDimOptions.lastIndex),
@@ -526,7 +526,7 @@ internal fun AppearanceLayoutSection(
     SmallTitle(text = stringResource(Res.string.settings_header_layout))
     SkipiSettingsSectionCard {
         if (capabilities.navigationStyle) {
-            AppOverlayDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.settings_navigation_style),
                 summary = stringResource(Res.string.settings_navigation_style_summary),
                 items = listOf(
@@ -540,7 +540,7 @@ internal fun AppearanceLayoutSection(
             )
         }
         if (capabilities.bottomBarSize && appState.navigationStyle == 0) {
-            AppOverlayDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.settings_bottom_bar_size),
                 summary = stringResource(Res.string.settings_bottom_bar_size_summary),
                 items = bottomBarSizeOptions,
@@ -550,7 +550,7 @@ internal fun AppearanceLayoutSection(
                 },
             )
         }
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.settings_connection_display_mode),
             summary = stringResource(Res.string.settings_connection_display_mode_summary),
             items = connectionDisplayModeOptions,
@@ -576,7 +576,7 @@ internal fun AppearanceLayoutSection(
                     enter = fadeIn() + expandVertically(),
                     exit = shrinkVertically() + fadeOut(),
                 ) {
-                    AppOverlayDropdownPreference(
+                    SkipiDropdownPreference(
                         title = stringResource(Res.string.settings_classic_button_size),
                         summary = stringResource(Res.string.settings_classic_button_size_summary),
                         items = classicButtonSizeOptions,

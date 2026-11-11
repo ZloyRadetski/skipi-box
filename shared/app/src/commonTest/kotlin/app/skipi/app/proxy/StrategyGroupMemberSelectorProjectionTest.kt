@@ -59,8 +59,8 @@ class StrategyGroupMemberSelectorProjectionTest {
         )
 
         assertEquals(listOf("subscription-7"), withoutRemarkRequirement.map { it.key })
-        assertEquals(listOf(1, 4, 6, 7, 8), withoutRemarkRequirement.single().servers.map(ProxyServerRecord::id))
-        assertEquals(listOf(1, 4, 6, 8), withRemarkRequirement.single().servers.map(ProxyServerRecord::id))
+        assertEquals(listOf(1, 4, 6, 7, 8), withoutRemarkRequirement.single().servers.map(ProxyServerRow::id))
+        assertEquals(listOf(1, 4, 6, 8), withRemarkRequirement.single().servers.map(ProxyServerRow::id))
     }
 
     @Test
@@ -76,7 +76,7 @@ class StrategyGroupMemberSelectorProjectionTest {
             excludedServerId = 42,
         )
 
-        assertEquals(listOf(41), groups.single().servers.map(ProxyServerRecord::id))
+        assertEquals(listOf(41), groups.single().servers.map(ProxyServerRow::id))
     }
 
     @Test
@@ -106,7 +106,7 @@ class StrategyGroupMemberSelectorProjectionTest {
 
         assertEquals(listOf("auto-balancers", "subscription-7"), withBalancers.map { it.key })
         assertEquals("Auto balancers", withBalancers.first().title)
-        assertEquals(listOf(40, 43), withBalancers.first().servers.map(ProxyServerRecord::id))
+        assertEquals(listOf(40, 43), withBalancers.first().servers.map(ProxyServerRow::id))
         assertEquals(listOf("subscription-7"), withoutBalancers.map { it.key })
     }
 
@@ -173,7 +173,7 @@ class StrategyGroupMemberSelectorProjectionTest {
         assertEquals(listOf("subscription-7", "manual-servers"), populated.map { it.key })
         assertEquals("Manual label", populated.last().title)
         assertEquals(DefaultSubscriptionGroupId, populated.last().subscriptionGroupId)
-        assertEquals(listOf(1), populated.last().servers.map(ProxyServerRecord::id))
+        assertEquals(listOf(1), populated.last().servers.map(ProxyServerRow::id))
         assertEquals(listOf("subscription-7"), emptyBesideProvider.map { it.key })
         assertEquals(listOf("manual-servers"), emptyWithoutProviders.map { it.key })
         assertEquals(DefaultSubscriptionGroupId, emptyWithoutProviders.single().subscriptionGroupId)
@@ -201,10 +201,10 @@ class StrategyGroupMemberSelectorProjectionTest {
         assertEquals(listOf("subscription-1", "manual-servers"), groups.map { it.key })
         assertEquals(listOf("Subscription one", "Manual servers"), groups.map { it.title })
         assertEquals(listOf(1, -1), groups.map { it.subscriptionGroupId })
-        assertEquals(listOf(listOf(101), listOf(202)), groups.map { group -> group.servers.map(ProxyServerRecord::id) })
+        assertEquals(listOf(listOf(101), listOf(202)), groups.map { group -> group.servers.map(ProxyServerRow::id) })
         assertEquals(listOf(1, -1), groups.map { group -> group.servers.single().groupId })
     }
 
     private fun record(id: Int, groupId: Int, server: features.proxy.server.model.ProxyServer<*>) =
-        ProxyServerRecord(id = id, groupId = groupId, server = server)
+        ProxyServerRow(id = id, groupId = groupId, server = server)
 }

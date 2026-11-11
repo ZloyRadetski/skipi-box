@@ -46,6 +46,7 @@ import androidx.compose.runtime.getValue
 import app.skipi.ui.diagnostics.SkipiDnsLeakTestScreen
 import app.skipi.ui.diagnostics.SkipiIpInfoScreen
 import app.skipi.ui.diagnostics.SkipiSpeedTestScreen
+import app.skipi.ui.navigation.SkipiTool
 import app.skipi.ui.navigation.OnNavigationReselect
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -64,16 +65,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -97,7 +88,6 @@ import app.skipi.ui.settings.SkipiSettingsInfoRow
 import app.skipi.ui.settings.SkipiSettingsNumberField
 import app.skipi.ui.settings.SkipiSettingsStatusMessage
 import app.skipi.ui.settings.SkipiSettingsSwitchRow
-import app.skipi.ui.settings.SkipiSettingsTextField
 import app.skipi.ui.settings.AboutRuntimeInfo
 import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.AboutSettingsLabels
@@ -159,6 +149,22 @@ internal enum class DesktopSettingsDestination {
     NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
+/** Where Desktop takes a tool of the navigation: a page of the settings, or the rules of the selected profile. */
+internal sealed interface DesktopToolTarget {
+    data class SettingsPage(val destination: DesktopSettingsDestination) : DesktopToolTarget
+
+    /** The rule editor of the profile that is selected on the Configs screen. */
+    data object SelectedProfileRules : DesktopToolTarget
+}
+
+internal fun SkipiTool.desktopTarget(): DesktopToolTarget = when (this) {
+    SkipiTool.SpeedTest -> DesktopToolTarget.SettingsPage(DesktopSettingsDestination.SpeedTest)
+    SkipiTool.DnsLeakTest -> DesktopToolTarget.SettingsPage(DesktopSettingsDestination.DnsLeakTest)
+    SkipiTool.IpInfo -> DesktopToolTarget.SettingsPage(DesktopSettingsDestination.IpInfo)
+    SkipiTool.CoreLogs -> DesktopToolTarget.SettingsPage(DesktopSettingsDestination.CoreLogs)
+    SkipiTool.RoutingRules -> DesktopToolTarget.SelectedProfileRules
+}
+
 /** The page a settings page returns to; null for the overview, which has nowhere to go back to. */
 internal fun desktopSettingsParent(destination: DesktopSettingsDestination): DesktopSettingsDestination? = when (destination) {
     DesktopSettingsDestination.Overview -> null
@@ -191,8 +197,10 @@ internal fun DesktopSettingsScreen(
     onClearSystemProxy: (() -> Unit)? = null,
     onExitApplication: () -> Unit = {},
     modifier: Modifier = Modifier,
+    /** The page the screen opens on; a pinned tool opens Settings straight on its page. */
+    initialDestination: DesktopSettingsDestination = DesktopSettingsDestination.Overview,
 ) {
-    var destination by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
+    var destination by remember { mutableStateOf(initialDestination) }
     var message by remember { mutableStateOf("") }
     val copiedMessage = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.common_copied)
     val scope = rememberCoroutineScope()
@@ -489,6 +497,7 @@ private fun DesktopSettingsOverview(
             visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
         ),
         padding = contentPadding,
+        isWideScreen = true,
         onNavigate = { selected ->
             when (selected) {
                 SkipiSettingsDestination.Appearance -> onNavigate(DesktopSettingsDestination.Appearance)

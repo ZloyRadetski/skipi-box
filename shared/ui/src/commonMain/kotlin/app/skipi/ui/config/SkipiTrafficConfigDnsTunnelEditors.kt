@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.components.AppWindowDialog
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.components.StringListEditor
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_add
@@ -235,7 +235,7 @@ private fun DnsServerListCard(
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surface)) {
         Text(title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), style = MiuixTheme.textStyles.title3)
         val labels = presets.map(Pair<String, String>::second) + stringResource(Res.string.configs_dns_custom)
-        AppWindowDropdownPreference(items = labels, selectedIndex = selectedPreset.coerceIn(labels.indices), title = stringResource(Res.string.configs_dns_servers), onSelectedIndexChange = onPreset)
+        SkipiDropdownPreference(items = labels, selectedIndex = selectedPreset.coerceIn(labels.indices), title = stringResource(Res.string.configs_dns_servers), onSelectedIndexChange = onPreset)
         DnsQuickChips(suggestions) { value -> if (value !in servers) onQuickAdd(value) }
         if (servers.isEmpty()) Text(stringResource(Res.string.configs_dns_empty_servers), modifier = Modifier.padding(16.dp), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
         servers.forEachIndexed { index, value ->

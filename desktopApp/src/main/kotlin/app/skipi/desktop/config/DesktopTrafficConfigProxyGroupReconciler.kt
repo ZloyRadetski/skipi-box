@@ -5,7 +5,7 @@ package app.skipi.desktop
 
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord as ReconciledProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow as ReconciledProxyServerRecord
 import app.skipi.app.proxy.reconcileConfigProxyGroups
 import app.skipi.app.config.toTrafficConfigState
 

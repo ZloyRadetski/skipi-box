@@ -25,18 +25,12 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.platform.LocalLayoutDirection
-import app.skipi.ui.components.AppCascadingListPopup
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
@@ -56,8 +50,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -144,6 +136,7 @@ import java.util.Date
 import features.config.ConfigProfile
 import app.skipi.ui.theme.SkipiTheme
 import utils.runCatchingCancellable
+import app.skipi.ui.components.AppEntriesMenu
 
 private val ConfigBackground: Color
     @Composable get() = DesktopContentBackground
@@ -193,6 +186,8 @@ private class DesktopConfigEditorSaveRejected(message: String) : RuntimeExceptio
 @Composable
 internal fun DesktopConfigsScreen(
     configLibrary: DesktopConfigLibrary,
+    /** Opens straight on the rule editor of the selected profile, as the pinned routing-rules tool asks. */
+    openRulesOfSelectedProfile: Boolean = false,
     onTransformConfigLibrary: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary,
     fetchUserAgent: String,
     fetchTimeoutSeconds: Int,
@@ -218,7 +213,13 @@ internal fun DesktopConfigsScreen(
     val scope = rememberCoroutineScope()
     val fetcher = remember { DesktopSubscriptionFetcher() }
     var editorDraft by remember { mutableStateOf<DesktopConfigDraft?>(null) }
-    var visualEditor by remember { mutableStateOf<DesktopVisualEditorSession?>(null) }
+    var visualEditor by remember {
+        mutableStateOf(
+            configLibrary.activeProfile?.takeIf { openRulesOfSelectedProfile }?.let { profile ->
+                DesktopVisualEditorSession(configId = profile.id, section = DesktopVisualEditorSection.Rules)
+            },
+        )
+    }
     val resourceUserAgentFallback = remember { versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME) }
     val trafficConfigProfiles = remember(configLibrary.configs, resourceUserAgentFallback) {
         configLibrary.configs.map { config -> config.toTrafficConfigState(resourceUserAgentFallback) }
@@ -803,6 +804,123 @@ internal fun DesktopConfigsScreen(
         return
     }
 
+    // The menu of the add button is shown inside a box with the button, so it opens under it.
+    val addConfigMenu: @Composable () -> Unit = {
+        AppEntriesMenu(
+            show = showAddMenu,
+            entries = listOf(
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_add_new),
+                            onClick = {
+                                showAddMenu = false
+                                editorDraft = DesktopConfigDraft(
+                                    id = null,
+                                    name = newProfileName,
+                                    content = defaultShadowrocketConfig(),
+                                    sourceUrl = "",
+                                    updateLocked = false,
+                                    lastUpdatedAtMillis = 0L,
+                                )
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_file),
+                            onClick = {
+                                showAddMenu = false
+                                DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
+                                    DesktopProfileFiles.read(path).onSuccess { content ->
+                                        importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
+                                    }.onFailure { error ->
+                                        message = "Не удалось открыть файл: ${error.message.orEmpty()}"
+                                    }
+                                }
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_clipboard),
+                            onClick = {
+                                showAddMenu = false
+                                val text = runCatching {
+                                    Toolkit.getDefaultToolkit().systemClipboard
+                                        .getData(DataFlavor.stringFlavor)
+                                        .toString()
+                                }.getOrDefault("").trim()
+                                when {
+                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
+                                    text.isNotBlank() -> importRawConfig(text, importedProfileName)
+                                    else -> message = clipboardEmptyMessage
+                                }
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_url),
+                            onClick = { showAddMenu = false; importUrlDialog = true },
+                        ),
+                    ),
+                ),
+            ),
+            onDismissRequest = { showAddMenu = false },
+        )
+    }
+
+    // The menu is shown inside the card of the profile it belongs to, so it opens next to that card.
+    val profileContextMenu: @Composable (TrafficConfigProfileItem) -> Unit = { item ->
+        contextMenuConfig?.takeIf { config -> config.id == item.profile.id }?.let { config ->
+            val duplicateName = stringResource(Res.string.configs_copy_name, config.name)
+            SkipiTrafficConfigContextMenu(
+                show = true,
+                onDismissRequest = { contextMenuConfig = null },
+                onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
+                    { contextMenuConfig = null; refreshConfigFromUrl(config) }
+                } else null,
+                onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
+                onUiEdit = { contextMenuConfig = null; openVisualEditor(config) },
+                onDuplicate = {
+                    contextMenuConfig = null
+                    var copy: DesktopStoredConfig? = null
+                    persist(
+                        transform = { latest ->
+                            DesktopConfigLibraries.duplicate(
+                                library = latest,
+                                sourceProfile = config,
+                                name = duplicateName,
+                            ).also { copy = it.configs.last() }
+                        },
+                        successMessage = "",
+                        afterSave = { copy?.let(::openConfigEditor) },
+                    )
+                },
+                onExport = {
+                    contextMenuConfig = null
+                    DesktopProfileFiles.chooseProfileToSave()?.let { path ->
+                        DesktopProfileFiles.write(path, config.content).onSuccess {
+                            message = "Конфиг экспортирован: ${path.fileName}"
+                        }.onFailure { error -> message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}" }
+                    }
+                },
+                onExportBase64 = {
+                    contextMenuConfig = null
+                    val encoded = Base64.getEncoder().encodeToString(config.content.toByteArray(Charsets.UTF_8))
+                    runCatching {
+                        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(encoded), null)
+                    }.onSuccess {
+                        message = exportedBase64Message
+                    }.onFailure { error -> message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}" }
+                },
+                onDelete = { contextMenuConfig = null; pendingDeletion = config },
+                onEnable = {
+                    contextMenuConfig = null
+                    persist(
+                        transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
+                        successMessage = "Выбран «${config.name}».",
+                    )
+                },
+            )
+        }
+    }
+
     DesktopTrafficConfigGlobalProxyGroupsAdapter(
         proxyServers = proxyServers,
         subscriptionCatalog = subscriptionCatalog,
@@ -830,6 +948,9 @@ internal fun DesktopConfigsScreen(
         )
         Box(modifier = Modifier.fillMaxSize()) {
             SkipiTrafficConfigScreen(
+                profileMenu = profileContextMenu,
+                addConfigMenu = addConfigMenu,
+                globalProxyGroupMenu = collection.groupMenu,
                 profiles = trafficConfigProfiles.map { profile ->
                     TrafficConfigProfileItem(
                         profile = profile,
@@ -907,67 +1028,6 @@ internal fun DesktopConfigsScreen(
         }
     }
 
-    if (showAddMenu) {
-        AppCascadingListPopup(
-            show = true,
-            entries = listOf(
-                DropdownEntry(
-                    items = listOf(
-                        DropdownItem(
-                            text = stringResource(Res.string.configs_add_new),
-                            onClick = {
-                                showAddMenu = false
-                                editorDraft = DesktopConfigDraft(
-                                    id = null,
-                                    name = newProfileName,
-                                    content = defaultShadowrocketConfig(),
-                                    sourceUrl = "",
-                                    updateLocked = false,
-                                    lastUpdatedAtMillis = 0L,
-                                )
-                            },
-                        ),
-                        DropdownItem(
-                            text = stringResource(Res.string.configs_import_file),
-                            onClick = {
-                                showAddMenu = false
-                                DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
-                                    DesktopProfileFiles.read(path).onSuccess { content ->
-                                        importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
-                                    }.onFailure { error ->
-                                        message = "Не удалось открыть файл: ${error.message.orEmpty()}"
-                                    }
-                                }
-                            },
-                        ),
-                        DropdownItem(
-                            text = stringResource(Res.string.configs_import_clipboard),
-                            onClick = {
-                                showAddMenu = false
-                                val text = runCatching {
-                                    Toolkit.getDefaultToolkit().systemClipboard
-                                        .getData(DataFlavor.stringFlavor)
-                                        .toString()
-                                }.getOrDefault("").trim()
-                                when {
-                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
-                                    text.isNotBlank() -> importRawConfig(text, importedProfileName)
-                                    else -> message = clipboardEmptyMessage
-                                }
-                            },
-                        ),
-                        DropdownItem(
-                            text = stringResource(Res.string.configs_import_url),
-                            onClick = { showAddMenu = false; importUrlDialog = true },
-                        ),
-                    ),
-                ),
-            ),
-            popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-            alignment = PopupPositionProvider.Align.TopEnd,
-            onDismissRequest = { showAddMenu = false },
-        )
-    }
     SkipiTrafficConfigUrlImportDialog(
         show = importUrlDialog,
         url = importUrl,
@@ -993,58 +1053,6 @@ internal fun DesktopConfigsScreen(
             onConfirm = {
                 pendingUnlockAndRefresh = null
                 startProfileRefresh(TrafficConfigProfileRefreshOperations.confirmUnlockAndRefresh(pending))
-            },
-        )
-    }
-    contextMenuConfig?.let { config ->
-        val duplicateName = stringResource(Res.string.configs_copy_name, config.name)
-        SkipiTrafficConfigContextMenu(
-            show = true,
-            onDismissRequest = { contextMenuConfig = null },
-            onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
-                { contextMenuConfig = null; refreshConfigFromUrl(config) }
-            } else null,
-            onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
-            onUiEdit = { contextMenuConfig = null; openVisualEditor(config) },
-            onDuplicate = {
-                contextMenuConfig = null
-                var copy: DesktopStoredConfig? = null
-                persist(
-                    transform = { latest ->
-                        DesktopConfigLibraries.duplicate(
-                            library = latest,
-                            sourceProfile = config,
-                            name = duplicateName,
-                        ).also { copy = it.configs.last() }
-                    },
-                    successMessage = "",
-                    afterSave = { copy?.let(::openConfigEditor) },
-                )
-            },
-            onExport = {
-                contextMenuConfig = null
-                DesktopProfileFiles.chooseProfileToSave()?.let { path ->
-                    DesktopProfileFiles.write(path, config.content).onSuccess {
-                        message = "Конфиг экспортирован: ${path.fileName}"
-                    }.onFailure { error -> message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}" }
-                }
-            },
-            onExportBase64 = {
-                contextMenuConfig = null
-                val encoded = Base64.getEncoder().encodeToString(config.content.toByteArray(Charsets.UTF_8))
-                runCatching {
-                    Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(encoded), null)
-                }.onSuccess {
-                    message = exportedBase64Message
-                }.onFailure { error -> message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}" }
-            },
-            onDelete = { contextMenuConfig = null; pendingDeletion = config },
-            onEnable = {
-                contextMenuConfig = null
-                persist(
-                    transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
-                    successMessage = "Выбран «${config.name}».",
-                )
             },
         )
     }

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import app.skipi.app.model.SubscriptionCatalog
-import app.skipi.app.proxy.ProxyServerRecord as EditorProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow as EditorProxyServerRecord
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroupsEditorScreen
 import app.skipi.ui.resources.Res

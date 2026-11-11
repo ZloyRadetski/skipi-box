@@ -68,7 +68,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import app.skipi.ui.components.SkipiSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import features.subscription.SubscriptionExpiryReminder
@@ -347,7 +347,7 @@ fun SubscriptionGroupEditorDialog(
                                 lineLimits = TextFieldLineLimits.SingleLine,
                             )
                             SubscriptionOptionsCard {
-                                WindowSpinnerPreference(
+                                SkipiSpinnerPreference(
                                     title = stringResource(Res.string.subscription_user_agent),
                                     summary = resolvedUserAgent,
                                     items = userAgentItems,
@@ -363,7 +363,7 @@ fun SubscriptionGroupEditorDialog(
                                         }
                                     },
                                 )
-                                WindowSpinnerPreference(
+                                SkipiSpinnerPreference(
                                     title = stringResource(Res.string.subscription_device_headers),
                                     summary = stringResource(Res.string.subscription_device_headers_summary),
                                     items = SubscriptionDeviceHeadersMode.entries.map { mode ->

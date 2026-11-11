@@ -24,7 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_rules_policy
 import app.skipi.ui.resources.configs_rules_type
@@ -104,7 +104,7 @@ fun SkipiTrafficConfigRuleEditorForm(
             ) {
                 val anyLabel = stringResource(Res.string.configs_rules_type_or)
                 val allLabel = stringResource(Res.string.configs_rules_type_and)
-                AppWindowDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.configs_rules_type),
                     items = typeOptions.map { type ->
                         when (type) {
@@ -162,7 +162,7 @@ fun SkipiTrafficConfigRuleEditorForm(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                         colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
                     ) {
-                        AppWindowDropdownPreference(
+                        SkipiDropdownPreference(
                             title = stringResource(Res.string.routing_network_label),
                             items = networkOptions,
                             selectedIndex = selectedIndex.coerceAtLeast(0),

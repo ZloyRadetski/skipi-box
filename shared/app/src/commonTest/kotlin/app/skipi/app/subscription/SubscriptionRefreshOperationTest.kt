@@ -4,7 +4,7 @@
 package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
@@ -102,15 +102,15 @@ class SubscriptionRefreshOperationTest {
             lastUpdatedAtMillis = 100L,
         )
         val existing = listOf(
-            ProxyServerRecord(11, requested.id, vless("match.example", "old name"), latency = "44 ms"),
-            ProxyServerRecord(12, requested.id, Custom(remarks = "old custom", configJson = "{\"outbounds\":[]}"), latency = "31 ms"),
-            ProxyServerRecord(20, 7, vless("unrelated.example", "unrelated"), latency = "9 ms"),
-            ProxyServerRecord(
+            ProxyServerRow(11, requested.id, vless("match.example", "old name"), latency = "44 ms"),
+            ProxyServerRow(12, requested.id, Custom(remarks = "old custom", configJson = "{\"outbounds\":[]}"), latency = "31 ms"),
+            ProxyServerRow(20, 7, vless("unrelated.example", "unrelated"), latency = "9 ms"),
+            ProxyServerRow(
                 30,
                 -2,
                 StrategyGroup(remarks = "strategy", proxyServerIds = listOf(11, 12), selectedMemberId = 12),
             ),
-            ProxyServerRecord(31, -2, ChainProxy(remarks = "chain", proxyServerIds = listOf(11, 12))),
+            ProxyServerRow(31, -2, ChainProxy(remarks = "chain", proxyServerIds = listOf(11, 12))),
         )
         val snapshot = SubscriptionRefreshSnapshot(
             subscriptions = listOf(latest),
@@ -158,7 +158,7 @@ class SubscriptionRefreshOperationTest {
         assertEquals(900L, result.snapshot.subscriptions.single().lastUpdatedAtMillis)
 
         val refreshed = result.snapshot.servers
-        assertEquals(listOf(11, 12, 40, 20, 30, 31), refreshed.map(ProxyServerRecord::id))
+        assertEquals(listOf(11, 12, 40, 20, 30, 31), refreshed.map(ProxyServerRow::id))
         assertEquals("44 ms", refreshed.first { it.id == 11 }.latency)
         assertEquals("31 ms", refreshed.first { it.id == 12 }.latency)
         assertEquals("9 ms", refreshed.first { it.id == 20 }.latency)
@@ -176,7 +176,7 @@ class SubscriptionRefreshOperationTest {
     fun staleOrDeletedSubscriptionLeavesTheWholeAggregateUnchangedAndWithholdsEmbeddedConfig() {
         val requested = subscription()
         val current = requested.copy(url = "https://edited.example/subscription")
-        val originalServer = ProxyServerRecord(50, 8, vless("manual.example", "manual"), latency = "12 ms")
+        val originalServer = ProxyServerRow(50, 8, vless("manual.example", "manual"), latency = "12 ms")
         val snapshot = SubscriptionRefreshSnapshot(
             subscriptions = listOf(current),
             servers = listOf(originalServer),

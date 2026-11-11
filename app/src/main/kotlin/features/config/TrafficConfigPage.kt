@@ -64,7 +64,7 @@ import app.skipi.app.config.TrafficConfigProfileRefreshOperations
 import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.ui.config.SkipiTrafficConfigScreen
 import app.skipi.ui.config.SkipiTrafficConfigContextMenu
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroupContextMenu
@@ -73,8 +73,8 @@ import app.skipi.ui.config.TrafficConfigProfileItem
 import app.skipi.ui.config.TrafficConfigProxyGroupItem
 import app.skipi.ui.config.projectTrafficConfigGlobalProxyGroups as projectSharedTrafficConfigGlobalProxyGroups
 import app.skipi.ui.config.projectTrafficConfigSourcedProxyGroups as projectSharedTrafficConfigSourcedProxyGroups
-import app.skipi.ui.config.trafficConfigGlobalProxyGroupDuplicateResult as projectSharedTrafficConfigGlobalProxyGroupDuplicateResult
-import app.skipi.ui.config.trafficConfigGlobalProxyGroupEditResult as projectSharedTrafficConfigGlobalProxyGroupEditResult
+import app.skipi.ui.config.trafficConfigGlobalProxyGroupDuplicateResult
+import app.skipi.ui.config.trafficConfigGlobalProxyGroupEditResult
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
@@ -94,8 +94,6 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -115,13 +113,13 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
-import app.skipi.ui.components.AppCascadingListPopup
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.text.formatTemplate
 import utils.encodeBase64
 import utils.runCatchingCancellable
+import app.skipi.ui.components.AppEntriesMenu
 
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -333,7 +331,7 @@ fun TrafficConfigPage(
             R.string.configs_copy_name,
             original.remarks.ifBlank { original.getInfo().protocol },
         )
-        val result = projectSharedTrafficConfigGlobalProxyGroupDuplicateResult(proxyGroup.server, copyName) ?: return
+        val result = trafficConfigGlobalProxyGroupDuplicateResult(proxyGroup.server, copyName) ?: return
         navigateToProxyGroupEditor(result)
     }
 
@@ -413,12 +411,92 @@ fun TrafficConfigPage(
         projectTrafficConfigGlobalProxyGroups(appState.proxyServers)
     }
 
+    // The menu is shown inside the card of the profile it belongs to, so it opens next to that card.
+    val profileContextMenu: @Composable (TrafficConfigProfileItem) -> Unit = { item ->
+        contextMenuConfig?.takeIf { config -> config.id == item.profile.id }?.let { config ->
+            SkipiTrafficConfigContextMenu(
+                show = true,
+                onDismissRequest = { contextMenuConfig = null },
+                onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
+                    {
+                        contextMenuConfig = null
+                        onTriggerConfigUpdate(config)
+                    }
+                } else null,
+                onRawEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigRawEditor(config.id)) },
+                onUiEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigEditor(config.id)) },
+                onDuplicate = { contextMenuConfig = null; duplicateConfig(config) },
+                onExport = { contextMenuConfig = null; exportConfig(config) },
+                onExportBase64 = { contextMenuConfig = null; exportConfigBase64(config) },
+                onDelete = { contextMenuConfig = null; pendingConfigDeletion = config },
+                onEnable = {
+                    contextMenuConfig = null
+                    updateAppState { state -> state.withActiveTrafficConfigProfile(config.id) }
+                    services.appScope.launch { services.tipNotifier.show(context.getString(R.string.configs_enabled)) }
+                },
+            )
+        }
+    }
+
+    val addConfigMenu: @Composable () -> Unit = {
+        AppEntriesMenu(
+            show = showAddMenu,
+            entries = listOf(
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = stringResource(R.string.configs_add_new),
+                            onClick = { showAddMenu = false; createConfig() },
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.configs_import_clipboard),
+                            onClick = { showAddMenu = false; importConfigFromClipboard() },
+                        ),
+                        DropdownItem(
+                            text = stringResource(R.string.configs_import_url),
+                            onClick = { showAddMenu = false; showUrlImportDialog = true },
+                        ),
+                    ),
+                ),
+            ),
+            onDismissRequest = { showAddMenu = false },
+        )
+    }
+
+    val globalProxyGroupMenu: @Composable (TrafficConfigProxyGroupItem) -> Unit = { item ->
+        contextMenuAutoBalancer?.takeIf { group -> "global:${group.id}" == item.key }?.let { proxyGroup ->
+            SkipiTrafficConfigProxyGroupContextMenu(
+                show = true,
+                onDismissRequest = { contextMenuAutoBalancer = null },
+                onEdit = {
+                    contextMenuAutoBalancer = null
+                    openProxyGroupEditor(proxyGroup.server, proxyGroup.id)
+                },
+                onDuplicate = {
+                    contextMenuAutoBalancer = null
+                    duplicateProxyGroup(proxyGroup)
+                },
+                onDelete = {
+                    contextMenuAutoBalancer = null
+                    if (appState.enableDeletionConfirmation) {
+                        pendingAutoBalancerDeletion = proxyGroup
+                    } else {
+                        deleteProxyGroup(proxyGroup)
+                    }
+                },
+            )
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
         SkipiTrafficConfigScreen(
+            profileMenu = profileContextMenu,
+            addConfigMenu = addConfigMenu,
+            globalProxyGroupMenu = globalProxyGroupMenu,
             profiles = profileItems,
             globalProxyGroups = globalProxyGroupItems,
             sourcedProxyGroups = configProxyGroups,
@@ -460,33 +538,6 @@ fun TrafficConfigPage(
         )
     }
 
-    if (showAddMenu) {
-        AppCascadingListPopup(
-            show = true,
-            entries = listOf(
-                DropdownEntry(
-                    items = listOf(
-                        DropdownItem(
-                            text = stringResource(R.string.configs_add_new),
-                            onClick = { showAddMenu = false; createConfig() },
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.configs_import_clipboard),
-                            onClick = { showAddMenu = false; importConfigFromClipboard() },
-                        ),
-                        DropdownItem(
-                            text = stringResource(R.string.configs_import_url),
-                            onClick = { showAddMenu = false; showUrlImportDialog = true },
-                        ),
-                    ),
-                ),
-            ),
-            popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-            alignment = PopupPositionProvider.Align.TopEnd,
-            onDismissRequest = { showAddMenu = false },
-        )
-    }
-
     if (showUrlImportDialog) {
         var importUrl by remember { mutableStateOf("") }
         LaunchedEffect(Unit) {
@@ -503,53 +554,6 @@ fun TrafficConfigPage(
             onImport = { url ->
                 showUrlImportDialog = false
                 importConfigFromUrl(url)
-            },
-        )
-    }
-
-    contextMenuConfig?.let { config ->
-        SkipiTrafficConfigContextMenu(
-            show = true,
-            onDismissRequest = { contextMenuConfig = null },
-            onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
-                {
-                    contextMenuConfig = null
-                    onTriggerConfigUpdate(config)
-                }
-            } else null,
-            onRawEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigRawEditor(config.id)) },
-            onUiEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigEditor(config.id)) },
-            onDuplicate = { contextMenuConfig = null; duplicateConfig(config) },
-            onExport = { contextMenuConfig = null; exportConfig(config) },
-            onExportBase64 = { contextMenuConfig = null; exportConfigBase64(config) },
-            onDelete = { contextMenuConfig = null; pendingConfigDeletion = config },
-            onEnable = {
-                contextMenuConfig = null
-                updateAppState { state -> state.withActiveTrafficConfigProfile(config.id) }
-                services.appScope.launch { services.tipNotifier.show(context.getString(R.string.configs_enabled)) }
-            },
-        )
-    }
-
-    contextMenuAutoBalancer?.let { proxyGroup ->
-        SkipiTrafficConfigProxyGroupContextMenu(
-            show = true,
-            onDismissRequest = { contextMenuAutoBalancer = null },
-            onEdit = {
-                contextMenuAutoBalancer = null
-                openProxyGroupEditor(proxyGroup.server, proxyGroup.id)
-            },
-            onDuplicate = {
-                contextMenuAutoBalancer = null
-                duplicateProxyGroup(proxyGroup)
-            },
-            onDelete = {
-                contextMenuAutoBalancer = null
-                if (appState.enableDeletionConfirmation) {
-                    pendingAutoBalancerDeletion = proxyGroup
-                } else {
-                    deleteProxyGroup(proxyGroup)
-                }
             },
         )
     }
@@ -614,7 +618,7 @@ internal fun projectTrafficConfigGlobalProxyGroups(
     proxyServers: List<ProxyServerState>,
 ): List<TrafficConfigProxyGroupItem> = projectSharedTrafficConfigGlobalProxyGroups(
     proxyServers.map { state ->
-        ProxyServerRecord(
+        ProxyServerRow(
             id = state.id,
             groupId = state.groupId,
             server = state.server,
@@ -622,8 +626,3 @@ internal fun projectTrafficConfigGlobalProxyGroups(
         )
     },
 )
-
-internal fun trafficConfigGlobalProxyGroupEditResult(
-    server: ProxyServer<*>,
-    serverId: Int?,
-): ProxyServerEditResult? = projectSharedTrafficConfigGlobalProxyGroupEditResult(server, serverId)

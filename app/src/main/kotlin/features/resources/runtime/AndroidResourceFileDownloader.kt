@@ -3,6 +3,8 @@
 
 package features.resources.runtime
 
+import engine.network.SocksProxyEndpoint
+import engine.network.withSocksProxyAuthenticator
 import android.content.Context
 import android.net.Network
 import engine.network.TunnelNetworks
@@ -23,15 +25,15 @@ internal class AndroidResourceFileDownloader(
     fun download(
         url: String,
         target: File,
-        proxy: AndroidResourceFileDownloadProxy? = null,
+        proxy: SocksProxyEndpoint? = null,
         userAgent: String? = null,
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ) {
         runResourceFileDownloadWithProxyFallback(
             proxy = proxy,
-            usernameOf = AndroidResourceFileDownloadProxy::username,
+            usernameOf = SocksProxyEndpoint::username,
             withAuthenticator = { selectedProxy, block ->
-                TunnelNetworks.withSocksProxyAuthenticator(
+                withSocksProxyAuthenticator(
                     port = selectedProxy.port,
                     username = selectedProxy.username,
                     password = selectedProxy.password,
@@ -52,7 +54,7 @@ internal class AndroidResourceFileDownloader(
 
     private fun transfer(
         target: File,
-        proxy: AndroidResourceFileDownloadProxy?,
+        proxy: SocksProxyEndpoint?,
         userAgent: String?,
     ): ResourceFileDownloadTransfer = ResourceFileDownloadTransfer(
         attempts = ResourceFileDownloadAttemptFactory {
@@ -72,19 +74,12 @@ internal class AndroidResourceFileDownloader(
     )
 }
 
-internal data class AndroidResourceFileDownloadProxy(
-    val host: String,
-    val port: Int,
-    val username: String,
-    val password: String,
-)
-
 private class AndroidVpnNetworkSnapshot(var network: Network?)
 
 /** Adapts a single Android HTTP connection to the shared transfer contract. */
 private class AndroidResourceFileDownloadConnection(
     private val uri: URI,
-    private val proxy: AndroidResourceFileDownloadProxy?,
+    private val proxy: SocksProxyEndpoint?,
     private val userAgent: String?,
     private val vpnNetwork: AndroidVpnNetworkSnapshot,
 ) : ResourceFileDownloadConnection {
@@ -127,7 +122,7 @@ private class AndroidResourceFileDownloadConnection(
 }
 
 private fun URI.toUrlConnection(
-    proxy: AndroidResourceFileDownloadProxy?,
+    proxy: SocksProxyEndpoint?,
     userAgent: String? = null,
     vpnNetwork: Network? = null,
 ): HttpURLConnection {
@@ -145,10 +140,6 @@ private fun URI.toUrlConnection(
         requestMethod = "GET"
         setRequestProperty("User-Agent", userAgent ?: ResourceFileDefaultUserAgent)
     }
-}
-
-private fun AndroidResourceFileDownloadProxy.toJavaProxy(): Proxy {
-    return Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
 }
 
 private const val ResourceFileDefaultUserAgent = "SKIPI/1.0"

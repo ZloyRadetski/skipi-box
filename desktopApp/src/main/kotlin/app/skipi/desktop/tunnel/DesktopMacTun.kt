@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import utils.shellQuote
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -46,8 +47,6 @@ internal data class MacTunSupervisorSpec(
     val userUid: Int,
 )
 
-private fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
-
 private fun validOctets(address: String) = address.split('.').all { part -> part.toIntOrNull()?.let { it in 0..255 } == true }
 
 private fun validateMacRoute(route: String): Boolean {
@@ -62,7 +61,7 @@ private fun validateMacRoute(route: String): Boolean {
 
 private fun routeCommand(verb: String, route: String): String {
     val family = if (':' in route) "-inet6 " else ""
-    return "route -n $verb $family-net ${shellQuote(route)} -interface \"\$IFACE\""
+    return "route -n $verb $family-net ${route.shellQuote()} -interface \"\$IFACE\""
 }
 
 /**
@@ -77,10 +76,10 @@ internal fun macTunSupervisorScript(spec: MacTunSupervisorSpec): String {
     require(spec.appPid > 0 && spec.userUid >= 0) { "Invalid owner" }
 
     return buildString {
-        appendLine("IFACE=${shellQuote(spec.interfaceName)}")
-        appendLine("STOP=${shellQuote(spec.stopFile)}")
-        appendLine("READY=${shellQuote(spec.readyFile)}")
-        appendLine("ERR=${shellQuote(spec.errorFile)}")
+        appendLine("IFACE=${spec.interfaceName.shellQuote()}")
+        appendLine("STOP=${spec.stopFile.shellQuote()}")
+        appendLine("READY=${spec.readyFile.shellQuote()}")
+        appendLine("ERR=${spec.errorFile.shellQuote()}")
         appendLine("APP_PID=${spec.appPid}")
         appendLine("HEV_PID=")
         appendLine("cleanup() {")
@@ -96,10 +95,10 @@ internal fun macTunSupervisorScript(spec: MacTunSupervisorSpec): String {
         appendLine("}")
         appendLine("trap 'cleanup; rm -f \"\$STOP\"; exit 0' TERM INT HUP")
         // jpackage can drop the executable bit of a bundled helper; root restores it instead of failing.
-        appendLine("[ -x ${shellQuote(spec.hevExecutable)} ] || chmod 755 ${shellQuote(spec.hevExecutable)} || fail \"Could not make the tunnel executable\"")
+        appendLine("[ -x ${spec.hevExecutable.shellQuote()} ] || chmod 755 ${spec.hevExecutable.shellQuote()} || fail \"Could not make the tunnel executable\"")
         // hev's own raise asks for an unlimited soft value, which macOS refuses; the default of 256 holds ~100 sessions.
         appendLine("ulimit -n 10240 2>/dev/null || true")
-        appendLine("${shellQuote(spec.hevExecutable)} ${shellQuote(spec.hevConfig)} </dev/null >/dev/null 2>&1 &")
+        appendLine("${spec.hevExecutable.shellQuote()} ${spec.hevConfig.shellQuote()} </dev/null >/dev/null 2>&1 &")
         appendLine("HEV_PID=\$!")
         appendLine("i=0")
         appendLine("until ifconfig \"\$IFACE\" >/dev/null 2>&1; do")
@@ -108,7 +107,7 @@ internal fun macTunSupervisorScript(spec: MacTunSupervisorSpec): String {
         appendLine("  kill -0 \"\$HEV_PID\" 2>/dev/null || fail \"The tunnel process stopped before the interface appeared\"")
         appendLine("  sleep 0.1")
         appendLine("done")
-        appendLine("ifconfig \"\$IFACE\" inet ${shellQuote(spec.ipv4Address)} ${shellQuote(spec.ipv4Address)} mtu ${spec.mtu} up || fail \"Could not configure the tunnel interface\"")
+        appendLine("ifconfig \"\$IFACE\" inet ${spec.ipv4Address.shellQuote()} ${spec.ipv4Address.shellQuote()} mtu ${spec.mtu} up || fail \"Could not configure the tunnel interface\"")
         spec.routes.forEach { route ->
             appendLine("${routeCommand("add", route)} >/dev/null 2>&1 || fail \"Could not add the route $route\"")
         }

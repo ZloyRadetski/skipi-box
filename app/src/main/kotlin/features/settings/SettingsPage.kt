@@ -3,6 +3,7 @@
 
 package features.settings
 
+import app.LocalIsWideScreen
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +48,7 @@ fun SettingsPage(
             categoryIconColor = categoryIconColor,
         ),
         padding = padding,
+        isWideScreen = LocalIsWideScreen.current,
         onNavigate = { destination ->
             val route = when (destination) {
                 SkipiSettingsDestination.Appearance -> Route.SettingsAppearance

@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.*
 import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
@@ -89,7 +89,7 @@ fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.proxy_editor_encryption),
             items = encryptionOptions,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -234,7 +234,7 @@ fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.proxy_editor_flow),
             items = flowOptions,
             modifier = Modifier.padding(bottom = 12.dp),

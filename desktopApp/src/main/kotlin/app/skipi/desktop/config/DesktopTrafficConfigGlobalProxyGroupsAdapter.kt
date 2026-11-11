@@ -3,10 +3,7 @@
 
 package app.skipi.desktop
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import app.skipi.ui.components.DeleteConfirmationDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -17,7 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord as EditorProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow as EditorProxyServerRecord
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.server.createProxyServerEditorDraft
@@ -28,11 +25,8 @@ import app.skipi.ui.config.projectTrafficConfigGlobalProxyGroups
 import app.skipi.ui.config.trafficConfigGlobalProxyGroupDuplicateResult
 import app.skipi.ui.config.trafficConfigGlobalProxyGroupEditResult
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.common_cancel
-import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.deletion_confirmation_delete_proxy_server
-import app.skipi.ui.resources.deletion_confirmation_summary
 import app.skipi.ui.resources.proxy_editor_strategy_group_all_groups
 import app.skipi.ui.resources.proxy_server_list_auto_balancers
 import app.skipi.ui.resources.routing_default_proxy_server
@@ -48,6 +42,8 @@ internal data class DesktopTrafficConfigGlobalProxyGroupCollection(
     val onOpen: (String) -> Unit,
     val onDelete: (String) -> Unit,
     val onContextMenu: (String) -> Unit,
+    /** Composed inside the card of each group, after it, so that its menu opens next to that card. */
+    val groupMenu: @Composable (TrafficConfigProxyGroupItem) -> Unit,
 )
 
 /** Desktop adapter for global traffic-config groups and the shared proxy editor. */
@@ -74,7 +70,6 @@ internal fun DesktopTrafficConfigGlobalProxyGroupsAdapter(
     val defaultProxyServerTemplate = stringResource(Res.string.routing_default_proxy_server)
     val copyNamePattern = stringResource(Res.string.configs_copy_name)
     val deleteTitle = stringResource(Res.string.deletion_confirmation_delete_proxy_server)
-    val deleteSummary = stringResource(Res.string.deletion_confirmation_summary)
 
     val editorProxyServers = remember(proxyServers) {
         proxyServers.map { server ->
@@ -169,6 +164,36 @@ internal fun DesktopTrafficConfigGlobalProxyGroupsAdapter(
     }
 
     val globalGroups = projectTrafficConfigGlobalProxyGroups(editorProxyServers)
+    // The menu is shown inside the card of the group it belongs to, so it opens next to that card.
+    val groupMenu: @Composable (TrafficConfigProxyGroupItem) -> Unit = { item ->
+        selectedContextRecord?.takeIf { record -> "global:${record.id}" == item.key }?.let { record ->
+            SkipiTrafficConfigProxyGroupContextMenu(
+                show = true,
+                onDismissRequest = { selectedContextRecord = null },
+                onEdit = {
+                    selectedContextRecord = null
+                    openEditor(trafficConfigGlobalProxyGroupEditResult(record.server, record.id))
+                },
+                onDuplicate = {
+                    selectedContextRecord = null
+                    val strategyGroup = record.server as? StrategyGroup
+                    val originalName = strategyGroup?.let { group ->
+                        group.remarks.ifBlank { group.getInfo().protocol }
+                    }
+                    val copyName = originalName?.let { String.format(java.util.Locale.getDefault(), copyNamePattern, it) }
+                    openEditor(
+                        if (copyName == null) null
+                        else trafficConfigGlobalProxyGroupDuplicateResult(record.server, copyName),
+                    )
+                },
+                onDelete = {
+                    selectedContextRecord = null
+                    if (confirmDeletion) pendingDeletion = record else applyDelete(record)
+                },
+            )
+        }
+    }
+
     content(
         DesktopTrafficConfigGlobalProxyGroupCollection(
             groups = globalGroups,
@@ -192,53 +217,18 @@ internal fun DesktopTrafficConfigGlobalProxyGroupsAdapter(
                 }
             },
             onContextMenu = { key -> selectedContextRecord = findRecord(key) },
+            groupMenu = groupMenu,
         ),
     )
 
-    selectedContextRecord?.let { record ->
-        SkipiTrafficConfigProxyGroupContextMenu(
-            show = true,
-            onDismissRequest = { selectedContextRecord = null },
-            onEdit = {
-                selectedContextRecord = null
-                openEditor(trafficConfigGlobalProxyGroupEditResult(record.server, record.id))
-            },
-            onDuplicate = {
-                selectedContextRecord = null
-                val strategyGroup = record.server as? StrategyGroup
-                val originalName = strategyGroup?.let { group ->
-                    group.remarks.ifBlank { group.getInfo().protocol }
-                }
-                val copyName = originalName?.let { String.format(java.util.Locale.getDefault(), copyNamePattern, it) }
-                openEditor(
-                    if (copyName == null) null
-                    else trafficConfigGlobalProxyGroupDuplicateResult(record.server, copyName),
-                )
-            },
-            onDelete = {
-                selectedContextRecord = null
-                if (confirmDeletion) pendingDeletion = record else applyDelete(record)
-            },
-        )
-    }
-
     pendingDeletion?.let { record ->
-        AlertDialog(
+        DeleteConfirmationDialog(
+            show = true,
+            title = deleteTitle,
             onDismissRequest = { pendingDeletion = null },
-            title = { Text(deleteTitle) },
-            text = { Text(deleteSummary) },
-            confirmButton = {
-                Button(onClick = {
-                    pendingDeletion = null
-                    applyDelete(record)
-                }) {
-                    Text(stringResource(Res.string.common_delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDeletion = null }) {
-                    Text(stringResource(Res.string.common_cancel))
-                }
+            onConfirm = {
+                pendingDeletion = null
+                applyDelete(record)
             },
         )
     }

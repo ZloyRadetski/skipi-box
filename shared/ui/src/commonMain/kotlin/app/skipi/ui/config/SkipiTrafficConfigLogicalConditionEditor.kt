@@ -27,7 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.configs_rules_all_of
 import app.skipi.ui.resources.configs_rules_all_of_hint
 import app.skipi.ui.resources.configs_rules_any_of
@@ -306,7 +306,7 @@ private fun LeafRow(
         colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppWindowDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.configs_rules_type),
                 items = types,
                 selectedIndex = types.indexOf(leaf.type).coerceAtLeast(0),

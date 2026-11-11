@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.layout.fadeUnderTopBar
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.resources.Res
@@ -335,7 +335,7 @@ private fun AuthBlock(
     onGenerate: () -> Unit,
     onCopy: (text: String, label: String) -> Unit,
 ) {
-    AppWindowDropdownPreference(
+    SkipiDropdownPreference(
         title = title,
         summary = labels.modeHint(mode),
         items = LocalProxyAuthModeOptions.map(labels::modeName),

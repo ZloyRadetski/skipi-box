@@ -3,6 +3,9 @@
 
 package features.proxy.server.list
 
+import app.skipi.app.home.ProxyHomeServerMove
+import app.skipi.app.home.resolveProxyHomeServerDrag
+import app.skipi.app.home.resolveProxyHomeServerStep
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
@@ -43,6 +46,8 @@ import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
+import app.navigation.route
+import app.skipi.ui.navigation.SkipiTool
 import app.LocalProxyPageScrollToTopRequest
 import app.LocalUpdateAppState
 import app.AppState
@@ -88,8 +93,6 @@ import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.layout.pageWindowPadding
 import app.skipi.ui.components.DeleteConfirmationDialog
-import app.skipi.ui.home.SkipiProxyHomeScaffold
-import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
@@ -834,6 +837,22 @@ fun ProxyServerListPage(
             },
         )
     }
+    /** Carries out a resolved move; the failure to report, or null when it was made or is a step off the group, which is ignored. */
+    fun moveServer(move: ProxyHomeServerMove): Result<Unit>? = when (move) {
+        is ProxyHomeServerMove.Swap -> {
+            services.sharedApplicationStore.dispatch(
+                SharedApplicationAction.UpdateProxyServers { current ->
+                    moveProxyHomeItem(items = current, fromId = move.fromId, toId = move.toId, idOf = { it.id })
+                },
+            )
+            null
+        }
+        ProxyHomeServerMove.NotDefaultSort ->
+            Result.failure(IllegalStateException("Server reordering is only available in the default sort."))
+        ProxyHomeServerMove.OutOfRange -> null
+        ProxyHomeServerMove.SameServer, ProxyHomeServerMove.NotVisible ->
+            Result.failure(IllegalStateException("The dragged servers are no longer visible."))
+    }
     val latestEffectHandler = rememberUpdatedState(
         ProxyHomeEffectHandler { effect ->
             try {
@@ -1108,22 +1127,17 @@ fun ProxyServerListPage(
                     is ProxyHomeEffect.MoveServer -> {
                         val serverId = effect.serverId.toIntOrNull()
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid server ID."))
-                        val orderedIds = homeStoreReference.value?.uiState?.value?.servers
-                            ?.mapNotNull { it.id.toIntOrNull() }
+                        val homeState = homeStoreReference.value?.uiState?.value
+                        val orderedIds = homeState?.servers?.mapNotNull { it.id.toIntOrNull() }
                             ?: groupStateForActions().currentFilteredServers.map { it.id }
-                        val fromIndex = orderedIds.indexOf(serverId)
-                        val toId = orderedIds.getOrNull(fromIndex + effect.offset)
-                            ?: return@ProxyHomeEffectHandler Result.success(Unit)
-                        services.sharedApplicationStore.dispatch(
-                            SharedApplicationAction.UpdateProxyServers { current ->
-                                moveProxyHomeItem(
-                                    items = current,
-                                    fromId = serverId,
-                                    toId = toId,
-                                    idOf = { it.id },
-                                )
-                            },
+                        val move = resolveProxyHomeServerStep(
+                            sortMode = homeState?.sortMode ?: ProxyHomeSortMode.Default,
+                            visibleIds = orderedIds,
+                            serverId = serverId,
+                            offset = effect.offset,
                         )
+                        // A step off the end of the group has always been ignored quietly here.
+                        moveServer(move)?.let { failure -> return@ProxyHomeEffectHandler failure }
                     }
                     is ProxyHomeEffect.ReorderServer -> {
                         val fromServerId = effect.fromServerId.toIntOrNull()
@@ -1132,27 +1146,13 @@ fun ProxyServerListPage(
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid target server ID."))
                         val currentHomeState = homeStoreReference.value?.uiState?.value
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Home is not ready."))
-                        if (currentHomeState.sortMode != ProxyHomeSortMode.Default) {
-                            return@ProxyHomeEffectHandler Result.failure(
-                                IllegalStateException("Server reordering is only available in the default sort."),
-                            )
-                        }
-                        val visibleIds = currentHomeState.servers.mapNotNull { server -> server.id.toIntOrNull() }
-                        if (fromServerId !in visibleIds || toServerId !in visibleIds || fromServerId == toServerId) {
-                            return@ProxyHomeEffectHandler Result.failure(
-                                IllegalStateException("The dragged servers are no longer visible."),
-                            )
-                        }
-                        services.sharedApplicationStore.dispatch(
-                            SharedApplicationAction.UpdateProxyServers { current ->
-                                moveProxyHomeItem(
-                                    items = current,
-                                    fromId = fromServerId,
-                                    toId = toServerId,
-                                    idOf = { it.id },
-                                )
-                            },
+                        val move = resolveProxyHomeServerDrag(
+                            sortMode = currentHomeState.sortMode,
+                            visibleIds = currentHomeState.servers.mapNotNull { server -> server.id.toIntOrNull() },
+                            fromId = fromServerId,
+                            toId = toServerId,
                         )
+                        moveServer(move)?.let { failure -> return@ProxyHomeEffectHandler failure }
                     }
                     is ProxyHomeEffect.OpenStrategyMemberPicker -> {
                         val serverId = effect.serverId.toIntOrNull()
@@ -1320,6 +1320,11 @@ fun ProxyServerListPage(
                 0.dp
             } else {
                 maxOf(homeContentPadding.calculateBottomPadding(), floatingNavigationBottomInset)
+            },
+            // On a tablet the navigation rail lists the tools; the phone gets them as a menu in the header.
+            pinnedTools = if (isWideScreen) emptyList() else SkipiTool.defaultPinned,
+            onOpenPinnedTool = { tool ->
+                navigator.push(tool.route(activeTrafficConfigId = stateStore.state.value.activeTrafficConfigId))
             },
         )
     }

@@ -69,6 +69,10 @@ import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.LocalNavigationReselectToken
 import app.skipi.ui.navigation.SkipiSidebarNavigation
+import app.skipi.ui.navigation.SkipiNavigationAction
+import app.skipi.ui.navigation.SkipiTool
+import app.skipi.ui.navigation.skipiToolActions
+import androidx.compose.runtime.key
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.logs.CoreLogTailerPollingPolicy
 import features.updater.AppUpdateDownloadStatus
@@ -108,7 +112,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -285,11 +289,34 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 var currentSection by remember { mutableStateOf(SkipiMainDestination.Proxy) }
                 // A tap on the item of the section that is already open: the page goes to its top or its start.
                 val reselectTokens = remember { mutableStateMapOf<SkipiMainDestination, Int>() }
+                // The settings page a pinned tool opens on; the counter makes Settings start over on it even when it is already open.
+                var settingsStart by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
+                var settingsOpenCount by remember { mutableStateOf(0) }
+                // Same for the Configs screen: a pinned tool can open it straight on the rules of the selected profile.
+                var configsStartOnRules by remember { mutableStateOf(false) }
+                var configsOpenCount by remember { mutableStateOf(0) }
                 val selectSection: (SkipiMainDestination) -> Unit = { destination ->
                     if (destination == currentSection) {
                         reselectTokens[destination] = (reselectTokens[destination] ?: 0) + 1
                     } else {
+                        settingsStart = DesktopSettingsDestination.Overview
+                        configsStartOnRules = false
                         currentSection = destination
+                    }
+                }
+                val openTool: (SkipiTool) -> Unit = { tool ->
+                    when (val target = tool.desktopTarget()) {
+                        is DesktopToolTarget.SettingsPage -> {
+                            settingsStart = target.destination
+                            settingsOpenCount++
+                            currentSection = SkipiMainDestination.Settings
+                        }
+
+                        DesktopToolTarget.SelectedProfileRules -> {
+                            configsStartOnRules = true
+                            configsOpenCount++
+                            currentSection = SkipiMainDestination.Configs
+                        }
                     }
                 }
                 var serverLibrary by remember {
@@ -958,7 +985,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     val libraryRecords by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
                         serverLibrary.servers.mapNotNull { stored ->
                             stored.decode().getOrNull()?.let { decoded ->
-                                ProxyServerRecord(
+                                ProxyServerRow(
                                     id = stored.id,
                                     groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                                     server = decoded,
@@ -1305,6 +1332,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 if (sidebar) DesktopSidebarNavigation(
                     selected = currentSection,
                     onSelect = selectSection,
+                    actions = skipiToolActions(SkipiTool.defaultPinned, openTool),
                     expanded = !desktopSettings.sidebarCollapsed,
                     onExpandedChange = { expanded ->
                         val next = desktopSettings.copy(sidebarCollapsed = !expanded)
@@ -1800,6 +1828,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     Unit
                                 }
                             },
+                            pinnedTools = if (desktopSettings.navigationStyle == 1) emptyList() else SkipiTool.defaultPinned,
+                            onOpenPinnedTool = openTool,
                             onHomeLeftColumnExtraChange = { extraDp ->
                                 subscriptionScope.launch {
                                     homeSortSaveMutex.withLock {
@@ -1823,7 +1853,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             },
                         )
 
-                        SkipiMainDestination.Configs -> DesktopConfigsScreen(
+                        SkipiMainDestination.Configs -> key(configsOpenCount) { DesktopConfigsScreen(
+                            openRulesOfSelectedProfile = configsStartOnRules,
                             configLibrary = configLibrary,
                             onTransformConfigLibrary = { transform ->
                                 val result = desktopSharedApplication.trafficConfigs.transformLatestWithPrevious(transform)
@@ -1874,9 +1905,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             latencyByServerId = latencyByServerId,
                             resourceServices = desktopResourceFileServices,
                             resourceFileStatusMessage = resourceFileStatusMessage,
-                        )
+                        ) }
 
-                        SkipiMainDestination.Settings -> DesktopSettingsScreen(
+                        SkipiMainDestination.Settings -> key(settingsOpenCount) { DesktopSettingsScreen(
+                            initialDestination = settingsStart,
                             appUpdateState = appUpdateState,
                             onCheckForAppUpdate = ::checkForAppUpdate,
                             onAppUpdateAction = ::runAppUpdateAction,
@@ -1908,7 +1940,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         }
                                 }
                             },
-                        )
+                        ) }
                     }
                 }
                 }
@@ -1948,11 +1980,13 @@ private fun DesktopSidebarNavigation(
     onSelect: (SkipiMainDestination) -> Unit,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    actions: List<SkipiNavigationAction>,
 ) {
     val colors = SkipiTheme.colors
     SkipiSidebarNavigation(
         selectedDestination = selected,
         onSelect = onSelect,
+        actions = actions,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
         colors = SkipiExpressiveNavigationColors(

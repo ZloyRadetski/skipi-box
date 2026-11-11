@@ -3,6 +3,7 @@
 
 package features.resources.runtime
 
+import engine.network.SocksProxyEndpoint
 import android.app.Application
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
@@ -223,7 +224,7 @@ private class LoopbackSocksServer(
     fun proxy(
         username: String = "",
         password: String = "",
-    ) = AndroidResourceFileDownloadProxy(
+    ) = SocksProxyEndpoint(
         host = "127.0.0.1",
         port = port,
         username = username,

@@ -4,7 +4,7 @@
 package app.skipi.app.routing
 
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.config.TrafficConfigState
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
@@ -274,7 +274,7 @@ class RouteOutboundPickerProjectionTest {
     }
 
     private fun projectOutbound(
-        servers: List<ProxyServerRecord> = emptyList(),
+        servers: List<ProxyServerRow> = emptyList(),
         selectedTag: String,
         trafficConfigId: Int?,
         trafficConfigs: List<TrafficConfigState> = emptyList(),
@@ -295,7 +295,7 @@ class RouteOutboundPickerProjectionTest {
     }
 
     private fun server(id: Int, groupId: Int, server: features.proxy.server.model.ProxyServer<*>) =
-        ProxyServerRecord(id = id, groupId = groupId, server = server)
+        ProxyServerRow(id = id, groupId = groupId, server = server)
 
     private fun profile(
         id: Int,

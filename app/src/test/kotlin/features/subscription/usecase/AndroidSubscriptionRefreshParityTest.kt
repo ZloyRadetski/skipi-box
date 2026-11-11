@@ -7,7 +7,7 @@ import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
 import app.skipi.app.subscription.SubscriptionRefreshSnapshot
 import app.skipi.app.subscription.loadSubscriptionRefresh
@@ -105,7 +105,7 @@ class AndroidSubscriptionRefreshParityTest {
         assertEquals(
             expected.snapshot.servers,
             applied.proxyServers.map { server ->
-                ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
+                ProxyServerRow(server.id, server.groupId, server.server, server.latency)
             },
         )
         assertEquals(expected.snapshot.nextServerId, applied.nextProxyServerId)
@@ -214,7 +214,7 @@ private fun SubscriptionGroupState.toSubscriptionRecord() = SubscriptionRecord(
 private fun AppState.toRefreshSnapshot() = SubscriptionRefreshSnapshot(
     subscriptions = subscriptionGroups.map(SubscriptionGroupState::toSubscriptionRecord),
     servers = proxyServers.map { server ->
-        ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
+        ProxyServerRow(server.id, server.groupId, server.server, server.latency)
     },
     nextServerId = nextProxyServerId,
     selectedServerId = selectedProxyServerId,

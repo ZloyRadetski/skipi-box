@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import utils.powerShellLiteral
 import java.util.concurrent.TimeUnit
 
 private const val RunKey = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
@@ -68,18 +69,17 @@ internal class DesktopWindowsAutostart(
 internal fun shouldRegisterElevatedAutostart(launchOnLogin: Boolean, tunModeEnabled: Boolean, elevated: Boolean): Boolean =
     launchOnLogin && tunModeEnabled && elevated
 
-private fun psLiteral(value: String): String = "'" + value.replace("'", "''") + "'"
 
 // Battery and time-limit defaults would keep a laptop from starting the app or kill it after 72 hours.
 private fun registerTaskCommand(launcher: String): List<String> = listOf(
     "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
     "\$u = [Security.Principal.WindowsIdentity]::GetCurrent().Name; " +
-        "\$a = New-ScheduledTaskAction -Execute ${psLiteral(launcher)} -Argument '--hidden'; " +
+        "\$a = New-ScheduledTaskAction -Execute ${launcher.powerShellLiteral()} -Argument '--hidden'; " +
         "\$t = New-ScheduledTaskTrigger -AtLogOn -User \$u; " +
         "\$p = New-ScheduledTaskPrincipal -UserId \$u -LogonType Interactive -RunLevel Highest; " +
         "\$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries " +
         "-ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew; " +
-        "Register-ScheduledTask -TaskName ${psLiteral(TaskName)} -Action \$a -Trigger \$t -Principal \$p -Settings \$s -Force | Out-Null",
+        "Register-ScheduledTask -TaskName ${TaskName.powerShellLiteral()} -Action \$a -Trigger \$t -Principal \$p -Settings \$s -Force | Out-Null",
 )
 
 /** Runs `reg.exe`, `schtasks` or PowerShell without a console window and returns its output, or its error text on a non-zero exit. */

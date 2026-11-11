@@ -4,7 +4,7 @@
 package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.VLESS
 import features.subscription.SubscriptionMetadata
@@ -26,8 +26,8 @@ class SubscriptionRefreshBatchCancellationTest {
             latest = SubscriptionRefreshSnapshot(
                 subscriptions = listOf(first, second),
                 servers = listOf(
-                    ProxyServerRecord(7, first.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
-                    ProxyServerRecord(8, second.id, HTTP(remarks = "Old second", server = "old-second.example.test", port = "443")),
+                    ProxyServerRow(7, first.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
+                    ProxyServerRow(8, second.id, HTTP(remarks = "Old second", server = "old-second.example.test", port = "443")),
                 ),
                 nextServerId = 9,
                 selectedServerId = 7,

@@ -3,52 +3,48 @@
 
 package app.skipi.ui.home
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.components.SkipiMenu
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuSection
 import app.skipi.ui.theme.SkipiTheme
 
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_more
+import app.skipi.ui.resources.ic_skipi_mark_dots
+import app.skipi.ui.resources.ic_skipi_mark_glyph
 import app.skipi.ui.resources.proxy_server_list_add
+import app.skipi.ui.resources.settings_header_tools
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /** A host-provided command rendered in either the add or overflow menu. */
@@ -57,6 +53,8 @@ data class SkipiProxyHomeHeaderAction(
     val title: String,
     val enabled: Boolean = true,
     val selected: Boolean = false,
+    /** Drawn before the title when set. */
+    val icon: ImageVector? = null,
     val children: List<SkipiProxyHomeHeaderAction> = emptyList(),
 )
 
@@ -67,12 +65,14 @@ data class SkipiProxyHomeHeaderState(
 data class SkipiProxyHomeHeaderLabels(
     val addActionDescription: String,
     val moreActionDescription: String,
+    val pinnedToolsActionDescription: String,
 )
 
 @Composable
 fun defaultSkipiProxyHomeHeaderLabels(): SkipiProxyHomeHeaderLabels = SkipiProxyHomeHeaderLabels(
     addActionDescription = stringResource(Res.string.proxy_server_list_add),
     moreActionDescription = stringResource(Res.string.common_more),
+    pinnedToolsActionDescription = stringResource(Res.string.settings_header_tools),
 )
 
 data class SkipiProxyHomeHeaderColors(
@@ -95,7 +95,13 @@ fun SkipiProxyHomeHeader(
     onToolAction: (String) -> Unit,
     modifier: Modifier = Modifier,
     labels: SkipiProxyHomeHeaderLabels = defaultSkipiProxyHomeHeaderLabels(),
+    /** The pinned tools; when not empty a button before "add" opens them as a menu. */
+    pinnedToolActions: List<SkipiProxyHomeHeaderAction> = emptyList(),
+    onPinnedToolAction: (String) -> Unit = {},
+    /** When set, the logo plays the tap-tap-boom easter egg; the overlay is drawn by the owner of this state. */
+    easterEgg: HeaderEasterEggState? = null,
 ) {
+    var pinnedMenuExpanded by remember { mutableStateOf(false) }
     var addMenuExpanded by remember { mutableStateOf(false) }
     var toolsMenuExpanded by remember { mutableStateOf(false) }
 
@@ -106,19 +112,34 @@ fun SkipiProxyHomeHeader(
             .padding(horizontal = SkipiTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = state.title,
-            color = colors.text,
-            style = SkipiTheme.typography.titleLarge,
-            fontWeight = themedFontWeight(FontWeight.SemiBold),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        SkipiHeaderMark(glyphColor = colors.text, contentDescription = state.title, easterEgg = easterEgg)
         Spacer(Modifier.weight(1f))
         Row(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (pinnedToolActions.isNotEmpty()) {
+                Box {
+                    IconButton(onClick = { pinnedMenuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.GridView,
+                            contentDescription = labels.pinnedToolsActionDescription,
+                            tint = colors.text,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    SkipiProxyHomeHeaderMenu(
+                        expanded = pinnedMenuExpanded,
+                        actions = pinnedToolActions,
+                        accent = colors.accent,
+                        onDismissRequest = { pinnedMenuExpanded = false },
+                        onAction = { actionId ->
+                            pinnedMenuExpanded = false
+                            onPinnedToolAction(actionId)
+                        },
+                    )
+                }
+            }
             if (addActions.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { addMenuExpanded = true }) {
@@ -175,100 +196,53 @@ private fun SkipiProxyHomeHeaderMenu(
     onDismissRequest: () -> Unit,
     onAction: (String) -> Unit,
 ) {
-    var navigationStack by remember(actions) {
-        mutableStateOf(emptyList<SkipiProxyHomeHeaderAction>())
-    }
-
-    val levelWidths = remember(actions) { MenuLevelWidths() }
-
-    SkipiHomeDropdownMenu(
+    SkipiMenu(
         expanded = expanded,
-        onDismissRequest = {
-            navigationStack = emptyList()
-            onDismissRequest()
-        },
-        modifier = animatedMenuWidth(levelWidths, navigationStack.lastOrNull()?.id.orEmpty()),
-    ) {
-        AnimatedContent(
-            targetState = navigationStack,
-            transitionSpec = {
-                val direction = if (targetState.size > initialState.size) 1 else -1
-                (fadeIn(tween(durationMillis = 180)) + slideInHorizontally(
-                    animationSpec = tween(durationMillis = 220),
-                    initialOffsetX = { width -> direction * width / 7 },
-                )).togetherWith(
-                    fadeOut(tween(durationMillis = 120)) + slideOutHorizontally(
-                        animationSpec = tween(durationMillis = 180),
-                        targetOffsetX = { width -> -direction * width / 7 },
-                    ),
-                ).using(
-                    SizeTransform(clip = false) { _, _ -> tween(durationMillis = 220) },
-                )
-            },
-            label = "home_header_menu_navigation",
-        ) { menuStack ->
-            Column(Modifier.reportMenuLevelWidth(levelWidths, menuStack.lastOrNull()?.id.orEmpty())) {
-                if (menuStack.isNotEmpty()) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = menuStack.last().title,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                        colors = skipiHomeDropdownItemColors(),
-                        onClick = { navigationStack = navigationStack.dropLast(1) },
-                    )
-                }
-                val visibleActions = menuStack.lastOrNull()?.children ?: actions
-                visibleActions.forEach { action ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = action.title,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        enabled = action.enabled,
-                        trailingIcon = {
-                            when {
-                                action.children.isNotEmpty() -> Icon(
-                                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
+        onDismissRequest = onDismissRequest,
+        sections = listOf(SkipiMenuSection(actions.map { action -> action.toMenuItem(onAction) })),
+        accent = accent,
+    )
+}
 
-                                action.selected -> Icon(
-                                    imageVector = Icons.Outlined.Check,
-                                    contentDescription = null,
-                                    tint = accent,
-                                    modifier = Modifier.size(18.dp),
-                                )
-
-                                else -> Unit
-                            }
-                        },
-                        colors = skipiHomeDropdownItemColors(),
-                        onClick = {
-                            if (action.children.isNotEmpty()) {
-                                navigationStack = navigationStack + action
-                            } else {
-                                navigationStack = emptyList()
-                                onAction(action.id)
-                            }
-                        },
-                    )
-                }
-            }
-        }
+private fun SkipiProxyHomeHeaderAction.toMenuItem(onAction: (String) -> Unit): SkipiMenuItem = SkipiMenuItem(
+    title = title,
+    enabled = enabled,
+    selected = selected,
+    icon = icon,
+    children = children.map { child -> child.toMenuItem(onAction) },
+    onClick = { onAction(id) },
+    key = id,
+)
+/**
+ * The app icon without its tile, the header's only title: the glyph takes the text color of the header so it reads on any theme,
+ * the three dots keep the logo's own green.
+ */
+@Composable
+private fun SkipiHeaderMark(
+    glyphColor: Color,
+    contentDescription: String,
+    easterEgg: HeaderEasterEggState?,
+    modifier: Modifier = Modifier,
+) {
+    val tapModifier = if (easterEgg == null) {
+        Modifier
+    } else {
+        // A tap gesture rather than a click, so a screen reader does not announce the logo as a button.
+        Modifier
+            .easterEggLogo(easterEgg)
+            .pointerInput(easterEgg) { detectTapGestures { easterEgg.onTap() } }
+    }
+    Box(modifier = modifier.size(32.dp).then(tapModifier)) {
+        Image(
+            painter = painterResource(Res.drawable.ic_skipi_mark_glyph),
+            contentDescription = contentDescription,
+            colorFilter = ColorFilter.tint(glyphColor),
+            modifier = Modifier.fillMaxSize(),
+        )
+        Image(
+            painter = painterResource(Res.drawable.ic_skipi_mark_dots),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }

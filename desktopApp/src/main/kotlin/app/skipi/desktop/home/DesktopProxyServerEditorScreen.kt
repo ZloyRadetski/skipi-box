@@ -6,7 +6,6 @@ package app.skipi.desktop
 import app.skipi.ui.resources.proxy_editor_custom_json
 import app.skipi.ui.server.editor.SkipiJsonCodeEditor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Box

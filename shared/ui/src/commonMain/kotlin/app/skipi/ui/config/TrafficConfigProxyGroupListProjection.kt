@@ -4,7 +4,7 @@
 package app.skipi.ui.config
 
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
 import features.proxy.server.model.StrategyGroup
@@ -23,7 +23,7 @@ fun projectTrafficConfigSourcedProxyGroups(
 }
 
 fun projectTrafficConfigGlobalProxyGroups(
-    proxyServers: List<ProxyServerRecord>,
+    proxyServers: List<ProxyServerRow>,
 ): List<TrafficConfigProxyGroupItem> = proxyServers.filter { state ->
     state.groupId == DefaultAutoBalancerGroupId &&
         (state.server as? StrategyGroup)?.sourceTrafficConfigId == null

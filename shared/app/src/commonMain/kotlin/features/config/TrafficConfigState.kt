@@ -12,7 +12,7 @@ import app.skipi.app.config.selectTrafficConfigProfile
 import app.skipi.app.config.updateTrafficConfigProfile
 import app.skipi.app.config.TrafficConfigProfileRefreshMode
 import app.skipi.app.config.TrafficConfigProfileRefreshOperations
-import app.skipi.app.proxy.ProxyServerRecord as ReconciledProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow as ReconciledProxyServerRecord
 import app.skipi.app.proxy.reconcileConfigProxyGroups
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord

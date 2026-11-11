@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import engine.network.toBasicAuthHeaderOrNull
+import engine.network.toIdnUrl
 import features.subscription.DefaultSubscriptionUserAgent
 
 import com.sun.net.httpserver.HttpServer
@@ -269,7 +271,7 @@ class DesktopSubscriptionFetcherTest {
     fun converts_a_unicode_host_to_ascii_before_a_direct_request() {
         assertEquals(
             "http://xn--e1afmkfd.xn--p1ai/path",
-            "http://пример.рф/path".toIdnSubscriptionUrl(),
+            "http://пример.рф/path".toIdnUrl(),
         )
     }
 

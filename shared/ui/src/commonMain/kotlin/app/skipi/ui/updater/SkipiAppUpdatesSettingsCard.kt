@@ -13,7 +13,7 @@ import app.skipi.ui.resources.settings_auto_check_updates_title
 import app.skipi.ui.resources.settings_auto_install_night_summary
 import app.skipi.ui.resources.settings_auto_install_night_title
 import app.skipi.ui.resources.settings_check_updates_now_action
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.settings_update_channel_nightly
 import app.skipi.ui.resources.settings_update_channel_nightly_summary
 import app.skipi.ui.resources.settings_update_channel_stable
@@ -57,7 +57,7 @@ fun SkipiAppUpdatesSettingsCard(
                 onCheckedChange = onNightInstallChange,
             )
         }
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.settings_update_channel_title),
             summary = stringResource(channel.summaryRes()),
             items = AppUpdateChannel.entries.map { stringResource(it.labelRes()) },

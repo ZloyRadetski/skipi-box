@@ -21,6 +21,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.TextStyle
+import app.skipi.ui.components.PullRefreshHeader
+import app.skipi.ui.components.PullRefreshPhase
+import app.skipi.ui.components.PullRefreshVisualState
+import app.skipi.ui.components.pullProgress
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -60,14 +65,6 @@ import kotlinx.coroutines.launch
 private val pullRefreshThreshold = 72.dp
 private val pullRefreshMaxDrag = 360.dp
 
-internal enum class SkipiPullRefreshState {
-    Idle,
-    Pulling,
-    ThresholdReached,
-    Refreshing,
-    RefreshComplete,
-}
-
 internal data class SkipiPullRefreshDrag(
     val touchOffset: Float,
     val indicatorOffset: Float,
@@ -87,51 +84,34 @@ internal fun skipiPullRefreshDrag(
     return SkipiPullRefreshDrag(touchOffset, indicatorOffset)
 }
 
-internal fun skipiPullRefreshStateForOffset(offset: Float, threshold: Float): SkipiPullRefreshState = when {
-    offset >= threshold && threshold > 0f -> SkipiPullRefreshState.ThresholdReached
-    offset > 0f -> SkipiPullRefreshState.Pulling
-    else -> SkipiPullRefreshState.Idle
+internal fun skipiPullRefreshStateForOffset(offset: Float, threshold: Float): PullRefreshPhase = when {
+    offset >= threshold && threshold > 0f -> PullRefreshPhase.ThresholdReached
+    offset > 0f -> PullRefreshPhase.Pulling
+    else -> PullRefreshPhase.Idle
 }
 
 internal fun skipiShouldFinishRefresh(
     isRefreshing: Boolean,
-    refreshState: SkipiPullRefreshState,
+    refreshState: PullRefreshPhase,
     cycleReady: Boolean,
-): Boolean = !isRefreshing && refreshState == SkipiPullRefreshState.Refreshing && cycleReady
-
-internal fun skipiPullRefreshHeaderHeightPx(
-    refreshState: SkipiPullRefreshState,
-    dragOffsetPx: Float,
-    thresholdPx: Float,
-    baseHeightPx: Float,
-    completionProgress: Float,
-): Float = when {
-    refreshState == SkipiPullRefreshState.Refreshing -> baseHeightPx
-    refreshState == SkipiPullRefreshState.RefreshComplete ->
-        baseHeightPx * (1f - completionProgress.coerceIn(0f, 1f))
-    thresholdPx > 0f && dragOffsetPx > 0f && dragOffsetPx <= thresholdPx ->
-        baseHeightPx * (dragOffsetPx / thresholdPx).coerceIn(0f, 1f)
-    dragOffsetPx > thresholdPx -> baseHeightPx + (dragOffsetPx - thresholdPx)
-    else -> 0f
-}
+): Boolean = !isRefreshing && refreshState == PullRefreshPhase.Refreshing && cycleReady
 
 internal class SkipiPullToRefreshController(
     private val coroutineScope: CoroutineScope,
-) {
+) : PullRefreshVisualState {
     var maxDragDistancePx: Float = 0f
-    var thresholdPx: Float = 0f
-    var dragOffset by mutableFloatStateOf(0f)
+    override var thresholdPx: Float = 0f
+    override var dragOffset by mutableFloatStateOf(0f)
     var currentTouch by mutableFloatStateOf(0f)
     var isTouching by mutableStateOf(false)
-    private var mutableRefreshState by mutableStateOf(SkipiPullRefreshState.Idle)
-    val refreshState: SkipiPullRefreshState get() = mutableRefreshState
+    private var mutableRefreshState by mutableStateOf(PullRefreshPhase.Idle)
+    val refreshState: PullRefreshPhase get() = mutableRefreshState
     private var mutableRefreshCycleReady by mutableStateOf(false)
     val refreshCycleReady: Boolean get() = mutableRefreshCycleReady
-    val pullProgress: Float by derivedStateOf {
-        if (thresholdPx > 0f) (dragOffset / thresholdPx).coerceIn(0f, 1f) else 0f
-    }
     private val completionProgress = mutableFloatStateOf(0f)
     val refreshCompleteProgress: Float get() = completionProgress.floatValue
+    override val phase: PullRefreshPhase get() = refreshState
+    override val completeProgress: Float get() = refreshCompleteProgress
     var animationJob: Job? = null
     private var onRefresh: () -> Unit = {}
 
@@ -155,8 +135,8 @@ internal class SkipiPullToRefreshController(
         override suspend fun onPreFling(available: Velocity): Velocity {
             // The release of a pull belongs to the pull: passed on, Android's stretch overscroll
             // took it and pulled the content a second time after the spring had returned it.
-            val pulling = mutableRefreshState == SkipiPullRefreshState.Pulling ||
-                mutableRefreshState == SkipiPullRefreshState.ThresholdReached
+            val pulling = mutableRefreshState == PullRefreshPhase.Pulling ||
+                mutableRefreshState == PullRefreshPhase.ThresholdReached
             settleOnFling()
             return if (pulling) available else Velocity.Zero
         }
@@ -173,8 +153,8 @@ internal class SkipiPullToRefreshController(
         val drag = skipiPullRefreshDrag(currentTouch, delta, maxDragDistancePx)
         currentTouch = drag.touchOffset
         dragOffset = drag.indicatorOffset
-        if (mutableRefreshState != SkipiPullRefreshState.Refreshing &&
-            mutableRefreshState != SkipiPullRefreshState.RefreshComplete
+        if (mutableRefreshState != PullRefreshPhase.Refreshing &&
+            mutableRefreshState != PullRefreshPhase.RefreshComplete
         ) {
             mutableRefreshState = skipiPullRefreshStateForOffset(dragOffset, thresholdPx)
         }
@@ -208,46 +188,46 @@ internal class SkipiPullToRefreshController(
 
     suspend fun showRefreshing() {
         mutableRefreshCycleReady = false
-        mutableRefreshState = SkipiPullRefreshState.Refreshing
+        mutableRefreshState = PullRefreshPhase.Refreshing
         animateTo(thresholdPx)
         mutableRefreshCycleReady = true
     }
 
     suspend fun finishRefreshing() {
-        if (mutableRefreshState != SkipiPullRefreshState.Refreshing || !mutableRefreshCycleReady) return
+        if (mutableRefreshState != PullRefreshPhase.Refreshing || !mutableRefreshCycleReady) return
         mutableRefreshCycleReady = false
-        mutableRefreshState = SkipiPullRefreshState.RefreshComplete
+        mutableRefreshState = PullRefreshPhase.RefreshComplete
         completionProgress.floatValue = 0f
         Animatable(0f).animateTo(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 200, easing = LinearEasing),
         ) { completionProgress.floatValue = value }
         animateTo(0f)
-        mutableRefreshState = SkipiPullRefreshState.Idle
+        mutableRefreshState = PullRefreshPhase.Idle
     }
 
     suspend fun release(onRefresh: () -> Unit) {
-        if (mutableRefreshState == SkipiPullRefreshState.ThresholdReached) {
+        if (mutableRefreshState == PullRefreshPhase.ThresholdReached) {
             mutableRefreshCycleReady = false
-            mutableRefreshState = SkipiPullRefreshState.Refreshing
+            mutableRefreshState = PullRefreshPhase.Refreshing
             onRefresh()
             animateTo(thresholdPx)
             mutableRefreshCycleReady = true
         } else {
             if (dragOffset > 0f || currentTouch > 0f) animateTo(0f)
-            mutableRefreshState = SkipiPullRefreshState.Idle
+            mutableRefreshState = PullRefreshPhase.Idle
         }
     }
 
     fun resetToIdle() {
-        if (mutableRefreshState != SkipiPullRefreshState.Refreshing &&
-            mutableRefreshState != SkipiPullRefreshState.RefreshComplete
-        ) mutableRefreshState = SkipiPullRefreshState.Idle
+        if (mutableRefreshState != PullRefreshPhase.Refreshing &&
+            mutableRefreshState != PullRefreshPhase.RefreshComplete
+        ) mutableRefreshState = PullRefreshPhase.Idle
     }
 
     fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        if (mutableRefreshState == SkipiPullRefreshState.Refreshing ||
-            mutableRefreshState == SkipiPullRefreshState.RefreshComplete
+        if (mutableRefreshState == PullRefreshPhase.Refreshing ||
+            mutableRefreshState == PullRefreshPhase.RefreshComplete
         ) return available
         if (source == NestedScrollSource.UserInput && available.y < 0f && (dragOffset > 0f || currentTouch > 0f)) {
             isTouching = true
@@ -258,8 +238,8 @@ internal class SkipiPullToRefreshController(
     }
 
     fun onPostScroll(available: Offset, source: NestedScrollSource): Offset {
-        if (mutableRefreshState == SkipiPullRefreshState.Refreshing ||
-            mutableRefreshState == SkipiPullRefreshState.RefreshComplete
+        if (mutableRefreshState == PullRefreshPhase.Refreshing ||
+            mutableRefreshState == PullRefreshPhase.RefreshComplete
         ) return available
         if (source == NestedScrollSource.UserInput && available.y > 0f) {
             isTouching = true
@@ -270,11 +250,11 @@ internal class SkipiPullToRefreshController(
     }
 
     suspend fun settleOnFling() {
-        if (dragOffset > 0f && mutableRefreshState != SkipiPullRefreshState.Refreshing &&
-            mutableRefreshState != SkipiPullRefreshState.RefreshComplete
+        if (dragOffset > 0f && mutableRefreshState != PullRefreshPhase.Refreshing &&
+            mutableRefreshState != PullRefreshPhase.RefreshComplete
         ) {
             isTouching = false
-            if (mutableRefreshState != SkipiPullRefreshState.ThresholdReached) {
+            if (mutableRefreshState != PullRefreshPhase.ThresholdReached) {
                 animateTo(0f)
                 resetToIdle()
             }
@@ -313,7 +293,7 @@ internal fun rememberSkipiPullToRefreshController(
     var lastState by remember(controller) { mutableStateOf(controller.refreshState) }
     LaunchedEffect(controller.refreshState) {
         if (lastState != controller.refreshState) {
-            if (controller.refreshState == SkipiPullRefreshState.ThresholdReached) {
+            if (controller.refreshState == PullRefreshPhase.ThresholdReached) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
             lastState = controller.refreshState
@@ -324,8 +304,8 @@ internal fun rememberSkipiPullToRefreshController(
         snapshotFlow {
             Triple(currentIsRefreshing.value, controller.refreshState, controller.refreshCycleReady)
         }.collect { (isRefreshingNow, refreshState, cycleReady) ->
-            if (isRefreshingNow && refreshState != SkipiPullRefreshState.Refreshing &&
-                refreshState != SkipiPullRefreshState.RefreshComplete
+            if (isRefreshingNow && refreshState != PullRefreshPhase.Refreshing &&
+                refreshState != PullRefreshPhase.RefreshComplete
             ) {
                 controller.showRefreshing()
             } else if (skipiShouldFinishRefresh(isRefreshingNow, refreshState, cycleReady)) {
@@ -350,155 +330,26 @@ internal fun Modifier.skipiPullToRefresh(controller: SkipiPullToRefreshControlle
             }
         }
 
+/** The Home header over the list: the shared pull-to-refresh header with Home's labels and text style. */
 @Composable
 internal fun SkipiPullRefreshHeader(
     controller: SkipiPullToRefreshController,
     presentation: SkipiPullRefreshPresentation,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
     val label = when (controller.refreshState) {
-        SkipiPullRefreshState.Pulling -> presentation.pullText
-        SkipiPullRefreshState.ThresholdReached -> presentation.releaseText
-        SkipiPullRefreshState.Refreshing -> presentation.refreshingText
-        SkipiPullRefreshState.RefreshComplete -> presentation.refreshedText
-        SkipiPullRefreshState.Idle -> ""
+        PullRefreshPhase.Pulling -> presentation.pullText
+        PullRefreshPhase.ThresholdReached -> presentation.releaseText
+        PullRefreshPhase.Refreshing -> presentation.refreshingText
+        PullRefreshPhase.RefreshComplete -> presentation.refreshedText
+        PullRefreshPhase.Idle -> ""
     }
-    val baseHeightPx = with(density) { (presentation.circleSize + 32.dp).toPx() }
-    val headerHeightPx by remember(controller, baseHeightPx, density) {
-        derivedStateOf {
-            skipiPullRefreshHeaderHeightPx(
-                refreshState = controller.refreshState,
-                dragOffsetPx = controller.dragOffset,
-                thresholdPx = controller.thresholdPx,
-                baseHeightPx = baseHeightPx,
-                completionProgress = controller.refreshCompleteProgress,
-            )
-        }
-    }
-    val headerHeight = with(density) { headerHeightPx.toDp() }
-    val textAlpha by remember(controller) {
-        derivedStateOf {
-            when {
-                controller.refreshState == SkipiPullRefreshState.ThresholdReached ||
-                    controller.refreshState == SkipiPullRefreshState.Refreshing -> 1f
-                controller.refreshState == SkipiPullRefreshState.RefreshComplete ->
-                    (1f - controller.refreshCompleteProgress).coerceIn(0f, 1f)
-                controller.dragOffset > 0f -> (controller.pullProgress - 0.2f).coerceIn(0f, 1f)
-                else -> 0f
-            }
-        }
-    }
-    Column(
-        modifier = modifier.fillMaxWidth().height(headerHeight),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        SkipiPullRefreshIndicator(controller, presentation.circleSize, presentation.color)
-        if (label.isNotBlank()) {
-            Text(
-                text = label,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = presentation.color,
-                modifier = Modifier.padding(top = 4.dp).graphicsLayer { alpha = textAlpha },
-            )
-        }
-    }
-}
-
-@Composable
-private fun SkipiPullRefreshIndicator(
-    controller: SkipiPullToRefreshController,
-    circleSize: Dp,
-    color: Color,
-) {
-    val rotation = if (controller.refreshState == SkipiPullRefreshState.Refreshing ||
-        controller.refreshState == SkipiPullRefreshState.RefreshComplete
-    ) {
-        val transition = rememberInfiniteTransition(label = "home_pull_refresh_rotation")
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(750, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-            label = "home_pull_refresh_angle",
-        )
-    } else null
-    val scale by remember(controller) {
-        derivedStateOf {
-            when {
-                controller.refreshState == SkipiPullRefreshState.Refreshing -> 1f
-                controller.refreshState == SkipiPullRefreshState.RefreshComplete ->
-                    (1f - controller.refreshCompleteProgress * 0.3f).coerceIn(0f, 1f)
-                controller.refreshState == SkipiPullRefreshState.ThresholdReached ->
-                    1f + ((controller.dragOffset - controller.thresholdPx) * 0.0015f).coerceAtMost(0.12f)
-                controller.dragOffset > 0f -> (controller.pullProgress * 1.05f).coerceIn(0f, 1f)
-                else -> 0f
-            }
-        }
-    }
-    Box(
-        modifier = Modifier.size(circleSize).graphicsLayer { scaleX = scale; scaleY = scale },
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(Modifier.size(circleSize)) {
-            val strokeWidth = size.minDimension / 8.5f
-            val radius = (size.minDimension - strokeWidth) / 2f
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val refreshBox = Offset(center.x - radius, center.y - radius)
-            val refreshSize = Size(radius * 2, radius * 2)
-            when (controller.refreshState) {
-                SkipiPullRefreshState.Idle -> return@Canvas
-                SkipiPullRefreshState.Pulling -> {
-                    val progress = controller.pullProgress
-                    drawArc(
-                        color = color.copy(alpha = (progress / 0.3f).coerceIn(0f, 1f)),
-                        startAngle = -90f + 720f * progress,
-                        sweepAngle = 300f * progress,
-                        useCenter = false,
-                        topLeft = refreshBox,
-                        size = refreshSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-                SkipiPullRefreshState.ThresholdReached -> {
-                    val extra = (controller.dragOffset - controller.thresholdPx).coerceAtLeast(0f)
-                    drawArc(
-                        color = color,
-                        startAngle = -90f + extra * 0.8f,
-                        sweepAngle = 310f,
-                        useCenter = false,
-                        topLeft = refreshBox,
-                        size = refreshSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-                SkipiPullRefreshState.Refreshing -> drawArc(
-                    color = color,
-                    startAngle = rotation?.value ?: 0f,
-                    sweepAngle = 280f,
-                    useCenter = false,
-                    topLeft = refreshBox,
-                    size = refreshSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                )
-                SkipiPullRefreshState.RefreshComplete -> {
-                    val progress = controller.refreshCompleteProgress
-                    val endRadius = radius * (1f - progress * 0.25f)
-                    drawArc(
-                        color = color.copy(alpha = (1f - progress).coerceIn(0f, 1f)),
-                        startAngle = rotation?.value ?: 0f,
-                        sweepAngle = 280f,
-                        useCenter = false,
-                        topLeft = Offset(center.x - endRadius, center.y - endRadius),
-                        size = Size(endRadius * 2, endRadius * 2),
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-            }
-        }
-    }
+    PullRefreshHeader(
+        state = controller,
+        circleSize = presentation.circleSize,
+        color = presentation.color,
+        label = label,
+        labelStyle = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+        modifier = modifier,
+    )
 }

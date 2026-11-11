@@ -6,7 +6,7 @@ package app.skipi.desktop
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.dp
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.routing.RouteOutboundItem
 import app.skipi.app.routing.RouteOutboundPickerGroup
 import app.skipi.app.routing.RouteOutboundPickerProjection
@@ -141,7 +141,7 @@ class RouteOutboundSelectorRenderTest {
                 subscriptionGroupId = ProviderGroupId,
                 items = listOf(
                     RouteOutboundItem.Server(
-                        server = ProxyServerRecord(
+                        server = ProxyServerRow(
                             id = SelectedServerTag.toInt(),
                             groupId = ProviderGroupId,
                             server = VLESS(

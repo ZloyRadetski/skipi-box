@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +63,8 @@ fun SkipiSidebarNavigation(
     expanded: Boolean = true,
     onExpandedChange: ((Boolean) -> Unit)? = null,
     items: List<SkipiNavigationItem> = defaultSkipiNavigationItems(),
+    /** Pinned shortcuts listed under the destinations, each running its action instead of selecting a section. */
+    actions: List<SkipiNavigationAction> = emptyList(),
 ) {
     val width by animateDpAsState(if (expanded) SidebarWidth else CollapsedSidebarWidth)
     val borderColor = if (colors.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
@@ -84,12 +87,26 @@ fun SkipiSidebarNavigation(
         ) {
             items.forEach { item ->
                 SidebarItem(
-                    item = item,
+                    label = item.label,
+                    icon = item.icon,
                     selected = item.destination == selectedDestination,
                     labelAlpha = labelAlpha,
                     colors = colors,
                     onClick = { onSelect(item.destination) },
                 )
+            }
+            if (actions.isNotEmpty()) {
+                Box(Modifier.padding(vertical = 8.dp, horizontal = 4.dp).fillMaxWidth().height(1.dp).background(borderColor))
+                actions.forEach { action ->
+                    SidebarItem(
+                        label = action.label,
+                        icon = action.icon,
+                        selected = false,
+                        labelAlpha = labelAlpha,
+                        colors = colors,
+                        onClick = action.onClick,
+                    )
+                }
             }
             Spacer(Modifier.weight(1f))
             if (onExpandedChange != null) {
@@ -102,7 +119,8 @@ fun SkipiSidebarNavigation(
 
 @Composable
 private fun SidebarItem(
-    item: SkipiNavigationItem,
+    label: String,
+    icon: ImageVector,
     selected: Boolean,
     labelAlpha: Float,
     colors: SkipiExpressiveNavigationColors,
@@ -136,10 +154,10 @@ private fun SidebarItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(imageVector = item.icon, contentDescription = item.label, tint = content, modifier = Modifier.size(22.dp))
+        Icon(imageVector = icon, contentDescription = label, tint = content, modifier = Modifier.size(22.dp))
         if (labelAlpha > 0f) {
             Text(
-                text = item.label,
+                text = label,
                 color = content.copy(alpha = content.alpha * labelAlpha),
                 fontSize = 14.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,

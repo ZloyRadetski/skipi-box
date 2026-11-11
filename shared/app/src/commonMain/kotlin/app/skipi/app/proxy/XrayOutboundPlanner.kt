@@ -25,8 +25,8 @@ import features.routing.model.RouteRule
 
 /** Explicit platform inputs for planning Xray outbounds from the live server list. */
 data class XrayOutboundPlanningInput(
-    val selectedServer: ProxyServerRecord,
-    val servers: List<ProxyServerRecord>,
+    val selectedServer: ProxyServerRow,
+    val servers: List<ProxyServerRow>,
     val routeRules: List<RouteRule>,
     val defaultRouteOutboundTag: String,
     val shadowrocketPolicyGroups: List<ShadowrocketPolicyGroup>,
@@ -85,7 +85,7 @@ object XrayOutboundPlanner {
             }
         }
 
-        private fun routeTargetServers(): List<ProxyServerRecord> {
+        private fun routeTargetServers(): List<ProxyServerRow> {
             val routeOutboundTags = (input.routeRules
                 .filter(RouteRule::enabled)
                 .map { rule -> rule.outboundTag } + input.defaultRouteOutboundTag)
@@ -153,7 +153,7 @@ object XrayOutboundPlanner {
             }
         }
 
-        private fun addRouteTarget(tag: String, server: ProxyServerRecord) {
+        private fun addRouteTarget(tag: String, server: ProxyServerRow) {
             when (val proxyServer = server.server) {
                 is StrategyGroup -> addStrategyGroup(tag, proxyServer)
                 is ChainProxy -> addChainProxy(tag, proxyServer)
@@ -182,7 +182,7 @@ object XrayOutboundPlanner {
 
         private fun addNormalOutbound(
             tag: String,
-            server: ProxyServerRecord,
+            server: ProxyServerRow,
             dialerProxyTag: String? = null,
             allowFragment: Boolean = true,
         ) {
@@ -242,7 +242,7 @@ object XrayOutboundPlanner {
         private fun addBalancer(
             tag: String,
             strategy: String,
-            members: List<ProxyServerRecord>,
+            members: List<ProxyServerRow>,
             selectedMemberId: Int?,
             keepsOrder: Boolean,
             probe: BalancerProbe,
@@ -283,14 +283,14 @@ object XrayOutboundPlanner {
             routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
         }
 
-        private fun chainProxyMembers(chainProxy: ChainProxy): List<ProxyServerRecord> {
+        private fun chainProxyMembers(chainProxy: ChainProxy): List<ProxyServerRow> {
             return chainProxy.proxyServerIds.mapNotNull { memberId ->
                 input.servers.firstOrNull { server -> server.id == memberId && !server.server.isCompositeProxyServer() }
                     ?.takeUnless { server -> server.server.isCustomProxyServer() }
             }
         }
 
-        private fun strategyGroupMembers(strategyGroup: StrategyGroup): List<ProxyServerRecord> =
+        private fun strategyGroupMembers(strategyGroup: StrategyGroup): List<ProxyServerRow> =
             resolveStrategyGroupMembers(
                 strategyGroup = strategyGroup,
                 servers = input.servers,
@@ -298,7 +298,7 @@ object XrayOutboundPlanner {
                 stripLeadingFlag = input.stripLeadingFlag,
             ).mapNotNull { resolved -> input.servers.firstOrNull { it.id == resolved.id } }
 
-        private fun shadowrocketPolicyGroupMembers(group: ShadowrocketPolicyGroup): List<ProxyServerRecord> =
+        private fun shadowrocketPolicyGroupMembers(group: ShadowrocketPolicyGroup): List<ProxyServerRow> =
             resolveShadowrocketPolicyGroupMembers(
                 group = group,
                 policyGroups = input.shadowrocketPolicyGroups,
@@ -327,7 +327,7 @@ private fun String.isLatencyDriven(): Boolean =
  * At most [limit] members, the fastest known first. The member the user chose always stays; members never
  * measured keep their order behind the measured ones, and failed ones come last.
  */
-private fun List<ProxyServerRecord>.fastestFirst(selectedMemberId: Int?, limit: Int): List<ProxyServerRecord> {
+private fun List<ProxyServerRow>.fastestFirst(selectedMemberId: Int?, limit: Int): List<ProxyServerRow> {
     if (size <= limit) return this
     val chosen = firstOrNull { it.id == selectedMemberId }
     val ranked = sortedBy { it.latency.latencySortKey() }.filter { it !== chosen }

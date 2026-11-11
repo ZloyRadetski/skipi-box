@@ -5,7 +5,7 @@ package app.skipi.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import app.skipi.ui.components.AppWindowBottomSheet
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,19 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.skipi.app.settings.isValidMuxConcurrency
 import app.skipi.app.settings.isValidMuxXudpConcurrency
-import app.skipi.app.settings.normalizeMuxInteger
 import app.skipi.app.settings.sanitizeMuxUdp443Index as sanitizeMuxUdp443IndexInApp
 import app.skipi.app.settings.MuxSettingsDraft
 import app.skipi.app.settings.toSavedSettings
-import engine.xray.DefaultMuxConcurrency
-import engine.xray.DefaultMuxXudpConcurrency
 import engine.xray.MuxUdp443Values
 import app.skipi.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import app.skipi.ui.text.formatTemplate
@@ -105,7 +101,7 @@ fun MuxSettingsBottomSheet(
     ) {
         key(show) {
             SettingsSheetContent {
-                MuxStatusText(stringResource(Res.string.settings_mux_description))
+                SettingsSheetStatusText(stringResource(Res.string.settings_mux_description))
                 SwitchPreference(
                     title = stringResource(Res.string.settings_mux_enabled),
                     summary = stringResource(Res.string.settings_mux_enabled_summary),
@@ -141,7 +137,7 @@ fun MuxSettingsBottomSheet(
                                 null
                             },
                         )
-                        AppWindowDropdownPreference(
+                        SkipiDropdownPreference(
                             title = stringResource(Res.string.settings_mux_udp443),
                             items = muxUdp443Options(),
                             selectedIndex = sanitizeMuxUdp443Index(xudpProxyUdp443),
@@ -171,20 +167,8 @@ private fun MuxNumberField(
             .padding(bottom = 4.dp),
         sanitizeInput = ::sanitizeMuxIntegerInput,
     )
-    MuxStatusText(helpText)
-    errorText?.let { MuxStatusText(text = it, error = true) }
-}
-
-@Composable
-private fun MuxStatusText(
-    text: String,
-    error: Boolean = false,
-) {
-    Text(
-        text = text,
-        color = if (error) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-    )
+    SettingsSheetStatusText(helpText)
+    errorText?.let { SettingsSheetStatusText(text = it, error = true) }
 }
 
 @Composable

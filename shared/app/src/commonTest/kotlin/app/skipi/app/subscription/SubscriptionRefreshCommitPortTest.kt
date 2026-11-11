@@ -4,7 +4,7 @@
 package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.proxy.server.model.Custom
 import features.proxy.server.model.VLESS
 import features.proxy.server.usecase.ProxyServerImportResult
@@ -156,7 +156,7 @@ class SubscriptionRefreshCommitPortTest {
         }
 
         serverTransformEntered.await()
-        val unrelated = ProxyServerRecord(
+        val unrelated = ProxyServerRow(
             id = 27,
             groupId = 9,
             server = vless("manual.example", "Manual"),
@@ -396,7 +396,7 @@ class SubscriptionRefreshCommitPortTest {
     private fun snapshot(subscription: SubscriptionRecord) = SubscriptionRefreshSnapshot(
         subscriptions = listOf(subscription),
         servers = listOf(
-            ProxyServerRecord(
+            ProxyServerRow(
                 id = 10,
                 groupId = subscription.id,
                 server = vless("old.example", "Old subscription server"),
@@ -455,7 +455,7 @@ class SubscriptionRefreshCommitPortTest {
         var latest: SubscriptionRefreshSnapshot,
     ) : SubscriptionRefreshCommitPort {
         val events = mutableListOf<String>()
-        var savedServers = emptyList<ProxyServerRecord>()
+        var savedServers = emptyList<ProxyServerRow>()
         var savedNextServerId: Int? = null
         var savedSelectedServerId: Int? = null
         var savedSubscription: SubscriptionRecord? = null

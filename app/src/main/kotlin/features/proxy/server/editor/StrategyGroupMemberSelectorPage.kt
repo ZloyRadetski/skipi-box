@@ -23,7 +23,7 @@ import app.R
 import app.SubscriptionGroupState
 import app.collectAppState
 import app.navigation.StrategyGroupMemberSelectionResult
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.StrategyMemberSelectorSubscription
 import app.skipi.app.proxy.projectStrategyGroupMemberGroups as projectSharedStrategyGroupMemberGroups
 import app.skipi.ui.server.editor.ServerPickerSubscriptionSummary
@@ -41,7 +41,7 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import app.skipi.ui.text.formatTemplate
 
-internal data class StrategyMemberSelectorGroup(
+internal data class AndroidStrategyMemberCatalogGroup(
     val key: String,
     val title: String,
     val subscriptionGroup: SubscriptionGroupState? = null,
@@ -55,7 +55,7 @@ internal fun projectStrategyGroupMemberGroups(
     requireServerRemarks: Boolean,
     defaultGroupName: String,
     autoBalancerName: String,
-): List<StrategyMemberSelectorGroup> {
+): List<AndroidStrategyMemberCatalogGroup> {
     val subscriptionInputs = appState.subscriptionGroups.map { group ->
         StrategyMemberSelectorSubscription(
             id = group.id,
@@ -65,7 +65,7 @@ internal fun projectStrategyGroupMemberGroups(
     }
     val projection = projectSharedStrategyGroupMemberGroups(
         servers = appState.proxyServers.map { server ->
-            ProxyServerRecord(
+            ProxyServerRow(
                 id = server.id,
                 groupId = server.groupId,
                 server = server.server,
@@ -79,7 +79,7 @@ internal fun projectStrategyGroupMemberGroups(
         requireServerRemarks = requireServerRemarks,
     )
     return projection.map { group ->
-        StrategyMemberSelectorGroup(
+        AndroidStrategyMemberCatalogGroup(
             key = group.key,
             title = group.title,
             subscriptionGroup = group.subscriptionGroupId?.let { id ->

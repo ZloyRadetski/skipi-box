@@ -9,7 +9,7 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 
 /** Platform-neutral proxy row used by collection transformations. */
-data class ProxyServerRecord(
+data class ProxyServerRow(
     val id: Int,
     val groupId: Int,
     val server: ProxyServer<*>,
@@ -17,7 +17,7 @@ data class ProxyServerRecord(
 )
 
 data class ProxyServerCollectionResult(
-    val servers: List<ProxyServerRecord>,
+    val servers: List<ProxyServerRow>,
     val nextServerId: Int,
     val selectedServerId: Int,
     val proxyRunning: Boolean = false,
@@ -25,7 +25,7 @@ data class ProxyServerCollectionResult(
 
 /** Prepends imported rows and advances IDs without disturbing the current selection. */
 fun importProxyServerRecords(
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     imported: List<ProxyServer<*>>,
     groupId: Int,
     nextServerId: Int,
@@ -33,7 +33,7 @@ fun importProxyServerRecords(
 ): ProxyServerCollectionResult {
     if (imported.isEmpty()) return ProxyServerCollectionResult(servers, nextServerId, selectedServerId)
     var id = nextServerId
-    val newServers = imported.map { server -> ProxyServerRecord(id = id++, groupId = groupId, server = server) }
+    val newServers = imported.map { server -> ProxyServerRow(id = id++, groupId = groupId, server = server) }
     val result = newServers + servers
     return ProxyServerCollectionResult(
         servers = result,
@@ -51,7 +51,7 @@ data class ProxyServerRecordSaveResult(
 
 /** Replaces an existing row in place or prepends a new row when its group is known. */
 fun saveProxyServerRecord(
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     serverId: Int,
     server: ProxyServer<*>,
     groupId: Int?,
@@ -63,7 +63,7 @@ fun saveProxyServerRecord(
     val actualGroupId = if (existing) servers[index].groupId else groupId
     val updated = when {
         existing -> servers.toMutableList().also { it[index] = it[index].copy(server = server) }
-        groupId != null -> listOf(ProxyServerRecord(serverId, groupId, server)) + servers
+        groupId != null -> listOf(ProxyServerRow(serverId, groupId, server)) + servers
         else -> servers
     }
     return ProxyServerRecordSaveResult(
@@ -81,7 +81,7 @@ fun saveProxyServerRecord(
 
 /** Removes rows and prunes their references from strategy and chain servers. */
 fun deleteProxyServerRecords(
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     deletedServerIds: Set<Int>,
     nextServerId: Int,
     selectedServerId: Int,
@@ -100,7 +100,7 @@ fun deleteProxyServerRecords(
         selectedServerId = selectedServerIdAfterDeletion(
             selectedServerId = selectedServerId,
             deletedServerIds = deletedServerIds,
-            remainingServerIds = next.map(ProxyServerRecord::id),
+            remainingServerIds = next.map(ProxyServerRow::id),
         ),
         proxyRunning = proxyRunning && selectedServerId !in deletedServerIds,
     )

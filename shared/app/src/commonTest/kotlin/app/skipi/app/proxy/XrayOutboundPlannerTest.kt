@@ -530,8 +530,8 @@ class XrayOutboundPlannerTest {
     }
 
     private fun input(
-        selected: ProxyServerRecord,
-        servers: List<ProxyServerRecord>,
+        selected: ProxyServerRow,
+        servers: List<ProxyServerRow>,
         routeRules: List<RouteRule> = emptyList(),
         defaultRouteOutboundTag: String = "proxy",
         groups: List<ShadowrocketPolicyGroup> = emptyList(),
@@ -557,7 +557,7 @@ class XrayOutboundPlannerTest {
         remarks: String,
         host: String,
         latency: String = "",
-    ) = ProxyServerRecord(
+    ) = ProxyServerRow(
         id = id,
         groupId = 1,
         server = VLESS(
@@ -569,7 +569,7 @@ class XrayOutboundPlannerTest {
         latency = latency,
     )
 
-    private fun record(id: Int, server: ProxyServer<*>) = ProxyServerRecord(
+    private fun record(id: Int, server: ProxyServer<*>) = ProxyServerRow(
         id = id,
         groupId = 1,
         server = server,

@@ -15,11 +15,11 @@ import features.proxy.server.model.isCompositeProxyServer
 /** Resolves the currently selectable concrete members of a strategy group. */
 fun resolveStrategyGroupMembers(
     strategyGroup: StrategyGroup,
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     trafficConfigContentById: Map<Int, String> = emptyMap(),
     stripLeadingFlag: (String) -> String = { it },
     visitingStrategyGroupIds: Set<Int> = emptySet(),
-): List<ProxyServerRecord> {
+): List<ProxyServerRow> {
     if (strategyGroup.proxyServerIds.isNotEmpty()) {
         return strategyGroup.proxyServerIds.flatMap { memberId ->
             val member = servers.firstOrNull { it.id == memberId }
@@ -36,7 +36,7 @@ fun resolveStrategyGroupMembers(
                 is Custom -> member.takeIf { server.canBeUsedInGeneratedProxyPlan() }?.let(::listOf).orEmpty()
                 else -> listOf(member)
             }
-        }.distinctBy(ProxyServerRecord::id)
+        }.distinctBy(ProxyServerRow::id)
     }
 
     strategyGroup.sourceTrafficConfigId?.let { configId ->
@@ -74,11 +74,11 @@ fun resolveStrategyGroupMembers(
 fun resolveShadowrocketPolicyGroupMembers(
     group: ShadowrocketPolicyGroup,
     policyGroups: List<ShadowrocketPolicyGroup>,
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     trafficConfigContentById: Map<Int, String>,
     stripLeadingFlag: (String) -> String,
     visitingPolicyGroupNames: Set<String> = emptySet(),
-): List<ProxyServerRecord> {
+): List<ProxyServerRow> {
     if (group.name in visitingPolicyGroupNames) return emptyList()
     val matchingStrategy = servers.firstOrNull { row ->
         (row.server as? StrategyGroup)?.sourcePolicyGroupName?.equals(group.name, ignoreCase = true) == true
@@ -135,5 +135,5 @@ fun resolveShadowrocketPolicyGroupMembers(
                 }.orEmpty()
             }
         }
-    }.distinctBy(ProxyServerRecord::id)
+    }.distinctBy(ProxyServerRow::id)
 }

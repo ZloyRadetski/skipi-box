@@ -5,6 +5,7 @@ package app.skipi.ui.config
 
 import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -87,6 +88,16 @@ fun SkipiTrafficConfigScreen(
     emptyProfilesContent: (@Composable () -> Unit)? = null,
     profileSupportingContent: (@Composable (TrafficConfigProfileItem) -> Unit)? = null,
     profileTrailingActions: (@Composable RowScope.(TrafficConfigProfileItem) -> Unit)? = null,
+    /**
+     * Called inside the card of every profile, after the card. A menu that a host opens for one profile is
+     * placed here, because a popup opens next to the layout it is composed in: composed anywhere else it
+     * would open next to the whole page instead of next to the card that was tapped.
+     */
+    profileMenu: (@Composable (TrafficConfigProfileItem) -> Unit)? = null,
+    /** Same for the global proxy groups: composed inside the card of each, after it. */
+    globalProxyGroupMenu: (@Composable (TrafficConfigProxyGroupItem) -> Unit)? = null,
+    /** The menu of the add button, composed in a box with the button so that it opens under it. */
+    addConfigMenu: (@Composable () -> Unit)? = null,
     statusContent: (@Composable () -> Unit)? = null,
     showAddProfileAction: Boolean = true,
     showProfilesHeaderWhenEmpty: Boolean = true,
@@ -112,12 +123,15 @@ fun SkipiTrafficConfigScreen(
             }
         }
         items(globalProxyGroups, key = TrafficConfigProxyGroupItem::key) { group ->
-            ProxyGroupCard(
-                group = group,
-                onClick = { onOpenProxyGroup(group.key) },
-                onDelete = { onDeleteGlobalProxyGroup(group.key) },
-                onLongPress = { onGlobalProxyGroupMenu(group.key) },
-            )
+            Box {
+                ProxyGroupCard(
+                    group = group,
+                    onClick = { onOpenProxyGroup(group.key) },
+                    onDelete = { onDeleteGlobalProxyGroup(group.key) },
+                    onLongPress = { onGlobalProxyGroupMenu(group.key) },
+                )
+                globalProxyGroupMenu?.invoke(group)
+            }
         }
         if (sourcedProxyGroups.isNotEmpty()) {
             item(key = "sourced_proxy_groups_section_title") {
@@ -135,8 +149,11 @@ fun SkipiTrafficConfigScreen(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     SmallTitle(text = stringResource(Res.string.configs_profiles), modifier = Modifier.weight(1f))
                     if (showAddProfileAction) {
-                        IconButton(onClick = onAddConfig) {
-                            Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+                        Box {
+                            IconButton(onClick = onAddConfig) {
+                                Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                            addConfigMenu?.invoke()
                         }
                     }
                 }
@@ -152,16 +169,19 @@ fun SkipiTrafficConfigScreen(
             val trailingActions: (@Composable RowScope.() -> Unit)? = profileTrailingActions?.let { content ->
                 { content(item) }
             }
-            ProfileCard(
-                item = item,
-                onSelect = { onSelectProfile(item.profile.id) },
-                onEdit = { onEditProfile(item.profile.id) },
-                onDelete = { onDeleteProfile(item.profile.id) },
-                onUpdate = { onUpdateProfile(item.profile.id) },
-                onLongPress = { onProfileMenu(item.profile.id) },
-                supportingContent = supportingContent,
-                trailingActions = trailingActions,
-            )
+            Box {
+                ProfileCard(
+                    item = item,
+                    onSelect = { onSelectProfile(item.profile.id) },
+                    onEdit = { onEditProfile(item.profile.id) },
+                    onDelete = { onDeleteProfile(item.profile.id) },
+                    onUpdate = { onUpdateProfile(item.profile.id) },
+                    onLongPress = { onProfileMenu(item.profile.id) },
+                    supportingContent = supportingContent,
+                    trailingActions = trailingActions,
+                )
+                profileMenu?.invoke(item)
+            }
         }
         if (statusContent != null) {
             item(key = "collection_status") { statusContent() }

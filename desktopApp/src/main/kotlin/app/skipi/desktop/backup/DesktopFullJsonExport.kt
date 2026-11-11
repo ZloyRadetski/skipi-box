@@ -3,7 +3,7 @@
 
 package app.skipi.desktop
 
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import engine.xray.XrayExportConfig
@@ -37,7 +37,7 @@ internal fun buildDesktopFullJsonExport(
 
     val records = serverLibrary.servers.mapNotNull { stored ->
         val server = stored.decode().getOrNull() ?: return@mapNotNull null
-        ProxyServerRecord(
+        ProxyServerRow(
             id = stored.id,
             groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
             server = server,

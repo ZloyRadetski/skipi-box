@@ -5,6 +5,7 @@
 
 package features.config
 
+import ui.editor.CodeEditorState
 import androidx.compose.foundation.background
 import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Arrangement
@@ -77,7 +78,6 @@ import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
@@ -201,7 +201,7 @@ fun TrafficConfigRawEditorPage(
         return
     }
     val rawEditorState = remember(config.id) {
-        ConfCodeEditorState(config.withSkipiSettingsInRawConfig().rawConfig)
+        CodeEditorState(config.withSkipiSettingsInRawConfig().rawConfig)
     }
     val copiedMessage = stringResource(R.string.common_copied)
     val editor = rememberTrafficConfigEditorController(updateAppState)

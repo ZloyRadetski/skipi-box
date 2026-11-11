@@ -3,6 +3,7 @@
 
 package features.proxy.server.editor
 
+import ui.editor.CodeEditorState
 import app.skipi.ui.server.editor.rememberJsonEditorColors
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -37,7 +38,7 @@ internal fun CustomProxyServerEditor(
     val jsonEditorColors = rememberJsonEditorColors()
     var remarks by remember(customEdit) { mutableStateOf(customEdit.remarks) }
     var overrideInboundAndDns by remember(customEdit) { mutableStateOf(customEdit.overrideInboundAndDns) }
-    val configJsonState = remember(customEdit) { JsonCodeEditorState(customEdit.configJson) }
+    val configJsonState = remember(customEdit) { CodeEditorState(customEdit.configJson) }
 
     LaunchedEffect(customEdit) {
         remarks = customEdit.remarks

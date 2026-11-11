@@ -6,28 +6,18 @@ package app.skipi.ui.components
 import androidx.compose.animation.core.Animatable
 import app.skipi.ui.text.themedFontWeight
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -37,14 +27,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -63,7 +48,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.LocalOverScrollState
 import top.yukonga.miuix.kmp.utils.OverScrollState
@@ -80,11 +64,11 @@ sealed interface AppRefreshState {
 
 class AppPullToRefreshState(
     internal var coroutineScope: CoroutineScope,
-) {
+) : PullRefreshVisualState {
     internal var maxDragDistancePx: Float = 0f
     internal var refreshThresholdOffset: Float = 0f
 
-    var dragOffset by mutableFloatStateOf(0f)
+    override var dragOffset by mutableFloatStateOf(0f)
     var cachedNestedScrollConnection: NestedScrollConnection? = null
 
     private var internalRefreshState by mutableStateOf<AppRefreshState>(AppRefreshState.Idle)
@@ -102,6 +86,17 @@ class AppPullToRefreshState(
     internal var isTouching by mutableStateOf(false)
     private val refreshCompleteAnimProgressState = mutableFloatStateOf(0f)
     internal val refreshCompleteAnimProgress: Float get() = refreshCompleteAnimProgressState.floatValue
+
+    override val thresholdPx: Float get() = refreshThresholdOffset
+    override val completeProgress: Float get() = refreshCompleteAnimProgress
+    override val phase: PullRefreshPhase
+        get() = when (refreshState) {
+            AppRefreshState.Idle -> PullRefreshPhase.Idle
+            AppRefreshState.Pulling -> PullRefreshPhase.Pulling
+            AppRefreshState.ThresholdReached -> PullRefreshPhase.ThresholdReached
+            AppRefreshState.Refreshing -> PullRefreshPhase.Refreshing
+            AppRefreshState.RefreshComplete -> PullRefreshPhase.RefreshComplete
+        }
 
     internal var animationJob: Job? = null
 
@@ -430,6 +425,7 @@ private fun createAppPullToRefreshConnection(
     }
 }
 
+/** The header over a list: the shared pull-to-refresh header with the label of the current phase. */
 @Composable
 private fun AppRefreshHeader(
     pullToRefreshState: AppPullToRefreshState,
@@ -439,190 +435,19 @@ private fun AppRefreshHeader(
     refreshTextStyle: TextStyle,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-    val refreshText = when (pullToRefreshState.refreshState) {
-        AppRefreshState.Pulling -> refreshTexts.getOrNull(0).orEmpty()
-        AppRefreshState.ThresholdReached -> refreshTexts.getOrNull(1).orEmpty()
-        AppRefreshState.Refreshing -> refreshTexts.getOrNull(2).orEmpty()
-        AppRefreshState.RefreshComplete -> refreshTexts.getOrNull(3).orEmpty()
-        AppRefreshState.Idle -> ""
+    val label = when (pullToRefreshState.phase) {
+        PullRefreshPhase.Pulling -> refreshTexts.getOrNull(0).orEmpty()
+        PullRefreshPhase.ThresholdReached -> refreshTexts.getOrNull(1).orEmpty()
+        PullRefreshPhase.Refreshing -> refreshTexts.getOrNull(2).orEmpty()
+        PullRefreshPhase.RefreshComplete -> refreshTexts.getOrNull(3).orEmpty()
+        PullRefreshPhase.Idle -> ""
     }
-
-    val headerHeight by remember(pullToRefreshState, circleSize, density) {
-        derivedStateOf {
-            val baseHeight = circleSize + 32.dp
-            when {
-                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> baseHeight
-                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> baseHeight * (1f - pullToRefreshState.refreshCompleteAnimProgress)
-                pullToRefreshState.dragOffset > 0f -> {
-                    if (pullToRefreshState.refreshThresholdOffset > 0f && pullToRefreshState.dragOffset <= pullToRefreshState.refreshThresholdOffset) {
-                        baseHeight * pullToRefreshState.pullProgress
-                    } else {
-                        val extraDp = with(density) {
-                            (pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset).coerceAtLeast(0f).toDp()
-                        }
-                        baseHeight + extraDp
-                    }
-                }
-                else -> 0.dp
-            }
-        }
-    }
-
-    val textAlpha by remember(pullToRefreshState) {
-        derivedStateOf {
-            when {
-                pullToRefreshState.refreshState == AppRefreshState.ThresholdReached -> 1f
-                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> 1f
-                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress).coerceIn(0f, 1f)
-                pullToRefreshState.dragOffset > 0f -> (pullToRefreshState.pullProgress - 0.2f).coerceIn(0f, 1f)
-                else -> 0f
-            }
-        }
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(headerHeight),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        AppRefreshIndicator(
-            pullToRefreshState = pullToRefreshState,
-            circleSize = circleSize,
-            color = color,
-        )
-        if (refreshText.isNotBlank()) {
-            Text(
-                text = refreshText,
-                style = refreshTextStyle,
-                color = color,
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .graphicsLayer { alpha = textAlpha },
-            )
-        }
-    }
-}
-
-@Composable
-private fun AppRefreshIndicator(
-    pullToRefreshState: AppPullToRefreshState,
-    circleSize: Dp,
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    val rotationState = if (
-        pullToRefreshState.refreshState == AppRefreshState.Refreshing ||
-        pullToRefreshState.refreshState == AppRefreshState.RefreshComplete
-    ) {
-        animateRotation()
-    } else {
-        null
-    }
-
-    val scale by remember(pullToRefreshState) {
-        derivedStateOf {
-            when {
-                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> 1f
-                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress * 0.3f).coerceIn(0f, 1f)
-                pullToRefreshState.refreshState == AppRefreshState.ThresholdReached -> 1f + ((pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset) * 0.0015f).coerceAtMost(0.12f)
-                pullToRefreshState.dragOffset > 0f -> (pullToRefreshState.pullProgress * 1.05f).coerceIn(0f, 1f)
-                else -> 0f
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .size(circleSize)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(circleSize)) {
-            val strokeWidth = size.minDimension / 8.5f
-            val radius = (size.minDimension - strokeWidth) / 2f
-            val center = Offset(size.width / 2f, size.height / 2f)
-
-            when (pullToRefreshState.refreshState) {
-                AppRefreshState.Idle -> return@Canvas
-                AppRefreshState.Pulling -> {
-                    val progress = pullToRefreshState.pullProgress
-                    val alpha = (progress / 0.3f).coerceIn(0f, 1f)
-                    val sweepAngle = 300f * progress
-                    val startAngle = -90f + (720f * progress)
-                    drawArc(
-                        color = color.copy(alpha = alpha),
-                        startAngle = startAngle,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        topLeft = Offset(center.x - radius, center.y - radius),
-                        size = Size(radius * 2, radius * 2),
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-                AppRefreshState.ThresholdReached -> {
-                    val extraDrag = (pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset).coerceAtLeast(0f)
-                    val startAngle = -90f + (extraDrag * 0.8f)
-                    drawArc(
-                        color = color,
-                        startAngle = startAngle,
-                        sweepAngle = 310f,
-                        useCenter = false,
-                        topLeft = Offset(center.x - radius, center.y - radius),
-                        size = Size(radius * 2, radius * 2),
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-                AppRefreshState.Refreshing -> {
-                    val rotation = rotationState?.value ?: 0f
-                    drawArc(
-                        color = color,
-                        startAngle = rotation,
-                        sweepAngle = 280f,
-                        useCenter = false,
-                        topLeft = Offset(center.x - radius, center.y - radius),
-                        size = Size(radius * 2, radius * 2),
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-                AppRefreshState.RefreshComplete -> {
-                    val progress = pullToRefreshState.refreshCompleteAnimProgress
-                    val alpha = (1f - progress).coerceIn(0f, 1f)
-                    val scaleRadius = radius * (1f - (progress * 0.25f))
-                    val rotation = rotationState?.value ?: 0f
-                    drawArc(
-                        color = color.copy(alpha = alpha),
-                        startAngle = rotation,
-                        sweepAngle = 280f,
-                        useCenter = false,
-                        topLeft = Offset(center.x - scaleRadius, center.y - scaleRadius),
-                        size = Size(scaleRadius * 2, scaleRadius * 2),
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun animateRotation(): State<Float> {
-    val infiniteTransition = rememberInfiniteTransition(label = "pull_refresh_rotation")
-    return infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(750, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pull_refresh_angle",
+    PullRefreshHeader(
+        state = pullToRefreshState,
+        circleSize = circleSize,
+        color = color,
+        label = label,
+        labelStyle = refreshTextStyle,
+        modifier = modifier,
     )
 }
-
-
-

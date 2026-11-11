@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.pullRefreshHeaderHeightPx
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -99,6 +100,10 @@ import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import app.skipi.ui.navigation.SkipiTool
+import app.skipi.ui.navigation.label
+import app.skipi.ui.navigation.skipiToolFromMenuId
+import app.skipi.ui.navigation.skipiToolMenuId
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 
@@ -120,6 +125,8 @@ fun ProxyHomeScreen(
     wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
     leftColumnExtra: Dp = 0.dp,
     onLeftColumnExtraChange: (Dp) -> Unit = {},
+    pinnedTools: List<SkipiTool> = emptyList(),
+    onOpenPinnedTool: (SkipiTool) -> Unit = {},
 ) {
     val state by store.uiState.collectAsState()
 
@@ -134,6 +141,8 @@ fun ProxyHomeScreen(
         wideSidePanel = wideSidePanel,
         leftColumnExtra = leftColumnExtra,
         onLeftColumnExtraChange = onLeftColumnExtraChange,
+        pinnedTools = pinnedTools,
+        onOpenPinnedTool = onOpenPinnedTool,
     )
 }
 
@@ -154,7 +163,11 @@ fun ProxyHomeScreenContent(
     /** How much wider than its base the wide Home's left column starts; the host saves what [onLeftColumnExtraChange] reports. */
     leftColumnExtra: Dp = 0.dp,
     onLeftColumnExtraChange: (Dp) -> Unit = {},
+    /** Tools shown as a menu in the header; empty hides the button. */
+    pinnedTools: List<SkipiTool> = emptyList(),
+    onOpenPinnedTool: (SkipiTool) -> Unit = {},
 ) {
+val easterEgg = rememberHeaderEasterEggState()
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
     val isCompact = windowClass == SkipiWindowClass.Compact
@@ -402,6 +415,11 @@ fun ProxyHomeScreenContent(
                 ),
                 addActions = addActions,
                 toolActions = toolActions,
+                pinnedToolActions = pinnedTools.map { tool ->
+                    SkipiProxyHomeHeaderAction(id = skipiToolMenuId(tool), title = tool.label(), icon = tool.icon)
+                },
+                onPinnedToolAction = { id -> skipiToolFromMenuId(id)?.let(onOpenPinnedTool) },
+                easterEgg = easterEgg,
                 onAddAction = { id ->
                     when {
                         id == "add-subscription" -> send(ProxyHomeAction.AddSubscription)
@@ -722,6 +740,7 @@ fun ProxyHomeScreenContent(
                 }
             }
         }
+        HeaderEasterEggOverlay(easterEgg)
     }
 }
 
@@ -803,13 +822,7 @@ private fun PageServerGrid(
                 Modifier
                     .skipiPullToRefresh(controller)
                     .graphicsLayer {
-                        translationY = skipiPullRefreshHeaderHeightPx(
-                            refreshState = controller.refreshState,
-                            dragOffsetPx = controller.dragOffset,
-                            thresholdPx = controller.thresholdPx,
-                            baseHeightPx = pullRefreshBaseHeightPx,
-                            completionProgress = controller.refreshCompleteProgress,
-                        )
+                        translationY = pullRefreshHeaderHeightPx(controller, pullRefreshBaseHeightPx)
                     }
             } ?: Modifier),
         contentPadding = contentPadding,

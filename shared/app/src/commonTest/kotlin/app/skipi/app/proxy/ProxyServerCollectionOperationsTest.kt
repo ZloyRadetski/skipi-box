@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class ProxyServerCollectionOperationsTest {
     @Test
     fun importedServersArePrependedAndPreserveSelectionWhenPossible() {
-        val existing = ProxyServerRecord(id = 5, groupId = 1, server = HTTP(port = "80"))
+        val existing = ProxyServerRow(id = 5, groupId = 1, server = HTTP(port = "80"))
 
         val result = importProxyServerRecords(
             servers = listOf(existing),
@@ -32,7 +32,7 @@ class ProxyServerCollectionOperationsTest {
 
     @Test
     fun saveKeepsExistingGroupAndLatencyAndSelectsFirstWhenCurrentSelectionDisappears() {
-        val existing = ProxyServerRecord(id = 8, groupId = 3, server = HTTP(port = "80"), latency = "42 ms")
+        val existing = ProxyServerRow(id = 8, groupId = 3, server = HTTP(port = "80"), latency = "42 ms")
 
         val result = saveProxyServerRecord(
             servers = listOf(existing),
@@ -56,10 +56,10 @@ class ProxyServerCollectionOperationsTest {
         val chain = ChainProxy(proxyServerIds = listOf(1, 2))
         val result = deleteProxyServerRecords(
             servers = listOf(
-                ProxyServerRecord(1, 1, HTTP(port = "80")),
-                ProxyServerRecord(2, 1, HTTP(port = "443")),
-                ProxyServerRecord(3, -2, strategy),
-                ProxyServerRecord(4, -2, chain),
+                ProxyServerRow(1, 1, HTTP(port = "80")),
+                ProxyServerRow(2, 1, HTTP(port = "443")),
+                ProxyServerRow(3, -2, strategy),
+                ProxyServerRow(4, -2, chain),
             ),
             deletedServerIds = setOf(1),
             nextServerId = 5,

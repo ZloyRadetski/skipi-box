@@ -3,30 +3,31 @@
 
 package features.subscription.runtime
 
+import engine.network.withAuthenticator
+import engine.network.SocksProxyEndpoint
+import engine.network.readUtf8Limited
+import engine.network.setEmbeddedBasicAuth
+import engine.network.toIdnUrl
+import engine.network.withSocksProxyAuthenticator
 import features.subscription.SubscriptionRedirectDecision
 import features.subscription.decideSubscriptionRedirect
 import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
-import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.KageSubscriptionAgeCrypto
 import features.subscription.SubscriptionAgePolicy
 import features.subscription.SubscriptionFetchResponse
 import features.subscription.SubscriptionFetchPolicy
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.SubscriptionHttpException
-import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import utils.encodeBase64
 import java.net.HttpURLConnection
-import java.net.IDN
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.URI
-import java.net.URL
 import features.subscription.SubscriptionAgeCrypto
 
 internal class AndroidSubscriptionFetcher(
@@ -87,17 +88,10 @@ private data class SubscriptionRequestCredentials(
     val agePublicKey: String?,
 )
 
-internal data class AndroidSubscriptionProxy(
-    val host: String,
-    val port: Int,
-    val username: String,
-    val password: String,
-)
-
-internal fun AndroidSubscriptionFetchOptions.toProxy(): AndroidSubscriptionProxy? {
+internal fun AndroidSubscriptionFetchOptions.toProxy(): SocksProxyEndpoint? {
     if (!useRunningProxy) return null
     val runtimeOptions = LocalProxyRuntime.current() ?: return null
-    return AndroidSubscriptionProxy(
+    return SocksProxyEndpoint(
         host = LocalProxyLoopbackAddress,
         port = runtimeOptions.port,
         username = runtimeOptions.username,
@@ -109,7 +103,7 @@ private fun fetchWithRedirects(
     url: String,
     userAgent: String,
     requestCredentials: SubscriptionRequestCredentials,
-    proxy: AndroidSubscriptionProxy?,
+    proxy: SocksProxyEndpoint?,
     timeoutSeconds: Int,
 ): SubscriptionFetchResponse {
     var currentUrl = url
@@ -199,7 +193,7 @@ private fun subscriptionDeviceHeaders(installationHwid: String): Map<String, Str
 }
 
 private fun String.toConnection(
-    proxy: AndroidSubscriptionProxy?,
+    proxy: SocksProxyEndpoint?,
     timeoutMillis: Int,
 ): HttpURLConnection {
     val url = URI(this).toURL()
@@ -213,36 +207,6 @@ private fun String.toConnection(
         instanceFollowRedirects = false
         requestMethod = "GET"
     }
-}
-
-private fun AndroidSubscriptionProxy.toJavaProxy(): Proxy {
-    return Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
-}
-
-private fun <T> AndroidSubscriptionProxy?.withAuthenticator(block: () -> T): T {
-    if (this == null || username.isBlank()) return block()
-    return TunnelNetworks.withSocksProxyAuthenticator(
-        port = port,
-        username = username,
-        password = password,
-        block = block,
-    )
-}
-
-private fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {
-    val userInfo = runCatching { URL(rawUrl).userInfo }.getOrNull() ?: return
-    val parts = userInfo.split(":", limit = 2)
-    val user = parts.getOrElse(0) { "" }
-    val password = parts.getOrElse(1) { "" }
-    val token = "$user:$password".encodeBase64()
-    setRequestProperty("Authorization", "Basic $token")
-}
-
-private fun String.toIdnUrl(): String {
-    val parsedUrl = URL(this)
-    val host = parsedUrl.host
-    val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
-    return if (host == asciiHost) this else replace(host, asciiHost)
 }
 
 internal fun parseSubscriptionHttpErrorMessage(errorBody: String?): String? {
@@ -292,14 +256,5 @@ private const val MaxSubscriptionBodyBytes = 32 * 1024 * 1024
 private const val MaxSubscriptionErrorBodyBytes = 64 * 1024
 
 /** Reads UTF-8 text, failing early instead of exhausting memory on a hostile or broken endpoint. */
-internal fun java.io.InputStream.readTextLimited(maxBytes: Int): String {
-    val out = java.io.ByteArrayOutputStream()
-    val buffer = ByteArray(8 * 1024)
-    while (true) {
-        val read = read(buffer)
-        if (read < 0) break
-        if (out.size() + read > maxBytes) error("Subscription response is larger than $maxBytes bytes")
-        out.write(buffer, 0, read)
-    }
-    return out.toString(Charsets.UTF_8.name())
-}
+internal fun java.io.InputStream.readTextLimited(maxBytes: Int): String =
+    readUtf8Limited(maxBytes) { IllegalStateException("Subscription response is larger than $maxBytes bytes") }

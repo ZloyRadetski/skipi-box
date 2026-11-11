@@ -5,6 +5,7 @@ package features.config
 
 import engine.xray.XrayTags
 import features.routing.model.RouteRule
+import utils.toConfigBooleanOrDefault
 import utils.toTrimmedNonEmptyDistinctList
 
 data class TrafficConfigReference(val id: Int, val rawConfig: String)
@@ -182,10 +183,4 @@ private fun shadowrocketHostToXrayHost(line: String): String? {
     val domain = trimmed.substring(0, separator).trim()
     val value = trimmed.substring(separator + 1).trim().removePrefix("server:")
     return "$domain:$value".takeIf { domain.isNotEmpty() && value.isNotEmpty() }
-}
-
-private fun String?.toConfigBooleanOrDefault(defaultValue: Boolean): Boolean = when (this?.trim()?.lowercase()) {
-    "true", "yes", "1" -> true
-    "false", "no", "0" -> false
-    else -> defaultValue
 }

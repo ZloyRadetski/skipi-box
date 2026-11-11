@@ -21,7 +21,7 @@ data class StrategyMemberSelectorGroupProjection(
     val key: String,
     val title: String,
     val subscriptionGroupId: Int?,
-    val servers: List<ProxyServerRecord>,
+    val servers: List<ProxyServerRow>,
 )
 
 /**
@@ -29,7 +29,7 @@ data class StrategyMemberSelectorGroupProjection(
  * platform-specific summary data with the host.
  */
 fun projectStrategyGroupMemberGroups(
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     subscriptionGroups: List<StrategyMemberSelectorSubscription>,
     defaultGroupName: String,
     autoBalancerName: String,
@@ -44,7 +44,7 @@ fun projectStrategyGroupMemberGroups(
             (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
             (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
     }
-    val serversByGroup = selectableServers.groupBy(ProxyServerRecord::groupId)
+    val serversByGroup = selectableServers.groupBy(ProxyServerRow::groupId)
 
     return buildList {
         val autoBalancerServers = serversByGroup[DefaultAutoBalancerGroupId].orEmpty()

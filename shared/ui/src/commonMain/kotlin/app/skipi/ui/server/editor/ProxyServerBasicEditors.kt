@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.*
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Shadowsocks
@@ -227,7 +227,7 @@ fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.proxy_editor_method),
             items = methodOptions,
             modifier = Modifier.padding(bottom = 12.dp),

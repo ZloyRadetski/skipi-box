@@ -4,7 +4,7 @@
 package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
 import app.skipi.app.proxy.reconcileSubscriptionServerCollection
 import features.config.decodeSkipiPayload
@@ -70,7 +70,7 @@ data class LoadedSubscriptionRefresh(
 /** Aggregate state needed to apply a response with Android's latest-state semantics. */
 data class SubscriptionRefreshSnapshot(
     val subscriptions: List<SubscriptionRecord>,
-    val servers: List<ProxyServerRecord>,
+    val servers: List<ProxyServerRow>,
     val nextServerId: Int,
     val selectedServerId: Int,
     /** Host rows omitted from [servers] but still present in the persisted catalog. */

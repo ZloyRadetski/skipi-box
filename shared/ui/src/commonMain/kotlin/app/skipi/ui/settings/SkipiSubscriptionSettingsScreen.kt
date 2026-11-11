@@ -49,7 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.subscription.SubscriptionExpiryReminderList
 import app.skipi.ui.text.themedFontWeight
@@ -149,7 +149,7 @@ fun SkipiSubscriptionSettingsScreen(
                     SmallTitle(text = labels.generalSectionTitle)
                     SkipiSettingsSectionCard {
                         if (capabilities.fetchTimeout) {
-                            AppOverlayDropdownPreference(
+                            SkipiDropdownPreference(
                                 title = labels.fetchTimeoutTitle,
                                 summary = labels.fetchTimeoutSummary,
                                 items = labels.timeoutOptions,

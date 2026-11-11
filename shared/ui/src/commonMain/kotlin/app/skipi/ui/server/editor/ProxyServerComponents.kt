@@ -35,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.*
 import app.skipi.ui.text.formatTemplate
 import app.skipi.ui.text.themedFontWeight
@@ -211,7 +211,7 @@ fun LazyListScope.strategyGroupProxyServer(
                 .padding(bottom = 16.dp),
             colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
         ) {
-            AppOverlayDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.proxy_editor_strategy_group_type),
                 items = strategyLabels,
                 selectedIndex = strategyIndex.intValue,
@@ -223,7 +223,7 @@ fun LazyListScope.strategyGroupProxyServer(
                 },
             )
             if (isConfigGroup) {
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_group_display_mode_title),
                     items = displayModeLabels,
                     selectedIndex = displayModeIndex.intValue,
@@ -286,7 +286,7 @@ fun LazyListScope.strategyGroupProxyServer(
                     onOpenMembers?.invoke()
                 },
             )
-            AppOverlayDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.proxy_editor_strategy_group_source_group),
                 items = effectiveGroupOptions.map { option -> option.label },
                 selectedIndex = groupIndex.intValue,
@@ -318,7 +318,7 @@ fun LazyListScope.strategyGroupProxyServer(
                     .padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
             ) {
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_strategy_group_probe_interval),
                     items = probeIntervalLabels,
                     selectedIndex = probeIntervalIndex.intValue,
@@ -327,7 +327,7 @@ fun LazyListScope.strategyGroupProxyServer(
                         strategyGroupEdit.probeInterval = probeIntervalValues[index]
                     },
                 )
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_strategy_group_tolerance),
                     items = toleranceLabels,
                     selectedIndex = toleranceIndex.intValue,
@@ -411,7 +411,7 @@ fun LazyListScope.chainProxyServer(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
             ) {
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_chain_member)
                         .formatTemplate("index" to (index + 1).toString()),
                     items = effectiveMemberOptions.map { option -> option.label },

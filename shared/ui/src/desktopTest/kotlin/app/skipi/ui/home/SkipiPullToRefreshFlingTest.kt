@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.PullRefreshPhase
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -35,14 +36,14 @@ class SkipiPullToRefreshFlingTest {
     fun releasingAShortPullKeepsItsVelocityAwayFromTheList() = runBlocking(StepClock()) {
         val controller = controller()
         controller.nestedScrollConnection.onPostScroll(Offset.Zero, Offset(0f, 40f), NestedScrollSource.UserInput)
-        assertEquals(SkipiPullRefreshState.Pulling, controller.refreshState)
+        assertEquals(PullRefreshPhase.Pulling, controller.refreshState)
 
         val release = Velocity(0f, 1_800f)
         val consumed = controller.nestedScrollConnection.onPreFling(release)
 
         assertEquals(release, consumed)
         assertEquals(0f, controller.dragOffset)
-        assertEquals(SkipiPullRefreshState.Idle, controller.refreshState)
+        assertEquals(PullRefreshPhase.Idle, controller.refreshState)
         assertEquals(Velocity.Zero, controller.nestedScrollConnection.onPostFling(Velocity.Zero, Velocity(0f, 300f)))
     }
 

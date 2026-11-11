@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -155,7 +155,7 @@ fun SkipiLogsSettingsScreen(
                     SmallTitle(text = labels.optionsSectionTitle)
                     SkipiSettingsSectionCard {
                         if (capabilities.logLevel) {
-                            AppOverlayDropdownPreference(
+                            SkipiDropdownPreference(
                                 title = labels.logLevelTitle,
                                 items = labels.logLevels,
                                 selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
@@ -163,7 +163,7 @@ fun SkipiLogsSettingsScreen(
                             )
                         }
                         if (capabilities.retention) {
-                            AppOverlayDropdownPreference(
+                            SkipiDropdownPreference(
                                 title = labels.retentionTitle,
                                 summary = labels.retentionSummary,
                                 items = labels.retentionOptions,

@@ -100,7 +100,7 @@ class ConfigProxyGroupReconcilerTest {
     private fun reconcile(
         trafficConfigs: List<TrafficConfigState>,
         activeConfigId: Int,
-        servers: List<ProxyServerRecord>,
+        servers: List<ProxyServerRow>,
         nextServerId: Int,
         selectedServerId: Int = 0,
         retainedServerIds: Set<Int> = emptySet(),
@@ -121,7 +121,7 @@ class ConfigProxyGroupReconcilerTest {
         rawConfig = rawConfig,
     )
 
-    private fun node(id: Int, remarks: String) = ProxyServerRecord(
+    private fun node(id: Int, remarks: String) = ProxyServerRow(
         id = id,
         groupId = DefaultSubscriptionGroupId,
         server = VLESS(

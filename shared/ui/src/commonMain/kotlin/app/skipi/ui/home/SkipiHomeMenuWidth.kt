@@ -31,12 +31,27 @@ internal class MenuLevelWidths {
     }
 }
 
-/** Reports the natural (intrinsic) width of this menu level; place it on the level's root. */
+/**
+ * What a menu level is measured with: its own [naturalWidth], exactly, whatever width the menu surface is
+ * pinned to at that moment. The surface glides between the widths of two levels; if the level followed it,
+ * every frame of that glide would wrap and ellipsize its text again to the width of the frame. Measured at its
+ * own width the text is laid out once, and the surface only reveals or hides it.
+ */
+internal fun menuLevelConstraints(incoming: Constraints, naturalWidth: Int): Constraints =
+    if (naturalWidth > 0) incoming.copy(minWidth = naturalWidth, maxWidth = naturalWidth) else incoming
+
+/**
+ * Reports the natural (intrinsic) width of this menu level and lays the level out at it, so its text does not
+ * reflow while the menu surface animates between levels; place it on the level's root.
+ */
 internal fun Modifier.reportMenuLevelWidth(widths: MenuLevelWidths, levelKey: String): Modifier =
     layout { measurable, constraints ->
-        widths.report(levelKey, measurable.maxIntrinsicWidth(Constraints.Infinity))
-        val placeable = measurable.measure(constraints)
-        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        val natural = measurable.maxIntrinsicWidth(Constraints.Infinity)
+        widths.report(levelKey, natural)
+        val placeable = measurable.measure(menuLevelConstraints(constraints, natural))
+        // The size reported to the parent still follows the surface; whatever is wider is clipped by it.
+        val width = placeable.width.coerceIn(constraints.minWidth, constraints.maxWidth)
+        layout(width, placeable.height) { placeable.place(0, 0) }
     }
 
 /**

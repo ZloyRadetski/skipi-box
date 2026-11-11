@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppCascadingListPopup
+import app.skipi.ui.components.AppEntriesMenu
 import app.skipi.ui.components.AppWindowDialog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
@@ -36,11 +36,9 @@ import app.skipi.ui.resources.configs_ui_edit
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Exact shared presentation for importing a config by URL. Clipboard and fetching stay with the caller. */
@@ -120,11 +118,9 @@ fun SkipiTrafficConfigContextMenu(
         if (showDelete) add(DropdownItem(text = stringResource(Res.string.common_delete), onClick = onDelete))
         if (showEnable) add(DropdownItem(text = stringResource(Res.string.configs_activate), onClick = onEnable))
     }
-    AppCascadingListPopup(
+    AppEntriesMenu(
         show = show && items.isNotEmpty(),
         entries = if (items.isEmpty()) emptyList() else listOf(DropdownEntry(items = items)),
-        popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-        alignment = PopupPositionProvider.Align.TopEnd,
         onDismissRequest = onDismissRequest,
     )
 }
@@ -137,7 +133,7 @@ fun SkipiTrafficConfigProxyGroupContextMenu(
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    AppCascadingListPopup(
+    AppEntriesMenu(
         show = show,
         entries = listOf(
             DropdownEntry(
@@ -148,8 +144,6 @@ fun SkipiTrafficConfigProxyGroupContextMenu(
                 ),
             ),
         ),
-        popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-        alignment = PopupPositionProvider.Align.TopEnd,
         onDismissRequest = onDismissRequest,
     )
 }

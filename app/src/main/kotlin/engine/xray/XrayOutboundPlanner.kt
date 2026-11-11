@@ -6,7 +6,7 @@ package engine.xray
 import app.AppState
 import app.ProxyServerState
 import app.effectiveLocalDnsEnabled
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.XrayOutboundPlanner as SharedXrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import app.skipi.app.proxy.resolveStrategyGroupMembers
@@ -35,7 +35,7 @@ internal fun AppState.strategyGroupMembers(
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerState> {
     val records = proxyServers.map { server ->
-        ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
+        ProxyServerRow(server.id, server.groupId, server.server, server.latency)
     }
     val resolved = resolveStrategyGroupMembers(
         strategyGroup = strategyGroup,
@@ -47,7 +47,7 @@ internal fun AppState.strategyGroupMembers(
     return resolved.mapNotNull { record -> proxyServers.firstOrNull { it.id == record.id } }
 }
 
-private fun ProxyServerState.toProxyServerRecord() = ProxyServerRecord(
+private fun ProxyServerState.toProxyServerRecord() = ProxyServerRow(
     id = id,
     groupId = groupId,
     server = server,

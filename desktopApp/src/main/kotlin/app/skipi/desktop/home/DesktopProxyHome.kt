@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ProxyHomeServerMove
+import app.skipi.app.home.resolveProxyHomeServerDrag
+import app.skipi.app.home.resolveProxyHomeServerStep
 import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +42,7 @@ import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.createProxyServerEditorDraft
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.SkipiConnectionLogPanel
+import app.skipi.ui.navigation.SkipiTool
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
@@ -75,7 +79,7 @@ import app.skipi.ui.resources.routing_default_proxy_server
 import app.skipi.ui.server.editor.GroupMemberChoice
 import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Custom
@@ -173,6 +177,9 @@ internal fun DesktopProxyHome(
     onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     onHomeSortModeChange: (ProxyHomeSortMode) -> Unit = {},
     onHomeLeftColumnExtraChange: (Float) -> Unit = {},
+    /** Tools listed as a menu in the Home header; the sidebar lists them itself, so it passes none. */
+    pinnedTools: List<SkipiTool> = emptyList(),
+    onOpenPinnedTool: (SkipiTool) -> Unit = {},
 ) {
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
@@ -261,7 +268,7 @@ internal fun DesktopProxyHome(
     val editorProxyServers = remember(decodedServers) {
         decodedServers.mapNotNull { (stored, server) ->
             server?.let { current ->
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = stored.id,
                     groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                     server = current,
@@ -623,6 +630,8 @@ internal fun DesktopProxyHome(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 leftColumnExtra = androidx.compose.ui.unit.Dp(desktopSettings.homeLeftColumnExtraDp),
                 onLeftColumnExtraChange = { extra -> onHomeLeftColumnExtraChange(extra.value) },
+                pinnedTools = pinnedTools,
+                onOpenPinnedTool = onOpenPinnedTool,
                 wideSidePanel = connectionLog?.let { log ->
                     { panelModifier ->
                         val logState by log.state.collectAsState()
@@ -657,7 +666,7 @@ internal fun DesktopProxyHome(
             val choices = remember(strategyGroup, decodedServers, trafficConfigContentById, latencyByServerId) {
                 val records = decodedServers.mapNotNull { (stored, server) ->
                     server?.let {
-                        ProxyServerRecord(
+                        ProxyServerRow(
                             id = stored.id,
                             groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                             server = it,
@@ -1130,34 +1139,21 @@ internal class DesktopProxyHomeEffectContext(
                 }
             }
         }
-        is ProxyHomeEffect.MoveServer -> {
-            if (sortMode != ProxyHomeSortMode.Default) {
-                unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
-            } else {
-                effect.serverId.toIntOrNull()?.let { id ->
-                    val fromIndex = orderedVisibleServerIds.indexOf(id)
-                    val toServerId = orderedVisibleServerIds.getOrNull(fromIndex + effect.offset)
-                    if (fromIndex == -1 || toServerId == null || effect.offset == 0) {
-                        unsupported("Невозможно переместить сервер за пределы группы.")
-                    } else {
-                        onMoveServer(id, toServerId)
-                    }
-                } ?: unsupported("Некорректный идентификатор сервера.")
-            }
-        }
+        is ProxyHomeEffect.MoveServer -> effect.serverId.toIntOrNull()?.let { id ->
+            performMove(resolveProxyHomeServerStep(sortMode, orderedVisibleServerIds, id, effect.offset))
+        } ?: unsupported("Некорректный идентификатор сервера.")
         is ProxyHomeEffect.ReorderServer -> {
-            if (sortMode != ProxyHomeSortMode.Default) {
-                unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
-            } else {
-                val fromServerId = effect.fromServerId.toIntOrNull()
-                val toServerId = effect.toServerId.toIntOrNull()
-                when {
-                    fromServerId == null || toServerId == null -> unsupported("Некорректный идентификатор сервера.")
-                    fromServerId == toServerId -> unsupported("Нельзя переместить сервер на ту же позицию.")
-                    fromServerId !in orderedVisibleServerIds || toServerId !in orderedVisibleServerIds ->
-                        unsupported("Перетаскиваемые серверы больше не видны в текущей группе.")
-                    else -> onMoveServer(fromServerId, toServerId)
+            val fromServerId = effect.fromServerId.toIntOrNull()
+            val toServerId = effect.toServerId.toIntOrNull()
+            if (fromServerId == null || toServerId == null) {
+                // Reordering only makes sense in the stored order, which is the first thing the refusal names.
+                if (sortMode != ProxyHomeSortMode.Default) {
+                    performMove(ProxyHomeServerMove.NotDefaultSort)
+                } else {
+                    unsupported("Некорректный идентификатор сервера.")
                 }
+            } else {
+                performMove(resolveProxyHomeServerDrag(sortMode, orderedVisibleServerIds, fromServerId, toServerId))
             }
         }
         is ProxyHomeEffect.OpenStrategyMemberPicker -> effect.serverId.toIntOrNull()?.let { id ->
@@ -1177,6 +1173,15 @@ internal class DesktopProxyHomeEffectContext(
         is ProxyHomeEffect.OpenExternalLink -> openExternalLink(effect.url)
     }
 
+
+    private fun performMove(move: ProxyHomeServerMove): Result<Unit> = when (move) {
+        is ProxyHomeServerMove.Swap -> onMoveServer(move.fromId, move.toId)
+        ProxyHomeServerMove.NotDefaultSort ->
+            unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
+        ProxyHomeServerMove.OutOfRange -> unsupported("Невозможно переместить сервер за пределы группы.")
+        ProxyHomeServerMove.SameServer -> unsupported("Нельзя переместить сервер на ту же позицию.")
+        ProxyHomeServerMove.NotVisible -> unsupported("Перетаскиваемые серверы больше не видны в текущей группе.")
+    }
     private fun testServers(serverIds: Iterable<String>): Result<Unit> {
         val targets = subscriptionTestTargets(serverIds)
         if (targets.isEmpty()) {

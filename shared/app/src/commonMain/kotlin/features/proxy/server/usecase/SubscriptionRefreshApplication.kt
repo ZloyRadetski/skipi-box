@@ -9,7 +9,7 @@ import app.SubscriptionGroupState
 import features.proxy.server.model.ProxyServer
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.server.createProxyServerDraft
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
 import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.importProxyServerRecords

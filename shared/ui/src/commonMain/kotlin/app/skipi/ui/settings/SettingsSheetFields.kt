@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,6 +82,7 @@ internal fun SheetTextField(
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
     sanitizeInput: (String) -> String = { it },
+    lineLimits: TextFieldLineLimits = TextFieldLineLimits.SingleLine,
 ) {
     val state = rememberTextFieldState(initialText = value)
 
@@ -104,7 +107,7 @@ internal fun SheetTextField(
     TextField(
         label = label,
         state = state,
-        lineLimits = TextFieldLineLimits.SingleLine,
+        lineLimits = lineLimits,
         inputTransformation = inputTransformation,
         keyboardOptions = keyboardOptions,
         enabled = enabled,
@@ -125,4 +128,17 @@ internal fun fiveDigitKeyboardOptions(): KeyboardOptions {
 
 internal fun isPort(value: String): Boolean {
     return value.toPortOrNull() != null
+}
+
+/** A help line or an error under a field of a settings sheet. */
+@Composable
+internal fun SettingsSheetStatusText(
+    text: String,
+    error: Boolean = false,
+) {
+    Text(
+        text = text,
+        color = if (error) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+    )
 }

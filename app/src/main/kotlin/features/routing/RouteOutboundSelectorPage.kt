@@ -21,7 +21,7 @@ import app.R
 import app.SubscriptionGroupState
 import app.collectAppState
 import app.navigation.RouteOutboundSelectionResult
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.routing.RouteOutboundPickerLabels
 import app.skipi.app.routing.RouteOutboundPickerProjection
 import app.skipi.app.routing.RouteOutboundPickerSubscription
@@ -56,7 +56,7 @@ internal fun projectRouteOutboundPicker(
     labels = labels,
 )
 
-private fun ProxyServerState.toProxyServerRecord() = ProxyServerRecord(
+private fun ProxyServerState.toProxyServerRecord() = ProxyServerRow(
     id = this.id,
     groupId = this.groupId,
     server = this.server,

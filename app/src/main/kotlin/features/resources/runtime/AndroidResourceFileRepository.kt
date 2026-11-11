@@ -3,6 +3,7 @@
 
 package features.resources.runtime
 
+import engine.network.SocksProxyEndpoint
 import android.content.Context
 import android.net.Uri
 import app.R
@@ -238,13 +239,13 @@ private data class ResourceFileDownloadTarget(
     val applyPermissions: () -> Unit = {},
 )
 
-private fun ResourceFileUpdateOptions.toDownloadProxy(): AndroidResourceFileDownloadProxy? {
+private fun ResourceFileUpdateOptions.toDownloadProxy(): SocksProxyEndpoint? {
     if (!useRunningProxy) return null
     val runtimeOptions = LocalProxyRuntime.current()
     val port = runtimeOptions?.port
         ?: fallbackProxyPort?.takeIf(Int::isPort)
         ?: error("Local proxy port is unavailable")
-    return AndroidResourceFileDownloadProxy(
+    return SocksProxyEndpoint(
         host = LocalProxyLoopbackAddress,
         port = port,
         username = runtimeOptions?.username ?: fallbackProxyUsername,

@@ -3,6 +3,12 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.AdaptiveTopAppBar
+import app.skipi.ui.layout.pageContentPaddingWithCutout
+import app.skipi.ui.layout.pageListPadding
+import app.skipi.ui.layout.pageScrollModifiers
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,11 +32,7 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -99,58 +101,43 @@ data class SkipiSettingsHomeState(
             .toSet(),
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SkipiSettingsHomeScreen(
     state: SkipiSettingsHomeState,
     padding: PaddingValues,
     onNavigate: (SkipiSettingsDestination) -> Unit,
     modifier: Modifier = Modifier,
+    isWideScreen: Boolean = false,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     val listState = rememberLazyListState()
     OnNavigationReselect { listState.animateScrollToItem(0) }
     val categoryIconColor = state.categoryIconColor
     val visible = state.visibleDestinations
-    val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
         containerColor = Color.Transparent,
-        contentColor = SkipiTheme.colors.onSurface,
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
-        modifier = modifier.fillMaxSize().nestedScroll(topBarScrollBehavior.nestedScrollConnection),
+        modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = {
-                    androidx.compose.foundation.layout.Column {
-                        Text(stringResource(Res.string.settings_title))
-                        Text(
-                            text = state.versionLabel,
-                            style = SkipiTheme.typography.bodySmall,
-                            color = SkipiTheme.colors.onSurfaceVariant,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-                scrollBehavior = topBarScrollBehavior,
+            AdaptiveTopAppBar(
+                title = stringResource(Res.string.settings_title),
+                subtitle = state.versionLabel,
+                isWideScreen = isWideScreen,
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->
-        val contentPadding = PaddingValues(
-            start = maxOf(padding.calculateStartPadding(layoutDirection), innerPadding.calculateStartPadding(layoutDirection)) + 8.dp,
-            // The top app bar already applies the status-bar inset and Scaffold
-            // includes its measured height here; adding host padding duplicates it.
-            top = innerPadding.calculateTopPadding(),
-            end = maxOf(padding.calculateEndPadding(layoutDirection), innerPadding.calculateEndPadding(layoutDirection)) + 8.dp,
-            bottom = padding.calculateBottomPadding() + innerPadding.calculateBottomPadding() + 12.dp,
+        val contentPadding = pageContentPaddingWithCutout(
+            innerPadding = innerPadding,
+            outerPadding = padding,
+            isWideScreen = isWideScreen,
         )
         LazyColumn(
             state = listState,
-            modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
-            contentPadding = contentPadding.withTopBarGap(),
+            modifier = Modifier
+                .fadeUnderTopBar(contentPadding.calculateTopPadding())
+                .pageScrollModifiers(scrollBehavior),
+            contentPadding = pageListPadding(contentPadding).withTopBarGap(),
         ) {
             if (SkipiSettingsDestination.Appearance in visible) item(key = "section_appearance") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_appearance))

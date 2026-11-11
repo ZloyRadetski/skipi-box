@@ -6,7 +6,7 @@ package app.skipi.desktop
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.ui.server.editor.ProxyServerEditorGroupOption
 import app.skipi.ui.server.editor.ServerPickerSubscriptionSummary
 import features.proxy.server.model.StrategyGroup
@@ -20,7 +20,7 @@ class DesktopProxyServerEditorProjectionTest {
     fun flagOnlyServerRemarkRemainsTheDisplayedTitle() {
         val inputs = projectDesktopProxyServerEditorInputs(
             proxyServers = listOf(
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = 45,
                     groupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                     server = VLESS(remarks = "🇺🇸"),
@@ -99,17 +99,17 @@ class DesktopProxyServerEditorProjectionTest {
         )
         val inputs = projectDesktopProxyServerEditorInputs(
             proxyServers = listOf(
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = 11,
                     groupId = 1,
                     server = VLESS(remarks = "Provider node"),
                 ),
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = 22,
                     groupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                     server = VLESS(remarks = "Manual node"),
                 ),
-                ProxyServerRecord(
+                ProxyServerRow(
                     id = 33,
                     groupId = DefaultAutoBalancerGroupId,
                     server = StrategyGroup(remarks = "Balancer"),

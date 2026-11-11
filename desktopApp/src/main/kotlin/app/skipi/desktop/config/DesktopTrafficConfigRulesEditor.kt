@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import app.skipi.app.model.SubscriptionCatalog
-import app.skipi.app.proxy.ProxyServerRecord as RouteProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow as RouteProxyServerRecord
 import app.skipi.app.routing.RouteOutboundPickerLabels
 import app.skipi.app.routing.RouteOutboundPickerSubscription
 import app.skipi.app.routing.projectRouteOutboundPicker

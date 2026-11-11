@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,7 +18,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
+import app.skipi.ui.components.StringListStatusText
+import app.skipi.ui.settings.SettingsTextField
+import app.skipi.ui.settings.SheetTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TextButton
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
@@ -92,15 +94,13 @@ fun SkipiRouteRuleEditorForm(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
+        SheetTextField(
             value = remarks,
             onValueChange = { remarks = it },
-            label = { Text(stringResource(Res.string.routing_rule_name)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(Res.string.routing_rule_name),
         )
         val outboundChoice = RouteRuleOutboundChoice(outboundOptions, outbound)
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.routing_outbound_tag_label),
             items = outboundChoice.labels,
             selectedIndex = outboundChoice.selectedIndex,
@@ -108,49 +108,57 @@ fun SkipiRouteRuleEditorForm(
             insideMargin = PaddingValues(0.dp, 8.dp),
         )
         RuleListField(stringResource(Res.string.routing_domain_label), domains, { domains = it }, domainsValid, stringResource(Res.string.routing_domain_invalid))
-        if (onRequestGeoSitePicker != null) TextButton(onClick = {
-            onRequestGeoSitePicker { selected -> domains = (splitLines(domains) + selected).distinct().joinToString("\n") }
-        }) { Text(geoSitePickerLabel) }
+        if (onRequestGeoSitePicker != null) {
+            TextButton(
+                text = geoSitePickerLabel,
+                onClick = {
+                    onRequestGeoSitePicker { selected -> domains = (splitLines(domains) + selected).distinct().joinToString("\n") }
+                },
+            )
+        }
         RuleListField(stringResource(Res.string.routing_ip_label), ips, { ips = it }, ipsValid, stringResource(Res.string.routing_ip_invalid))
-        if (onRequestGeoIpPicker != null) TextButton(onClick = {
-            onRequestGeoIpPicker { selected -> ips = (splitLines(ips) + selected).distinct().joinToString("\n") }
-        }) { Text(geoIpPickerLabel) }
+        if (onRequestGeoIpPicker != null) {
+            TextButton(
+                text = geoIpPickerLabel,
+                onClick = {
+                    onRequestGeoIpPicker { selected -> ips = (splitLines(ips) + selected).distinct().joinToString("\n") }
+                },
+            )
+        }
         RuleListField(stringResource(Res.string.routing_process_label), processes, { processes = it }, processesValid, stringResource(Res.string.routing_process_invalid))
         if (onRequestInstalledAppPicker != null) {
-            TextButton(onClick = {
-                onRequestInstalledAppPicker { selected ->
-                    processes = (splitLines(processes) + selected).distinct().joinToString("\n")
-                }
-            }) { Text(installedAppsLabel) }
+            TextButton(
+                text = installedAppsLabel,
+                onClick = {
+                    onRequestInstalledAppPicker { selected ->
+                        processes = (splitLines(processes) + selected).distinct().joinToString("\n")
+                    }
+                },
+            )
         }
-        OutlinedTextField(
+        SettingsTextField(
             value = port,
             onValueChange = { port = it },
-            label = { Text(stringResource(Res.string.routing_port_label)) },
-            isError = !portsValid,
-            supportingText = if (portsValid) null else ({ Text(stringResource(Res.string.routing_port_invalid)) }),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(Res.string.routing_port_label),
+            errorText = if (portsValid) null else stringResource(Res.string.routing_port_invalid),
         )
-        OutlinedTextField(
+        SheetTextField(
             value = protocol,
             onValueChange = { protocol = it },
-            label = { Text(stringResource(Res.string.routing_protocol_label)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(Res.string.routing_protocol_label),
         )
-        OutlinedTextField(
+        SettingsTextField(
             value = network,
             onValueChange = { network = it },
-            label = { Text(stringResource(Res.string.routing_network_label)) },
-            isError = !networkValid,
-            supportingText = if (networkValid) null else ({ Text(stringResource(Res.string.routing_network_invalid)) }),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(Res.string.routing_network_label),
+            errorText = if (networkValid) null else stringResource(Res.string.routing_network_invalid),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onCancel) { Text(stringResource(Res.string.common_cancel)) }
-            Button(
+            TextButton(text = stringResource(Res.string.common_cancel), onClick = onCancel)
+            TextButton(
+                text = stringResource(Res.string.common_save),
+                enabled = canSave,
+                colors = ButtonDefaults.textButtonColorsPrimary(),
                 onClick = {
                     if (canSave) onSave(
                         RouteRule(
@@ -167,23 +175,20 @@ fun SkipiRouteRuleEditorForm(
                         ),
                     )
                 },
-                enabled = canSave,
-            ) { Text(stringResource(Res.string.common_save)) }
+            )
         }
     }
 }
 
 @Composable
 private fun RuleListField(label: String, value: String, onValueChange: (String) -> Unit, valid: Boolean, error: String) {
-    OutlinedTextField(
+    SheetTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        isError = !valid,
-        supportingText = if (valid) null else ({ Text(error) }),
-        minLines = 2,
-        modifier = Modifier.fillMaxWidth(),
+        label = label,
+        lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 2),
     )
+    if (!valid) StringListStatusText(text = error, error = true)
 }
 
 private fun splitLines(value: String): List<String> = value.lineSequence().map(String::trim).filter(String::isNotEmpty).distinct().toList()

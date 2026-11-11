@@ -14,7 +14,7 @@ import features.proxy.server.model.toStrategyGroupTypeFromShadowrocketPolicy
 
 /** The portable result of materializing profile-owned proxy groups. */
 data class ConfigProxyGroupReconciliation(
-    val servers: List<ProxyServerRecord>,
+    val servers: List<ProxyServerRow>,
     val nextServerId: Int,
     val selectedServerId: Int,
 )
@@ -29,7 +29,7 @@ data class ConfigProxyGroupReconciliation(
 fun reconcileConfigProxyGroups(
     trafficConfigs: List<TrafficConfigState>,
     activeTrafficConfigId: Int,
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     nextServerId: Int,
     selectedServerId: Int,
     autoBalancerGroupId: Int,
@@ -91,7 +91,7 @@ fun reconcileConfigProxyGroups(
             ?.takeIf { memberId -> memberId in effectiveMemberIds || effectiveMemberIds.isEmpty() }
             ?: effectiveMemberIds.firstOrNull()
 
-        ProxyServerRecord(
+        ProxyServerRow(
             id = id,
             groupId = autoBalancerGroupId,
             latency = existing?.latency.orEmpty(),

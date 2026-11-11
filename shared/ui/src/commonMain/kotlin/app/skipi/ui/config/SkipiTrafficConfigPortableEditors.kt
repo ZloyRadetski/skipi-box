@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_ipv6
 import app.skipi.ui.resources.configs_ipv6_prefer
@@ -83,7 +83,7 @@ fun SkipiTrafficConfigNetworkActivation(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
             )
-            AppWindowDropdownPreference(
+            SkipiDropdownPreference(
                 title = stringResource(Res.string.configs_network_transport),
                 items = transports,
                 selectedIndex = transport.coerceIn(transports.indices),

@@ -66,7 +66,7 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
+import app.skipi.ui.components.SkipiSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -123,7 +123,7 @@ internal fun ResourceFileSourceCard(
             contentColor = app.skipi.ui.theme.SkipiTheme.colors.onSurface,
         ),
     ) {
-        OverlaySpinnerPreference(
+        SkipiSpinnerPreference(
             title = stringResource(Res.string.settings_resource_files_source),
             items = sourceItems,
             selectedIndex = selectedIndex,
@@ -167,7 +167,7 @@ internal fun ResourceFileSourceCard(
                 )
             },
         )
-        OverlaySpinnerPreference(
+        SkipiSpinnerPreference(
             title = stringResource(Res.string.subscription_user_agent),
             summary = settings.userAgent,
             items = userAgentItems,

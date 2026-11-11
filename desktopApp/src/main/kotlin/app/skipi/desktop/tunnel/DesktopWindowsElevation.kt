@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import utils.powerShellLiteral
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
 import java.lang.foreign.SymbolLookup
@@ -21,16 +22,15 @@ internal fun windowsElevatedRelaunchCommand(
     val argumentList = if (arguments.isEmpty()) {
         ""
     } else {
-        " -ArgumentList " + arguments.joinToString(",") { argument -> powerShellLiteral(argument) }
+        " -ArgumentList " + arguments.joinToString(",") { argument -> argument.powerShellLiteral() }
     }
     val delay = if (exitDelaySeconds > 0) "Start-Sleep -Seconds $exitDelaySeconds; " else ""
     return listOf(
         "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
-        "${delay}Start-Process -FilePath ${powerShellLiteral(launcher)}$argumentList -Verb RunAs",
+        "${delay}Start-Process -FilePath ${launcher.powerShellLiteral()}$argumentList -Verb RunAs",
     )
 }
 
-private fun powerShellLiteral(value: String): String = "'" + value.replace("'", "''") + "'"
 
 /**
  * Asks Windows to start this application elevated. Success means the prompt was accepted and the

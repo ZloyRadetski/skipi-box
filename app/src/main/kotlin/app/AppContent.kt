@@ -107,6 +107,9 @@ import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiMainPager
 import app.skipi.ui.navigation.SkipiMainPagerState
 import app.skipi.ui.navigation.SkipiNavigationItem
+import app.skipi.ui.navigation.SkipiTool
+import app.skipi.ui.navigation.label
+import app.navigation.route
 import app.skipi.ui.navigation.navigationIcon
 import app.skipi.ui.navigation.rememberSkipiMainPagerState
 import top.yukonga.miuix.kmp.basic.NavigationRail
@@ -482,6 +485,11 @@ private fun Home(
     val isWideScreen = LocalIsWideScreen.current
     val layoutDirection = LocalLayoutDirection.current
     val navigationItems = MainNavigation.navigationItems()
+    val navigator = LocalNavigator.current
+    val stateStore = LocalAppStateStore.current
+    val openTool: (SkipiTool) -> Unit = { tool ->
+        navigator.push(tool.route(activeTrafficConfigId = stateStore.currentState.activeTrafficConfigId))
+    }
     Scaffold(
         containerColor = Color.Transparent,
         modifier = Modifier
@@ -492,6 +500,8 @@ private fun Home(
                 navigationItems = navigationItems,
                 layoutDirection = layoutDirection,
                 mainPagerState = mainPagerState,
+                tools = SkipiTool.defaultPinned,
+                onOpenTool = openTool,
             )
         } else {
             CompactScreenLayout(
@@ -508,6 +518,8 @@ private fun WideScreenContent(
     navigationItems: List<SkipiNavigationItem>,
     layoutDirection: LayoutDirection,
     mainPagerState: SkipiMainPagerState,
+    tools: List<SkipiTool>,
+    onOpenTool: (SkipiTool) -> Unit,
 ) {
     val page = mainPagerState.selectedPage
     Row {
@@ -520,6 +532,14 @@ private fun WideScreenContent(
                     onClick = { mainPagerState.animateTo(item.destination) },
                     icon = item.icon,
                     label = item.label,
+                )
+            }
+            tools.forEach { tool ->
+                NavigationRailItem(
+                    selected = false,
+                    onClick = { onOpenTool(tool) },
+                    icon = tool.icon,
+                    label = tool.label(),
                 )
             }
         }

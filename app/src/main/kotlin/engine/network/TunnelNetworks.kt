@@ -3,6 +3,7 @@
 
 package engine.network
 
+import engine.network.withSocksProxyAuthenticator
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -41,29 +42,6 @@ object TunnelNetworks {
             password = options.password,
             block = block,
         )
-    }
-
-    /** Shared by resource downloads that use an explicit local SOCKS proxy. */
-    fun <T> withSocksProxyAuthenticator(
-        port: Int,
-        username: String,
-        password: String,
-        block: () -> T,
-    ): T {
-        if (username.isBlank()) return block()
-        synchronized(SocksAuthenticatorLock) {
-            Authenticator.setDefault(object : Authenticator() {
-                override fun getPasswordAuthentication(): PasswordAuthentication? {
-                    if (!isSocksProxyAuthenticationRequest(requestingPort, port)) return null
-                    return PasswordAuthentication(username, password.toCharArray())
-                }
-            })
-            return try {
-                block()
-            } finally {
-                Authenticator.setDefault(null)
-            }
-        }
     }
 
     /** The device's active VPN network, or null when no tunnel is up or socket cannot be bound. */
@@ -144,12 +122,3 @@ object TunnelNetworks {
     }
 }
 
-/**
- * Android's SOCKS implementation does not consistently expose the proxy host
- * to [Authenticator], but the dynamically allocated local port is unique.
- */
-internal fun isSocksProxyAuthenticationRequest(requestingPort: Int, proxyPort: Int): Boolean {
-    return requestingPort == proxyPort && proxyPort in 1..65_535
-}
-
-private val SocksAuthenticatorLock = Any()

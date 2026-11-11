@@ -9,7 +9,7 @@ import app.SubscriptionGroupState
 import features.proxy.server.model.ProxyServer
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.server.createProxyServerDraft
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
 import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.importProxyServerRecords
@@ -159,7 +159,7 @@ fun AppState.withUpdatedSubscriptionServersBatch(
     val applicableUpdatesByGroupId = applicableUpdates.associateBy { update -> update.groupId }
     val collection = reconcileSubscriptionServerCollection(
         servers = proxyServers.map { server ->
-            ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
+            ProxyServerRow(server.id, server.groupId, server.server, server.latency)
         },
         updates = applicableUpdates.map { update ->
             SubscriptionServerCollectionUpdate(
@@ -262,7 +262,7 @@ fun SubscriptionGroupState.toRefreshSubscriptionRecord(): SubscriptionRecord {
 fun AppState.toSubscriptionRefreshSnapshot(): SubscriptionRefreshSnapshot = SubscriptionRefreshSnapshot(
     subscriptions = subscriptionGroups.map(SubscriptionGroupState::toRefreshSubscriptionRecord),
     servers = proxyServers.map { server ->
-        ProxyServerRecord(
+        ProxyServerRow(
             id = server.id,
             groupId = server.groupId,
             server = server.server,
@@ -277,7 +277,7 @@ fun AppState.toSubscriptionRefreshSnapshot(
     catalog: ProxyServerCatalog,
 ): SubscriptionRefreshSnapshot = toSubscriptionRefreshSnapshot().copy(
     servers = catalog.servers.map { server ->
-        ProxyServerRecord(
+        ProxyServerRow(
             id = server.id,
             groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
             server = server.server,

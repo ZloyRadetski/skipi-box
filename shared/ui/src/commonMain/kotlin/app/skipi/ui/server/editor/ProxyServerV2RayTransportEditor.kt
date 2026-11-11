@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.resources.*
 import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.V2RayTransportGrpc
@@ -59,7 +59,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         val selectedTransportType = typeOptions.getOrElse(type.intValue) { typeOptions.first() }.value
 
         SmallTitle(text = stringResource(Res.string.proxy_editor_transport))
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.proxy_editor_transport_type),
             items = typeLabels,
             selectedIndex = type.intValue,
@@ -85,7 +85,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     )
                 }
                 SmallTitle(text = stringResource(Res.string.proxy_editor_transport_raw))
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_header_type),
                     items = headerTypeOptions,
                     selectedIndex = headerType.intValue,
@@ -125,7 +125,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     )
                 }
                 SmallTitle(text = stringResource(Res.string.proxy_editor_transport_kcp))
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_header_type),
                     items = kcpHeaderTypeOptions,
                     selectedIndex = kcpHeaderType.intValue,
@@ -271,7 +271,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     )
                 }
                 SmallTitle(text = stringResource(Res.string.proxy_editor_transport_xhttp))
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_xhttp_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
@@ -332,7 +332,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     )
                 }
                 SmallTitle(text = stringResource(Res.string.proxy_editor_transport_grpc))
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_grpc_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
@@ -414,7 +414,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 if (alpnOptions.indexOf(params.alpn) > -1) alpnOptions.indexOf(params.alpn) else 0
             )
         }
-        AppOverlayDropdownPreference(
+        SkipiDropdownPreference(
             title = stringResource(Res.string.proxy_editor_security),
             items = securityOptions,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -443,7 +443,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,
@@ -453,7 +453,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         params.fp = fingerprintOptions[newFingerprint]
                     },
                 )
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = "ALPN",
                     items = alpnOptions,
                     selectedIndex = alpn.intValue,
@@ -517,7 +517,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
-                AppOverlayDropdownPreference(
+                SkipiDropdownPreference(
                     title = stringResource(Res.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,

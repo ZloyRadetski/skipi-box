@@ -20,7 +20,7 @@ class StrategyGroupMemberResolverTest {
 
         val members = resolveStrategyGroupMembers(servers[3].server as StrategyGroup, servers)
 
-        assertEquals(listOf(2, 1), members.map(ProxyServerRecord::id))
+        assertEquals(listOf(2, 1), members.map(ProxyServerRow::id))
     }
 
     @Test
@@ -41,7 +41,7 @@ Policy = select, Alpha, Beta
             stripLeadingFlag = { value -> value.removePrefix("🇩🇪 ") },
         )
 
-        assertEquals(listOf(1, 2), members.map(ProxyServerRecord::id))
+        assertEquals(listOf(1, 2), members.map(ProxyServerRow::id))
     }
 
     @Test
@@ -56,9 +56,9 @@ Policy = select, Alpha, Beta
             servers = servers,
         )
 
-        assertEquals(listOf(1), members.map(ProxyServerRecord::id))
+        assertEquals(listOf(1), members.map(ProxyServerRow::id))
     }
 
     private fun record(id: Int, server: features.proxy.server.model.ProxyServer<*>) =
-        ProxyServerRecord(id = id, groupId = 1, server = server)
+        ProxyServerRow(id = id, groupId = 1, server = server)
 }

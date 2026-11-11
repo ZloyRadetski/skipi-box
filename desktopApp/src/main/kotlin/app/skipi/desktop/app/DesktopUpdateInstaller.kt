@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import utils.powerShellLiteral
+import utils.shellQuote
 import features.updater.DesktopUpdatePackage
 import java.nio.file.Path
 
@@ -58,9 +60,9 @@ private fun windowsPowerShell(script: String): List<String> =
 
 private fun shell(script: String): List<String> = listOf("/bin/sh", "-c", script)
 
-private fun ps(value: Any): String = "'" + value.toString().replace("'", "''") + "'"
+private fun ps(value: Any): String = value.toString().powerShellLiteral()
 
-private fun sh(value: Any): String = "'" + value.toString().replace("'", "'\\''") + "'"
+private fun sh(value: Any): String = value.toString().shellQuote()
 
 /**
  * The MSI is per machine, so msiexec asks for administrator rights (one UAC prompt). Whatever the answer, the

@@ -7,7 +7,7 @@ import app.ProjectInfo
 import app.skipi.app.config.importTrafficConfigDocument
 import app.skipi.app.config.TrafficConfigLibraryOperations
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord as RefreshServerRecord
+import app.skipi.app.proxy.ProxyServerRow as RefreshServerRecord
 import app.skipi.app.subscription.LoadedSubscriptionRefresh
 import app.skipi.app.subscription.ResolvedEmbeddedSubscriptionConfig
 import app.skipi.app.subscription.SubscriptionRefreshBatchCommitPort

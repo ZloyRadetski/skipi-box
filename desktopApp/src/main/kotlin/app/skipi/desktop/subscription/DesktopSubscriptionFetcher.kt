@@ -3,6 +3,12 @@
 
 package app.skipi.desktop
 
+import engine.network.SocksProxyEndpoint
+import engine.network.withAuthenticator
+import engine.network.readUtf8Limited
+import engine.network.setEmbeddedBasicAuth
+import engine.network.toIdnUrl
+import engine.network.toBasicAuthHeaderOrNull
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.normalizeSkipiUserAgent
 import features.config.decodeSkipiConfigPayloadOrNull
@@ -16,16 +22,10 @@ import features.subscription.SubscriptionMetadata
 import features.subscription.SubscriptionServerImportResult
 import features.subscription.isValidManualSubscriptionUrl
 import features.subscription.subscriptionMetadata
-import utils.encodeBase64
-import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.net.Authenticator
 import java.net.HttpURLConnection
-import java.net.IDN
 import java.net.Inet4Address
 import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URI
 import java.net.URL
@@ -302,7 +302,7 @@ class DesktopSubscriptionFetcher(
         deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        var requestUri = URI(url.trim().toIdnSubscriptionUrl()).withoutFragment()
+        var requestUri = URI(url.trim().toIdnUrl()).withoutFragment()
         var redirects = 0
 
         while (true) {
@@ -373,7 +373,7 @@ class DesktopSubscriptionFetcher(
         deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        var requestUri = URI(url.trim().toIdnSubscriptionUrl()).withoutFragment()
+        var requestUri = URI(url.trim().toIdnUrl()).withoutFragment()
         var redirects = 0
         val timeoutMillis = if (automaticResource) {
             timeout.toMillis().coerceIn(1_000, 600_000).toInt()
@@ -496,36 +496,15 @@ data class DesktopSubscriptionSocksProxy(
         require(port in 1..65_535) { "Subscription SOCKS proxy port must be in 1..65535" }
     }
 
-    internal fun toJavaProxy(): Proxy = Proxy(
-        Proxy.Type.SOCKS,
-        InetSocketAddress(host.removePrefix("[").removeSuffix("]"), port),
-    )
+
+    internal fun toJavaProxy(): Proxy = SocksProxyEndpoint(host, port).toJavaProxy()
 }
 
 @Deprecated("Use DesktopSubscriptionSocksProxy instead", ReplaceWith("DesktopSubscriptionSocksProxy"))
 typealias DesktopSubscriptionHttpProxy = DesktopSubscriptionSocksProxy
 
-private val SocksAuthenticatorLock = Any()
-
-internal fun <T> DesktopSubscriptionSocksProxy?.withAuthenticator(block: () -> T): T {
-    if (this == null || username.isBlank()) return block()
-    synchronized(SocksAuthenticatorLock) {
-        val previous = Authenticator.getDefault()
-        Authenticator.setDefault(object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication? {
-                if (requestingPort == port && port in 1..65_535) {
-                    return PasswordAuthentication(username, password.toCharArray())
-                }
-                return null
-            }
-        })
-        return try {
-            block()
-        } finally {
-            Authenticator.setDefault(previous)
-        }
-    }
-}
+internal fun <T> DesktopSubscriptionSocksProxy?.withAuthenticator(block: () -> T): T =
+    if (this == null) block() else SocksProxyEndpoint(host, port, username, password).withAuthenticator(block)
 
 private fun defaultUrlConnectionFactory(url: URL, proxy: Proxy?): HttpURLConnection {
     val connection = if (proxy != null) url.openConnection(proxy) else url.openConnection()
@@ -580,25 +559,6 @@ internal fun requireSafeAutomaticSubscriptionResourceUrl(
     return uri
 }
 
-internal fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {
-    val header = runCatching { URI(rawUrl).toBasicAuthHeaderOrNull() }.getOrNull() ?: return
-    setRequestProperty("Authorization", header)
-}
-
-/** Converts a Unicode URL hostname the same way Android's subscription transport does. */
-internal fun String.toIdnSubscriptionUrl(): String {
-    val host = URL(this).host
-    val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
-    return if (host == asciiHost) this else replace(host, asciiHost)
-}
-
-internal fun URI.toBasicAuthHeaderOrNull(): String? {
-    val info = rawUserInfo ?: return null
-    val parts = info.split(":", limit = 2)
-    val user = parts.getOrElse(0) { "" }
-    val password = parts.getOrElse(1) { "" }
-    return "Basic " + "$user:$password".encodeBase64()
-}
 
 private fun readUtf8BodyAtMost(
     rawStream: InputStream,
@@ -623,20 +583,7 @@ private fun readUtf8BodyAtMost(
     }
 
     return stream.use { input ->
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(16 * 1024)
-        var total = 0
-        while (true) {
-            val count = input.read(buffer)
-            if (count < 0) break
-            if (count == 0) continue
-            total += count
-            if (maxBytes != null && total > maxBytes) {
-                throw DesktopSubscriptionResponseTooLargeException(maxBytes)
-            }
-            output.write(buffer, 0, count)
-        }
-        String(output.toByteArray(), StandardCharsets.UTF_8)
+        input.readUtf8Limited(maxBytes ?: Int.MAX_VALUE) { DesktopSubscriptionResponseTooLargeException(maxBytes ?: Int.MAX_VALUE) }
     }
 }
 

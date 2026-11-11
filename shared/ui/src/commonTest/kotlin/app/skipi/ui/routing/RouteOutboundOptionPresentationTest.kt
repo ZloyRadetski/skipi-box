@@ -3,7 +3,7 @@
 
 package app.skipi.ui.routing
 
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.routing.RouteOutboundItem
 import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.V2RayTransportWebSocket
@@ -47,7 +47,7 @@ class RouteOutboundOptionPresentationTest {
 
     @Test
     fun serverPresentationUsesCountryFlagAndProtocolTransportText() {
-        val record = ProxyServerRecord(
+        val record = ProxyServerRow(
             id = 12,
             groupId = 1,
             server = VLESS(
@@ -74,7 +74,7 @@ class RouteOutboundOptionPresentationTest {
     fun flagOnlyAndUnnamedServersRetainAndroidTitleFallbacks() {
         val flagOnly = presentRouteOutboundOption(
             RouteOutboundItem.Server(
-                server = ProxyServerRecord(
+                server = ProxyServerRow(
                     id = 7,
                     groupId = 1,
                     server = VLESS(remarks = "🇫🇮", server = "flag.example", port = "443"),
@@ -85,7 +85,7 @@ class RouteOutboundOptionPresentationTest {
         )
         val unnamed = presentRouteOutboundOption(
             RouteOutboundItem.Server(
-                server = ProxyServerRecord(
+                server = ProxyServerRow(
                     id = 93,
                     groupId = 1,
                     server = VLESS(server = "unnamed.example", port = "443"),
@@ -109,7 +109,7 @@ class RouteOutboundOptionPresentationTest {
         val rawPaddedFlagOnlyRemarks = "  🇫🇮  "
         val nonCountryEmoji = presentRouteOutboundOption(
             RouteOutboundItem.Server(
-                server = ProxyServerRecord(
+                server = ProxyServerRow(
                     id = 81,
                     groupId = 1,
                     server = VLESS(
@@ -124,7 +124,7 @@ class RouteOutboundOptionPresentationTest {
         )
         val paddedFlagOnly = presentRouteOutboundOption(
             RouteOutboundItem.Server(
-                server = ProxyServerRecord(
+                server = ProxyServerRow(
                     id = 82,
                     groupId = 1,
                     server = VLESS(

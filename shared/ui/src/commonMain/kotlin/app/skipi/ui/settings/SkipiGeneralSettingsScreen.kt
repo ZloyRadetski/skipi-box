@@ -41,7 +41,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import app.skipi.ui.components.AppSlider
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_back
@@ -206,7 +206,7 @@ fun SkipiGeneralSettingsScreen(
                         SmallTitle(text = stringResource(Res.string.settings_localization_and_feedback))
                         SkipiSettingsSectionCard {
                             if (GeneralSettingsControl.Language in visibleControls) {
-                                AppOverlayDropdownPreference(
+                                SkipiDropdownPreference(
                                     title = stringResource(Res.string.settings_language),
                                     items = languageOptions,
                                     selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),

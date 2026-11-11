@@ -2,6 +2,7 @@
 
 package app.skipi.desktop
 
+import utils.toConfigBooleanOrDefault
 import platform.buildLogJson
 import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.ProfileProxyTag
@@ -245,12 +246,6 @@ private fun List<String>.toDesktopXrayHosts(): Map<String, List<String>> = build
             .distinct()
         if (domain.isNotEmpty() && targets.isNotEmpty()) put(domain, targets)
     }
-}
-
-private fun String?.toConfigBooleanOrDefault(defaultValue: Boolean): Boolean = when (this?.trim()?.lowercase()) {
-    "true", "yes", "1" -> true
-    "false", "no", "0" -> false
-    else -> defaultValue
 }
 
 private const val SocksInboundTag = "skipi-socks"

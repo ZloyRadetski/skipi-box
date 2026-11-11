@@ -4,6 +4,7 @@
 package features.config
 
 import app.skipi.app.server.ProxyServerEditResult
+import app.skipi.ui.config.trafficConfigGlobalProxyGroupEditResult
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.VLESS

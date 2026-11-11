@@ -4,7 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.model.SubscriptionCatalog
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.StrategyMemberSelectorSubscription
 import app.skipi.app.proxy.projectStrategyGroupMemberGroups
 import app.skipi.ui.server.editor.ProxyServerEditorGroupOption
@@ -25,7 +25,7 @@ internal data class DesktopProxyServerEditorInputs(
 )
 
 internal fun projectDesktopProxyServerEditorInputs(
-    proxyServers: List<ProxyServerRecord>,
+    proxyServers: List<ProxyServerRow>,
     subscriptionCatalog: SubscriptionCatalog,
     subscriptionSummaries: Map<Int, ServerPickerSubscriptionSummary>,
     allGroupsLabel: String,

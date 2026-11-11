@@ -3,9 +3,10 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.resources.*
 import androidx.compose.animation.AnimatedVisibility
 import app.skipi.ui.components.AppWindowBottomSheet
-import app.skipi.ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.SkipiDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,15 +25,11 @@ import app.skipi.app.settings.FragmentSettingsDraft
 import app.skipi.app.settings.toSavedSettings
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
-import engine.xray.DefaultFragmentPackets
 import engine.xray.FragmentPacketsValues
 import engine.xray.MaxFragmentInputLength
-import app.skipi.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import app.skipi.ui.text.formatTemplate
@@ -103,7 +100,7 @@ fun FragmentSettingsBottomSheet(
     ) {
         key(show) {
             SettingsSheetContent {
-                FragmentStatusText(stringResource(Res.string.settings_fragment_description))
+                SettingsSheetStatusText(stringResource(Res.string.settings_fragment_description))
                 SwitchPreference(
                     title = stringResource(Res.string.settings_fragment_enabled),
                     checked = enabled,
@@ -115,7 +112,7 @@ fun FragmentSettingsBottomSheet(
                     exit = shrinkVertically() + fadeOut(),
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        AppWindowDropdownPreference(
+                        SkipiDropdownPreference(
                             title = stringResource(Res.string.settings_fragment_packets),
                             items = FragmentPacketsValues,
                             selectedIndex = fragmentPacketsIndex(packets),
@@ -170,20 +167,8 @@ private fun FragmentTextField(
             modifier = Modifier.fillMaxWidth(),
             sanitizeInput = ::sanitizeFragmentRangeInput,
         )
-        errorText?.let { FragmentStatusText(text = it, error = true) }
+        errorText?.let { SettingsSheetStatusText(text = it, error = true) }
     }
-}
-
-@Composable
-private fun FragmentStatusText(
-    text: String,
-    error: Boolean = false,
-) {
-    Text(
-        text = text,
-        color = if (error) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-    )
 }
 
 private fun fragmentPacketsIndex(value: String): Int {

@@ -3,19 +3,18 @@
 
 package app.skipi.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.hapticfeedback.HapticFeedback
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 data class IconDropdownMenuEntry<T>(
@@ -26,6 +25,7 @@ data class IconDropdownMenuEntry<T>(
     val children: List<IconDropdownMenuEntry<T>> = emptyList(),
 )
 
+/** An icon button that opens a [SkipiMenu] of [entries] under it; choosing one reports its action. */
 @Composable
 fun <T> IconDropdownMenu(
     imageVector: ImageVector,
@@ -35,65 +35,43 @@ fun <T> IconDropdownMenu(
     hapticFeedback: HapticFeedback,
     modifier: Modifier = Modifier,
 ) {
-    val showPopup = remember { mutableStateOf(false) }
-    val holdDown = remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
 
-    IconButton(
-        modifier = modifier,
-        onClick = {
-            showPopup.value = true
-            holdDown.value = true
-        },
-        holdDownState = holdDown.value,
-    ) {
-        Icon(
-            imageVector = imageVector,
-            contentDescription = contentDescription,
-            tint = MiuixTheme.colorScheme.onBackground,
+    // The menu opens next to the layout it is composed in, so the button and the menu share a Box.
+    Box(modifier = modifier) {
+        IconButton(
+            onClick = { expanded = true },
+            holdDownState = expanded,
+        ) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                tint = MiuixTheme.colorScheme.onBackground,
+            )
+        }
+        SkipiMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            sections = listOf(SkipiMenuSection(entries.toMenuItems(hapticFeedback, onAction))),
+            closeOnSelection = true,
         )
     }
-    AppCascadingListPopup(
-        show = showPopup.value,
-        entries = listOf(
-            DropdownEntry(
-                items = entries.toDropdownItems(
-                    hapticFeedback = hapticFeedback,
-                    onAction = onAction,
-                ),
-            ),
-        ),
-        popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-        alignment = PopupPositionProvider.Align.TopEnd,
-        onDismissRequest = {
-            showPopup.value = false
-        },
-        onDismissFinished = {
-            holdDown.value = false
-        },
-    )
 }
 
-private fun <T> List<IconDropdownMenuEntry<T>>.toDropdownItems(
+private fun <T> List<IconDropdownMenuEntry<T>>.toMenuItems(
     hapticFeedback: HapticFeedback,
     onAction: (T) -> Unit,
-): List<DropdownItem> {
-    return map { entry ->
-        DropdownItem(
-            text = entry.title,
-            selected = entry.selected,
-            onClick = entry.action?.let { action ->
-                {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
-                    onAction(action)
-                }
-            },
-            children = entry.children
-                .takeIf { children -> children.isNotEmpty() }
-                ?.toDropdownItems(
-                    hapticFeedback = hapticFeedback,
-                    onAction = onAction,
-                ),
-        )
-    }
+): List<SkipiMenuItem> = map { entry ->
+    SkipiMenuItem(
+        title = entry.title,
+        selected = entry.selected,
+        children = entry.children.toMenuItems(hapticFeedback, onAction),
+        onClick = entry.action?.let { action ->
+            {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAction(action)
+            }
+        },
+        key = entry.key.toString(),
+    )
 }
-

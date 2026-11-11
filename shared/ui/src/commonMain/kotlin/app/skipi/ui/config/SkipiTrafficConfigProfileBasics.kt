@@ -3,14 +3,12 @@
 
 package app.skipi.ui.config
 
+import app.skipi.ui.settings.SheetTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.byValue
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.then
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,7 +31,6 @@ import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 /** Common profile basics form; persistence and navigation are supplied by the host platform. */
@@ -109,13 +106,7 @@ fun SkipiTrafficConfigProfileBasics(
 @Composable
 private fun ProfileTextField(value: String, onValueChange: (String) -> Unit, label: String, summary: String) {
     Column(Modifier.fillMaxWidth()) {
-        TextField(
-            state = rememberTextFieldState(value),
-            inputTransformation = { onValueChange(asCharSequence().toString()) },
-            label = label,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        SheetTextField(value = value, onValueChange = onValueChange, label = label)
         Text(
             text = summary,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -127,13 +118,12 @@ private fun ProfileTextField(value: String, onValueChange: (String) -> Unit, lab
 
 @Composable
 private fun IntervalField(value: String, onValueChange: (String) -> Unit, label: String) {
-    TextField(
-        state = rememberTextFieldState(initialText = value),
-        inputTransformation = InputTransformation
-            .byValue { _, proposed -> sanitizeSubscriptionIntervalInput(proposed.toString()) }
-            .then { onValueChange(asCharSequence().toString()) },
+    SheetTextField(
+        value = value,
+        onValueChange = onValueChange,
         label = label,
-        lineLimits = TextFieldLineLimits.SingleLine,
+        sanitizeInput = ::sanitizeSubscriptionIntervalInput,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
     )
 }

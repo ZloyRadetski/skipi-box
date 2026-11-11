@@ -52,7 +52,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import app.skipi.ui.components.SkipiSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import org.jetbrains.compose.resources.stringResource
@@ -246,7 +246,7 @@ internal fun SubscriptionExpiryReminderDialog(
                 .padding(bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            WindowSpinnerPreference(
+            SkipiSpinnerPreference(
                 title = stringResource(Res.string.subscription_expiry_reminder_value_label),
                 summary = unitItems[selectedUnitIndex].summary,
                 items = unitItems,

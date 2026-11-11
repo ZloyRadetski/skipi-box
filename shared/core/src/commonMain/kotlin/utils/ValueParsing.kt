@@ -33,3 +33,10 @@ fun String.toIntCoercedInOrDefault(range: IntRange, default: Int): Int {
     val value = trim().toIntOrNull() ?: return default
     return value.coerceIn(range.first, range.last)
 }
+
+/** A config flag: true/yes/1 or false/no/0 in any case; anything else, or nothing, is [defaultValue]. */
+fun String?.toConfigBooleanOrDefault(defaultValue: Boolean): Boolean = when (this?.trim()?.lowercase()) {
+    "true", "yes", "1" -> true
+    "false", "no", "0" -> false
+    else -> defaultValue
+}

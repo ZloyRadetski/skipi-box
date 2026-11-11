@@ -4,7 +4,7 @@
 package app.skipi.app.routing
 
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
 import features.proxy.server.model.Custom
@@ -26,7 +26,7 @@ sealed interface RouteOutboundItem {
     }
 
     data class Server(
-        val server: ProxyServerRecord,
+        val server: ProxyServerRow,
         val tag: String,
     ) : RouteOutboundItem {
         override val key: String get() = "server-${server.id}"
@@ -70,7 +70,7 @@ data class RouteOutboundPickerProjection(
  * shared UI owns portable option presentation and rendering.
  */
 fun projectRouteOutboundPicker(
-    servers: List<ProxyServerRecord>,
+    servers: List<ProxyServerRow>,
     subscriptionGroups: List<RouteOutboundPickerSubscription>,
     trafficConfigs: List<TrafficConfigState>,
     selectedTag: String,
@@ -86,7 +86,7 @@ fun projectRouteOutboundPicker(
         (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
             (!shadowrocketPolicyMode || server.server.getInfo().remarks.isNotBlank())
     }
-    val serversByGroup = selectableServers.groupBy(ProxyServerRecord::groupId)
+    val serversByGroup = selectableServers.groupBy(ProxyServerRow::groupId)
 
     val systemEntries = mutableListOf(
         RouteOutboundItem.Static(
@@ -224,7 +224,7 @@ private fun RouteOutboundPickerSubscription.displayName(
     defaultGroupId: Int = DefaultSubscriptionGroupId,
 ): String = if (builtIn && id == defaultGroupId) defaultGroupName else name
 
-private fun resolveTag(server: ProxyServerRecord, shadowrocketPolicyMode: Boolean): String =
+private fun resolveTag(server: ProxyServerRow, shadowrocketPolicyMode: Boolean): String =
     if (shadowrocketPolicyMode) server.server.getInfo().remarks.trim() else server.id.toString()
 
 private fun RouteOutboundItem.tagForMatching(): String = when (this) {

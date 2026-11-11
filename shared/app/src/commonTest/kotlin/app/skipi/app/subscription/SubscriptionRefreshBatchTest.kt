@@ -4,7 +4,7 @@
 package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionRecord
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.StrategyGroup
@@ -88,7 +88,7 @@ class SubscriptionRefreshBatchTest {
             lastUpdatedAtMillis = 700L,
         )
         val deleted = subscription(id = 6, url = "https://deleted.example.test/list")
-        val latestManual = ProxyServerRecord(
+        val latestManual = ProxyServerRow(
             id = 70,
             groupId = 90,
             server = VLESS(remarks = "Latest manual", id = "manual-latest", server = "manual.example.test", port = "443"),
@@ -97,8 +97,8 @@ class SubscriptionRefreshBatchTest {
         val latest = snapshot.copy(
             subscriptions = listOf(latestFirst, latestSecond, subscription(id = 9)),
             servers = listOf(
-                ProxyServerRecord(7, requestedFirst.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
-                ProxyServerRecord(8, requestedSecond.id, vless("old-second.example.test", "Old second"), latency = "30 ms"),
+                ProxyServerRow(7, requestedFirst.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
+                ProxyServerRow(8, requestedSecond.id, vless("old-second.example.test", "Old second"), latency = "30 ms"),
                 latestManual,
             ),
             nextServerId = 100,
@@ -450,11 +450,11 @@ class SubscriptionRefreshBatchTest {
             SubscriptionRefreshSnapshot(
                 subscriptions = listOf(first, second),
                 servers = listOf(
-                    ProxyServerRecord(7, first.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
-                    ProxyServerRecord(8, second.id, vless("old-second.example.test", "Old second"), latency = "30 ms"),
-                    ProxyServerRecord(33, 90, vless("manual.example.test", "Manual"), latency = "9 ms"),
-                    ProxyServerRecord(100, -2, StrategyGroup(remarks = "Balancer", proxyServerIds = listOf(7, 8), selectedMemberId = 8)),
-                    ProxyServerRecord(101, -2, ChainProxy(remarks = "Chain", proxyServerIds = listOf(7, 8))),
+                    ProxyServerRow(7, first.id, HTTP(remarks = "Old first", server = "old-first.example.test", port = "443")),
+                    ProxyServerRow(8, second.id, vless("old-second.example.test", "Old second"), latency = "30 ms"),
+                    ProxyServerRow(33, 90, vless("manual.example.test", "Manual"), latency = "9 ms"),
+                    ProxyServerRow(100, -2, StrategyGroup(remarks = "Balancer", proxyServerIds = listOf(7, 8), selectedMemberId = 8)),
+                    ProxyServerRow(101, -2, ChainProxy(remarks = "Chain", proxyServerIds = listOf(7, 8))),
                 ),
                 nextServerId = 102,
                 selectedServerId = 7,

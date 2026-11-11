@@ -4,7 +4,7 @@
 package app.skipi.ui.config
 
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId
-import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRow
 import features.config.TrafficConfigState
 import features.proxy.server.model.OutboundObject
 import features.proxy.server.model.ProxyServer
@@ -85,13 +85,13 @@ Repeated = load-balance, DIRECT
             ),
             projectTrafficConfigGlobalProxyGroups(
                 listOf(
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 70,
                         groupId = DefaultAutoBalancerGroupId,
                         server = StrategyGroup(remarks = "Global group"),
                     ),
                     // The Android safe cast compares null to null for a non-StrategyGroup server.
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 71,
                         groupId = DefaultAutoBalancerGroupId,
                         server = VLESS(
@@ -101,17 +101,17 @@ Repeated = load-balance, DIRECT
                             port = "443",
                         ),
                     ),
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 72,
                         groupId = DefaultAutoBalancerGroupId,
                         server = StrategyGroup(remarks = "Profile-owned", sourceTrafficConfigId = 41),
                     ),
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 73,
                         groupId = 5,
                         server = StrategyGroup(remarks = "Other group"),
                     ),
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 74,
                         groupId = DefaultAutoBalancerGroupId,
                         server = StrategyGroup(remarks = "Second global group"),
@@ -134,7 +134,7 @@ Repeated = load-balance, DIRECT
             ),
             projectTrafficConfigGlobalProxyGroups(
                 listOf(
-                    ProxyServerRecord(
+                    ProxyServerRow(
                         id = 80,
                         groupId = DefaultAutoBalancerGroupId,
                         server = ProxyServerInfoStub(

@@ -74,20 +74,6 @@ fun SkipiSettingsNumberField(
 }
 
 @Composable
-fun SkipiSettingsTextField(value: String, onValueChange: (String) -> Unit, label: String, readOnly: Boolean = false) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = label,
-            readOnly = readOnly,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
 fun SkipiSettingsInlineError(text: String) {
     Text(
         text = text,

@@ -3,7 +3,6 @@
 
 package app.skipi.ui.components
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -11,15 +10,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import app.skipi.ui.theme.LocalPopupColors
 import app.skipi.ui.theme.LocalPopupTextStyles
-import top.yukonga.miuix.kmp.basic.BasicComponentColors
-import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.layout.DialogDefaults
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -130,164 +122,4 @@ fun AppWindowBottomSheet(
             },
         )
     }
-}
-
-@Composable
-fun AppWindowDropdownPreference(
-    items: List<String>,
-    selectedIndex: Int,
-    title: String,
-    modifier: Modifier = Modifier,
-    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
-    summary: String? = null,
-    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
-    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
-    startAction: (@Composable (() -> Unit))? = null,
-    bottomAction: (@Composable (() -> Unit))? = null,
-    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
-    maxHeight: Dp? = null,
-    enabled: Boolean = true,
-    showValue: Boolean = true,
-    onExpandedChange: ((Boolean) -> Unit)? = null,
-    onSelectedIndexChange: ((Int) -> Unit)? = null,
-) {
-    AppMiuixWindowTheme {
-        WindowDropdownPreference(
-            items = items,
-            selectedIndex = selectedIndex,
-            title = title,
-            modifier = modifier,
-            titleColor = titleColor,
-            summary = summary,
-            summaryColor = summaryColor,
-            dropdownColors = dropdownColors,
-            startAction = startAction,
-            bottomAction = bottomAction,
-            insideMargin = insideMargin,
-            maxHeight = maxHeight,
-            enabled = enabled,
-            showValue = showValue,
-            onExpandedChange = onExpandedChange,
-            onSelectedIndexChange = onSelectedIndexChange,
-        )
-    }
-}
-
-@Composable
-fun AppWindowDropdownPreference(
-    title: String,
-    entries: List<DropdownEntry>,
-    modifier: Modifier = Modifier,
-    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
-    summary: String? = null,
-    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
-    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
-    startAction: (@Composable (() -> Unit))? = null,
-    bottomAction: (@Composable (() -> Unit))? = null,
-    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
-    maxHeight: Dp? = null,
-    enabled: Boolean = true,
-    showValue: Boolean = true,
-    collapseOnSelection: Boolean = entries.size <= 1,
-    onExpandedChange: ((Boolean) -> Unit)? = null,
-) {
-    AppMiuixWindowTheme {
-        WindowDropdownPreference(
-            title = title,
-            entries = entries,
-            modifier = modifier,
-            titleColor = titleColor,
-            summary = summary,
-            summaryColor = summaryColor,
-            dropdownColors = dropdownColors,
-            startAction = startAction,
-            bottomAction = bottomAction,
-            insideMargin = insideMargin,
-            maxHeight = maxHeight,
-            enabled = enabled,
-            showValue = showValue,
-            collapseOnSelection = collapseOnSelection,
-            onExpandedChange = onExpandedChange,
-        )
-    }
-}
-
-@Composable
-fun AppOverlayDropdownPreference(
-    items: List<String>,
-    selectedIndex: Int,
-    title: String,
-    modifier: Modifier = Modifier,
-    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
-    summary: String? = null,
-    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
-    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
-    startAction: (@Composable (() -> Unit))? = null,
-    bottomAction: (@Composable (() -> Unit))? = null,
-    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
-    maxHeight: Dp? = null,
-    enabled: Boolean = true,
-    showValue: Boolean = true,
-    renderInRootScaffold: Boolean = true,
-    onExpandedChange: ((Boolean) -> Unit)? = null,
-    onSelectedIndexChange: ((Int) -> Unit)? = null,
-) {
-    OverlayDropdownPreference(
-        items = items,
-        selectedIndex = selectedIndex,
-        title = title,
-        modifier = modifier,
-        titleColor = titleColor,
-        summary = summary,
-        summaryColor = summaryColor,
-        dropdownColors = dropdownColors,
-        startAction = startAction,
-        bottomAction = bottomAction,
-        insideMargin = insideMargin,
-        maxHeight = maxHeight,
-        enabled = enabled,
-        showValue = showValue,
-        renderInRootScaffold = renderInRootScaffold,
-        onExpandedChange = onExpandedChange,
-        onSelectedIndexChange = onSelectedIndexChange,
-    )
-}
-
-@Composable
-fun AppOverlayDropdownPreference(
-    title: String,
-    entries: List<DropdownEntry>,
-    modifier: Modifier = Modifier,
-    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
-    summary: String? = null,
-    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
-    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
-    startAction: (@Composable (() -> Unit))? = null,
-    bottomAction: (@Composable (() -> Unit))? = null,
-    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
-    maxHeight: Dp? = null,
-    enabled: Boolean = true,
-    showValue: Boolean = true,
-    renderInRootScaffold: Boolean = true,
-    collapseOnSelection: Boolean = entries.size <= 1,
-    onExpandedChange: ((Boolean) -> Unit)? = null,
-) {
-    OverlayDropdownPreference(
-        title = title,
-        entries = entries,
-        modifier = modifier,
-        titleColor = titleColor,
-        summary = summary,
-        summaryColor = summaryColor,
-        dropdownColors = dropdownColors,
-        startAction = startAction,
-        bottomAction = bottomAction,
-        insideMargin = insideMargin,
-        maxHeight = maxHeight,
-        enabled = enabled,
-        showValue = showValue,
-        renderInRootScaffold = renderInRootScaffold,
-        collapseOnSelection = collapseOnSelection,
-        onExpandedChange = onExpandedChange,
-    )
 }
