@@ -4,7 +4,9 @@
 package app.skipi.desktop
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -22,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -160,7 +164,15 @@ private fun DesktopTrayMenuRow(label: String, onClick: () -> Unit) {
             .clip(RoundedCornerShape(8.dp))
             .background(if (hovered) colors.onSurface.copy(alpha = 0.09f) else colors.surface)
             .hoverable(interaction)
-            .clickable(onClick = onClick),
+            .pointerInput(onClick) {
+                // Only a full left click that starts on the row counts: the menu opens under the cursor while the
+                // right button of the tray click is still going, and that button must never activate a row.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    if (!currentEvent.buttons.isPrimaryPressed) return@awaitEachGesture
+                    if (waitForUpOrCancellation() != null) onClick()
+                }
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
