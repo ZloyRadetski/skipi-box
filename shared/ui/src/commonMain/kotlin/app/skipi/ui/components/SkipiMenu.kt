@@ -11,7 +11,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -21,8 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,17 +38,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.skipi.ui.home.MenuLevelWidths
-import app.skipi.ui.home.SkipiHomeDropdownMenu
 import app.skipi.ui.home.animatedMenuWidth
 import app.skipi.ui.home.reportMenuLevelWidth
-import app.skipi.ui.home.skipiHomeDropdownItemColors
 import app.skipi.ui.theme.SkipiTheme
 
 /** The key of the level that holds the menu's own rows; the levels of submenus are keyed by their door row. */
 private const val RootLevelKey = ""
 
 /**
- * The menu of the whole app. It is a Material3 popup styled with the app's own colors, which opens next to
+ * The menu of the whole app. It is the app's own popup surface (SkipiMenuPopup), which opens next to
  * the layout it is composed in, so compose it right after the control that opens it, inside a `Box`.
  * [surface], [text], [mutedText] and [outline] recolor the surface and its rows for a screen with its own palette;
  * [header] and [footer] add free content above and below the rows of the top level (a search field, a row of
@@ -77,7 +77,7 @@ fun SkipiMenu(
     val levelWidths = remember { MenuLevelWidths() }
     val opened = openedKeys.openedRows(sections)
 
-    SkipiHomeDropdownMenu(
+    SkipiMenuPopup(
         expanded = expanded,
         onDismissRequest = {
             openedKeys = emptyList()
@@ -111,25 +111,29 @@ fun SkipiMenu(
             Column(Modifier.reportMenuLevelWidth(levelWidths, levelKeys.lastOrNull() ?: RootLevelKey)) {
                 if (rows.isEmpty()) header?.invoke()
                 if (rows.isNotEmpty()) {
-                    DropdownMenuItem(
-                        text = { Text(text = rows.last().title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    SkipiMenuRowItem(
+                        onClick = { openedKeys = openedKeys.dropLast(1) },
+                        text = text,
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = null,
+                                tint = mutedText,
                                 modifier = Modifier.size(18.dp),
                             )
                         },
-                        colors = skipiHomeDropdownItemColors(text, mutedText),
-                        onClick = { openedKeys = openedKeys.dropLast(1) },
+                        label = { SkipiMenuRowLabel(text = rows.last().title, maxLines = 1) },
                     )
                 }
                 val levelSections = rows.lastOrNull()?.let { door -> listOf(SkipiMenuSection(door.children)) } ?: sections
                 levelSections.forEachIndexed { sectionIndex, section ->
                     if (sectionIndex > 0) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            color = outline.copy(alpha = 0.2f),
+                        Box(
+                            Modifier
+                                .padding(vertical = 4.dp)
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(outline.copy(alpha = 0.2f)),
                         )
                     }
                     section.items.forEach { item ->
@@ -170,7 +174,8 @@ private fun SkipiMenuRow(
     mutedText: Color,
     onClick: () -> Unit,
 ) {
-    DropdownMenuItem(
+    SkipiMenuRowItem(
+        onClick = onClick,
         modifier = if (item.contentDescription == null) {
             Modifier
         } else {
@@ -179,9 +184,35 @@ private fun SkipiMenuRow(
                 selected = item.selected
             }
         },
-        text = {
+        enabled = item.enabled,
+        text = text,
+        leadingIcon = item.icon?.let { icon ->
+            { Icon(imageVector = icon, contentDescription = null, tint = mutedText, modifier = Modifier.size(20.dp)) }
+        },
+        trailingIcon = when {
+            item.hasChildren -> ({
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = mutedText,
+                    modifier = Modifier.size(18.dp),
+                )
+            })
+
+            item.selected -> ({
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(18.dp),
+                )
+            })
+
+            else -> null
+        },
+        label = {
             Column {
-                Text(text = item.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                SkipiMenuRowLabel(text = item.title)
                 item.summary?.let { summary ->
                     Text(
                         text = summary,
@@ -193,30 +224,6 @@ private fun SkipiMenuRow(
                 }
             }
         },
-        enabled = item.enabled,
-        leadingIcon = item.icon?.let { icon ->
-            { Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp)) }
-        },
-        trailingIcon = {
-            when {
-                item.hasChildren -> Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-
-                item.selected -> Icon(
-                    imageVector = Icons.Outlined.Check,
-                    contentDescription = null,
-                    tint = accent,
-                    modifier = Modifier.size(18.dp),
-                )
-
-                else -> Unit
-            }
-        },
-        colors = skipiHomeDropdownItemColors(text, mutedText),
-        onClick = onClick,
     )
 }
 

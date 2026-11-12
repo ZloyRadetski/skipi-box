@@ -18,11 +18,11 @@ import kotlin.math.roundToInt
 /**
  * Natural widths of the levels of a nested dropdown menu.
  *
- * A Material3 menu sizes itself to the widest content it holds, so while one level slides out and
+ * The menu surface sizes itself to the widest content it holds, so while one level slides out and
  * the next slides in the menu would snap to the wider of the two. Each level reports its own
  * width here, and [animatedMenuWidth] then glides the menu surface between the levels.
  */
-/** The widest a menu is allowed to be; longer row text wraps. The same 280 dp as Material's own menus. */
+/** The widest a menu is allowed to be; longer row text wraps. The same 280 dp as Material's menus. */
 internal val MenuMaxWidth = 280.dp
 
 internal class MenuLevelWidths {
