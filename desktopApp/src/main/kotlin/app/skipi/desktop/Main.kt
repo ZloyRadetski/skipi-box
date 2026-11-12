@@ -175,7 +175,6 @@ import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
 fun main(args: Array<String>) {
-    scheduleTrainingExit()
     val launch = parseDesktopLaunchArgs(args.toList())
     // An elevated relaunch starts while the instance that asked for it is still shutting down; claiming
     // the single-instance channel before it left would hand this start's request to that dying instance.
@@ -286,6 +285,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground && trayAvailable)) }
     // A window hidden to the tray would be lost if the tray went away (the panel quit): bring it back.
     LaunchedEffect(trayAvailable) { if (!trayAvailable) windowShown = true }
+    // The working set (what Task Manager counts) is handed back once the start has settled and while the window sits
+    // in the background; a focused window is left alone.
+    var windowFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        runDesktopWorkingSetTrim(isFocused = { windowShown && !windowState.isMinimized && windowFocused })
+    }
     var shownWindow by remember { mutableStateOf<java.awt.Window?>(null) }
     // State and background work below outlive the window. Strings resolve through LocalDensity, which only a window
     // provides; strings do not depend on it, so a plain one lets them resolve while no window exists.
@@ -1329,7 +1334,17 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     ) {
         DisposableEffect(window) {
             shownWindow = window
-            onDispose { shownWindow = null }
+            windowFocused = window.isFocused
+            val focusListener = object : java.awt.event.WindowFocusListener {
+                override fun windowGainedFocus(event: java.awt.event.WindowEvent?) { windowFocused = true }
+                override fun windowLostFocus(event: java.awt.event.WindowEvent?) { windowFocused = false }
+            }
+            window.addWindowFocusListener(focusListener)
+            onDispose {
+                window.removeWindowFocusListener(focusListener)
+                windowFocused = false
+                shownWindow = null
+            }
         }
         CompositionLocalProvider(
             LocalDesktopThemeMode provides desktopSettings.themeMode,

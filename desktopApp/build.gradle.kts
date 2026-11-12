@@ -174,6 +174,10 @@ compose.desktop {
         // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
         // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
         if (isLinuxHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
+        // The first start on the machine writes the application's class-data-sharing archive next to the jars when it
+        // exits, and every later start reads it (see the note at createRuntimeImage). A folder that cannot be
+        // written (a non-elevated start under Program Files) just goes without it.
+        if (isWindowsHost) jvmArgs += listOf("-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=\$APPDIR/skipi.jsa")
         // The UI and its services use ~40 MB of Java heap. G1 spends ~65 MB of native memory on its own bookkeeping
         // however small the heap is (the serial collector: 0.2 MB, ~100 MB less resident in all), so use the serial
         // one and cap the heap. It keeps what a burst made it commit until a full collection, so the app runs one
@@ -287,47 +291,30 @@ tasks.withType<Test>().configureEach {
     environment("APPDATA", testHome.absolutePath)
 }
 
-// The packaged runtime ships without a class-data-sharing archive, so every start loads and verifies the JDK's
-// classes and the application's own from scratch. Two archives fix that: the JDK's (made through the launcher
-// with -Xshare:dump, which makes the JVM write it and exit) and the application's (a training start that exits
-// by itself and lets the JVM record what it loaded). The launcher is pointed at the second one afterwards,
-// because the JVM refuses a training run while the archive it should write is already named. The archives
-// belong to this exact copy of the jars, so they are made last, in place; an installer builds its own image.
-val trainStartupArchives = tasks.register("trainStartupArchives") {
-    onlyIf { isWindowsHost }
-    val image = layout.buildDirectory.dir("compose/binaries/main/app/${ProjectConfig.PROJECT_NAME}")
+// A jlinked runtime ships without a class-data-sharing archive, so every start loaded and verified the JDK's classes
+// from scratch. The JDK's own archive is made here, right after the runtime image, so the portable image and the
+// installers (which all take that runtime) carry it; it does not depend on file dates. The application's own
+// archive is made by the first start on the user's machine (-XX:+AutoCreateSharedArchive in the launcher options):
+// the JVM refuses an archive whose jar dates differ from the ones it recorded, and an installer rewrites file dates
+// (a cabinet keeps two-second local time), so one made at build time never matched what was installed.
+tasks.matching { it.name == "createRuntimeImage" }.configureEach {
+    val runtime = layout.buildDirectory.dir("compose/tmp/main/runtime")
     doLast {
-        val directory = image.get().asFile
-        val launcher = directory.resolve("${ProjectConfig.PROJECT_NAME}.exe")
-        val config = directory.resolve("app/${ProjectConfig.PROJECT_NAME}.cfg")
-        val appArchive = directory.resolve("app/skipi.jsa")
-        val scratch = temporaryDir.resolve("run")
-        fun launch(javaToolOptions: String): Int {
-            scratch.deleteRecursively()
-            scratch.resolve("appdata").mkdirs()
-            scratch.resolve("run").mkdirs()
-            val process = ProcessBuilder(launcher.absolutePath)
-                .directory(directory)
+        val directory = runtime.get().asFile
+        // The runtime is made with --strip-native-commands, so it has no java launcher of its own. The JDK that
+        // made it (the one running Gradle, the plugin's default) lends its launcher for the dump and takes it back.
+        val launcherName = if (isWindowsHost) "java.exe" else "java"
+        val borrowed = directory.resolve("bin/$launcherName")
+        File(System.getProperty("java.home"), "bin/$launcherName").copyTo(borrowed, overwrite = true)
+        try {
+            val process = ProcessBuilder(borrowed.absolutePath, "-Xshare:dump")
                 .redirectErrorStream(true)
-                .apply {
-                    environment()["JAVA_TOOL_OPTIONS"] = javaToolOptions
-                    // A machine may mark the launcher "run as administrator"; a build must not ask for that.
-                    environment()["__COMPAT_LAYER"] = "RunAsInvoker"
-                    // The training start must not touch the real settings or hand itself to a running SKIPI.
-                    environment()["APPDATA"] = scratch.resolve("appdata").absolutePath
-                    environment()["XDG_RUNTIME_DIR"] = scratch.resolve("run").absolutePath
-                }
                 .start()
-            process.inputStream.readBytes()
-            return process.waitFor()
+            val output = process.inputStream.readBytes().decodeToString()
+            val archive = directory.resolve(if (isWindowsHost) "bin/server/classes.jsa" else "lib/server/classes.jsa")
+            check(process.waitFor() == 0 && archive.isFile) { "The JDK class-data-sharing archive was not written: $output" }
+        } finally {
+            borrowed.delete()
         }
-        launch("-Xshare:dump")
-        check(directory.resolve("runtime/bin/server/classes.jsa").isFile) { "The JDK class-data-sharing archive was not written" }
-        appArchive.delete()
-        launch("-XX:ArchiveClassesAtExit=${appArchive.absolutePath} -Dskipi.exitAfterMillis=12000")
-        check(appArchive.isFile) { "The application class-data-sharing archive was not written" }
-        val option = "java-options=-XX:SharedArchiveFile=\$APPDIR/skipi.jsa"
-        if (option !in config.readText()) config.appendText("\n$option\n")
     }
 }
-tasks.matching { it.name == "createDistributable" }.configureEach { finalizedBy(trainStartupArchives) }
