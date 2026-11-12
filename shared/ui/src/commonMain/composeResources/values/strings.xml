@@ -40,7 +40,7 @@
     <!-- Home screen widget -->
     <string name="widget_description">Toggle the VPN connection and see live traffic speed</string>
     <string name="widget_toggle_description">Toggle proxy</string>
-    <string name="widget_speed_format">\u2191 %1$s \u00B7 \u2193 %2$s</string>
+    <string name="widget_speed_format">↑ %1$s · ↓ %2$s</string>
 <!-- Common -->
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
@@ -114,7 +114,7 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
-    <string name="settings_color_mode">Theme</string>
+    <string name="settings_color_mode">Color mode</string>
     <string name="app_icon">Icon</string>
     <string name="settings_app_icon">App icon</string>
     <string name="settings_app_icon_summary">Select app launcher icon style</string>
@@ -350,7 +350,7 @@
     <string name="settings_category_local_proxy">Inbound Local Proxy</string>
     <string name="settings_category_local_proxy_summary">Inbound SOCKS5 / HTTP proxy server</string>
     <string name="settings_category_subscriptions">Subscriptions &amp; Servers</string>
-    <string name="settings_category_subscriptions_summary">Fetch timeout, User-Agent, ping check</string>
+    <string name="settings_category_subscriptions_summary">Fetch timeout, User-Agent, device identifiers, expiry notifications, ping check</string>
     <string name="settings_category_general">General</string>
     <string name="settings_category_general_summary">Language, haptics, notifications, integration</string>
     <string name="settings_category_integration">Automation &amp; Integration</string>
@@ -401,9 +401,9 @@
     <string name="settings_mux_xudp_concurrency_summary" tools:ignore="TypographyDashes">-1 off, 0 same as TCP, 1–1024</string>
     <string name="settings_mux_xudp_concurrency_error" tools:ignore="TypographyDashes">Use -1, 0, or 1–1024</string>
     <string name="settings_mux_udp443">QUIC handling</string>
-    <string name="settings_mux_udp443_reject">No proxy</string>
+    <string name="settings_mux_udp443_reject">Block</string>
     <string name="settings_mux_udp443_allow">Multiplex</string>
-    <string name="settings_mux_udp443_skip">Native</string>
+    <string name="settings_mux_udp443_skip">Native (no Mux)</string>
     <string name="settings_mux_display_disabled">disabled</string>
     <string name="settings_mux_display_default_8">default 8</string>
     <string name="settings_mux_display_same_as_tcp">same as TCP</string>
@@ -430,7 +430,7 @@
     <string name="settings_restore_completed">User data restored</string>
     <string name="settings_restore_failed">Failed to restore user data</string>
     <string name="settings_restore_confirm_title">Restore user data?</string>
-    <string name="settings_restore_confirm_summary">Current settings, proxy servers, subscriptions, routing rules, and app proxy data will be replaced. The current proxy will be stopped, ROOT boot script will be disabled, and run mode will switch to VPN Service.</string>
+    <string name="settings_restore_confirm_summary">Current settings, proxy servers, subscriptions, configurations, routing rules and per-app proxy lists will be replaced. The running proxy will be stopped.</string>
     <string name="settings_restore_backup_version">Backup version {version}, app {appVersion}</string>
     <string name="settings_restore_backup_created_at">Created: {time}</string>
     <string name="settings_restore_backup_counts">{groups} groups, {servers} proxy servers, {rules} routing rules, {configs} configs</string>
@@ -564,9 +564,9 @@
     <string name="proxy_server_list_import_clipboard">Import from clipboard</string>
     <string name="proxy_server_list_import_file">Import from file</string>
     <string name="proxy_server_list_manual_input">Manual input</string>
-    <string name="proxy_server_list_add_strategy_group">Add Strategy group</string>
-    <string name="proxy_server_list_add_chain_proxy">Add Chain proxy</string>
-    <string name="proxy_server_list_add_custom">Add Custom</string>
+    <string name="proxy_server_list_add_strategy_group">Add strategy group</string>
+    <string name="proxy_server_list_add_chain_proxy">Add chain proxy</string>
+    <string name="proxy_server_list_add_custom">Add custom</string>
     <string name="proxy_server_list_add_http">Add HTTP</string>
     <string name="proxy_server_list_add_vmess">Add VMess</string>
     <string name="proxy_server_list_add_vless">Add VLESS</string>
@@ -574,7 +574,7 @@
     <string name="proxy_server_list_add_shadowsocks">Add Shadowsocks</string>
     <string name="proxy_server_list_add_socks">Add Socks</string>
     <string name="proxy_server_list_add_hysteria2">Add Hysteria2</string>
-    <string name="proxy_server_list_add_wireguard">Add Wireguard</string>
+    <string name="proxy_server_list_add_wireguard">Add WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">Add AmneziaWG</string>
     <string name="proxy_server_list_restart_service">Restart service</string>
     <string name="proxy_server_list_update_subscriptions">Update subscriptions</string>
@@ -686,7 +686,7 @@
     <string name="proxy_editor_strategy_group_filter_groups">Filter applies to</string>
     <string name="proxy_editor_strategy_group_all_groups">All groups</string>
     <string name="proxy_editor_strategy_group_filter">Remarks regex filter</string>
-     <string name="proxy_editor_strategy_group_health_check">Health Check</string>
+     <string name="proxy_editor_strategy_group_health_check">Health check</string>
     <string name="proxy_editor_strategy_group_probe_interval">Probe interval</string>
     <string name="proxy_editor_strategy_group_probe_timeout">Probe timeout</string>
     <string name="proxy_editor_strategy_group_probe_timeout_summary">Server is considered dead if it does not respond within this time</string>
@@ -834,9 +834,9 @@
     <string name="subscription_device_headers_default">Use the global setting</string>
     <string name="subscription_device_headers_enabled">On</string>
     <string name="subscription_device_headers_disabled">Off</string>
-    <string name="subscription_update_via_proxy_summary">Use the local proxy for subscription requests</string>
+    <string name="subscription_update_via_proxy_summary">Use the local proxy for subscription requests while it is running</string>
     <string name="subscription_auto_override_rules">Automatic rule override</string>
-    <string name="subscription_auto_override_rules_summary">Apply SKIPI routing rules to all configurations in the subscription</string>
+    <string name="subscription_auto_override_rules_summary">Use SKIPI inbound, DNS and routing rules instead of those in each custom JSON configuration of the subscription</string>
     <string name="subscription_install_existing_url">A matching subscription URL already exists in {name}; updating that group</string>
     <string name="subscription_install_config_invalid">Invalid subscription link</string>
     <string name="subscription_install_config_failed">Failed to import subscription</string>
@@ -1084,7 +1084,7 @@
     <string name="subscription_move_left">Move left</string>
     <string name="subscription_move_right">Move right</string>
     <string name="proxy_editor_strategy_group_select_servers">Add servers</string>
-    <string name="proxy_editor_strategy_group_select_servers_summary">Choose individual servers from subscriptions, manual servers, or auto balancers.</string>
+    <string name="proxy_editor_strategy_group_select_servers_summary">Choose individual servers from subscriptions, manual servers, or proxy groups.</string>
     <string name="proxy_editor_strategy_group_selected_servers_summary">%1$d servers selected</string>
     <string name="proxy_editor_strategy_group_servers_count">%1$d servers</string>
     <string name="proxy_editor_strategy_group_no_servers">No selectable servers in this group</string>
@@ -1125,7 +1125,7 @@
     <string name="common_show">Show</string>
     <string name="common_hide">Hide</string>
     <string name="settings_enable_material_you">Dynamic colors</string>
-    <string name="settings_enable_material_you_summary">Use the system accent colour</string>
+    <string name="settings_enable_material_you_summary">Use the system accent color</string>
     <string name="settings_enable_haptics">Haptic feedback</string>
     <string name="settings_enable_haptics_summary">Vibrate on connection, server selection and key actions</string>
     <string name="settings_custom_colors_status_title">Connection Status &amp; Latency</string>
@@ -1196,7 +1196,7 @@
     <string name="network_automation_type_specific_wifi">Specific Wi-Fi SSID</string>
     <string name="network_automation_rule_action">Action</string>
     <string name="network_automation_action_switch_server">Always connect server</string>
-    <string name="network_automation_action_switch_if_connected">Connect only if VPN is active</string>
+    <string name="network_automation_action_switch_if_connected">Switch server only if VPN is on</string>
     <string name="network_automation_action_disconnect">Disconnect VPN</string>
     <string name="network_automation_ssid_label">Network name (SSID)</string>
     <string name="network_automation_ssid_placeholder">Enter SSID (e.g. Home_5G)</string>
@@ -1217,7 +1217,7 @@
 
     <!-- DNS Section in Traffic Config -->
     <string name="configs_dns_title">DNS Settings</string>
-    <string name="configs_dns_summary">VPN Local DNS, Proxy &amp; Direct DNS (DoH, local DoQ, DoU, TCP), FakeDNS</string>
+    <string name="configs_dns_summary">Local VPN DNS, Proxy &amp; Direct DNS (DoH, local DoQ, DoU, TCP), FakeDNS</string>
     <string name="configs_dns_master_switches">DNS Behavior</string>
     <string name="configs_dns_proxy_section">Remote DNS (Proxy)</string>
     <string name="configs_dns_proxy_summary">DNS servers queried through the proxy tunnel for blocked and overseas domains</string>
@@ -1375,7 +1375,7 @@
     <string name="tools_dns_failed_detail">Reason: %1$s</string>
     <string name="tools_dns_reason_no_internet">No internet connection - check your network.</string>
     <string name="tools_dns_reason_tunnel_not_passing">The VPN tunnel is up but passes no traffic - reconnect the VPN or change the server.</string>
-    <string name="tools_dns_description">Each DNS path (your system servers and well-known public resolvers) is asked directly for an echo record that reveals which network your queries come from. The observed network is compared with your HTTP exit: a path resolving through a different network is a leak.</string>
+    <string name="tools_dns_description">Each DNS path (your system servers and well-known public resolvers) is asked directly for an echo record that reveals which network your queries come from. The country of that network is compared with the country of your exit: a path that resolves from a different country is a leak.</string>
     <string name="tools_dns_observed_subnet">subnet %1$s</string>
     <string name="tools_dns_observed_egress">via %1$s</string>
     <string name="tools_dns_isp_unknown">Unknown provider</string>
@@ -1792,10 +1792,10 @@
     <string name="desktop_settings_http_port_conflict">The HTTP port must differ from the SOCKS5 port.</string>
     <string name="desktop_settings_copy_failed">Failed to copy %1$s: %2$s</string>
     <string name="desktop_settings_use_system_proxy">Use the system proxy</string>
-    <string name="desktop_settings_use_system_proxy_summary">SKIPI temporarily configures the system HTTP/SOCKS proxy while connected.</string>
+    <string name="desktop_settings_use_system_proxy_summary">While connected, SKIPI temporarily points the system proxy to its local proxy and restores the previous settings afterward.</string>
     <string name="desktop_settings_system_proxy_header">SYSTEM PROXY</string>
     <string name="desktop_settings_reset_system_proxy">Reset the system proxy</string>
-    <string name="desktop_settings_reset_system_proxy_summary">Restore the previous system proxy settings.</string>
+    <string name="desktop_settings_reset_system_proxy_summary">Turn off the system proxy and clear the proxy state saved by SKIPI.</string>
     <string name="desktop_settings_subscriptions_saved">Subscription settings saved.</string>
     <string name="desktop_settings_ping_saved">Ping check settings saved.</string>
     <string name="desktop_settings_user_agents_saved">User-Agent values saved.</string>
@@ -1803,7 +1803,7 @@
     <string name="desktop_settings_state_header">DESKTOP STATE</string>
     <string name="desktop_settings_tunnel_running">The local tunnel is running</string>
     <string name="desktop_settings_tunnel_stopped">The local tunnel is stopped</string>
-    <string name="desktop_settings_tunnel_running_summary">SKIPI Core runs inside the app process. Changes apply after reconnecting.</string>
+    <string name="desktop_settings_tunnel_running_summary">SKIPI Core runs inside the app process. Changing connection settings reconnects it automatically.</string>
     <string name="desktop_settings_tunnel_stopped_summary">Select a server on the home screen and connect to start SKIPI Core.</string>
     <string name="desktop_settings_core_found">SKIPI Core found</string>
     <string name="desktop_settings_core_not_found">SKIPI Core not found</string>

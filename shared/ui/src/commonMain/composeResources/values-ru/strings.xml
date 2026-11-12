@@ -57,7 +57,7 @@
     <string name="common_copied">Скопировано</string>
     <string name="common_copy_field">Копировать %1$s</string>
     <string name="common_less">Свернуть</string>
-    <string name="common_more">Еще</string>
+    <string name="common_more">Ещё</string>
     <string name="common_import_from_clipboard">Импортировать из буфера обмена</string>
     <string name="common_export_to_clipboard">Экспортировать в буфер обмена</string>
     <string name="common_replace_existing">Заменить существующие</string>
@@ -135,7 +135,7 @@
     <string name="app_icon">Иконка</string>
     <string name="settings_app_icon">Иконка приложения</string>
     <string name="settings_app_icon_summary">Стиль и цветовая тема иконки на рабочем столе</string>
-    <string name="app_icon_default">Фирменная </string>
+    <string name="app_icon_default">Фирменная</string>
     <string name="app_icon_dark">Тёмная (AMOLED)</string>
     <string name="app_icon_light">Светлая</string>
     <string name="app_icon_monet">Material You (Динамическая)</string>
@@ -152,7 +152,7 @@
     <string name="settings_show_server_search">Поиск серверов</string>
     <string name="settings_show_server_search_summary">Отображать строку поиска на главном экране</string>
     <string name="settings_connection_display_mode">Виджет подключения</string>
-    <string name="settings_connection_display_mode_summary">Выберите стиль плашки подключения на главном экране</string>
+    <string name="settings_connection_display_mode_summary">Выберите стиль виджета подключения на главном экране</string>
     <string name="settings_connection_display_mode_compact">Компактный</string>
     <string name="settings_connection_display_mode_classic">Классический</string>
     <string name="settings_connection_display_mode_legacy">Устаревший</string>
@@ -202,7 +202,7 @@
     <string name="connection_status_connected">Подключено</string>
     <string name="connection_status_connecting">Подключение…</string>
     <string name="connection_status_disconnected">Отключено</string>
-    <string name="connection_status_secured">Идет защищенное соединение</string>
+    <string name="connection_status_secured">Идёт защищённое соединение</string>
     <string name="connection_status_tap_to_connect">Нажмите для подключения</string>
     <string name="tray_connect">Подключить</string>
     <string name="tray_disconnect">Отключить</string>
@@ -346,8 +346,8 @@
     <string name="settings_category_vpn_summary">Параметры TUN, HevTun, локальный DNS</string>
     <string name="settings_category_local_proxy">Локальный входящий прокси</string>
     <string name="settings_category_local_proxy_summary">Входящий SOCKS5 / HTTP прокси-сервер</string>
-    <string name="settings_category_subscriptions">Подписки и узлы</string>
-    <string name="settings_category_subscriptions_summary">Таймауты, User-Agent, проверка пинга</string>
+    <string name="settings_category_subscriptions">Подписки и серверы</string>
+    <string name="settings_category_subscriptions_summary">Таймаут, User-Agent, идентификаторы устройства, уведомления об окончании, проверка пинга</string>
     <string name="settings_category_general">Общие настройки</string>
     <string name="settings_category_general_summary">Язык, вибрация, уведомления, интеграция</string>
     <string name="settings_category_integration">Автоматизация и интеграция</string>
@@ -396,9 +396,9 @@
     <string name="settings_mux_xudp_concurrency_summary" tools:ignore="TypographyDashes">-1 выкл, 0 как в TCP, диапазон 1–1024</string>
     <string name="settings_mux_xudp_concurrency_error" tools:ignore="TypographyDashes">Допустимые значения: -1, 0, или от 1 до 1024</string>
     <string name="settings_mux_udp443">Обработка QUIC (порт 443/UDP)</string>
-    <string name="settings_mux_udp443_reject">Блокировать (Без прокси)</string>
+    <string name="settings_mux_udp443_reject">Блокировать</string>
     <string name="settings_mux_udp443_allow">Мультиплексировать</string>
-    <string name="settings_mux_udp443_skip">Нативно (Пропускать напрямую)</string>
+    <string name="settings_mux_udp443_skip">Нативно (без Mux)</string>
     <string name="settings_mux_display_disabled">отключено</string>
     <string name="settings_mux_display_default_8">по умолчанию 8</string>
     <string name="settings_mux_display_same_as_tcp">как в TCP</string>
@@ -416,7 +416,7 @@
     <string name="settings_dns_summary">FakeDNS, прямой DNS, DNS для прокси, DNS hosts</string>
     <string name="settings_backup_restore">Резервное копирование и восстановление</string>
     <string name="settings_backup_user_data">Создать резервную копию</string>
-    <string name="settings_backup_user_data_summary">Экспортировать текущие данные пользователя в файл бэкапа</string>
+    <string name="settings_backup_user_data_summary">Экспортировать текущие данные пользователя в файл резервной копии</string>
     <string name="settings_restore_user_data">Восстановить данные</string>
     <string name="settings_restore_user_data_summary">Восстановить данные пользователя из файла резервной копии</string>
     <string name="settings_backup_exported">Резервная копия успешно создана</string>
@@ -425,13 +425,13 @@
     <string name="settings_restore_completed">Данные пользователя успешно восстановлены</string>
     <string name="settings_restore_failed">Не удалось восстановить данные пользователя</string>
     <string name="settings_restore_confirm_title">Восстановить данные пользователя?</string>
-    <string name="settings_restore_confirm_summary">Текущие настройки, прокси-серверы, подписки, правила маршрутизации и привязки приложений будут полностью заменены. Активный прокси будет остановлен, скрипт автозапуска ROOT отключен, а режим работы переключен на стандартный VPN Service.</string>
-    <string name="settings_restore_backup_version">Версия бэкапа: {version}, приложение: {appVersion}</string>
+    <string name="settings_restore_confirm_summary">Текущие настройки, прокси-серверы, подписки, конфиги, правила маршрутизации и привязки приложений будут заменены. Активный прокси будет остановлен.</string>
+    <string name="settings_restore_backup_version">Версия копии: {version}, приложение: {appVersion}</string>
     <string name="settings_restore_backup_created_at">Создано: {time}</string>
     <string name="settings_restore_backup_counts">Групп: {groups}, серверов: {servers}, правил: {rules}, конфигов: {configs}</string>
     <string name="settings_restore_warning_missing_chain_members">Внимание: {count} ссылок в цепочке прокси ведут на несуществующие серверы. Они будут сохранены как есть.</string>
     <string name="settings_restore_warning_missing_strategy_members">Внимание: {count} ссылок в автобалансерах ведут на несуществующие серверы. Они будут сохранены как есть.</string>
-    <string name="settings_logs">Журналы событий (Логи)</string>
+    <string name="settings_logs">Логи</string>
     <string name="settings_core_logs">Логи ядра</string>
     <string name="settings_record_access_log">Записывать логи доступа (Access log)</string>
     <string name="settings_access_logs">Логи доступа</string>
@@ -452,8 +452,8 @@
     <string name="settings_dns_server_system_hint">Используйте localhost для системного DNS Android, включая Private DNS.</string>
     <string name="settings_direct_dns_domains">Домены для прямого DNS</string>
     <string name="settings_direct_dns_domains_empty">Правила доменов для прямого DNS не добавлены</string>
-    <string name="settings_direct_dns_resolve_proxy_server_domains">Разрешать прокси через прямой DNS</string>
-    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Разрешать доменные имена прокси-серверов строго через прямой DNS</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains">Определять адреса прокси через прямой DNS</string>
+    <string name="settings_direct_dns_resolve_proxy_server_domains_summary">Определять IP доменных имён прокси-серверов через прямой DNS</string>
     <string name="settings_dns_domain_invalid">Недопустимое правило DNS-домена</string>
     <string name="settings_dns_hosts">DNS hosts</string>
     <string name="settings_dns_hosts_format">Формат: domain:address1,address2,…</string>
@@ -502,7 +502,7 @@
     <string name="logs_export">Экспорт логов</string>
     <string name="logs_exported">Логи успешно экспортированы</string>
     <string name="logs_export_failed">Не удалось экспортировать логи</string>
-    <string name="logs_output">Вывод журнала</string>
+    <string name="logs_output">Вывод логов</string>
     <string name="logs_pull_to_refresh">Потяните вниз для обновления</string>
     <string name="logs_release_to_refresh">Отпустите для обновления</string>
     <string name="logs_refreshing">Обновление…</string>
@@ -563,7 +563,7 @@
     <string name="proxy_server_list_add_shadowsocks">Добавить Shadowsocks</string>
     <string name="proxy_server_list_add_socks">Добавить Socks</string>
     <string name="proxy_server_list_add_hysteria2">Добавить Hysteria2</string>
-    <string name="proxy_server_list_add_wireguard">Добавить Wireguard</string>
+    <string name="proxy_server_list_add_wireguard">Добавить WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">Добавить AmneziaWG</string>
     <string name="proxy_server_list_restart_service">Перезапустить службу</string>
     <string name="proxy_server_list_update_subscriptions">Обновить подписки</string>
@@ -584,7 +584,7 @@
     <string name="proxy_server_list_service_stopped">Служба прокси остановлена</string>
     <string name="proxy_server_list_select_first">Сначала выберите прокси-сервер</string>
     <string name="proxy_server_list_latency_result">{name} пинг: {latency}</string>
-    <string name="proxy_server_list_latency_failed">Тайм-аут</string>
+    <string name="proxy_server_list_latency_failed">Ошибка</string>
     <string name="proxy_validation_strategy_group_members_required">Выберите для группы серверы, подписку или фильтр по имени</string>
     <string name="proxy_server_list_strategy_group_no_members">Нет серверов в группе</string>
     <string name="proxy_server_list_import_result">Успешно импортировано серверов: {serverCount}</string>
@@ -749,7 +749,7 @@
     <string name="routing_new_rule">Новое правило</string>
     <string name="routing_unnamed_rule">Безымянное правило</string>
     <string name="routing_add_rule">Добавить правило маршрутизации</string>
-    <string name="routing_edit_rule">Редактировать</string>
+    <string name="routing_edit_rule">Редактировать правило маршрутизации</string>
     <string name="routing_rule_name">Имя правила</string>
     <string name="routing_domain_label">Правила доменов</string>
     <string name="routing_domain_invalid">Недопустимое правило домена</string>
@@ -796,13 +796,13 @@
     <string name="subscription_url">URL подписки (оставьте пустым для ручных групп)</string>
     <string name="subscription_invalid_url">Некорректный URL-адрес подписки</string>
     <string name="subscription_http_warning_title">Предупреждение: незащищенный протокол HTTP</string>
-    <string name="subscription_http_warning_message">Данный URL использует незащищенную передачу данных по HTTP cleartext. Содержимое конфигураций может быть перехвачено или изменено злоумышленниками в процессе транспортировки. Сохраняйте подписку только в том случае, если полностью доверяете этому источнику.</string>
+    <string name="subscription_http_warning_message">Этот URL подписки использует передачу по HTTP без шифрования. Содержимое конфигурации могут прочитать или изменить по пути. Сохраняйте подписку, только если доверяете источнику.</string>
     <string name="subscription_http_warning_confirm">Все равно сохранить</string>
     <string name="subscription_user_agent">Идентификатор клиента (User-Agent)</string>
     <string name="subscription_user_agent_v2rayng">v2rayNG</string>
     <string name="subscription_user_agent_clash_meta">Clash Meta</string>
     <string name="subscription_user_agent_flclash_x">FlClash X</string>
-    <string name="subscription_user_agent_custom">Кастомный User-Agent</string>
+    <string name="subscription_user_agent_custom">Пользовательский</string>
     <string name="subscription_custom_user_agent">Пользовательский User-Agent</string>
     <string name="subscription_user_agent_custom_summary">Введите собственное значение заголовка User-Agent</string>
     <string name="subscription_user_agent_value">User-Agent: {userAgent}</string>
@@ -813,9 +813,9 @@
     <string name="subscription_device_headers_default">Как в настройках</string>
     <string name="subscription_device_headers_enabled">Включено</string>
     <string name="subscription_device_headers_disabled">Выключено</string>
-    <string name="subscription_update_via_proxy_summary">Задействовать локальное ядро прокси для отправки запросов обновления подписок</string>
+    <string name="subscription_update_via_proxy_summary">Отправлять запросы подписки через локальный прокси, пока он запущен</string>
     <string name="subscription_auto_override_rules">Автоматическое переопределение правил</string>
-    <string name="subscription_auto_override_rules_summary">Применять правила маршрутизации SKIPI ко всем конфигурациям в подписке</string>
+    <string name="subscription_auto_override_rules_summary">Использовать входящие подключения, DNS и маршрутизацию SKIPI вместо заданных в каждой JSON-конфигурации подписки</string>
     <string name="subscription_install_existing_url">Совпадающий URL подписки уже найден в группе «{name}»; обновляем эту группу</string>
     <string name="subscription_install_config_invalid">Недопустимая ссылка на подписку</string>
     <string name="subscription_install_config_failed">Не удалось импортировать подписку</string>
@@ -975,7 +975,7 @@
     <string name="configs_mux_summary">Объединяет совместимые соединения для снижения накладных расходов. Некоторым серверам и стриминг-приложениям лучше без него.</string>
     <string name="configs_fragment_summary">Разбивает начальные TCP-пакеты для обхода DPI, если это требуется провайдером.</string>
     <string name="configs_local_dns_summary">Разрешает DNS внутри VPN-туннеля вместо использования только DNS текущей сети.</string>
-    <string name="configs_fake_dns_summary">Использует синтетические ответы DNS, которые затем восстанавливает ядро. Требует Local VPN DNS.</string>
+    <string name="configs_fake_dns_summary">Использует синтетические ответы DNS, которые затем восстанавливает ядро. Требует включённого «Локальный DNS VPN».</string>
     <string name="configs_fake_dns_ip_pool">Пул IP-адресов Fake DNS</string>
     <string name="configs_fake_dns_pool_size">Размер пула Fake DNS</string>
     <string name="configs_hevtun_tcp_read_write_timeout">TCP Read/Write Timeout (мс)</string>
@@ -988,7 +988,7 @@
     <string name="subscription_move_left">Переместить влево</string>
     <string name="subscription_move_right">Переместить вправо</string>
     <string name="proxy_editor_strategy_group_select_servers">Добавить серверы</string>
-    <string name="proxy_editor_strategy_group_select_servers_summary">Выберите отдельные серверы из подписок, ручных серверов или автобалансеров.</string>
+    <string name="proxy_editor_strategy_group_select_servers_summary">Выберите отдельные серверы из подписок, ручных серверов или групп прокси.</string>
     <string name="proxy_editor_strategy_group_selected_servers_summary">Выбрано серверов: %1$d</string>
     <string name="proxy_editor_strategy_group_servers_count">Серверов: %1$d</string>
     <string name="proxy_editor_strategy_group_no_servers">В этой группе нет доступных серверов</string>
@@ -1185,7 +1185,7 @@
     <string name="network_automation_type_specific_wifi">Конкретный Wi-Fi SSID</string>
     <string name="network_automation_rule_action">Действие</string>
     <string name="network_automation_action_switch_server">Всегда подключать сервер</string>
-    <string name="network_automation_action_switch_if_connected">Подключить, если включен</string>
+    <string name="network_automation_action_switch_if_connected">Сменить сервер, только если VPN включён</string>
     <string name="network_automation_action_disconnect">Отключить VPN</string>
     <string name="network_automation_ssid_label">Имя сети (SSID)</string>
     <string name="network_automation_ssid_placeholder">Введите SSID (например, Home_5G)</string>
@@ -1364,7 +1364,7 @@
     <string name="tools_dns_failed_detail">Причина: %1$s</string>
     <string name="tools_dns_reason_no_internet">Нет подключения к интернету — проверьте сеть.</string>
     <string name="tools_dns_reason_tunnel_not_passing">VPN-туннель подключён, но не пропускает трафик — переподключите VPN или смените сервер.</string>
-    <string name="tools_dns_description">Каждый DNS-путь (ваши системные серверы и известные публичные резолверы) напрямую опрашивается эхо-записью, показывающей, из какой сети приходят ваши запросы. Наблюдаемая сеть сравнивается с вашим HTTP-exit: путь через другую сеть — это утечка.</string>
+    <string name="tools_dns_description">Каждый DNS-путь (ваши системные серверы и известные публичные резолверы) напрямую опрашивается эхо-записью, показывающей, из какой сети приходят ваши запросы. Страна этой сети сравнивается со страной вашего exit: путь, выходящий из другой страны, — это утечка.</string>
     <string name="tools_dns_observed_subnet">подсеть %1$s</string>
     <string name="tools_dns_observed_egress">через %1$s</string>
     <string name="tools_dns_isp_unknown">Неизвестный провайдер</string>
@@ -1388,7 +1388,7 @@
     <string name="tools_dns_title_running">Проверяем…</string>
     <string name="tools_dns_title_idle">Проверка DNS на утечки</string>
     <!-- Tools: IP info -->
-    <string name="settings_category_ip_info">Информация об IP адресе</string>
+    <string name="settings_category_ip_info">Информация об IP-адресе</string>
     <string name="settings_category_ip_info_summary">Внешний IP, геолокация, провайдер и сеть</string>
     <string name="tools_ip_info_title">Информация об IP</string>
     <string name="tools_ip_info_refresh">Обновить</string>
@@ -1415,7 +1415,7 @@
     <string name="tools_ip_info_local_time">Местное время</string>
     <string name="tools_ip_info_utc_offset">Смещение UTC</string>
     <string name="tools_ip_info_tunnel_direct">Прямое соединение</string>
-    <string name="tools_ip_info_tunnel_vpn">VPN туннель / Прокси</string>
+    <string name="tools_ip_info_tunnel_vpn">VPN-туннель / прокси</string>
     <string name="tools_ip_info_loading">Определение информации об IP…</string>
     <string name="tools_ip_info_failed">Не удалось получить информацию об IP. Проверьте соединение.</string>
     <string name="settings_background_title">Фон приложения</string>
@@ -1490,7 +1490,7 @@
     <string name="settings_local_proxy_auth_mode_auto">Авто</string>
     <string name="settings_local_proxy_auth_mode_manual">Вручную</string>
     <string name="settings_local_proxy_auth_mode_json">Из JSON</string>
-    <string name="settings_local_proxy_auth_mode_off">Отключить</string>
+    <string name="settings_local_proxy_auth_mode_off">Выключено</string>
     <string name="settings_local_proxy_auth_hint_auto">Берёт логин из кастомного JSON, если он там есть, иначе использует сгенерированный ниже</string>
     <string name="settings_local_proxy_auth_hint_manual">Использует логин и пароль, которые вы укажете ниже</string>
     <string name="settings_local_proxy_auth_hint_json">Берёт логин из inbound кастомного JSON; если его там нет, inbound остаётся без авторизации</string>
@@ -1581,8 +1581,8 @@
     <string name="external_import_confirm_title">Добавить по ссылке?</string>
     <string name="external_import_confirm_message">Другое приложение или веб-страница просит SKIPI добавить сервер или конфиг с %1$s. Продолжайте, только если доверяете источнику.</string>
     <string name="external_import_confirm_accept">Добавить</string>
-    <string name="external_theme_confirm_message">Ссылка просит SKIPI добавить цветовую тему "%1$s" в ваши темы. Она меняет только цвета. Продолжайте, только если доверяете источнику.</string>
-    <string name="skipi_imported_theme">Тема добавлена. Примените её в настройках, в разделе «Оформление».</string>
+    <string name="external_theme_confirm_message">Ссылка просит SKIPI добавить цветовую тему «%1$s» в ваши темы. Она меняет только цвета. Продолжайте, только если доверяете источнику.</string>
+    <string name="skipi_imported_theme">Тема добавлена. Примените её в настройках, в разделе «Внешний вид».</string>
     <string name="skipi_imported_theme_existing">Эти цвета уже сохранены как тема.</string>
     <string name="skipi_imported_theme_full">Список тем заполнен. Сначала удалите одну.</string>
     <string name="external_import_inline_content">самой ссылки</string>
@@ -1686,13 +1686,13 @@
     <string name="desktop_home_delete_confirmation_not_connected">Подтверждение удаления не подключено в Desktop.</string>
     <string name="desktop_home_clear_list_not_connected">Очистка списка серверов не подключена в Desktop.</string>
     <string name="desktop_home_bulk_refresh_not_connected">Массовое обновление подписок не подключено в Desktop.</string>
-    <string name="desktop_link_https_host_required">HTTPS ссылка должна содержать хост.</string>
-    <string name="desktop_link_https_no_credentials">HTTPS ссылка не должна содержать учётные данные.</string>
-    <string name="desktop_link_mailto_single_address">Mailto ссылка должна содержать один адрес без параметров.</string>
-    <string name="desktop_link_mailto_invalid_address">Mailto ссылка содержит некорректный адрес.</string>
-    <string name="desktop_link_unsupported_scheme">Поддерживаются только HTTPS и корректные mailto ссылки.</string>
+    <string name="desktop_link_https_host_required">HTTPS-ссылка должна содержать хост.</string>
+    <string name="desktop_link_https_no_credentials">HTTPS-ссылка не должна содержать учётные данные.</string>
+    <string name="desktop_link_mailto_single_address">Ссылка mailto должна содержать один адрес без параметров.</string>
+    <string name="desktop_link_mailto_invalid_address">Ссылка mailto содержит некорректный адрес.</string>
+    <string name="desktop_link_unsupported_scheme">Поддерживаются только HTTPS-ссылки и корректные ссылки mailto.</string>
     <string name="desktop_import_no_data">Нет данных для импорта.</string>
-    <string name="desktop_import_rejected_servers">Не удалось разобрать серверов: %1$s.</string>
+    <string name="desktop_import_rejected_servers">Не разобрано серверов: %1$s.</string>
     <string name="desktop_import_mihomo_providers">Найдены внешние Mihomo-провайдеры (%1$s); они не загружались автоматически.</string>
     <string name="desktop_import_duplicate_servers_skipped">Повторяющиеся серверы пропущены: %1$s.</string>
     <string name="desktop_import_duplicate_subscriptions_skipped">Повторяющиеся подписки пропущены: %1$s.</string>
@@ -1702,7 +1702,7 @@
     <string name="desktop_import_config_exists">Такой конфиг уже есть в библиотеке.</string>
     <string name="desktop_import_invalid_xray_json">Некорректный JSON-конфиг Xray.</string>
     <string name="desktop_import_xray_json_no_objects">JSON-массив не содержит объектов конфигурации Xray.</string>
-    <string name="desktop_import_xray_json_rejected">Не удалось разобрать JSON-конфигов Xray: %1$s.</string>
+    <string name="desktop_import_xray_json_rejected">Не разобрано JSON-конфигов Xray: %1$s.</string>
     <string name="desktop_import_xray_json_none_valid">JSON не содержит корректных конфигураций Xray.</string>
     <string name="desktop_import_default_config_name">Импортированный конфиг</string>
     <string name="desktop_import_count_servers">серверов: %1$s</string>
@@ -1754,8 +1754,8 @@
     <string name="desktop_reason_network_automation">Автоматизация сети: смена сервера.</string>
     <string name="desktop_system_proxy_activated">Системный прокси %1$s активирован.</string>
     <string name="desktop_system_proxy_no_active_lease">Нет активной аренды системного прокси %1$s.</string>
-    <string name="desktop_system_proxy_restored">Системный прокси %1$s возвращен в исходное состояние.</string>
-    <string name="desktop_system_proxy_no_saved_lease">Нет сохраненной аренды для восстановления.</string>
+    <string name="desktop_system_proxy_restored">Системный прокси %1$s возвращён в исходное состояние.</string>
+    <string name="desktop_system_proxy_no_saved_lease">Нет сохранённой аренды для восстановления.</string>
     <string name="desktop_system_proxy_recovered">Восстановлены системные настройки прокси %1$s после предыдущей сессии.</string>
     <string name="desktop_system_proxy_unsupported_platform">Системный прокси не поддерживается на этой платформе</string>
     <string name="desktop_subscription_provider_unnamed">без названия</string>
@@ -1781,10 +1781,10 @@
     <string name="desktop_settings_http_port_conflict">HTTP-порт должен отличаться от порта SOCKS5.</string>
     <string name="desktop_settings_copy_failed">Не удалось скопировать %1$s: %2$s</string>
     <string name="desktop_settings_use_system_proxy">Использовать системный прокси</string>
-    <string name="desktop_settings_use_system_proxy_summary">SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.</string>
+    <string name="desktop_settings_use_system_proxy_summary">Во время подключения SKIPI временно направляет системный прокси на свой локальный прокси, а затем возвращает прежние настройки.</string>
     <string name="desktop_settings_system_proxy_header">СИСТЕМНЫЙ ПРОКСИ</string>
     <string name="desktop_settings_reset_system_proxy">Сбросить системный прокси</string>
-    <string name="desktop_settings_reset_system_proxy_summary">Вернуть прежние настройки системного прокси.</string>
+    <string name="desktop_settings_reset_system_proxy_summary">Отключить системный прокси и очистить сохранённое SKIPI состояние прокси.</string>
     <string name="desktop_settings_subscriptions_saved">Параметры подписок сохранены.</string>
     <string name="desktop_settings_ping_saved">Параметры проверки ping сохранены.</string>
     <string name="desktop_settings_user_agents_saved">User-Agent сохранены.</string>
@@ -1792,7 +1792,7 @@
     <string name="desktop_settings_state_header">СОСТОЯНИЕ DESKTOP</string>
     <string name="desktop_settings_tunnel_running">Локальный туннель запущен</string>
     <string name="desktop_settings_tunnel_stopped">Локальный туннель остановлен</string>
-    <string name="desktop_settings_tunnel_running_summary">SKIPI Core работает в процессе приложения. Изменения применятся после переподключения.</string>
+    <string name="desktop_settings_tunnel_running_summary">SKIPI Core работает в процессе приложения. При изменении настроек подключения он переподключается автоматически.</string>
     <string name="desktop_settings_tunnel_stopped_summary">Выберите сервер на главном экране и подключитесь для запуска SKIPI Core.</string>
     <string name="desktop_settings_core_found">SKIPI Core найден</string>
     <string name="desktop_settings_core_not_found">SKIPI Core не найден</string>
@@ -1809,10 +1809,10 @@
     <string name="desktop_settings_log_not_created">Файл журнала ещё не создан</string>
     <string name="desktop_settings_log_empty">Записей пока нет</string>
     <string name="desktop_settings_data_header">ДАННЫЕ</string>
-    <string name="desktop_settings_data_dir">Каталог данных SKIPI</string>
-    <string name="desktop_settings_data_dir_not_found">Каталог данных не найден.</string>
-    <string name="desktop_settings_data_dir_opened">Каталог данных открыт.</string>
-    <string name="desktop_settings_data_dir_open_failed">Не удалось открыть каталог: %1$s</string>
+    <string name="desktop_settings_data_dir">Папка данных SKIPI</string>
+    <string name="desktop_settings_data_dir_not_found">Папка данных не найдена.</string>
+    <string name="desktop_settings_data_dir_opened">Папка данных открыта.</string>
+    <string name="desktop_settings_data_dir_open_failed">Не удалось открыть папку: %1$s</string>
     <string name="desktop_settings_copy_settings_path">Скопировать путь к settings.json</string>
     <string name="desktop_settings_path_copied">Путь к настройкам скопирован.</string>
     <string name="desktop_settings_path_copy_failed">Не удалось скопировать путь: %1$s</string>
@@ -1833,7 +1833,7 @@
     <string name="desktop_core_local_tunnel_stopped">Локальный туннель SKIPI Core остановлен.</string>
     <string name="desktop_core_tunnel_proxy_stopped">Туннель SKIPI Core и системный прокси остановлены.</string>
     <string name="desktop_core_reconnected">SKIPI Core переподключён.</string>
-    <string name="desktop_core_reconnected_with_proxy">SKIPI Core переподключён и системный прокси.</string>
+    <string name="desktop_core_reconnected_with_proxy">SKIPI Core и системный прокси переподключены.</string>
     <string name="desktop_core_reconnect_failed">Не удалось переподключить SKIPI Core: %1$s</string>
     <string name="desktop_reason_last_tunnel_action">Выполняю последнее действие с туннелем.</string>
     <string name="desktop_core_safe_shutdown">Безопасное завершение SKIPI…</string>
@@ -1844,7 +1844,7 @@
     <string name="desktop_core_already_connected">Туннель SKIPI Core уже подключён.</string>
     <string name="desktop_core_connecting">Подключение SKIPI Core…</string>
     <string name="desktop_core_tunnel_started">Туннель SKIPI Core запущен.</string>
-    <string name="desktop_core_tunnel_proxy_started">Туннель SKIPI Core и системный прокси запущен.</string>
+    <string name="desktop_core_tunnel_proxy_started">Туннель SKIPI Core и системный прокси запущены.</string>
     <string name="desktop_system_proxy_already_owned">Системный прокси %1$s уже принадлежит SKIPI.</string>
     <string name="desktop_system_proxy_windows_points">Прокси Windows HTTP/HTTPS указывает на %1$s:%2$s.</string>
     <string name="desktop_system_proxy_no_lease_stored">Аренда системного прокси SKIPI не сохранена.</string>
@@ -1857,4 +1857,5 @@
     <string name="desktop_select_server_before_connect">Перед подключением выберите работающий сервер</string>
     <string name="desktop_select_server_before_export">Перед экспортом выберите работающий сервер</string>
     <string name="desktop_autostart_remove_failed">Не удалось убрать запуск при входе в систему</string>
+    <string name="common_back">Назад</string>
 </resources>
