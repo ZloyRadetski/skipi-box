@@ -3,6 +3,14 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.Icons
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
@@ -171,20 +179,20 @@ fun SkipiAboutScreen(
                 if (capabilities.runtime) item(key = "about_runtime") {
                     SmallTitle(text = labels.runtimeTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = "SKIPI Core", summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo)
-                        BasicComponent(title = "Xray-core", summary = runtime.xrayCoreVersion)
+                        ArrowPreference(title = "SKIPI Core", startAction = settingIcon(Icons.Filled.Memory), summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo)
+                        BasicComponent(title = "Xray-core", startAction = settingIcon(Icons.Filled.Hub), summary = runtime.xrayCoreVersion)
                         if (runtime.hevTunnelVersion.isNotBlank()) {
-                            BasicComponent(title = "hev-socks5-tunnel", summary = runtime.hevTunnelVersion)
+                            BasicComponent(title = "hev-socks5-tunnel", startAction = settingIcon(Icons.Filled.Lan), summary = runtime.hevTunnelVersion)
                         }
                     }
                 }
                 if (capabilities.replayOnboarding || capabilities.telegram || capabilities.bugReport || capabilities.source) item(key = "about_other") {
                     SmallTitle(text = labels.otherTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.replayOnboarding) ArrowPreference(title = labels.replayOnboardingTitle, summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding)
-                        if (capabilities.telegram) ArrowPreference(title = labels.telegramTitle, summary = "@skipi_public", onClick = onOpenTelegram)
-                        if (capabilities.bugReport) ArrowPreference(title = labels.bugReportTitle, summary = labels.bugReportSummary, onClick = onOpenBugReport)
-                        if (capabilities.source) ArrowPreference(title = labels.sourceTitle, onClick = onOpenSource)
+                        if (capabilities.replayOnboarding) ArrowPreference(title = labels.replayOnboardingTitle, startAction = settingIcon(Icons.Filled.Replay), summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding)
+                        if (capabilities.telegram) ArrowPreference(title = labels.telegramTitle, startAction = settingIcon(Icons.Filled.Send), summary = "@skipi_public", onClick = onOpenTelegram)
+                        if (capabilities.bugReport) ArrowPreference(title = labels.bugReportTitle, startAction = settingIcon(Icons.Filled.BugReport), summary = labels.bugReportSummary, onClick = onOpenBugReport)
+                        if (capabilities.source) ArrowPreference(title = labels.sourceTitle, startAction = settingIcon(Icons.Filled.Code), onClick = onOpenSource)
                     }
                 }
                 platformContent?.let { content -> item(key = "about_platform_extension") { Column(content = content) } }

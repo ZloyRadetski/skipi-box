@@ -3,6 +3,22 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Swipe
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.HideImage
+import androidx.compose.material.icons.filled.Colorize
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.Icons
 import app.skipi.ui.resources.*
 import androidx.compose.animation.AnimatedVisibility
 import app.skipi.ui.components.SkipiDropdownPreference
@@ -125,6 +141,7 @@ internal fun AppearanceThemeSection(
         if (capabilities.appIcon) {
             ArrowPreference(
                 title = stringResource(Res.string.settings_app_icon),
+                startAction = settingIcon(Icons.Filled.Apps),
                 summary = appIconTitle,
                 onClick = onRequestAppIconSelection,
             )
@@ -138,6 +155,7 @@ internal fun AppearanceThemeSection(
             // clears a colour that onboarding picked.
             SwitchPreference(
                 title = stringResource(Res.string.settings_enable_material_you),
+                startAction = settingIcon(Icons.Filled.ColorLens),
                 summary = stringResource(Res.string.settings_enable_material_you_summary),
                 checked = appState.enableMaterialYou,
                 onCheckedChange = { enabled ->
@@ -205,6 +223,7 @@ internal fun AppearanceBackgroundSection(
             Column(modifier = Modifier.fillMaxWidth()) {
                 ArrowPreference(
                     title = stringResource(Res.string.settings_background_photo_pick),
+                    startAction = settingIcon(Icons.Filled.Image),
                     onClick = onChooseBackgroundPhoto,
                 )
                 SkipiDropdownPreference(
@@ -220,6 +239,7 @@ internal fun AppearanceBackgroundSection(
                 if (hasCustomBackgroundPhoto) {
                     ArrowPreference(
                         title = stringResource(Res.string.settings_background_photo_remove),
+                        startAction = settingIcon(Icons.Filled.HideImage),
                         onClick = {
                             onRemoveBackgroundPhoto()
                             updateAppState { it.copy(backgroundStyle = AppearanceSettingValues.BackgroundStyleClassic) }
@@ -251,6 +271,7 @@ internal fun AppearanceCustomColorsSection(
         SkipiSettingsSectionCard {
             SwitchPreference(
                 title = stringResource(Res.string.settings_enable_custom_colors),
+                startAction = settingIcon(Icons.Filled.Colorize),
                 summary = stringResource(Res.string.settings_enable_custom_colors_summary),
                 checked = appState.enableCustomColors,
                 onCheckedChange = { enabled ->
@@ -415,6 +436,7 @@ internal fun AppearanceCustomColorsSection(
                     )
                     ArrowPreference(
                         title = stringResource(Res.string.settings_colors_reset),
+                        startAction = settingIcon(Icons.Filled.RestartAlt),
                         summary = stringResource(Res.string.settings_colors_reset_summary),
                         onClick = {
                             updateAppState { state ->
@@ -548,6 +570,7 @@ internal fun AppearanceLayoutSection(
                 if (capabilities.floatingPowerButton) {
                     SwitchPreference(
                         title = stringResource(Res.string.settings_classic_show_floating_power_button),
+                        startAction = settingIcon(Icons.Filled.PowerSettingsNew),
                         summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
                         checked = appState.classicShowFloatingPowerButton,
                         onCheckedChange = { enabled ->
@@ -559,6 +582,7 @@ internal fun AppearanceLayoutSection(
         }
         SwitchPreference(
             title = stringResource(Res.string.settings_pin_connection_panel),
+            startAction = settingIcon(Icons.Filled.PushPin),
             summary = stringResource(Res.string.settings_pin_connection_panel_summary),
             checked = appState.pinConnectionPanelOnHome,
             onCheckedChange = { enabled ->
@@ -568,6 +592,7 @@ internal fun AppearanceLayoutSection(
         if (capabilities.subscriptionSwipe) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_enable_subscription_swipe),
+                startAction = settingIcon(Icons.Filled.Swipe),
                 summary = stringResource(Res.string.settings_enable_subscription_swipe_summary),
                 checked = appState.enableSubscriptionSwipe,
                 onCheckedChange = { enabled ->
@@ -577,6 +602,7 @@ internal fun AppearanceLayoutSection(
         }
         SwitchPreference(
             title = stringResource(Res.string.settings_tunnel_memory_show_on_home),
+            startAction = settingIcon(Icons.Filled.Memory),
             summary = stringResource(Res.string.settings_tunnel_memory_show_on_home_summary),
             checked = appState.showTunnelMemoryOnHome,
             onCheckedChange = { enabled ->
@@ -585,6 +611,7 @@ internal fun AppearanceLayoutSection(
         )
         SwitchPreference(
             title = stringResource(Res.string.settings_tunnel_ip_show_on_home),
+            startAction = settingIcon(Icons.Filled.Language),
             summary = stringResource(Res.string.settings_tunnel_ip_show_on_home_summary),
             checked = appState.showTunnelIpOnHome,
             onCheckedChange = { enabled ->
@@ -594,6 +621,7 @@ internal fun AppearanceLayoutSection(
         if (appState.showTunnelIpOnHome) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_tunnel_ip_mask_on_home),
+                startAction = settingIcon(Icons.Filled.VisibilityOff),
                 summary = stringResource(Res.string.settings_tunnel_ip_mask_on_home_summary),
                 checked = appState.maskTunnelIpOnHome,
                 onCheckedChange = { enabled ->
@@ -604,6 +632,7 @@ internal fun AppearanceLayoutSection(
         if (capabilities.connectionLog) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_connection_log_show_on_home),
+                startAction = settingIcon(Icons.Filled.Article),
                 summary = stringResource(Res.string.settings_connection_log_show_on_home_summary),
                 checked = appState.showConnectionLogOnHome,
                 onCheckedChange = { enabled ->
@@ -613,12 +642,14 @@ internal fun AppearanceLayoutSection(
         }
         SwitchPreference(
             title = stringResource(Res.string.settings_enable_all_proxy_group),
+            startAction = settingIcon(Icons.Filled.AllInclusive),
             summary = stringResource(Res.string.settings_enable_all_proxy_group_summary),
             checked = appState.enableAllProxyGroup,
             onCheckedChange = { enabled -> updateAppState { it.copy(enableAllProxyGroup = enabled) } },
         )
         SwitchPreference(
             title = stringResource(Res.string.settings_show_server_search),
+            startAction = settingIcon(Icons.Filled.Search),
             summary = stringResource(Res.string.settings_show_server_search_summary),
             checked = appState.showServerSearch,
             onCheckedChange = { enabled -> updateAppState { it.copy(showServerSearch = enabled) } },

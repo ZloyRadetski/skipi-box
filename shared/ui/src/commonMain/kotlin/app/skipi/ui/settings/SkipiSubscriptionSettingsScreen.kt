@@ -3,6 +3,10 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.NetworkPing
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.Icons
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import app.skipi.ui.resources.common_cancel
@@ -155,6 +159,7 @@ fun SkipiSubscriptionSettingsScreen(
                         if (capabilities.userAgents) {
                             ArrowPreference(
                                 title = labels.userAgentsTitle,
+                                startAction = settingIcon(Icons.Filled.Fingerprint),
                                 summary = labels.userAgentsSummary,
                                 onClick = onOpenUserAgents,
                             )
@@ -162,6 +167,7 @@ fun SkipiSubscriptionSettingsScreen(
                         if (capabilities.deviceHeaders) {
                             SwitchPreference(
                                 title = labels.deviceHeadersTitle,
+                                startAction = settingIcon(Icons.Filled.PhoneAndroid),
                                 summary = labels.deviceHeadersSummary,
                                 checked = state.deviceHeadersEnabled,
                                 onCheckedChange = { enabled ->
@@ -224,6 +230,7 @@ fun SkipiSubscriptionSettingsScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = labels.pingTitle,
+                            startAction = settingIcon(Icons.Filled.NetworkPing),
                             summary = state.pingSummary,
                             onClick = onOpenPingSettings,
                         )

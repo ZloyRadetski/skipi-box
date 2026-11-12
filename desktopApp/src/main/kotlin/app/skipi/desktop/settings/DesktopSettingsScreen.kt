@@ -3,6 +3,12 @@
 
 package app.skipi.desktop
 
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.ContentCopy
 import app.ProjectInfo
 import app.skipi.ui.networkautomation.NetworkAutomationServerOption
 import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
@@ -227,6 +233,9 @@ internal fun desktopSettingsParent(destination: DesktopSettingsDestination): Des
     -> DesktopSettingsDestination.Diagnostics
     else -> DesktopSettingsDestination.Overview
 }
+
+/** The icon color of settings rows until the user picks one. */
+internal const val DesktopDefaultSettingsIconColor = 0xFF5C6DB0L
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
 @Composable
@@ -543,7 +552,7 @@ private fun DesktopSettingsOverview(
             tunMtu = settings.tunMtu,
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
-            categoryIconColor = Color(0xFF5C6DB0),
+            categoryIconColor = settings.customCategoryIconColor?.let(::Color) ?: Color(DesktopDefaultSettingsIconColor),
             visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
         ),
         padding = contentPadding,
@@ -797,6 +806,7 @@ private fun DesktopLocalProxySettings(
             {
                 SkipiSettingsSwitchRow(
                     title = stringResource(Res.string.desktop_settings_use_system_proxy),
+                    icon = Icons.Filled.Language,
                     summary = stringResource(Res.string.desktop_settings_use_system_proxy_summary),
                     checked = settings.useSystemProxy,
                     onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
@@ -810,6 +820,7 @@ private fun DesktopLocalProxySettings(
                 SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_system_proxy_header)) {
                     SkipiSettingsActionRow(
                         title = stringResource(Res.string.desktop_settings_reset_system_proxy),
+                        icon = Icons.Filled.RestartAlt,
                         summary = stringResource(Res.string.desktop_settings_reset_system_proxy_summary),
                         onClick = onClearSystemProxy,
                     )
@@ -1024,6 +1035,7 @@ private fun DesktopDiagnosticsContent(
         )
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_recheck_runtime),
+            icon = Icons.Filled.Refresh,
             summary = stringResource(Res.string.desktop_settings_recheck_runtime_summary),
             onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
         )
@@ -1031,6 +1043,7 @@ private fun DesktopDiagnosticsContent(
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_app_log_header)) {
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_open_logs_folder),
+            icon = Icons.Filled.FolderOpen,
             summary = logDir.toString(),
             onClick = {
                 val result = openDirectory(logDir)
@@ -1055,6 +1068,7 @@ private fun DesktopDiagnosticsContent(
             )
             SkipiSettingsActionRow(
                 title = stringResource(Res.string.common_refresh),
+                icon = Icons.Filled.Refresh,
                 summary = "",
                 onClick = { recentLogs = DesktopLogger.recentEntries(40) },
             )
@@ -1063,6 +1077,7 @@ private fun DesktopDiagnosticsContent(
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_data_header)) {
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_data_dir),
+            icon = Icons.Filled.Folder,
             summary = dataDirectory?.toString().orEmpty(),
             onClick = {
                 val result = dataDirectory?.let(::openDirectory)
@@ -1072,6 +1087,7 @@ private fun DesktopDiagnosticsContent(
         )
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_copy_settings_path),
+            icon = Icons.Filled.ContentCopy,
             summary = settingsPath.toString(),
             onClick = {
                 copyToClipboard(settingsPath.toString()).fold(

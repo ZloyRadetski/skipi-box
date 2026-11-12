@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,13 +36,18 @@ fun SkipiSettingsGroup(title: String, content: @Composable ColumnScope.() -> Uni
 }
 
 @Composable
-fun SkipiSettingsActionRow(title: String, summary: String, onClick: () -> Unit) {
-    ArrowPreference(title = title, summary = summary.ifBlank { null }, onClick = onClick)
+fun SkipiSettingsActionRow(title: String, summary: String, onClick: () -> Unit, icon: ImageVector? = null) {
+    ArrowPreference(
+        title = title,
+        summary = summary.ifBlank { null },
+        startAction = icon?.let(::settingIcon),
+        onClick = onClick,
+    )
 }
 
 @Composable
-fun SkipiSettingsInfoRow(title: String, summary: String) {
-    BasicComponent(title = title, summary = summary.ifBlank { null })
+fun SkipiSettingsInfoRow(title: String, summary: String, icon: ImageVector? = null) {
+    BasicComponent(title = title, summary = summary.ifBlank { null }, startAction = icon?.let(::settingIcon))
 }
 
 @Composable
@@ -50,8 +56,15 @@ fun SkipiSettingsSwitchRow(
     summary: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    icon: ImageVector? = null,
 ) {
-    SwitchPreference(title = title, summary = summary, checked = checked, onCheckedChange = onCheckedChange)
+    SwitchPreference(
+        title = title,
+        summary = summary,
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        startAction = icon?.let(::settingIcon),
+    )
 }
 
 @Composable

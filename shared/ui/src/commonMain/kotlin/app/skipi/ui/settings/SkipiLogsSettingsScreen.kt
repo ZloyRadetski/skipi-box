@@ -3,6 +3,11 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Article
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
@@ -176,6 +181,7 @@ fun SkipiLogsSettingsScreen(
                         if (capabilities.accessLog) {
                             SwitchPreference(
                                 title = labels.accessLogTitle,
+                                startAction = settingIcon(Icons.Filled.Receipt),
                                 checked = state.accessLogEnabled,
                                 onCheckedChange = onAccessLogChange,
                             )
@@ -185,11 +191,11 @@ fun SkipiLogsSettingsScreen(
                 if (capabilities.coreLogs || (capabilities.accessLogs && showAccessLogs) || capabilities.logcat) item(key = "log_viewers") {
                     SmallTitle(text = labels.viewersSectionTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, onClick = onOpenCoreLogs)
+                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, startAction = settingIcon(Icons.Filled.Terminal), onClick = onOpenCoreLogs)
                         if (capabilities.accessLogs && showAccessLogs) {
-                            ArrowPreference(title = labels.accessLogsTitle, onClick = onOpenAccessLogs)
+                            ArrowPreference(title = labels.accessLogsTitle, startAction = settingIcon(Icons.Filled.ReceiptLong), onClick = onOpenAccessLogs)
                         }
-                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, onClick = onOpenLogcat)
+                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, startAction = settingIcon(Icons.Filled.Article), onClick = onOpenLogcat)
                     }
                 }
                 if (capabilities.bugReport) item(key = "logs_feedback") {
@@ -197,6 +203,7 @@ fun SkipiLogsSettingsScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = labels.bugReportTitle,
+                            startAction = settingIcon(Icons.Filled.BugReport),
                             summary = labels.bugReportSummary,
                             onClick = onOpenBugReport,
                         )

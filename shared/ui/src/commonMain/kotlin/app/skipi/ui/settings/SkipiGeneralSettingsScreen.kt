@@ -3,6 +3,14 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Minimize
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Backup
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
@@ -220,6 +228,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.Haptics in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_enable_haptics),
+                                    startAction = settingIcon(Icons.Filled.Vibration),
                                     summary = stringResource(Res.string.settings_enable_haptics_summary),
                                     checked = state.enableHaptics,
                                     onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
@@ -240,6 +249,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.TrafficStatsNotifications in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_traffic_stats_notification),
+                                    startAction = settingIcon(Icons.Filled.Insights),
                                     summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
                                     checked = state.enableTrafficStatsNotification,
                                     onCheckedChange = { enabled ->
@@ -260,6 +270,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.ResourceFileNotifications in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_resource_files_notifications),
+                                    startAction = settingIcon(Icons.Filled.NotificationsActive),
                                     summary = stringResource(Res.string.settings_resource_files_notifications_summary),
                                     checked = state.enableResourceFileNotifications,
                                     onCheckedChange = { enabled ->
@@ -270,6 +281,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.DeletionConfirmation in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_deletion_confirmation),
+                                    startAction = settingIcon(Icons.Filled.Delete),
                                     summary = stringResource(Res.string.settings_deletion_confirmation_summary),
                                     checked = state.enableDeletionConfirmation,
                                     onCheckedChange = { enabled ->
@@ -292,6 +304,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.UrlSchemes in visibleControls) {
                                 ArrowPreference(
                                     title = stringResource(Res.string.settings_url_schemes),
+                                    startAction = settingIcon(Icons.Filled.Link),
                                     summary = stringResource(Res.string.settings_url_schemes_summary),
                                     onClick = onOpenUrlSchemes,
                                 )
@@ -299,6 +312,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.BroadcastControl in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_broadcast_control),
+                                    startAction = settingIcon(Icons.Filled.SettingsRemote),
                                     summary = stringResource(Res.string.settings_broadcast_control_summary),
                                     checked = state.enableBroadcastControl,
                                     onCheckedChange = { enabled ->
@@ -309,6 +323,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.CloseToBackground in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_close_to_background),
+                                    startAction = settingIcon(Icons.Filled.Minimize),
                                     summary = stringResource(Res.string.settings_close_to_background_summary),
                                     checked = state.closeToBackground,
                                     onCheckedChange = { enabled ->
@@ -326,6 +341,7 @@ fun SkipiGeneralSettingsScreen(
                         SkipiSettingsSectionCard(bottomPadding = 0.dp) {
                             ArrowPreference(
                                 title = stringResource(Res.string.settings_category_backup_reset),
+                                startAction = settingIcon(Icons.Filled.Backup),
                                 summary = stringResource(Res.string.settings_category_backup_reset_summary),
                                 onClick = onOpenBackupReset,
                             )

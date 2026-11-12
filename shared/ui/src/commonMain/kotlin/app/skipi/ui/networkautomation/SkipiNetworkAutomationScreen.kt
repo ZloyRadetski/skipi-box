@@ -3,6 +3,11 @@
 
 package app.skipi.ui.networkautomation
 
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.AutoMode
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.Icons
+import app.skipi.ui.settings.settingIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
@@ -154,12 +159,14 @@ fun SkipiNetworkAutomationScreen(
                     SkipiSettingsSectionCard {
                         SwitchPreference(
                             title = stringResource(Res.string.network_automation_switch_title),
+                            startAction = settingIcon(Icons.Filled.AutoMode),
                             summary = stringResource(Res.string.network_automation_switch_summary),
                             checked = networkAutomationEnabled,
                             onCheckedChange = onNetworkAutomationChange,
                         )
                         SwitchPreference(
                             title = stringResource(Res.string.network_automation_on_demand_title),
+                            startAction = settingIcon(Icons.Filled.TouchApp),
                             summary = stringResource(Res.string.network_automation_on_demand_summary),
                             checked = onDemandEnabled,
                             onCheckedChange = onOnDemandChange,
@@ -205,6 +212,7 @@ fun SkipiNetworkAutomationScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = stringResource(Res.string.network_automation_add_rule),
+                            startAction = settingIcon(Icons.Filled.Add),
                             onClick = {
                                 editingRule = null
                                 editorOpen = true

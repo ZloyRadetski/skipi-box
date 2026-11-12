@@ -3,6 +3,19 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.SettingsEthernet
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.AutoMode
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.vector.ImageVector
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
@@ -187,17 +200,20 @@ fun SkipiVpnSettingsScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = labels.tunTitle,
+                            startAction = settingIcon(Icons.Filled.SettingsEthernet),
                             summary = state.tunSummary,
                             onClick = onOpenTunSettings,
                         )
                         if (capabilities.hevTun) SwitchPreference(
                             title = labels.hevTunTitle,
+                            startAction = settingIcon(Icons.Filled.Speed),
                             summary = labels.hevTunSummary,
                             checked = state.hevTunEnabled,
                             onCheckedChange = onHevTunChange,
                         )
                         if (capabilities.strictFullTunnel) SwitchPreference(
                             title = labels.strictFullTunnelTitle,
+                            startAction = settingIcon(Icons.Filled.Lock),
                             summary = labels.strictFullTunnelSummary,
                             checked = state.strictFullTunnelEnabled,
                             onCheckedChange = onStrictFullTunnelChange,
@@ -209,12 +225,14 @@ fun SkipiVpnSettingsScreen(
                     SkipiSettingsSectionCard {
                         SwitchPreference(
                             title = labels.autoConnectOnOpenTitle,
+                            startAction = settingIcon(Icons.Filled.PlayCircle),
                             summary = labels.autoConnectOnOpenSummary,
                             checked = state.autoConnectOnAppOpen,
                             onCheckedChange = onAutoConnectOnOpenChange,
                         )
                         if (capabilities.autoConnectOnBoot) SwitchPreference(
                             title = labels.autoConnectOnBootTitle,
+                            startAction = settingIcon(Icons.Filled.PowerSettingsNew),
                             summary = labels.autoConnectOnBootSummary,
                             checked = state.autoConnectOnBoot,
                             onCheckedChange = onAutoConnectOnBootChange,
@@ -226,12 +244,14 @@ fun SkipiVpnSettingsScreen(
                     SkipiSettingsSectionCard {
                         if (capabilities.killSwitch) SwitchPreference(
                             title = labels.killSwitchTitle,
+                            startAction = settingIcon(Icons.Filled.Block),
                             summary = labels.killSwitchSummary,
                             checked = state.killSwitchEnabled,
                             onCheckedChange = onKillSwitchChange,
                         )
                         if (capabilities.systemVpnSettings) ArrowPreference(
                             title = labels.systemVpnSettingsTitle,
+                            startAction = settingIcon(Icons.Filled.VpnKey),
                             summary = labels.systemVpnSettingsSummary,
                             onClick = onOpenSystemVpnSettings,
                         )
@@ -242,6 +262,7 @@ fun SkipiVpnSettingsScreen(
                     SkipiSettingsSectionCard {
                         if (capabilities.batteryOptimization) SwitchPreference(
                             title = labels.batteryOptimizationTitle,
+                            startAction = settingIcon(Icons.Filled.BatteryChargingFull),
                             summary = if (state.batteryOptimizationUnrestricted) {
                                 labels.batteryUnrestrictedSummary
                             } else {
@@ -252,18 +273,21 @@ fun SkipiVpnSettingsScreen(
                         )
                         if (capabilities.wakeLock) SwitchPreference(
                             title = labels.wakeLockTitle,
+                            startAction = settingIcon(Icons.Filled.Coffee),
                             summary = labels.wakeLockSummary,
                             checked = state.wakeLockEnabled,
                             onCheckedChange = onWakeLockChange,
                         )
                         if (capabilities.seamlessSwitching) SwitchPreference(
                             title = labels.seamlessSwitchingTitle,
+                            startAction = settingIcon(Icons.Filled.SwapHoriz),
                             summary = labels.seamlessSwitchingSummary,
                             checked = state.seamlessNetworkSwitchingEnabled,
                             onCheckedChange = onSeamlessSwitchingChange,
                         )
                         ArrowPreference(
                             title = labels.networkAutomationTitle,
+                            startAction = settingIcon(Icons.Filled.AutoMode),
                             summary = labels.networkAutomationSummary,
                             onClick = onOpenNetworkAutomation,
                         )
@@ -288,11 +312,13 @@ fun SkipiHostSwitchSection(
     checked: Boolean,
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    icon: ImageVector? = null,
 ) {
     SmallTitle(text = sectionTitle)
     SkipiSettingsSectionCard {
         SwitchPreference(
             title = title,
+            startAction = icon?.let(::settingIcon),
             summary = summary,
             checked = checked,
             enabled = enabled,
