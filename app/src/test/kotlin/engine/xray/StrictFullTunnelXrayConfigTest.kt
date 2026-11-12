@@ -8,7 +8,6 @@ import app.ProxyServerState
 import features.proxy.server.model.Custom
 import features.proxy.server.model.VLESS
 import features.routing.model.RouteRule
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
@@ -51,27 +50,32 @@ class StrictFullTunnelXrayConfigTest {
     }
 
     @Test
-    fun rawConfig_failsClosedWhenStrictTunnelIsEnabled() {
+    fun rawConfig_dropsItsDirectRulesAndEndsInTheProxyWhenStrictTunnelIsEnabled() {
         val server = ProxyServerState(
             id = 1,
             groupId = 0,
             server = Custom(
                 remarks = "Raw",
-                configJson = """{"outbounds":[{"tag":"proxy","protocol":"freedom"}]}""",
+                configJson = """
+                    {"outbounds":[{"tag":"vpn","protocol":"vless","settings":{"vnext":[{"address":"p.example","port":443,"users":[{"id":"u","encryption":"none"}]}]}},
+                                  {"tag":"local","protocol":"freedom"}],
+                     "routing":{"rules":[{"domain":["direct.example"],"outboundTag":"local"}]}}
+                """.trimIndent(),
             ),
         )
 
-        val error = assertFailsWith<IllegalStateException> {
-            XrayConfigFactory.buildXrayConfig(
-                XrayConfigRequest(
-                    appState = AppState(enableStrictFullTunnel = true),
-                    selectedServer = server,
-                    inbounds = emptyList(),
-                    coreLogPaths = XrayCoreLogPaths("/tmp/access.log", "/tmp/error.log"),
-                ),
-            )
-        }
+        fun build(strict: Boolean) = XrayConfigFactory.buildXrayConfig(
+            XrayConfigRequest(
+                appState = AppState(enableStrictFullTunnel = strict),
+                selectedServer = server,
+                inbounds = emptyList(),
+                coreLogPaths = XrayCoreLogPaths("/tmp/access.log", "/tmp/error.log"),
+            ),
+        )
 
-        assertTrue(error.message.orEmpty().contains("Strict full-tunnel"))
+        assertTrue(build(strict = false).contains("direct.example"))
+        val strict = build(strict = true)
+        assertFalse(strict.contains("direct.example"))
+        assertTrue(strict.contains("\"outboundTag\":\"vpn\"") || strict.contains("\"outboundTag\": \"vpn\""))
     }
 }

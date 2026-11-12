@@ -417,23 +417,11 @@ fun TrafficConfigPage(
             SkipiTrafficConfigContextMenu(
                 show = true,
                 onDismissRequest = { contextMenuConfig = null },
-                onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
-                    {
-                        contextMenuConfig = null
-                        onTriggerConfigUpdate(config)
-                    }
-                } else null,
                 onRawEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigRawEditor(config.id)) },
                 onUiEdit = { contextMenuConfig = null; navigator.push(Route.TrafficConfigEditor(config.id)) },
                 onDuplicate = { contextMenuConfig = null; duplicateConfig(config) },
                 onExport = { contextMenuConfig = null; exportConfig(config) },
                 onExportBase64 = { contextMenuConfig = null; exportConfigBase64(config) },
-                onDelete = { contextMenuConfig = null; pendingConfigDeletion = config },
-                onEnable = {
-                    contextMenuConfig = null
-                    updateAppState { state -> state.withActiveTrafficConfigProfile(config.id) }
-                    services.appScope.launch { services.tipNotifier.show(context.getString(R.string.configs_enabled)) }
-                },
             )
         }
     }

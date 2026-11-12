@@ -166,7 +166,6 @@ fun AppState.withConfigProxyGroupsReflected(catalog: ProxyServerCatalog): ProxyS
     val existingById = catalog.servers.associateBy(CatalogProxyServerRecord::id)
     val result = reconcileConfigProxyGroups(
         trafficConfigs = trafficConfigs,
-        activeTrafficConfigId = activeTrafficConfigId,
         servers = catalog.servers.map { server ->
             ReconciledProxyServerRecord(
                 id = server.id,

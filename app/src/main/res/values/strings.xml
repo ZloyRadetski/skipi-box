@@ -249,7 +249,7 @@
     <string name="settings_kill_switch">Kill Switch</string>
     <string name="settings_kill_switch_summary">Opens Android settings to enable Always-on VPN and block connections without VPN</string>
     <string name="settings_strict_full_tunnel">Strict full tunnel</string>
-    <string name="settings_strict_full_tunnel_summary">Routes managed app traffic through the selected tunnel and disables app exceptions and Direct rules. Raw Xray profiles are not supported.</string>
+    <string name="settings_strict_full_tunnel_summary">Routes managed app traffic through the selected tunnel and disables app exceptions and Direct rules.</string>
     <string name="settings_system_vpn_settings">System VPN settings</string>
     <string name="settings_system_vpn_settings_summary">Configure Android Always-on VPN and \"Block connections without VPN\"</string>
     <string name="settings_inbound">Inbound proxy settings</string>
@@ -668,7 +668,7 @@
     <string name="proxy_editor_strategy_group_random">Random</string>
     <string name="proxy_editor_strategy_group_round_robin">Round robin</string>
     <string name="proxy_group_select_active_server">Select active server</string>
-    <string name="proxy_editor_strategy_group_source_group">Subscription group</string>
+    <string name="proxy_editor_strategy_group_filter_groups">Filter applies to</string>
     <string name="proxy_editor_strategy_group_all_groups">All groups</string>
     <string name="proxy_editor_strategy_group_filter">Remarks regex filter</string>
      <string name="proxy_editor_strategy_group_health_check">Health Check</string>
@@ -688,8 +688,8 @@
     <string name="proxy_editor_custom_json_outbounds">Xray JSON outbounds</string>
     <string name="proxy_editor_custom_format_json">Format JSON</string>
     <string name="proxy_editor_custom_json_invalid">Invalid JSON config</string>
-    <string name="proxy_editor_custom_override_inbound_dns">Override inbound and DNS settings</string>
-    <string name="proxy_editor_custom_override_inbound_dns_summary">Use inbound and DNS settings provided by SKIPI</string>
+    <string name="proxy_editor_custom_override_inbound_dns">Override inbound, DNS and routing</string>
+    <string name="proxy_editor_custom_override_inbound_dns_summary">Use the inbound, DNS and routing rules provided by SKIPI instead of the ones in this JSON</string>
     <string name="proxy_validation_required_field">{field} is required</string>
     <string name="proxy_validation_server_address_contains_invalid_content">Server address must not include protocol, path, whitespace, or user info</string>
     <string name="proxy_validation_invalid_server_address">Invalid server address</string>

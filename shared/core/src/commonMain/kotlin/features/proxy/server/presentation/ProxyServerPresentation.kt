@@ -7,6 +7,9 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.model.effectiveFilterGroupIds
+import features.proxy.server.model.effectiveWholeGroupIds
+import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.extractLeadingCountryFlagOrNull
 import features.proxy.server.model.getTransportDisplay
 import features.proxy.server.model.stripLeadingCountryFlag
@@ -97,8 +100,19 @@ class ProxyServerPresentationFormatter(
             // A configured member is not necessarily the member currently selected at runtime.
             // Only display a member label when the model carries an actual selection.
             val activeMember = selectedMemberId?.let(serverById::get)
-            val memberCount = if (proxyServerIds.isNotEmpty()) {
-                proxyServerIds.size
+            val memberCount = if (proxyServerIds.isNotEmpty() || wholeGroupIds.isNotEmpty()) {
+                val wholeGroups = effectiveWholeGroupIds().toSet()
+                val filterGroups = effectiveFilterGroupIds().toSet()
+                val regex = filter.takeIf(String::isNotBlank)?.let { runCatching { Regex(it) }.getOrNull() }
+                (
+                    proxyServerIds +
+                        servers.filter { node -> node.groupId in wholeGroups && !node.server.isCompositeProxyServer() }.map { it.id } +
+                        servers.filter { node ->
+                            filter.isNotBlank() && !node.server.isCompositeProxyServer() &&
+                                (filterGroups.isEmpty() || node.groupId in filterGroups) &&
+                                (regex?.containsMatchIn(node.server.getInfo().remarks) ?: node.server.getInfo().remarks.contains(filter))
+                        }.map { it.id }
+                    ).distinct().size
             } else {
                 servers.count { server ->
                     server.groupId == subscriptionGroupId || subscriptionGroupId == null

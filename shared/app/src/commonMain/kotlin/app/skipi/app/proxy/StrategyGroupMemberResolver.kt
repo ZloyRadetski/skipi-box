@@ -10,6 +10,8 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import features.proxy.server.model.effectiveFilterGroupIds
+import features.proxy.server.model.effectiveWholeGroupIds
 import features.proxy.server.model.isCompositeProxyServer
 
 /** Resolves the currently selectable concrete members of a strategy group. */
@@ -20,26 +22,26 @@ fun resolveStrategyGroupMembers(
     stripLeadingFlag: (String) -> String = { it },
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerRow> {
-    if (strategyGroup.proxyServerIds.isNotEmpty()) {
-        return strategyGroup.proxyServerIds.flatMap { memberId ->
-            val member = servers.firstOrNull { it.id == memberId }
-            when (val server = member?.server) {
-                is StrategyGroup -> if (member.id in visitingStrategyGroupIds) emptyList()
-                    else resolveStrategyGroupMembers(
-                        server,
-                        servers,
-                        trafficConfigContentById,
-                        stripLeadingFlag,
-                        visitingStrategyGroupIds + member.id,
-                    )
-                null, is ChainProxy -> emptyList()
-                is Custom -> member.takeIf { server.canBeUsedInGeneratedProxyPlan() }?.let(::listOf).orEmpty()
-                else -> listOf(member)
-            }
-        }.distinctBy(ProxyServerRow::id)
-    }
+    val explicitMembers = strategyGroup.proxyServerIds.flatMap { memberId ->
+        val member = servers.firstOrNull { it.id == memberId }
+        when (val server = member?.server) {
+            is StrategyGroup -> if (member.id in visitingStrategyGroupIds) emptyList()
+                else resolveStrategyGroupMembers(
+                    server,
+                    servers,
+                    trafficConfigContentById,
+                    stripLeadingFlag,
+                    visitingStrategyGroupIds + member.id,
+                )
+            null, is ChainProxy -> emptyList()
+            is Custom -> member.takeIf { server.canBeUsedInGeneratedProxyPlan() }?.let(::listOf).orEmpty()
+            else -> listOf(member)
+        }
+    }.distinctBy(ProxyServerRow::id)
 
-    strategyGroup.sourceTrafficConfigId?.let { configId ->
+    if (strategyGroup.sourceTrafficConfigId != null) {
+        if (explicitMembers.isNotEmpty()) return explicitMembers
+        val configId = strategyGroup.sourceTrafficConfigId
         val sourceGroups = trafficConfigContentById[configId]
             ?.analyzeShadowrocketConfig()
             ?.proxyGroups
@@ -57,18 +59,28 @@ fun resolveStrategyGroupMembers(
             }
     }
 
-    val regex = strategyGroup.filter.takeIf(String::isNotBlank)?.let { runCatching { Regex(it) }.getOrNull() }
-    if (strategyGroup.filter.isBlank() && strategyGroup.subscriptionGroupId == null) return emptyList()
-    return servers.asSequence()
-        .filter { !it.server.isCompositeProxyServer() }
-        .filter { it.server !is Custom || it.server.canBeUsedInGeneratedProxyPlan() }
-        .filter { strategyGroup.subscriptionGroupId == null || it.groupId == strategyGroup.subscriptionGroupId }
-        .filter {
-            val filter = strategyGroup.filter
-            filter.isBlank() || regex?.containsMatchIn(it.server.getInfo().remarks) == true ||
-                (regex == null && it.server.getInfo().remarks.contains(filter))
+    // Picked servers, whole subscriptions and regex matches add up. The last two are looked up here, on every
+    // resolution, so a subscription refresh that brings in servers puts them in the group without any edit.
+    fun ProxyServerRow.isSelectable(): Boolean =
+        !server.isCompositeProxyServer() && (server !is Custom || server.canBeUsedInGeneratedProxyPlan())
+
+    val wholeGroupIds = strategyGroup.effectiveWholeGroupIds().toSet()
+    val wholeGroupMembers = if (wholeGroupIds.isEmpty()) emptyList() else {
+        servers.filter { row -> row.isSelectable() && row.groupId in wholeGroupIds }
+    }
+
+    val filter = strategyGroup.filter
+    val filterGroupIds = strategyGroup.effectiveFilterGroupIds().toSet()
+    val regex = filter.takeIf(String::isNotBlank)?.let { runCatching { Regex(it) }.getOrNull() }
+    val filteredMembers = if (filter.isBlank()) emptyList() else {
+        servers.filter { row ->
+            val remarks = row.server.getInfo().remarks
+            row.isSelectable() &&
+                (filterGroupIds.isEmpty() || row.groupId in filterGroupIds) &&
+                (regex?.containsMatchIn(remarks) ?: remarks.contains(filter))
         }
-        .toList()
+    }
+    return (explicitMembers + wholeGroupMembers + filteredMembers).distinctBy(ProxyServerRow::id)
 }
 
 fun resolveShadowrocketPolicyGroupMembers(

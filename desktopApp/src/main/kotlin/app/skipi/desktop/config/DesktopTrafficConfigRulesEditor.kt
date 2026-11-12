@@ -30,9 +30,7 @@ import app.skipi.ui.config.rememberSkipiRoutingTableDraft
 import app.skipi.ui.config.rememberSkipiRoutingTableState
 import app.skipi.ui.config.rememberSkipiTrafficConfigRuleEditorState
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.configs_proxy_groups_title
 import app.skipi.ui.resources.configs_rules_title
-import app.skipi.ui.resources.nav_configs
 import app.skipi.ui.resources.proxy_server_list_auto_balancers
 import app.skipi.ui.resources.routing_outbound_block
 import app.skipi.ui.resources.routing_outbound_direct
@@ -246,8 +244,6 @@ private fun DesktopPolicySelector(
         proxyLabel = stringResource(Res.string.routing_outbound_proxy),
         directLabel = stringResource(Res.string.routing_outbound_direct),
         blockLabel = stringResource(Res.string.routing_outbound_block),
-        proxyGroupsName = stringResource(Res.string.configs_proxy_groups_title),
-        configTargetsName = stringResource(Res.string.nav_configs),
     )
     val routeServers = remember(proxyServers, latencyByServerId) {
         proxyServers.map { server ->

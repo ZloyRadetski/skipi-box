@@ -55,8 +55,6 @@ data class RouteOutboundPickerLabels(
     val proxyLabel: String,
     val directLabel: String,
     val blockLabel: String,
-    val proxyGroupsName: String,
-    val configTargetsName: String,
 )
 
 data class RouteOutboundPickerProjection(
@@ -132,24 +130,9 @@ fun projectRouteOutboundPicker(
         )
     }
 
-    val otherConfigs = if (shadowrocketPolicyMode) {
-        trafficConfigs
-            .filter { it.id != trafficConfigId }
-            .map { config ->
-                RouteOutboundItem.Static(
-                    tag = "CONFIG:${config.id}",
-                    title = config.name,
-                    summary = "CONFIG:${config.id}",
-                )
-            }
-    } else {
-        emptyList()
-    }
-
     if (selectedTag.isNotBlank()) {
         val isKnown = systemEntries.any { it.tag.equals(selectedTag, ignoreCase = true) } ||
             configProxyGroups.any { it.tag == selectedTag } ||
-            otherConfigs.any { it.tag == selectedTag } ||
             selectableServers.any { server -> resolveTag(server, shadowrocketPolicyMode) == selectedTag }
         if (!isKnown) {
             systemEntries += RouteOutboundItem.Static(
@@ -159,6 +142,8 @@ fun projectRouteOutboundPicker(
         }
     }
 
+    // The user's proxy groups (global balancers, and the profile's own in a profile) are one group, listed with
+    // the manual servers above the subscriptions. Other profiles are not offered as targets.
     val groups = buildList {
         add(
             RouteOutboundPickerGroup(
@@ -173,10 +158,9 @@ fun projectRouteOutboundPicker(
                 key = AutoBalancersGroupKey,
                 title = labels.autoBalancerName,
                 subscriptionGroupId = null,
-                items = autoBalancerItems,
+                items = autoBalancerItems + configProxyGroups,
             ),
         )
-        addAll(subscriptionGroupItems)
         add(
             RouteOutboundPickerGroup(
                 key = ManualServersGroupKey,
@@ -185,24 +169,7 @@ fun projectRouteOutboundPicker(
                 items = manualGroupItems,
             ),
         )
-        if (shadowrocketPolicyMode) {
-            add(
-                RouteOutboundPickerGroup(
-                    key = ConfigProxyGroupsKey,
-                    title = labels.proxyGroupsName,
-                    subscriptionGroupId = null,
-                    items = configProxyGroups,
-                ),
-            )
-            add(
-                RouteOutboundPickerGroup(
-                    key = ConfigTargetsGroupKey,
-                    title = labels.configTargetsName,
-                    subscriptionGroupId = null,
-                    items = otherConfigs,
-                ),
-            )
-        }
+        addAll(subscriptionGroupItems)
     }
 
     val initiallyExpandedGroupKey = groups.firstOrNull { group ->
@@ -240,5 +207,3 @@ private fun String.isSystemTargetForInitialExpansion(): Boolean =
 private const val SystemTargetsGroupKey = "routing-system-targets"
 private const val AutoBalancersGroupKey = "routing-auto-balancers"
 private const val ManualServersGroupKey = "routing-manual-servers"
-private const val ConfigProxyGroupsKey = "routing-config-proxy-groups"
-private const val ConfigTargetsGroupKey = "routing-config-targets"

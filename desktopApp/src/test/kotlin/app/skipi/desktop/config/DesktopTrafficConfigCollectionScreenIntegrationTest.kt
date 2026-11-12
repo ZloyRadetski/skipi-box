@@ -24,9 +24,12 @@ import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.common_refresh
+import app.skipi.ui.resources.configs_activate
+import app.skipi.ui.resources.configs_export_menu
+import app.skipi.ui.resources.configs_export_base64
+import app.skipi.ui.resources.configs_export
 import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.configs_add
-import app.skipi.ui.resources.configs_activate
 import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.configs_duplicate
 import app.skipi.ui.resources.configs_global_proxy_groups
@@ -287,7 +290,11 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(DefaultAutoBalancerGroupId, request.groupId)
             assertEquals(DefaultAutoBalancerGroupId, request.returnGroupId)
             assertFalse(request.deleted)
-            assertEquals(originalSnapshot.copy(remarks = editedCopyName), request.server)
+            // Opening the editor moves the old single source group into the group list the regex looks at: the same meaning.
+            assertEquals(
+                originalSnapshot.copy(remarks = editedCopyName, subscriptionGroupId = null, filterGroupIds = listOf(23)),
+                request.server,
+            )
             assertEquals(screen.initialLibrary, screen.persistedLibrary())
             assertEquals(0, screen.libraryTransformCount())
             assertEquals(originalSnapshot, globalStrategy(screen.proxyServers, 40))
@@ -797,7 +804,6 @@ loglevel = debug
             configs = listOf(target, active),
             nextConfigId = 29,
         )
-        val activateLabel = getString(Res.string.configs_activate)
         lateinit var configFile: File
 
         withDesktopScreen(
@@ -807,9 +813,7 @@ loglevel = debug
             initialLibraryOverride = initialLibrary,
             libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, target.name, "Ещё")
-            assertNotNull(awaitText(screen.scene, activateLabel), "The profile More menu should expose Activate")
-            clickTextAction(screen.scene, activateLabel)
+            clickProfileCardSelection(screen.scene, target.name)
 
             val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
             assertEquals(target.id, saved.selectedConfigId)
@@ -876,9 +880,7 @@ loglevel = error
                 configFile = file
             },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, active.name, "Ещё")
-            assertNotNull(awaitText(screen.scene, deleteLabel), "The profile More menu should expose Delete")
-            clickTextAction(screen.scene, deleteLabel)
+            clickRowContentDescriptionAction(screen.scene, active.name, deleteLabel)
             assertNotNull(awaitText(screen.scene, getString(Res.string.deletion_confirmation_delete_config)), "Delete should wait for confirmation")
 
             val latestLibrary = configRepository.transformLatest { latest ->
@@ -907,7 +909,7 @@ loglevel = error
     }
 
     @Test
-    fun profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter() = runBlocking {
+    fun profileMenuOffersUiEditBeforeRawEditDuplicateAndAnExportSubmenuOnly() = runBlocking {
         val only = normalizedProfile(
             id = 8,
             name = "Only profile",
@@ -922,32 +924,35 @@ loglevel = warning
             configs = listOf(only),
             nextConfigId = 17,
         )
-        val deleteLabel = getString(Res.string.common_delete)
-        lateinit var configFile: File
+        val uiEditLabel = getString(Res.string.configs_ui_edit)
+        val rawEditLabel = getString(Res.string.configs_raw_edit)
+        val duplicateLabel = getString(Res.string.configs_duplicate)
+        val exportLabel = getString(Res.string.configs_export_menu)
 
         withDesktopScreen(
             proxyServers = emptyList(),
             targetProfile = only,
             activeProfile = only,
             initialLibraryOverride = initialLibrary,
-            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
         ) { screen ->
             clickRowContentDescriptionAction(screen.scene, only.name, "Ещё")
-            assertNotNull(awaitText(screen.scene, deleteLabel), "The public More menu should expose Delete for the last profile")
-            clickTextAction(screen.scene, deleteLabel)
-            assertNotNull(awaitText(screen.scene, getString(Res.string.deletion_confirmation_delete_config)))
-            clickDialogTextAction(screen.scene, getString(Res.string.deletion_confirmation_delete_config), getString(Res.string.common_delete))
-
-            val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
-            assertEquals(initialLibrary, saved, "The last-profile guard must preserve the complete stored library")
-            assertEquals(only.id, saved.selectedConfigId)
-            assertEquals(17, saved.nextConfigId)
-            assertEquals(1, screen.libraryTransformCount(), "The confirmed menu action makes one guarded transform attempt")
-            assertNotNull(awaitText(screen.scene, only.name), "The only profile should remain visible after the guard")
-            assertFalse(
-                hasVisibleText(screen.scene, "Конфиг удалён."),
-                "The last-profile guard must not show the deletion success message",
+            val uiEdit = assertNotNull(awaitText(screen.scene, uiEditLabel), "The menu should offer the visual editor")
+            val rawEdit = assertNotNull(awaitText(screen.scene, rawEditLabel), "The menu should offer the raw editor")
+            assertTrue(
+                uiEdit.boundsInRoot.top < rawEdit.boundsInRoot.top,
+                "The visual editor is listed above the raw editor",
             )
+            assertNotNull(awaitText(screen.scene, duplicateLabel))
+            assertNotNull(awaitText(screen.scene, exportLabel))
+            // Enable, refresh and delete live on the profile card, not in the menu.
+            assertEquals(null, awaitText(screen.scene, getString(Res.string.configs_activate)))
+            assertEquals(null, awaitText(screen.scene, getString(Res.string.common_delete)))
+            assertEquals(null, awaitText(screen.scene, getString(Res.string.common_refresh)))
+
+            clickTextAction(screen.scene, exportLabel)
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_export)), "Export .conf is in the submenu")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_export_base64)), "Export as Base64 is in the submenu")
+            assertEquals(initialLibrary, screen.persistedLibrary(), "Opening menus must not change the library")
         }
     }
 
@@ -1486,8 +1491,7 @@ resource-user-agent = Provider response agent/1.0
                 withTimeout(5_000L) { returnDocument.await() }
             },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, originalProfile.name, "Ещё")
-            clickTextAction(screen.scene, getString(Res.string.common_refresh))
+            clickRowContentDescriptionAction(screen.scene, originalProfile.name, getString(Res.string.common_refresh))
 
             val request = awaitDeferredWithRenderTicks(screen.scene, enteredFetch, "manual profile fetch")
             assertEquals(originalProfile.id, request.profile.id)
@@ -1592,8 +1596,7 @@ resource-user-agent = Provider locked agent/1.0
                 response
             },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, lockedProfile.name, "Ещё")
-            clickTextAction(screen.scene, getString(Res.string.common_refresh))
+            clickRowContentDescriptionAction(screen.scene, lockedProfile.name, getString(Res.string.common_refresh))
             assertNotNull(awaitText(screen.scene, warningTitle))
             assertFalse(enteredFetch.isCompleted, "A locked profile must not fetch before explicit confirmation")
             assertEquals(0, screen.libraryTransformCount(), "Showing the lock warning must not persist")
@@ -1737,8 +1740,7 @@ FINAL,DIRECT
                     )
                 },
             ) { screen ->
-                clickRowContentDescriptionAction(screen.scene, targetProfile.name, "Ещё")
-                clickTextAction(screen.scene, getString(Res.string.common_refresh))
+                clickRowContentDescriptionAction(screen.scene, targetProfile.name, getString(Res.string.common_refresh))
                 val request = awaitDeferredWithRenderTicks(screen.scene, enteredFetch, "repository-backed manual refresh")
                 assertEquals(targetProfile.id, request.profile.id)
                 assertEquals(targetProfile.name, request.profile.name)

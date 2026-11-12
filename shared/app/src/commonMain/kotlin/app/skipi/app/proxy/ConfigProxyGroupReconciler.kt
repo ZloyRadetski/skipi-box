@@ -28,7 +28,6 @@ data class ConfigProxyGroupReconciliation(
  */
 fun reconcileConfigProxyGroups(
     trafficConfigs: List<TrafficConfigState>,
-    activeTrafficConfigId: Int,
     servers: List<ProxyServerRow>,
     nextServerId: Int,
     selectedServerId: Int,
@@ -36,17 +35,12 @@ fun reconcileConfigProxyGroups(
     stripLeadingCountryFlag: (String) -> String,
     retainedServerIds: Set<Int> = emptySet(),
 ): ConfigProxyGroupReconciliation {
+    // A group shown "only if the config is active" keeps its record while another config is active: the mode
+    // only decides where the group is listed (see isProxyServerGroupEntryVisible). Dropping it would give it a
+    // new id on return, and a rule (On Demand, routing) that points at it would lose its target.
     val desired = trafficConfigs.flatMap { config ->
-        val isConfigActive = config.id == activeTrafficConfigId
         config.rawConfig.analyzeShadowrocketConfig().proxyGroups
-            .filter { group ->
-                when (group.displayMode) {
-                    StrategyGroupDisplayMode.ALWAYS -> true
-                    StrategyGroupDisplayMode.NEVER -> false
-                    StrategyGroupDisplayMode.ACTIVE_CONFIG -> isConfigActive
-                    else -> isConfigActive
-                }
-            }
+            .filter { group -> group.displayMode != StrategyGroupDisplayMode.NEVER }
             .map { ConfigAutoBalancerSource(config.id, it) }
     }
     val existingGenerated = servers.filter { record ->

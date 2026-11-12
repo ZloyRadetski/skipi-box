@@ -26,4 +26,54 @@ class StrategyMemberSelectionStateTest {
         assertEquals(ToggleableState.Indeterminate, StrategyMemberSelectionState.groupToggleState(listOf(4), listOf(4, 7)))
         assertEquals(ToggleableState.On, StrategyMemberSelectionState.groupToggleState(listOf(4, 7), listOf(4, 7)))
     }
+
+    @Test
+    fun selectingAWholeSubscriptionKeepsItSelectedForServersThatAppearLater() {
+        val picked = StrategyMemberSelectionState.toggleGroup(StrategyMemberSelection(), groupId = 3, groupServerIds = listOf(7, 8))
+
+        assertEquals(setOf(3), picked.wholeGroupIds)
+        assertEquals(ToggleableState.On, StrategyMemberSelectionState.groupToggleState(picked, 3, listOf(7, 8, 9)))
+        assertEquals(true, StrategyMemberSelectionState.isSelected(picked, groupId = 3, serverId = 9))
+    }
+
+    @Test
+    fun anEmptySubscriptionCanBeSelectedWhole() {
+        val picked = StrategyMemberSelectionState.toggleGroup(StrategyMemberSelection(), groupId = 3, groupServerIds = emptyList())
+
+        assertEquals(setOf(3), picked.wholeGroupIds)
+        assertEquals(ToggleableState.On, StrategyMemberSelectionState.groupToggleState(picked, 3, emptyList()))
+    }
+
+    @Test
+    fun clearingOneServerOfAWholeSubscriptionKeepsTheOthersAsPlainMembers() {
+        val whole = StrategyMemberSelectionState.toggleGroup(StrategyMemberSelection(), groupId = 3, groupServerIds = listOf(7, 8, 9))
+
+        val next = StrategyMemberSelectionState.toggleMember(whole, groupId = 3, groupServerIds = listOf(7, 8, 9), serverId = 8)
+
+        assertEquals(emptySet(), next.wholeGroupIds)
+        assertEquals(listOf(7, 9), next.memberIds)
+    }
+
+    @Test
+    fun togglingAWholeSubscriptionOffClearsItsMembersToo() {
+        val whole = StrategyMemberSelectionState.toggleGroup(StrategyMemberSelection(listOf(1)), groupId = 3, groupServerIds = listOf(7, 8))
+
+        val off = StrategyMemberSelectionState.toggleGroup(whole, groupId = 3, groupServerIds = listOf(7, 8))
+
+        assertEquals(StrategyMemberSelection(listOf(1)), off)
+    }
+
+    @Test
+    fun aGroupWithoutASubscriptionKeepsThePlainToggle() {
+        val picked = StrategyMemberSelectionState.toggleGroup(StrategyMemberSelection(), groupId = null, groupServerIds = listOf(5, 6))
+
+        assertEquals(StrategyMemberSelection(listOf(5, 6)), picked)
+    }
+
+    @Test
+    fun savedMembersLeaveOutTheServersAWholeSubscriptionAlreadyCovers() {
+        val selection = StrategyMemberSelection(memberIds = listOf(1, 7, 8), wholeGroupIds = setOf(3))
+
+        assertEquals(listOf(1), StrategyMemberSelectionState.explicitMemberIds(selection, mapOf(3 to listOf(7, 8))))
+    }
 }

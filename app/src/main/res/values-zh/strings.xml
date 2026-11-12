@@ -609,7 +609,7 @@
     <string name="proxy_editor_strategy_group_random">随机</string>
     <string name="proxy_editor_strategy_group_round_robin">轮询 (Round robin)</string>
     <string name="proxy_group_select_active_server">选择活动服务器</string>
-    <string name="proxy_editor_strategy_group_source_group">订阅组</string>
+    <string name="proxy_editor_strategy_group_filter_groups">过滤器适用于</string>
     <string name="proxy_editor_strategy_group_all_groups">所有组</string>
     <string name="proxy_editor_strategy_group_filter">备注正则表达式过滤器</string>
     <string name="proxy_editor_strategy_group_health_check">健康检查</string>
@@ -629,8 +629,8 @@
     <string name="proxy_editor_custom_json_outbounds">Xray JSON 出站</string>
     <string name="proxy_editor_custom_format_json">格式化 JSON</string>
     <string name="proxy_editor_custom_json_invalid">无效的 JSON 配置</string>
-    <string name="proxy_editor_custom_override_inbound_dns">覆盖入站和 DNS 设置</string>
-    <string name="proxy_editor_custom_override_inbound_dns_summary">使用 SKIPI 提供的入站和 DNS 设置</string>
+    <string name="proxy_editor_custom_override_inbound_dns">覆盖入站、DNS 和路由设置</string>
+    <string name="proxy_editor_custom_override_inbound_dns_summary">使用 SKIPI 提供的入站、DNS 和路由规则，而不是 JSON 中的设置</string>
     <string name="proxy_validation_required_field">{field}为必填项</string>
     <string name="proxy_validation_server_address_contains_invalid_content">服务器地址不得包含协议、路径、空格或用户信息</string>
     <string name="proxy_validation_invalid_server_address">服务器地址无效</string>

@@ -52,27 +52,25 @@ class RouteOutboundPickerProjectionTest {
             listOf(
                 "routing-system-targets",
                 "routing-auto-balancers",
+                "routing-manual-servers",
                 "routing-subscription-7",
                 "routing-subscription-8",
-                "routing-manual-servers",
-                "routing-config-proxy-groups",
-                "routing-config-targets",
             ),
             result.groups.map { it.key },
         )
         assertEquals(listOf("PROXY", "DIRECT", "REJECT"), result.groups[0].tags())
-        assertEquals(listOf("Balance"), result.groups[1].tags())
-        assertEquals(listOf("Provider Node"), result.groups[2].tags())
-        val providerOption = result.groups[2].items.single() as RouteOutboundItem.Server
+        // The global proxy groups and the profile's own are one group.
+        assertEquals(listOf("Balance", "Preferred"), result.groups[1].tags())
+        assertEquals(listOf("Provider Node"), result.groups[3].tags())
+        val providerOption = result.groups[3].items.single() as RouteOutboundItem.Server
         assertEquals(provider, providerOption.server)
         assertEquals("server-12", providerOption.key)
-        assertTrue(result.groups[3].items.isEmpty(), "empty subscription groups remain present")
-        assertEquals(listOf("Manual Node"), result.groups[4].tags())
-        assertEquals(listOf("Preferred"), result.groups[5].tags())
-        assertEquals(listOf("CONFIG:99"), result.groups[6].tags())
-        assertEquals(7, result.groups[2].subscriptionGroupId)
-        assertEquals(DefaultSubscriptionGroupId, result.groups[4].subscriptionGroupId)
-        assertEquals("select", (result.groups[5].items.single() as RouteOutboundItem.Static).summary)
+        assertTrue(result.groups[4].items.isEmpty(), "empty subscription groups remain present")
+        assertEquals(listOf("Manual Node"), result.groups[2].tags())
+        assertTrue(result.groups.none { it.tags().any { tag -> tag.startsWith("CONFIG:") } }, "other configs are not offered")
+        assertEquals(7, result.groups[3].subscriptionGroupId)
+        assertEquals(DefaultSubscriptionGroupId, result.groups[2].subscriptionGroupId)
+        assertEquals("select", (result.groups[1].items.last() as RouteOutboundItem.Static).summary)
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
 
@@ -98,16 +96,15 @@ class RouteOutboundPickerProjectionTest {
             listOf(
                 "routing-system-targets",
                 "routing-auto-balancers",
+                "routing-manual-servers",
                 "routing-subscription-7",
                 "routing-subscription-8",
-                "routing-manual-servers",
             ),
             result.groups.map { it.key },
         )
         assertEquals(listOf("proxy", "direct", "block"), result.groups[0].tags())
-        assertEquals(listOf("12"), result.groups[2].tags())
-        assertTrue(result.groups[3].items.isEmpty())
-        assertFalse(result.groups.any { it.key == "routing-config-proxy-groups" })
+        assertEquals(listOf("12"), result.groups[3].tags())
+        assertTrue(result.groups[4].items.isEmpty())
         assertFalse(result.groups.any { it.key == "routing-config-targets" })
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
@@ -128,12 +125,12 @@ class RouteOutboundPickerProjectionTest {
         )
 
         assertEquals(listOf("PROXY", "DIRECT", "REJECT", "preferred"), result.groups[0].tags())
-        assertEquals(listOf("Preferred"), result.groups[5].tags())
+        assertEquals(listOf("Preferred"), result.groups[1].tags())
         assertEquals("routing-system-targets", result.initiallyExpandedGroupKey)
     }
 
     @Test
-    fun missingExplicitProfileIdStillUsesPolicyTargetsAndAllOtherConfigs() {
+    fun missingExplicitProfileIdStillUsesPolicyTargets() {
         val result = projectOutbound(
             selectedTag = "Provider Node",
             trafficConfigId = 404,
@@ -145,9 +142,9 @@ class RouteOutboundPickerProjectionTest {
         )
 
         assertEquals(listOf("PROXY", "DIRECT", "REJECT"), result.groups[0].tags())
-        assertEquals(listOf("Provider Node"), result.groups[2].tags())
-        assertTrue(result.groups[5].items.isEmpty())
-        assertEquals(listOf("CONFIG:42", "CONFIG:99"), result.groups[6].tags())
+        assertEquals(listOf("Provider Node"), result.groups[3].tags())
+        assertTrue(result.groups[1].items.isEmpty())
+        assertFalse(result.groups.any { it.key == "routing-config-targets" })
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
 
@@ -186,8 +183,8 @@ class RouteOutboundPickerProjectionTest {
             trafficConfigs = listOf(selectedProfile),
         )
 
-        assertEquals(listOf("Runnable Custom"), profileResult.groups[2].tags())
-        assertEquals(listOf("70", "72"), globalResult.groups[2].tags())
+        assertEquals(listOf("Runnable Custom"), profileResult.groups[3].tags())
+        assertEquals(listOf("70", "72"), globalResult.groups[3].tags())
     }
 
     @Test
@@ -217,8 +214,8 @@ class RouteOutboundPickerProjectionTest {
             trafficConfigs = listOf(selectedProfile),
         )
 
-        assertEquals(listOf("Preferred"), result.groups[5].tags())
-        assertEquals("routing-config-proxy-groups", result.initiallyExpandedGroupKey)
+        assertEquals(listOf("Preferred"), result.groups[1].tags())
+        assertEquals("routing-auto-balancers", result.initiallyExpandedGroupKey)
     }
 
     @Test
@@ -257,13 +254,13 @@ class RouteOutboundPickerProjectionTest {
             listOf(
                 "routing-system-targets",
                 "routing-auto-balancers",
-                "routing-subscription-1",
                 "routing-manual-servers",
+                "routing-subscription-1",
             ),
             result.groups.map { it.key },
         )
-        val subscriptionOne = result.groups[2]
-        val manualServers = result.groups[3]
+        val subscriptionOne = result.groups[3]
+        val manualServers = result.groups[2]
         assertEquals(1, subscriptionOne.subscriptionGroupId)
         assertEquals(listOf("101"), subscriptionOne.tags())
         assertEquals(1, (subscriptionOne.items.single() as RouteOutboundItem.Server).server.groupId)
@@ -320,7 +317,5 @@ class RouteOutboundPickerProjectionTest {
         proxyLabel = "Proxy",
         directLabel = "Direct",
         blockLabel = "Block",
-        proxyGroupsName = "Proxy groups",
-        configTargetsName = "Configs",
     )
 }

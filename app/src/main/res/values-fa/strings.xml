@@ -587,7 +587,7 @@
     <string name="proxy_editor_strategy_group_least_load">کمترین بار</string>
     <string name="proxy_editor_strategy_group_random">تصادفی</string>
     <string name="proxy_editor_strategy_group_round_robin">گرد رابین</string>
-    <string name="proxy_editor_strategy_group_source_group">گروه اشتراک</string>
+    <string name="proxy_editor_strategy_group_filter_groups">فیلتر برای</string>
     <string name="proxy_editor_strategy_group_all_groups">همه گروه ها</string>
     <string name="proxy_editor_strategy_group_filter">اظهارات فیلتر regex</string>
     <string name="proxy_editor_strategy_group_health_check">بررسی سلامت</string>
@@ -607,8 +607,8 @@
     <string name="proxy_editor_custom_json_outbounds">Xray JSON خروجی</string>
     <string name="proxy_editor_custom_format_json">فرمت JSON</string>
     <string name="proxy_editor_custom_json_invalid">پیکربندی JSON نامعتبر است</string>
-    <string name="proxy_editor_custom_override_inbound_dns">تنظیمات ورودی و DNS را لغو کنید</string>
-    <string name="proxy_editor_custom_override_inbound_dns_summary">از تنظیمات ورودی و DNS ارائه شده توسط SKIPI استفاده کنید</string>
+    <string name="proxy_editor_custom_override_inbound_dns">لغو تنظیمات ورودی، DNS و مسیریابی</string>
+    <string name="proxy_editor_custom_override_inbound_dns_summary">به‌جای تنظیمات موجود در JSON از ورودی، DNS و قوانین مسیریابی SKIPI استفاده کنید</string>
     <string name="proxy_validation_required_field">{field}مورد نیاز است</string>
     <string name="proxy_validation_server_address_contains_invalid_content">آدرس سرور نباید شامل پروتکل، مسیر، فضای خالی یا اطلاعات کاربر باشد</string>
     <string name="proxy_validation_invalid_server_address">آدرس سرور نامعتبر است</string>

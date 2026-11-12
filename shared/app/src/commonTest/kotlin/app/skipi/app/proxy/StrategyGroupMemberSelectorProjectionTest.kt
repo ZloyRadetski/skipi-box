@@ -170,10 +170,10 @@ class StrategyGroupMemberSelectorProjectionTest {
             excludedServerId = null,
         )
 
-        assertEquals(listOf("subscription-7", "manual-servers"), populated.map { it.key })
-        assertEquals("Manual label", populated.last().title)
-        assertEquals(DefaultSubscriptionGroupId, populated.last().subscriptionGroupId)
-        assertEquals(listOf(1), populated.last().servers.map(ProxyServerRow::id))
+        assertEquals(listOf("manual-servers", "subscription-7"), populated.map { it.key })
+        assertEquals("Manual label", populated.first().title)
+        assertEquals(DefaultSubscriptionGroupId, populated.first().subscriptionGroupId)
+        assertEquals(listOf(1), populated.first().servers.map(ProxyServerRow::id))
         assertEquals(listOf("subscription-7"), emptyBesideProvider.map { it.key })
         assertEquals(listOf("manual-servers"), emptyWithoutProviders.map { it.key })
         assertEquals(DefaultSubscriptionGroupId, emptyWithoutProviders.single().subscriptionGroupId)
@@ -198,11 +198,11 @@ class StrategyGroupMemberSelectorProjectionTest {
             defaultGroupId = -1,
         )
 
-        assertEquals(listOf("subscription-1", "manual-servers"), groups.map { it.key })
-        assertEquals(listOf("Subscription one", "Manual servers"), groups.map { it.title })
-        assertEquals(listOf(1, -1), groups.map { it.subscriptionGroupId })
-        assertEquals(listOf(listOf(101), listOf(202)), groups.map { group -> group.servers.map(ProxyServerRow::id) })
-        assertEquals(listOf(1, -1), groups.map { group -> group.servers.single().groupId })
+        assertEquals(listOf("manual-servers", "subscription-1"), groups.map { it.key })
+        assertEquals(listOf("Manual servers", "Subscription one"), groups.map { it.title })
+        assertEquals(listOf(-1, 1), groups.map { it.subscriptionGroupId })
+        assertEquals(listOf(listOf(202), listOf(101)), groups.map { group -> group.servers.map(ProxyServerRow::id) })
+        assertEquals(listOf(-1, 1), groups.map { group -> group.servers.single().groupId })
     }
 
     private fun record(id: Int, groupId: Int, server: features.proxy.server.model.ProxyServer<*>) =

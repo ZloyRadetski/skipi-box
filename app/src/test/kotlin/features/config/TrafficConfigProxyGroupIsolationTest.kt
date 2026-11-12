@@ -25,7 +25,7 @@ import org.junit.Test
 class TrafficConfigProxyGroupIsolationTest {
 
     @Test
-    fun withConfigProxyGroupsReflected_only_reflects_active_config_groups() {
+    fun withConfigProxyGroupsReflected_keeps_every_config_group_but_lists_only_the_active_configs() {
         val config1Text = """
             [Proxy Group]
             Config1Group = select, DIRECT, REJECT, skipi-display=active_config
@@ -39,42 +39,26 @@ class TrafficConfigProxyGroupIsolationTest {
         val config1 = TrafficConfigState(id = 1, name = "Config 1", rawConfig = config1Text)
         val config2 = TrafficConfigState(id = 2, name = "Config 2", rawConfig = config2Text)
 
-        // When no config is active (activeTrafficConfigId = 0)
-        val stateNoActive = AppState(
+        fun reflected(activeId: Int) = AppState(
             trafficConfigs = listOf(config1, config2),
-            activeTrafficConfigId = 0,
+            activeTrafficConfigId = activeId,
         ).withConfigProxyGroupsReflected()
 
-        val generatedNoActive = stateNoActive.proxyServers.filter {
-            (it.server as? StrategyGroup)?.sourceTrafficConfigId != null
+        fun AppState.generated() = proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
+        fun AppState.listedNames() = generated()
+            .filter { it.isVisibleOnProxyServerList(activeTrafficConfigId) }
+            .map { (it.server as StrategyGroup).remarks }
+
+        // Both groups exist whichever config is active, so a rule that targets one keeps its target.
+        listOf(0, 1, 2).forEach { activeId ->
+            assertEquals(listOf("Config1Group", "Config2Group"), reflected(activeId).generated().map { (it.server as StrategyGroup).remarks })
         }
-        assertTrue("No proxy groups should be generated when activeTrafficConfigId is 0", generatedNoActive.isEmpty())
-
-        // When config 1 is active
-        val stateActive1 = AppState(
-            trafficConfigs = listOf(config1, config2),
-            activeTrafficConfigId = 1,
-        ).withConfigProxyGroupsReflected()
-
-        val generated1 = stateActive1.proxyServers.filter {
-            (it.server as? StrategyGroup)?.sourceTrafficConfigId != null
-        }
-        assertEquals(1, generated1.size)
-        assertEquals("Config1Group", (generated1.first().server as StrategyGroup).remarks)
-        assertEquals(1, (generated1.first().server as StrategyGroup).sourceTrafficConfigId)
-
-        // When config 2 is active
-        val stateActive2 = AppState(
-            trafficConfigs = listOf(config1, config2),
-            activeTrafficConfigId = 2,
-        ).withConfigProxyGroupsReflected()
-
-        val generated2 = stateActive2.proxyServers.filter {
-            (it.server as? StrategyGroup)?.sourceTrafficConfigId != null
-        }
-        assertEquals(1, generated2.size)
-        assertEquals("Config2Group", (generated2.first().server as StrategyGroup).remarks)
-        assertEquals(2, (generated2.first().server as StrategyGroup).sourceTrafficConfigId)
+        // Only the active config's group is listed.
+        assertTrue("No group is listed when no config is active", reflected(0).listedNames().isEmpty())
+        assertEquals(listOf("Config1Group"), reflected(1).listedNames())
+        assertEquals(listOf("Config2Group"), reflected(2).listedNames())
+        assertEquals(1, (reflected(1).generated().first().server as StrategyGroup).sourceTrafficConfigId)
+        assertEquals(2, (reflected(2).generated().last().server as StrategyGroup).sourceTrafficConfigId)
     }
 
     @Test
@@ -342,28 +326,28 @@ class TrafficConfigProxyGroupIsolationTest {
             activeTrafficConfigId = 1,
         ).withConfigProxyGroupsReflected()
 
-        assertEquals(1, state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }.size)
-        val group1 = state.proxyServers.first { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
-        assertEquals("Config1Group", (group1.server as StrategyGroup).remarks)
+        fun AppState.generated() = proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
+        assertEquals(2, state.generated().size)
+        val group1 = state.generated().first { (it.server as StrategyGroup).remarks == "Config1Group" }
         assertTrue(group1.isVisibleOnProxyServerList(state.activeTrafficConfigId))
 
         // The active profile is persisted separately from its runtime catalog projection.
         state = state.withActiveTrafficConfigProfile(2).withConfigProxyGroupsReflected()
 
         assertEquals(2, state.activeTrafficConfigId)
-        val generatedGroups2 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
-        assertEquals(1, generatedGroups2.size)
-        val group2 = generatedGroups2.first()
-        assertEquals("Config2Group", (group2.server as StrategyGroup).remarks)
+        assertEquals(2, state.generated().size)
+        val group2 = state.generated().first { (it.server as StrategyGroup).remarks == "Config2Group" }
         assertEquals(2, (group2.server as StrategyGroup).sourceTrafficConfigId)
         assertTrue(group2.isVisibleOnProxyServerList(state.activeTrafficConfigId))
+        // Config 1's group is hidden now, but it is the same record: its id did not change.
+        val hiddenGroup1 = state.generated().first { (it.server as StrategyGroup).remarks == "Config1Group" }
+        assertEquals(group1.id, hiddenGroup1.id)
+        assertFalse(hiddenGroup1.isVisibleOnProxyServerList(state.activeTrafficConfigId))
 
         // Switch back to config 1
         state = state.withActiveTrafficConfigProfile(1).withConfigProxyGroupsReflected()
 
         assertEquals(1, state.activeTrafficConfigId)
-        val generatedGroups1 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
-        assertEquals(1, generatedGroups1.size)
-        assertEquals("Config1Group", (generatedGroups1.first().server as StrategyGroup).remarks)
+        assertEquals(group1.id, state.generated().first { (it.server as StrategyGroup).remarks == "Config1Group" }.id)
     }
 }

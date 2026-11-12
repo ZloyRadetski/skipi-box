@@ -25,7 +25,8 @@ data class StrategyMemberSelectorGroupProjection(
 )
 
 /**
- * Projects the Android strategy-group member picker while leaving localized labels and
+ * Projects the strategy-group member picker: the user's proxy groups, then manual servers, then the
+ * subscriptions, so the groups kept by hand never sink below providers. Leaves localized labels and
  * platform-specific summary data with the host.
  */
 fun projectStrategyGroupMemberGroups(
@@ -60,19 +61,6 @@ fun projectStrategyGroupMemberGroups(
             )
         }
 
-        subscriptionGroups.forEach { group ->
-            if (group.id != defaultGroupId) {
-                add(
-                    StrategyMemberSelectorGroupProjection(
-                        key = "subscription-${group.id}",
-                        title = group.profileTitle.ifBlank { group.name },
-                        subscriptionGroupId = group.id,
-                        servers = serversByGroup[group.id].orEmpty(),
-                    ),
-                )
-            }
-        }
-
         val manualServers = serversByGroup[defaultGroupId].orEmpty()
         if (manualServers.isNotEmpty() || subscriptionGroups.none { it.id != defaultGroupId }) {
             val manualGroupId = subscriptionGroups.firstOrNull { it.id == defaultGroupId }?.id
@@ -84,6 +72,19 @@ fun projectStrategyGroupMemberGroups(
                     servers = manualServers,
                 ),
             )
+        }
+
+        subscriptionGroups.forEach { group ->
+            if (group.id != defaultGroupId) {
+                add(
+                    StrategyMemberSelectorGroupProjection(
+                        key = "subscription-${group.id}",
+                        title = group.profileTitle.ifBlank { group.name },
+                        subscriptionGroupId = group.id,
+                        servers = serversByGroup[group.id].orEmpty(),
+                    ),
+                )
+            }
         }
     }
 }

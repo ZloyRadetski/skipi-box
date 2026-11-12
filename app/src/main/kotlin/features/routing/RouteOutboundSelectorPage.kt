@@ -82,8 +82,6 @@ fun RouteOutboundSelectorPage(
         proxyLabel = stringResource(R.string.routing_outbound_proxy),
         directLabel = stringResource(R.string.routing_outbound_direct),
         blockLabel = stringResource(R.string.routing_outbound_block),
-        proxyGroupsName = stringResource(R.string.configs_proxy_groups_title),
-        configTargetsName = stringResource(R.string.nav_configs),
     )
     val projection = remember(
         appState.proxyServers,

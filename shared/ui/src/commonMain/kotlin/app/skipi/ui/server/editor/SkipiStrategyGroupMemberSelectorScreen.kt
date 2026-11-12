@@ -54,6 +54,8 @@ data class StrategyMemberSelectorGroup(
     val title: String,
     val items: List<StrategyMemberSelectorItem>,
     val summary: ServerPickerSubscriptionSummary? = null,
+    /** The subscription (or manual) group this section shows; its header can select it whole. Null for the rest. */
+    val subscriptionGroupId: Int? = null,
 )
 
 /** Shared presentation and ordered selection behavior for strategy-group membership. */
@@ -63,6 +65,8 @@ fun SkipiStrategyGroupMemberSelectorScreen(
     padding: PaddingValues,
     groups: List<StrategyMemberSelectorGroup>,
     selectedServerIds: List<Int>,
+    /** Subscriptions already selected whole: their servers, including later ones, are members. */
+    selectedWholeGroupIds: List<Int> = emptyList(),
     title: String,
     isWideScreen: Boolean = false,
     fallbackPainter: Painter? = null,
@@ -70,21 +74,40 @@ fun SkipiStrategyGroupMemberSelectorScreen(
     flagFallbackTint: Color = Color.White.copy(alpha = 0.65f),
     selectedSummary: @Composable (Int) -> String,
     emptyGroupMessage: String,
-    /** Leaving the screen saves the selection, so there is no separate save action. */
-    onSave: (List<Int>) -> Unit,
+    /** Leaving the screen saves the selection, so there is no separate save action: picked servers, whole groups. */
+    onSave: (memberIds: List<Int>, wholeGroupIds: List<Int>) -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
-    var selectedIds by remember(selectedServerIds) { mutableStateOf(selectedServerIds.distinct()) }
+    var selection by remember(selectedServerIds, selectedWholeGroupIds) {
+        mutableStateOf(StrategyMemberSelection(selectedServerIds.distinct(), selectedWholeGroupIds.toSet()))
+    }
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
-    val saveAndBack: () -> Unit = { onSave(selectedIds.toList()) }
+    val saveAndBack: () -> Unit = {
+        val idsByGroup = groups.mapNotNull { group ->
+            group.subscriptionGroupId?.let { id -> id to group.items.map(StrategyMemberSelectorItem::id) }
+        }.toMap()
+        onSave(
+            StrategyMemberSelectionState.explicitMemberIds(selection, idsByGroup),
+            selection.wholeGroupIds.toList(),
+        )
+    }
     platformBackHandler(saveAndBack)
-    fun toggle(id: Int) {
-        selectedIds = StrategyMemberSelectionState.toggleMember(selectedIds, id)
+    val selectedCount = remember(selection, groups) {
+        val covered = groups.filter { group -> group.subscriptionGroupId in selection.wholeGroupIds }
+            .flatMap { group -> group.items.map(StrategyMemberSelectorItem::id) }
+        (selection.memberIds + covered).distinct().size
+    }
+    fun toggle(group: StrategyMemberSelectorGroup, id: Int) {
+        selection = StrategyMemberSelectionState.toggleMember(
+            selection, group.subscriptionGroupId, group.items.map(StrategyMemberSelectorItem::id), id,
+        )
     }
     fun toggleGroup(group: StrategyMemberSelectorGroup) {
-        selectedIds = StrategyMemberSelectionState.toggleGroup(selectedIds, group.items.map(StrategyMemberSelectorItem::id))
+        selection = StrategyMemberSelectionState.toggleGroup(
+            selection, group.subscriptionGroupId, group.items.map(StrategyMemberSelectorItem::id),
+        )
     }
 
     Scaffold(
@@ -93,7 +116,7 @@ fun SkipiStrategyGroupMemberSelectorScreen(
         topBar = {
             AdaptiveTopAppBar(
                 title = title,
-                subtitle = selectedSummary(selectedIds.size),
+                subtitle = selectedSummary(selectedCount),
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { BackNavigationIcon(onClick = saveAndBack) },
@@ -106,7 +129,7 @@ fun SkipiStrategyGroupMemberSelectorScreen(
                 groups.forEach { group ->
                     val expanded = expandedGroups[group.key] ?: true
                     val ids = group.items.map(StrategyMemberSelectorItem::id)
-                    val toggleState = StrategyMemberSelectionState.groupToggleState(selectedIds, ids)
+                    val toggleState = StrategyMemberSelectionState.groupToggleState(selection, group.subscriptionGroupId, ids)
                     item(key = "strategy-member-group-${group.key}") {
                         SkipiServerPickerGroupHeader(
                             title = group.title,
@@ -128,12 +151,12 @@ fun SkipiStrategyGroupMemberSelectorScreen(
                                     flag = server.flag,
                                     displayTitle = server.displayTitle,
                                     subtitle = server.subtitle,
-                                    selected = server.id in selectedIds,
+                                    selected = StrategyMemberSelectionState.isSelected(selection, group.subscriptionGroupId, server.id),
                                     isLast = server.id == lastId,
                                     fallbackPainter = fallbackPainter,
                                     flagContainerColor = flagContainerColor,
                                     flagFallbackTint = flagFallbackTint,
-                                    onClick = { toggle(server.id) },
+                                    onClick = { toggle(group, server.id) },
                                 )
                             }
                         }

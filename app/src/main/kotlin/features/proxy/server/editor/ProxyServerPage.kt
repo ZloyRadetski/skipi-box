@@ -36,6 +36,7 @@ import features.proxy.server.display.displayNameWithGroup
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.effectiveWholeGroupIds
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.usecase.ProxyServerCopyTextResult
@@ -99,12 +100,17 @@ fun ProxyServerPage(
     var strategyGroupMemberIds by rememberSaveable(serverId, resultKey) {
         mutableStateOf((psEdit as? StrategyGroup)?.proxyServerIds.orEmpty())
     }
+    var strategyGroupWholeGroupIds by rememberSaveable(serverId, resultKey) {
+        mutableStateOf((psEdit as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty())
+    }
     if (psEdit is StrategyGroup) {
         LaunchedEffect(navigator, strategyMemberResultKey) {
             navigator.observeResult<StrategyGroupMemberSelectionResult>(strategyMemberResultKey).collect { result ->
                 val memberIds = ProxyServerEditorController.normalizeStrategyGroupMemberIds(result.serverIds)
                 strategyGroupMemberIds = memberIds
+                strategyGroupWholeGroupIds = result.wholeGroupIds
                 psEdit.proxyServerIds = memberIds
+                psEdit.wholeGroupIds = result.wholeGroupIds
                 navigator.clearResult(strategyMemberResultKey)
             }
         }
@@ -112,12 +118,14 @@ fun ProxyServerPage(
 
     fun hasChanges(): Boolean {
         if (psEdit is StrategyGroup && strategyGroupMemberIds != (ps as? StrategyGroup)?.proxyServerIds.orEmpty()) return true
+        if (psEdit is StrategyGroup && strategyGroupWholeGroupIds != (ps as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty()) return true
         return ProxyServerEditorController.hasChanges(ps, psEdit)
     }
 
     fun saveProxyServer() {
         if (psEdit is StrategyGroup) {
             psEdit.proxyServerIds = strategyGroupMemberIds
+            psEdit.wholeGroupIds = strategyGroupWholeGroupIds
         }
         if (resultKey != null) {
             navigator.setResult(
@@ -203,13 +211,16 @@ fun ProxyServerPage(
             )
         }
     }
-    val editorOptions = remember(groupOptions, memberOptions, strategyGroupMemberIds, psEdit, serverId) {
+    val editorOptions = remember(groupOptions, memberOptions, strategyGroupMemberIds, strategyGroupWholeGroupIds, appState.proxyServers, psEdit, serverId) {
+        val wholeGroupServerIds = appState.proxyServers
+            .filter { server -> server.groupId in strategyGroupWholeGroupIds && server.id != serverId && !server.server.isCompositeProxyServer() }
+            .map { server -> server.id }
         ProxyServerEditorOptions(
             groupOptions = groupOptions,
             memberOptions = memberOptions,
-            strategyGroupSelectedMemberCount = strategyGroupMemberIds.size,
+            strategyGroupSelectedMemberCount = (strategyGroupMemberIds + wholeGroupServerIds).distinct().size,
             onOpenStrategyGroupMembers = if (psEdit is StrategyGroup) {
-                { navigator.navigateForResult(Route.StrategyGroupMemberSelector(strategyGroupMemberIds, serverId, strategyMemberResultKey), strategyMemberResultKey) }
+                { navigator.navigateForResult(Route.StrategyGroupMemberSelector(strategyGroupMemberIds, strategyGroupWholeGroupIds, serverId, strategyMemberResultKey), strategyMemberResultKey) }
             } else null,
         )
     }

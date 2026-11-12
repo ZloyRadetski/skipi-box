@@ -55,11 +55,13 @@ import app.skipi.ui.server.editor.SkipiCustomProxyServerEditorPresentation
 import app.skipi.ui.server.editor.SkipiProxyServerEditorScreen
 import app.skipi.ui.server.editor.SkipiStrategyGroupMemberSelectorScreen
 import app.skipi.ui.server.editor.StrategyMemberSelectorGroup
+import app.skipi.ui.server.editor.StrategyMemberSelectorItem
 import app.skipi.ui.server.editor.editorTitle
 import app.skipi.ui.server.editor.rememberProxyServerEditorUiState
 import app.skipi.ui.server.editor.rememberSaveableProxyServerEditorDraft
 import app.skipi.ui.server.validation.rememberProxyServerValidationMessageResolver
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.effectiveWholeGroupIds
 import features.proxy.server.model.formatCustomXrayConfigJson
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Toolkit
@@ -96,14 +98,20 @@ internal fun DesktopProxyServerEditorHost(
     var strategyGroupMemberIds by remember(serverId, serverEdit) {
         mutableStateOf((serverEdit as? StrategyGroup)?.proxyServerIds.orEmpty())
     }
+    var strategyGroupWholeGroupIds by remember(serverId, serverEdit) {
+        mutableStateOf((serverEdit as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty())
+    }
     var selectingMembers by remember(serverId) { mutableStateOf(false) }
     val noServersMessage = stringResource(Res.string.proxy_editor_strategy_group_no_servers)
     var showDeleteConfirmation by remember(serverId) { mutableStateOf(false) }
-    val editorOptions = remember(groupOptions, memberOptions, strategyGroupMemberIds, serverEdit, selectingMembers) {
+    val editorOptions = remember(groupOptions, memberOptions, memberGroups, strategyGroupMemberIds, strategyGroupWholeGroupIds, serverEdit, selectingMembers) {
+        val wholeGroupServerIds = memberGroups
+            .filter { group -> group.subscriptionGroupId in strategyGroupWholeGroupIds }
+            .flatMap { group -> group.items.map(StrategyMemberSelectorItem::id) }
         ProxyServerEditorOptions(
             groupOptions = groupOptions,
             memberOptions = memberOptions,
-            strategyGroupSelectedMemberCount = strategyGroupMemberIds.size,
+            strategyGroupSelectedMemberCount = (strategyGroupMemberIds + wholeGroupServerIds).distinct().size,
             onOpenStrategyGroupMembers = if (serverEdit is StrategyGroup) ({ selectingMembers = true }) else null,
         )
     }
@@ -111,7 +119,10 @@ internal fun DesktopProxyServerEditorHost(
     // Leaving saves the draft. A draft that cannot be saved says why and offers to discard it, so the
     // editor never traps the user.
     fun saveDraft() {
-        if (serverEdit is StrategyGroup) serverEdit.proxyServerIds = strategyGroupMemberIds
+        if (serverEdit is StrategyGroup) {
+            serverEdit.proxyServerIds = strategyGroupMemberIds
+            serverEdit.wholeGroupIds = strategyGroupWholeGroupIds
+        }
         when (val decision = ProxyServerEditorController.requestSave(serverEdit)) {
             is ProxyServerEditorSaveDecision.Reject -> {
                 onMessage(validationMessageOf(decision.issue))
@@ -127,7 +138,10 @@ internal fun DesktopProxyServerEditorHost(
     }
 
     fun continueSaveAfterWarning() {
-        if (serverEdit is StrategyGroup) serverEdit.proxyServerIds = strategyGroupMemberIds
+        if (serverEdit is StrategyGroup) {
+            serverEdit.proxyServerIds = strategyGroupMemberIds
+            serverEdit.wholeGroupIds = strategyGroupWholeGroupIds
+        }
         onSave(editResult.copy(server = serverEdit))
         editorUiState.dismissFullValidationWarning()
         onDismiss()
@@ -173,13 +187,16 @@ internal fun DesktopProxyServerEditorHost(
             padding = contentPadding,
             groups = memberGroups,
             selectedServerIds = strategyGroupMemberIds,
+            selectedWholeGroupIds = strategyGroupWholeGroupIds,
             title = stringResource(Res.string.proxy_editor_strategy_group_select_servers),
             isWideScreen = true,
             selectedSummary = { count -> stringResource(Res.string.proxy_editor_strategy_group_selected_servers_summary, count) },
             emptyGroupMessage = noServersMessage,
-            onSave = { ids ->
+            onSave = { ids, wholeGroupIds ->
                 strategyGroupMemberIds = ProxyServerEditorController.normalizeStrategyGroupMemberIds(ids)
+                strategyGroupWholeGroupIds = wholeGroupIds
                 serverEdit.proxyServerIds = strategyGroupMemberIds
+                serverEdit.wholeGroupIds = wholeGroupIds
                 selectingMembers = false
             },
         )
@@ -208,6 +225,7 @@ internal fun DesktopProxyServerEditorHost(
             showFullValidationWarning = editorUiState.showFullValidationWarning,
             onRequestBack = {
                 if (strategyGroupMemberIds != (original as? StrategyGroup)?.proxyServerIds.orEmpty() ||
+                    strategyGroupWholeGroupIds != (original as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty() ||
                     ProxyServerEditorController.hasChanges(original, serverEdit)
                 ) {
                     saveDraft()

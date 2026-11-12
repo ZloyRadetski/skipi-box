@@ -121,6 +121,7 @@
     <string name="configs_raw_edit">Редактировать raw .conf</string>
     <string name="configs_ui_edit">Редактировать через UI</string>
     <string name="configs_duplicate">Дублировать конфиг</string>
+    <string name="configs_export_menu">Экспорт</string>
     <string name="configs_export">Экспортировать .conf</string>
     <string name="configs_export_base64">Экспортировать в Base64</string>
     <string name="configs_enabled">Конфиг включён</string>
@@ -262,7 +263,7 @@
     <string name="settings_kill_switch">Блокировка утечек (Kill Switch)</string>
     <string name="settings_kill_switch_summary">Откроет настройки Android: включите «Постоянная VPN» и «Блокировать соединения без VPN»</string>
     <string name="settings_strict_full_tunnel">Строгий полный туннель</string>
-    <string name="settings_strict_full_tunnel_summary">Направляет трафик управляемых приложений через выбранный туннель и отключает исключения приложений и правила Direct. Raw-профили Xray не поддерживаются.</string>
+    <string name="settings_strict_full_tunnel_summary">Направляет трафик управляемых приложений через выбранный туннель и отключает исключения приложений и правила Direct.</string>
     <string name="settings_system_vpn_settings">Системные настройки VPN</string>
     <string name="settings_system_vpn_settings_summary">Включить «Постоянная VPN» и «Блокировать соединения без VPN» в Android</string>
     <string name="settings_inbound">Настройки входящих подключений (Inbound)</string>
@@ -663,7 +664,7 @@
     <string name="proxy_editor_strategy_group_random">Случайный выбор (Random)</string>
     <string name="proxy_editor_strategy_group_round_robin">Циклический перебор (Round robin)</string>
     <string name="proxy_group_select_active_server">Выбрать активный сервер</string>
-    <string name="proxy_editor_strategy_group_source_group">Группа подписки</string>
+    <string name="proxy_editor_strategy_group_filter_groups">Фильтр применяется к</string>
     <string name="proxy_editor_strategy_group_all_groups">Все группы</string>
     <string name="proxy_editor_strategy_group_filter">Фильтр имен по регулярному выражению (Regex)</string>
     <string name="proxy_editor_strategy_group_health_check">Проверка здоровья (Health Check)</string>
@@ -684,8 +685,8 @@
     <string name="proxy_editor_custom_json_outbounds">Блок outbounds Xray JSON</string>
     <string name="proxy_editor_custom_format_json">Форматировать JSON</string>
     <string name="proxy_editor_custom_json_invalid">Недопустимый синтаксис JSON конфигурации</string>
-    <string name="proxy_editor_custom_override_inbound_dns">Переопределить параметры входящих соединений и DNS</string>
-    <string name="proxy_editor_custom_override_inbound_dns_summary">Использовать конфигурации входящих соединений и DNS, сгенерированные SKIPI</string>
+    <string name="proxy_editor_custom_override_inbound_dns">Переопределить входящие соединения, DNS и маршрутизацию</string>
+    <string name="proxy_editor_custom_override_inbound_dns_summary">Использовать входящие соединения, DNS и правила маршрутизации SKIPI вместо указанных в JSON</string>
     <string name="proxy_validation_required_field">Поле {field} является обязательным</string>
     <string name="proxy_validation_server_address_contains_invalid_content">Адрес сервера не должен содержать протокол, путь, пробелы или учетные данные</string>
     <string name="proxy_validation_invalid_server_address">Недопустимый адрес сервера</string>

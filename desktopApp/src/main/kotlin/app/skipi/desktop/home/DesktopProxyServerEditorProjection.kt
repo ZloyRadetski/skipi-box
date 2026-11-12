@@ -76,6 +76,7 @@ internal fun projectDesktopProxyServerEditorInputs(
         StrategyMemberSelectorGroup(
             key = group.key,
             title = group.title,
+            subscriptionGroupId = group.subscriptionGroupId,
             summary = group.subscriptionGroupId?.let(subscriptionSummaries::get),
             items = group.servers.map { server ->
                 val remarks = server.server.getInfo().remarks

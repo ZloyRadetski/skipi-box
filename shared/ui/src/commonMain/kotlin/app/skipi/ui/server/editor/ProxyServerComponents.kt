@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +37,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.components.SkipiDropdownPreference
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuPreference
+import app.skipi.ui.components.SkipiMenuSection
 import app.skipi.ui.resources.*
 import app.skipi.ui.text.formatTemplate
 import app.skipi.ui.text.themedFontWeight
@@ -44,6 +48,7 @@ import engine.network.NetworkDefaults
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.model.effectiveFilterGroupIds
 import features.proxy.server.model.strategyGroupSpreadsConnections
 import features.proxy.server.model.StrategyGroupDisplayMode
 import org.jetbrains.compose.resources.stringResource
@@ -103,21 +108,20 @@ fun LazyListScope.strategyGroupProxyServer(
             stringResource(Res.string.proxy_editor_strategy_group_random),
             stringResource(Res.string.proxy_editor_strategy_group_round_robin),
         )
-        val effectiveGroupOptions = groupOptions.ifEmpty {
-            listOf(ProxyServerEditorGroupOption(null, stringResource(Res.string.proxy_editor_strategy_group_all_groups)))
-        }
         var currentStrategy by remember(strategyGroupEdit.strategy) {
             mutableStateOf(strategyGroupEdit.strategy)
         }
         val strategyIndex = remember(currentStrategy) {
             mutableIntStateOf(strategyValues.indexOf(currentStrategy).coerceAtLeast(0))
         }
-        val groupIndex = remember(strategyGroupEdit.subscriptionGroupId, effectiveGroupOptions) {
-            mutableIntStateOf(
-                effectiveGroupOptions
-                    .indexOfFirst { option -> option.id == strategyGroupEdit.subscriptionGroupId }
-                    .coerceAtLeast(0),
-            )
+        // The groups the regex looks at. An older group's single source group becomes one of them (or a whole
+        // group, which the host reads before this runs), so the old field is retired once it is read.
+        val filterGroupIds = remember(strategyGroupEdit) {
+            mutableStateListOf<Int>().apply { addAll(strategyGroupEdit.effectiveFilterGroupIds()) }
+        }
+        LaunchedEffect(strategyGroupEdit) {
+            strategyGroupEdit.filterGroupIds = filterGroupIds.toList()
+            strategyGroupEdit.subscriptionGroupId = null
         }
         val isConfigGroup = strategyGroupEdit.sourceTrafficConfigId != null
         val displayModeValues = listOf(
@@ -278,21 +282,11 @@ fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.remarks = remarksState.text.toString()
                     strategyGroupEdit.filter = filterState.text.toString()
                     strategyGroupEdit.strategy = currentStrategy
-                    strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions.getOrNull(groupIndex.intValue)?.id
                     strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "15s" }
                     strategyGroupEdit.tolerance = toleranceValues.getOrElse(toleranceIndex.intValue) { "50ms" }
                     strategyGroupEdit.enableBurstProbe = burstProbeState.value
                     strategyGroupEdit.probeUrl = probeUrlState.text.toString()
                     onOpenMembers?.invoke()
-                },
-            )
-            SkipiDropdownPreference(
-                title = stringResource(Res.string.proxy_editor_strategy_group_source_group),
-                items = effectiveGroupOptions.map { option -> option.label },
-                selectedIndex = groupIndex.intValue,
-                onSelectedIndexChange = { index ->
-                    groupIndex.intValue = index
-                    strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions[index].id
                 },
             )
         }
@@ -307,8 +301,43 @@ fun LazyListScope.strategyGroupProxyServer(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 12.dp),
         )
+        val scopeOptions = groupOptions.filter { option -> option.id != null }
+        if (scopeOptions.isNotEmpty()) {
+            val allGroupsLabel = stringResource(Res.string.proxy_editor_strategy_group_all_groups)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
+            ) {
+                SkipiMenuPreference(
+                    title = stringResource(Res.string.proxy_editor_strategy_group_filter_groups),
+                    summary = scopeOptions.filter { option -> option.id in filterGroupIds }
+                        .joinToString { option -> option.label }
+                        .ifEmpty { allGroupsLabel },
+                    showValue = false,
+                    closeOnSelection = false,
+                    sections = listOf(
+                        SkipiMenuSection(
+                            scopeOptions.map { option ->
+                                SkipiMenuItem(
+                                    title = option.label,
+                                    key = "filter-group-${option.id}",
+                                    selected = option.id in filterGroupIds,
+                                    onClick = {
+                                        val id = checkNotNull(option.id)
+                                        if (id in filterGroupIds) filterGroupIds.remove(id) else filterGroupIds.add(id)
+                                        strategyGroupEdit.filterGroupIds = filterGroupIds.toList()
+                                    },
+                                )
+                            },
+                        ),
+                    ),
+                )
+            }
+        }
 
         if (currentStrategy != StrategyGroupConstants.TYPE_SELECT) {
             SmallTitle(text = stringResource(Res.string.proxy_editor_strategy_group_health_check))

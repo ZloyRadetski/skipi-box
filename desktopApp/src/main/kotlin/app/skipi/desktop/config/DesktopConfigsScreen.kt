@@ -872,9 +872,6 @@ internal fun DesktopConfigsScreen(
             SkipiTrafficConfigContextMenu(
                 show = true,
                 onDismissRequest = { contextMenuConfig = null },
-                onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
-                    { contextMenuConfig = null; refreshConfigFromUrl(config) }
-                } else null,
                 onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
                 onUiEdit = { contextMenuConfig = null; openVisualEditor(config) },
                 onDuplicate = {
@@ -908,14 +905,6 @@ internal fun DesktopConfigsScreen(
                     }.onSuccess {
                         message = exportedBase64Message
                     }.onFailure { error -> message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}" }
-                },
-                onDelete = { contextMenuConfig = null; pendingDeletion = config },
-                onEnable = {
-                    contextMenuConfig = null
-                    persist(
-                        transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
-                        successMessage = "Выбран «${config.name}».",
-                    )
                 },
             )
         }

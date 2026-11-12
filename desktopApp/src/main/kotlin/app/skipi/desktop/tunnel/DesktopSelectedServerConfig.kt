@@ -9,6 +9,7 @@ import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayTags
 import engine.xray.CustomSkipiRouting
+import engine.xray.withStrictFullTunnelRouting
 import engine.xray.XrayRouteTarget
 import engine.xray.XrayRouteTargetKind
 import engine.xray.XrayRoutingRequest
@@ -90,13 +91,13 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     val effectiveTunDns = profileRuntime.tunVpnDnsOr(tunVpnDns)
     if (selectedServer is Custom) {
         return checkNotNull(selectedServerResult).mapCatching {
-            check(!strictFullTunnel) { "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration" }
             DesktopGeneratedXrayConfig(
                 buildDesktopCustomXrayConfig(
                     server = selectedServer,
                     options = options,
                     dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns),
                     sniffing = profileRuntime?.sniffingOptions(),
+                    strictFullTunnel = strictFullTunnel,
                     skipiRouting = customServerSkipiRouting(
                         profile = configLibrary.activeProfile,
                         profileDomainStrategy = profileRuntime?.settings?.routeDomainStrategy,
@@ -167,6 +168,8 @@ internal fun buildDesktopCustomXrayConfig(
     log: JsonObject = options.buildLogJson(),
     /** The rules SKIPI applies when the server overrides inbound and DNS; null keeps the JSON's own routing. */
     skipiRouting: CustomSkipiRouting? = null,
+    /** The strict full tunnel: no rule of the JSON may leave directly (see [withStrictFullTunnelRouting]). */
+    strictFullTunnel: Boolean = false,
 ): String {
     val customJson = parseCustomXrayConfigJsonObject(server.configJson)
     val inbounds = if (!listeners) emptyList() else buildList {
@@ -205,7 +208,7 @@ internal fun buildDesktopCustomXrayConfig(
         )
     } else {
         customJson
-    }
+    }.let { routed -> if (strictFullTunnel) routed.withStrictFullTunnelRouting() else routed }
     val cleanConfig = buildJsonObject {
         put("log", log)
         put("inbounds", JsonArray(inbounds))

@@ -49,22 +49,19 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
             listOf(
                 "routing-system-targets",
                 "routing-auto-balancers",
+                "routing-manual-servers",
                 "routing-subscription-7",
                 "routing-subscription-8",
-                "routing-manual-servers",
-                "routing-config-proxy-groups",
-                "routing-config-targets",
             ),
             result.groups.map { it.key },
         )
         assertEquals(listOf("PROXY", "DIRECT", "REJECT"), result.groups[0].tags())
-        assertEquals(listOf("Balance"), result.groups[1].tags())
-        assertEquals(listOf("Provider Node"), result.groups[2].tags())
-        assertTrue("empty subscription groups remain present", result.groups[3].items.isEmpty())
-        assertEquals(listOf("Manual Node"), result.groups[4].tags())
-        assertEquals(listOf("Preferred"), result.groups[5].tags())
-        assertEquals(listOf("CONFIG:99"), result.groups[6].tags())
-        assertEquals("select", (result.groups[5].items.single() as RouteOutboundItem.Static).summary)
+        // The global proxy groups and the profile's own are one group.
+        assertEquals(listOf("Balance", "Preferred"), result.groups[1].tags())
+        assertEquals(listOf("Provider Node"), result.groups[3].tags())
+        assertTrue("empty subscription groups remain present", result.groups[4].items.isEmpty())
+        assertEquals(listOf("Manual Node"), result.groups[2].tags())
+        assertEquals("select", (result.groups[1].items.last() as RouteOutboundItem.Static).summary)
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
 
@@ -89,7 +86,7 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
         )
 
         assertEquals(listOf("PROXY", "DIRECT", "REJECT", "preferred"), result.groups[0].tags())
-        assertEquals(listOf("Preferred"), result.groups[5].tags())
+        assertEquals(listOf("Balance", "Preferred"), result.groups[1].tags())
         assertEquals("routing-system-targets", result.initiallyExpandedGroupKey)
     }
 
@@ -117,22 +114,21 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
             listOf(
                 "routing-system-targets",
                 "routing-auto-balancers",
+                "routing-manual-servers",
                 "routing-subscription-7",
                 "routing-subscription-8",
-                "routing-manual-servers",
             ),
             result.groups.map { it.key },
         )
         assertEquals(listOf(DefaultRouteOutboundTag, "direct", "block"), result.groups[0].tags())
-        assertEquals(listOf("12"), result.groups[2].tags())
-        assertTrue(result.groups[3].items.isEmpty())
-        assertFalse(result.groups.any { it.key == "routing-config-proxy-groups" })
+        assertEquals(listOf("12"), result.groups[3].tags())
+        assertTrue(result.groups[4].items.isEmpty())
         assertFalse(result.groups.any { it.key == "routing-config-targets" })
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
 
     @Test
-    fun missingExplicitProfileIdStillUsesPolicyTargetsAndOtherConfigTags() {
+    fun missingExplicitProfileIdStillUsesPolicyTargets() {
         val currentConfig = TrafficConfigState(
             id = 42,
             name = "Profile",
@@ -147,9 +143,9 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
         )
 
         assertEquals(listOf("PROXY", "DIRECT", "REJECT"), result.groups[0].tags())
-        assertEquals(listOf("Provider Node"), result.groups[2].tags())
-        assertTrue(result.groups[5].items.isEmpty())
-        assertEquals(listOf("CONFIG:42", "CONFIG:99"), result.groups[6].tags())
+        assertEquals(listOf("Provider Node"), result.groups[3].tags())
+        assertEquals(listOf("Balance"), result.groups[1].tags())
+        assertFalse(result.groups.any { it.key == "routing-config-targets" })
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
     }
 
@@ -195,8 +191,8 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
             labels = labels,
         )
 
-        assertEquals(listOf("Runnable Custom"), profileResult.groups[2].tags())
-        assertEquals(listOf("70", "72"), globalResult.groups[2].tags())
+        assertEquals(listOf("Runnable Custom"), profileResult.groups[3].tags())
+        assertEquals(listOf("70", "72"), globalResult.groups[3].tags())
     }
 
     @Test
@@ -226,8 +222,8 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
 
         assertEquals(listOf("PROXY", "DIRECT", "REJECT"), direct.groups[0].tags())
         assertEquals("routing-system-targets", direct.initiallyExpandedGroupKey)
-        assertEquals(listOf("Preferred"), selectedGroup.groups[5].tags())
-        assertEquals("routing-config-proxy-groups", selectedGroup.initiallyExpandedGroupKey)
+        assertEquals(listOf("Balance", "Preferred"), selectedGroup.groups[1].tags())
+        assertEquals("routing-auto-balancers", selectedGroup.initiallyExpandedGroupKey)
     }
 
     @Test
@@ -312,7 +308,5 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
         proxyLabel = "Proxy",
         directLabel = "Direct",
         blockLabel = "Block",
-        proxyGroupsName = "Proxy groups",
-        configTargetsName = "Configs",
     )
 }

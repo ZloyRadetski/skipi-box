@@ -22,11 +22,10 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_edit
-import app.skipi.ui.resources.common_refresh
-import app.skipi.ui.resources.configs_activate
 import app.skipi.ui.resources.configs_duplicate
 import app.skipi.ui.resources.configs_export
 import app.skipi.ui.resources.configs_export_base64
+import app.skipi.ui.resources.configs_export_menu
 import app.skipi.ui.resources.configs_import_url
 import app.skipi.ui.resources.configs_import_url_dialog_summary
 import app.skipi.ui.resources.configs_import_url_dialog_title
@@ -87,7 +86,11 @@ fun SkipiTrafficConfigUrlImportDialog(
     }
 }
 
-/** Shared profile action menu. Actions are injected so storage, navigation, and import policy stay platform-owned. */
+/**
+ * Shared profile action menu: editing (visual first, then raw), duplicating and an export submenu. Enabling,
+ * refreshing and deleting live on the profile card. Actions are injected so storage, navigation, and import
+ * policy stay platform-owned.
+ */
 @Composable
 fun SkipiTrafficConfigContextMenu(
     show: Boolean,
@@ -97,30 +100,22 @@ fun SkipiTrafficConfigContextMenu(
     onDuplicate: () -> Unit,
     onExport: () -> Unit,
     onExportBase64: () -> Unit,
-    onDelete: () -> Unit,
-    onEnable: () -> Unit,
-    onUpdate: (() -> Unit)? = null,
-    showRawEdit: Boolean = true,
-    showUiEdit: Boolean = true,
-    showDuplicate: Boolean = true,
-    showExport: Boolean = true,
-    showExportBase64: Boolean = true,
-    showDelete: Boolean = true,
-    showEnable: Boolean = true,
 ) {
-    val items = buildList {
-        if (onUpdate != null) add(DropdownItem(text = stringResource(Res.string.common_refresh), onClick = onUpdate))
-        if (showRawEdit) add(DropdownItem(text = stringResource(Res.string.configs_raw_edit), onClick = onRawEdit))
-        if (showUiEdit) add(DropdownItem(text = stringResource(Res.string.configs_ui_edit), onClick = onUiEdit))
-        if (showDuplicate) add(DropdownItem(text = stringResource(Res.string.configs_duplicate), onClick = onDuplicate))
-        if (showExport) add(DropdownItem(text = stringResource(Res.string.configs_export), onClick = onExport))
-        if (showExportBase64) add(DropdownItem(text = stringResource(Res.string.configs_export_base64), onClick = onExportBase64))
-        if (showDelete) add(DropdownItem(text = stringResource(Res.string.common_delete), onClick = onDelete))
-        if (showEnable) add(DropdownItem(text = stringResource(Res.string.configs_activate), onClick = onEnable))
-    }
+    val items = listOf(
+        DropdownItem(text = stringResource(Res.string.configs_ui_edit), onClick = onUiEdit),
+        DropdownItem(text = stringResource(Res.string.configs_raw_edit), onClick = onRawEdit),
+        DropdownItem(text = stringResource(Res.string.configs_duplicate), onClick = onDuplicate),
+        DropdownItem(
+            text = stringResource(Res.string.configs_export_menu),
+            children = listOf(
+                DropdownItem(text = stringResource(Res.string.configs_export), onClick = onExport),
+                DropdownItem(text = stringResource(Res.string.configs_export_base64), onClick = onExportBase64),
+            ),
+        ),
+    )
     AppEntriesMenu(
-        show = show && items.isNotEmpty(),
-        entries = if (items.isEmpty()) emptyList() else listOf(DropdownEntry(items = items)),
+        show = show,
+        entries = listOf(DropdownEntry(items = items)),
         onDismissRequest = onDismissRequest,
     )
 }

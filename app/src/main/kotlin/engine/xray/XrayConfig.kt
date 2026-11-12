@@ -217,13 +217,13 @@ private fun buildCustomXrayConfig(
     request: XrayConfigRequest,
     server: Custom,
 ): String {
-    check(!request.appState.enableStrictFullTunnel) {
-        "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration"
-    }
     // Logging belongs to the application rather than a pasted raw profile.
     // Otherwise a profile's "log": {"loglevel":"none"} silently disables
     // the access/error viewer and DNS diagnostics selected in Skipi.
     val config = CustomXrayConfigRewriter.rewrite(request, server)
+        .let { rewritten ->
+            if (request.appState.enableStrictFullTunnel) rewritten.withStrictFullTunnelRouting() else rewritten
+        }
         .updated {
             put("log", request.buildXrayLogConfig())
         }

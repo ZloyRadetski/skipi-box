@@ -132,9 +132,9 @@ class StrategyGroupMemberSelectorAndroidOracleTest {
                 proxyServers = listOf(server(51, DefaultSubscriptionGroupId, vless("Manual node"))),
             ),
         )
-        assertEquals(listOf("subscription-8", "manual-servers"), withManualServer.map { it.key })
-        assertEquals(listOf("Provider", "Manual servers"), withManualServer.map { it.title })
-        assertEquals(listOf(emptyList<Int>(), listOf(51)), withManualServer.map { group -> group.servers.map { it.id } })
+        assertEquals(listOf("manual-servers", "subscription-8"), withManualServer.map { it.key })
+        assertEquals(listOf("Manual servers", "Provider"), withManualServer.map { it.title })
+        assertEquals(listOf(listOf(51), emptyList<Int>()), withManualServer.map { group -> group.servers.map { it.id } })
 
         val noSubscriptions = project(
             AppState(subscriptionGroups = emptyList(), proxyServers = emptyList()),

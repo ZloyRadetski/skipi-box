@@ -60,7 +60,7 @@ class ConfigProxyGroupReconcilerTest {
     }
 
     @Test
-    fun activeVisibilityAndOpaqueSelectedIdFollowTheSharedCatalogContract() {
+    fun aGroupShownOnlyForTheActiveConfigKeepsItsRecordSoOnDemandAndRoutingRulesKeepTheirTarget() {
         val config = profile(
             """[Proxy Group]
                 Always = select, Node A, skipi-display=always
@@ -69,6 +69,9 @@ class ConfigProxyGroupReconcilerTest {
             """.trimIndent(),
         )
         val servers = listOf(node(10, "Node A"))
+        fun generated(result: ConfigProxyGroupReconciliation) = result.servers.mapNotNull { record ->
+            (record.server as? StrategyGroup)?.takeIf { it.sourceTrafficConfigId != null }?.let { record.id to it.remarks }
+        }
 
         val selected = reconcile(
             trafficConfigs = listOf(config),
@@ -86,14 +89,21 @@ class ConfigProxyGroupReconcilerTest {
             selectedServerId = selected.selectedServerId,
             retainedServerIds = setOf(999),
         )
+        val active = reconcile(
+            trafficConfigs = listOf(config),
+            activeConfigId = config.id,
+            servers = inactive.servers,
+            nextServerId = inactive.nextServerId,
+            selectedServerId = inactive.selectedServerId,
+            retainedServerIds = setOf(999),
+        )
 
-        assertEquals(listOf("Always", "Active"), selected.servers.mapNotNull { record ->
-            (record.server as? StrategyGroup)?.takeIf { it.sourceTrafficConfigId != null }?.remarks
-        })
+        // A hidden group is not materialized at all; the other two are, whichever config is active.
+        assertEquals(listOf("Always", "Active"), generated(selected).map { it.second })
         assertEquals(999, selected.selectedServerId)
-        assertEquals(listOf("Always"), inactive.servers.mapNotNull { record ->
-            (record.server as? StrategyGroup)?.takeIf { it.sourceTrafficConfigId != null }?.remarks
-        })
+        // Switching to another config only hides the group; its id survives, so a rule that targets it still works.
+        assertEquals(generated(selected), generated(inactive))
+        assertEquals(generated(selected), generated(active))
         assertEquals(999, inactive.selectedServerId)
     }
 
@@ -106,7 +116,6 @@ class ConfigProxyGroupReconcilerTest {
         retainedServerIds: Set<Int> = emptySet(),
     ) = reconcileConfigProxyGroups(
         trafficConfigs = trafficConfigs,
-        activeTrafficConfigId = activeConfigId,
         servers = servers,
         nextServerId = nextServerId,
         selectedServerId = selectedServerId,

@@ -102,6 +102,7 @@ internal fun projectStrategyGroupMemberGroups(
 fun StrategyGroupMemberSelectorPage(
     padding: PaddingValues,
     selectedServerIds: List<Int>,
+    selectedWholeGroupIds: List<Int>,
     excludedServerId: Int?,
     resultKey: String,
     requireServerRemarks: Boolean = false,
@@ -150,6 +151,7 @@ fun StrategyGroupMemberSelectorPage(
             SharedStrategyMemberSelectorGroup(
                 key = group.key,
                 title = group.title,
+                subscriptionGroupId = group.subscriptionGroup?.id,
                 summary = subscriptionSummaries[group.key],
                 items = group.servers.map { server ->
                     val remarks = server.server.getInfo().remarks
@@ -168,6 +170,7 @@ fun StrategyGroupMemberSelectorPage(
         padding = padding,
         groups = sharedGroups,
         selectedServerIds = selectedServerIds,
+        selectedWholeGroupIds = selectedWholeGroupIds,
         title = stringResource(R.string.proxy_editor_strategy_group_select_servers),
         isWideScreen = isWideScreen,
         fallbackPainter = painterResource(R.drawable.ic_globe),
@@ -175,7 +178,7 @@ fun StrategyGroupMemberSelectorPage(
         flagFallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.85f),
         selectedSummary = { count -> stringResource(R.string.proxy_editor_strategy_group_selected_servers_summary, count) },
         emptyGroupMessage = stringResource(R.string.proxy_editor_strategy_group_no_servers),
-        onSave = { ids -> navigator.setResult(resultKey, StrategyGroupMemberSelectionResult(ids)) },
+        onSave = { ids, wholeGroupIds -> navigator.setResult(resultKey, StrategyGroupMemberSelectionResult(ids, wholeGroupIds)) },
         platformBackHandler = { back ->
             NavigationBackHandler(
                 state = rememberNavigationEventState(NavigationEventInfo.None),

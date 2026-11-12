@@ -22,7 +22,6 @@ class DesktopTrafficConfigProxyGroupReconciler(
             val existingById = catalog.servers.associateBy(CatalogProxyServerRecord::id)
             val result = reconcileConfigProxyGroups(
                 trafficConfigs = latestConfigLibrary.configs.map { profile -> profile.toTrafficConfigState() },
-                activeTrafficConfigId = latestConfigLibrary.selectedConfigId ?: 0,
                 servers = catalog.servers.map { server ->
                     ReconciledProxyServerRecord(
                         id = server.id,

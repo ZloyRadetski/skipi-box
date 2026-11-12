@@ -240,16 +240,21 @@ class DesktopTunSettingsTest {
     }
 
     @Test
-    fun strictFullTunnelRefusesARawCustomConfigLikeAndroid() {
-        val custom = features.proxy.server.model.Custom(remarks = "Raw", configJson = "{}")
+    fun strictFullTunnelDropsTheDirectRulesOfARawCustomConfigAndEndsInTheProxy() {
+        val raw = """
+            {"outbounds":[
+              {"tag":"vpn","protocol":"vless","settings":{"vnext":[{"address":"proxy.example","port":443,"users":[{"id":"u","encryption":"none"}]}]}},
+              {"tag":"local","protocol":"freedom"}],
+             "routing":{"rules":[{"domain":["direct.example"],"outboundTag":"local"}]}}
+        """.trimIndent()
+        val custom = features.proxy.server.model.Custom(remarks = "Raw", configJson = raw)
         val library = DesktopServerLibrary(
             selectedServerId = 10,
             servers = listOf(
                 DesktopStoredProxyServer(10, custom.encodePersistedProxyServer(), subscriptionId = null),
             ),
         )
-
-        val result = buildDesktopSelectedServerConfig(
+        fun config(strict: Boolean) = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = DesktopConfigLibrary(),
             routing = app.skipi.app.model.RoutingConfigRecord(),
@@ -257,13 +262,13 @@ class DesktopTunSettingsTest {
             trafficConfigContentById = emptyMap(),
             subscriptionPingUrl = "http://127.0.0.1/ping",
             latencyByServerId = emptyMap(),
-            strictFullTunnel = true,
-        )!!
+            strictFullTunnel = strict,
+        )!!.getOrThrow()
 
-        assertEquals(
-            "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration",
-            result.exceptionOrNull()?.message,
-        )
+        assertTrue("direct.example" in config(strict = false))
+        val strict = config(strict = true)
+        assertFalse("direct.example" in strict)
+        assertTrue("\"outboundTag\": \"vpn\"" in strict || "\"outboundTag\":\"vpn\"" in strict, strict)
     }
 
     @Test

@@ -130,6 +130,8 @@ sealed interface Route : NavKey {
     @Serializable
     data class StrategyGroupMemberSelector(
         val selectedServerIds: List<Int>,
+        /** Subscriptions selected whole: their servers, including ones a refresh adds later, are members. */
+        val selectedWholeGroupIds: List<Int> = emptyList(),
         val excludedServerId: Int? = null,
         val resultKey: String,
         /**
@@ -176,6 +178,7 @@ typealias ProxyServerEditResult = app.skipi.app.server.ProxyServerEditResult
 
 data class StrategyGroupMemberSelectionResult(
     val serverIds: List<Int>,
+    val wholeGroupIds: List<Int> = emptyList(),
 )
 
 data class RouteOutboundSelectionResult(

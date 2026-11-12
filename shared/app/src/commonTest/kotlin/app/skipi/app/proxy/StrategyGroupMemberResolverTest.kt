@@ -59,6 +59,67 @@ Policy = select, Alpha, Beta
         assertEquals(listOf(1), members.map(ProxyServerRow::id))
     }
 
-    private fun record(id: Int, server: features.proxy.server.model.ProxyServer<*>) =
-        ProxyServerRow(id = id, groupId = 1, server = server)
+    @Test
+    fun aWholeSubscriptionCoversItsServersIncludingOnesAddedByALaterRefresh() {
+        val group = StrategyGroup(wholeGroupIds = listOf(5))
+        val before = listOf(record(1, HTTP(remarks = "A"), groupId = 5), record(2, HTTP(remarks = "B"), groupId = 6))
+        val after = before + record(3, HTTP(remarks = "C"), groupId = 5)
+
+        assertEquals(listOf(1), resolveStrategyGroupMembers(group, before).map(ProxyServerRow::id))
+        assertEquals(listOf(1, 3), resolveStrategyGroupMembers(group, after).map(ProxyServerRow::id))
+    }
+
+    @Test
+    fun theRegexOnlyLooksAtTheChosenGroupsAndPicksUpNewMatches() {
+        val group = StrategyGroup(filter = "^DE", filterGroupIds = listOf(5))
+        val servers = listOf(
+            record(1, HTTP(remarks = "DE 1"), groupId = 5),
+            record(2, HTTP(remarks = "DE 2"), groupId = 6),
+            record(3, HTTP(remarks = "US 1"), groupId = 5),
+            record(4, HTTP(remarks = "DE 3"), groupId = 5),
+        )
+
+        assertEquals(listOf(1, 4), resolveStrategyGroupMembers(group, servers).map(ProxyServerRow::id))
+    }
+
+    @Test
+    fun aRegexWithoutChosenGroupsLooksAtEveryGroup() {
+        val group = StrategyGroup(filter = "^DE")
+        val servers = listOf(record(1, HTTP(remarks = "DE 1"), groupId = 5), record(2, HTTP(remarks = "DE 2"), groupId = 6))
+
+        assertEquals(listOf(1, 2), resolveStrategyGroupMembers(group, servers).map(ProxyServerRow::id))
+    }
+
+    @Test
+    fun pickedServersWholeSubscriptionsAndRegexMatchesAddUpWithoutRepeats() {
+        val group = StrategyGroup(
+            proxyServerIds = listOf(9, 1),
+            wholeGroupIds = listOf(5),
+            filter = "^DE",
+            filterGroupIds = listOf(6),
+        )
+        val servers = listOf(
+            record(1, HTTP(remarks = "A"), groupId = 5),
+            record(2, HTTP(remarks = "DE 2"), groupId = 6),
+            record(3, HTTP(remarks = "US 3"), groupId = 6),
+            record(9, HTTP(remarks = "Picked"), groupId = 7),
+        )
+
+        assertEquals(listOf(9, 1, 2), resolveStrategyGroupMembers(group, servers).map(ProxyServerRow::id))
+    }
+
+    @Test
+    fun theOldSingleSourceGroupStillMeansTheSameThing() {
+        val servers = listOf(
+            record(1, HTTP(remarks = "DE 1"), groupId = 5),
+            record(2, HTTP(remarks = "US 2"), groupId = 5),
+            record(3, HTTP(remarks = "DE 3"), groupId = 6),
+        )
+
+        assertEquals(listOf(1, 2), resolveStrategyGroupMembers(StrategyGroup(subscriptionGroupId = 5), servers).map(ProxyServerRow::id))
+        assertEquals(listOf(1), resolveStrategyGroupMembers(StrategyGroup(subscriptionGroupId = 5, filter = "^DE"), servers).map(ProxyServerRow::id))
+    }
+
+    private fun record(id: Int, server: features.proxy.server.model.ProxyServer<*>, groupId: Int = 1) =
+        ProxyServerRow(id = id, groupId = groupId, server = server)
 }

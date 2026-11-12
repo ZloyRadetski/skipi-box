@@ -395,6 +395,7 @@ fun AppContent(
                         StrategyGroupMemberSelectorPage(
                             padding = padding,
                             selectedServerIds = route.selectedServerIds,
+                            selectedWholeGroupIds = route.selectedWholeGroupIds,
                             excludedServerId = route.excludedServerId,
                             resultKey = route.resultKey,
                             requireServerRemarks = route.requireServerRemarks,

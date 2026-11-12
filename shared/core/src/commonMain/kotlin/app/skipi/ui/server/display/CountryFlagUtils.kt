@@ -4,6 +4,8 @@
 package app.skipi.ui.server.display
 
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.effectiveFilterGroupIds
+import features.proxy.server.model.effectiveWholeGroupIds
 
 interface StrategyGroupMemberCandidate {
     val id: Int
@@ -126,33 +128,25 @@ object CountryFlagUtils {
         allServers: List<StrategyGroupMemberCandidate>,
         visitingStrategyGroupIds: Set<Int> = emptySet(),
     ): Boolean {
-        if (strategyGroup.proxyServerIds.isNotEmpty()) {
-            if (memberId in strategyGroup.proxyServerIds) return true
-            for (id in strategyGroup.proxyServerIds) {
-                val member = allServers.firstOrNull { it.id == id }
-                val server = member?.strategyGroup
-                if (server != null && id !in visitingStrategyGroupIds) {
-                    if (strategyGroupContainsMember(server, memberId, allServers, visitingStrategyGroupIds + id)) {
-                        return true
-                    }
+        // Picked servers, whole groups and regex matches add up, as in the member resolver.
+        if (memberId in strategyGroup.proxyServerIds) return true
+        for (id in strategyGroup.proxyServerIds) {
+            val member = allServers.firstOrNull { it.id == id }
+            val server = member?.strategyGroup
+            if (server != null && id !in visitingStrategyGroupIds) {
+                if (strategyGroupContainsMember(server, memberId, allServers, visitingStrategyGroupIds + id)) {
+                    return true
                 }
             }
-            return false
         }
         val targetServer = allServers.firstOrNull { it.id == memberId } ?: return false
-        if (strategyGroup.subscriptionGroupId != null && targetServer.groupId != strategyGroup.subscriptionGroupId) {
-            return false
-        }
+        if (targetServer.groupId in strategyGroup.effectiveWholeGroupIds()) return true
         val filter = strategyGroup.filter
-        if (filter.isNotBlank()) {
-            val regex = runCatching { Regex(filter) }.getOrNull()
-            val remarks = targetServer.remarks
-            return if (regex != null) {
-                regex.containsMatchIn(remarks)
-            } else {
-                remarks.contains(filter, ignoreCase = true)
-            }
-        }
-        return strategyGroup.subscriptionGroupId != null
+        if (filter.isBlank()) return false
+        val filterGroupIds = strategyGroup.effectiveFilterGroupIds()
+        if (filterGroupIds.isNotEmpty() && targetServer.groupId !in filterGroupIds) return false
+        val regex = runCatching { Regex(filter) }.getOrNull()
+        val remarks = targetServer.remarks
+        return if (regex != null) regex.containsMatchIn(remarks) else remarks.contains(filter, ignoreCase = true)
     }
 }

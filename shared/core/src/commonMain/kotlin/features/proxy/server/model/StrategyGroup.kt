@@ -67,10 +67,16 @@ fun String.toXrayBalancerStrategy(): String = when (trim().lowercase()) {
 data class StrategyGroup(
     var remarks: String = "",
     var strategy: String = StrategyGroupConstants.TYPE_SELECT,
+    /** The single source group of older groups. New groups use [wholeGroupIds] and [filterGroupIds] instead. */
     var subscriptionGroupId: Int? = null,
+    /** A regex on server names. It keeps selecting servers as subscriptions refresh, within [filterGroupIds]. */
     var filter: String = "",
-    /** Explicit user-selected members. Empty retains the legacy group/filter selector. */
+    /** Explicit user-selected members; they add up with [wholeGroupIds] and the [filter] matches. */
     var proxyServerIds: List<Int> = emptyList(),
+    /** Subscriptions (or the manual group) selected whole: every server they hold, now and after any refresh. */
+    var wholeGroupIds: List<Int> = emptyList(),
+    /** The groups the [filter] looks at; empty means every group. */
+    var filterGroupIds: List<Int> = emptyList(),
     /** User-selected member for `select`, or a transient verified startup member for automatic groups. */
     var selectedMemberId: Int? = null,
     /** Display policy for home proxy groups list. */
@@ -95,7 +101,7 @@ data class StrategyGroup(
         val source = if (proxyServerIds.isNotEmpty()) {
             "custom (${proxyServerIds.size})"
         } else {
-            subscriptionGroupId?.toString() ?: "all"
+            subscriptionGroupId?.toString() ?: if (wholeGroupIds.isNotEmpty()) "groups (${wholeGroupIds.size})" else "all"
         }
         val filterText = filter.takeIf(String::isNotBlank)?.let { ", $it" }.orEmpty()
         return ProxyServerInfo(remarks, "$strategy, $source$filterText", "Strategy")
@@ -114,6 +120,8 @@ data class StrategyGroup(
         subscriptionGroupId = other.subscriptionGroupId
         filter = other.filter
         proxyServerIds = other.proxyServerIds
+        wholeGroupIds = other.wholeGroupIds
+        filterGroupIds = other.filterGroupIds
         selectedMemberId = other.selectedMemberId
         displayMode = other.displayMode
         showInAutoBalancerList = other.showInAutoBalancerList
@@ -134,7 +142,7 @@ data class StrategyGroup(
     }
 
     override fun connectionFingerprint(): String {
-        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId|$displayMode|$tolerance"
+        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$wholeGroupIds|$filter|$filterGroupIds|$selectedMemberId|$displayMode|$tolerance"
     }
 }
 
@@ -143,4 +151,13 @@ data class StrategyGroup(
  * profile's policy group. Without any of them it has no members on any platform.
  */
 fun StrategyGroup.hasMemberSource(): Boolean =
-    proxyServerIds.isNotEmpty() || subscriptionGroupId != null || filter.isNotBlank() || sourceTrafficConfigId != null
+    proxyServerIds.isNotEmpty() || wholeGroupIds.isNotEmpty() || subscriptionGroupId != null ||
+        filter.isNotBlank() || sourceTrafficConfigId != null
+
+/** The groups taken whole; an older group that named one source group and no filter meant that group whole. */
+fun StrategyGroup.effectiveWholeGroupIds(): List<Int> =
+    (wholeGroupIds + listOfNotNull(subscriptionGroupId?.takeIf { filter.isBlank() })).distinct()
+
+/** The groups the filter looks at; an older group's single source group narrowed its filter the same way. */
+fun StrategyGroup.effectiveFilterGroupIds(): List<Int> =
+    (filterGroupIds + listOfNotNull(subscriptionGroupId?.takeIf { filter.isNotBlank() })).distinct()
