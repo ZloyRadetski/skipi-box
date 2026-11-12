@@ -147,15 +147,11 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
-// Desktop bundles the same font files already shipped by Android; keep the source assets canonical.
+// Fonts, geo files and the direct-CIDR lists are bundled from shared/bundled, the one place Android reads them from too.
 tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
     mustRunAfter(rootProject.tasks.named("updateResourceFileAssets"))
-    from(rootProject.file("app/src/main/res/font")) {
-        include("*.ttf")
-        into("font")
-    }
-    from(rootProject.file("app/src/main/assets")) {
-        include("geo/**", "xray/**")
+    from(rootProject.file("shared/bundled")) {
+        include("font/*.ttf", "geo/**", "xray/**")
     }
 }
 

@@ -64,7 +64,7 @@ class ResourceFileDecompressorTest {
 
     @Test
     fun testRealBundledAssetDecompression() {
-        val assetFile = File("src/main/assets/geo/roscomvpn/geosite.dat.xz")
+        val assetFile = File("../shared/bundled/geo/roscomvpn/geosite.dat.xz")
         if (!assetFile.isFile) return // only runs when asset is present in project path
 
         val decompressed = assetFile.inputStream().use { input ->

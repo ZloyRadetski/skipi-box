@@ -189,24 +189,43 @@ androidComponents {
     }
 
     onVariants { variant ->
-        variant.sources.assets?.addStaticSourceDirectory("build/generated/resourceFileAssets")
+        variant.sources.assets?.addStaticSourceDirectory("build/generated/sharedBundledAssets")
         variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
-        variant.sources.res?.addStaticSourceDirectory("build/generated/sharedStringsRes")
+        variant.sources.res?.addStaticSourceDirectory("build/generated/sharedRes")
     }
 }
 
-// The app has no strings of its own: every text lives in shared/ui's composeResources, and the Android
-// resources that services, notifications, widgets and the manifest read are generated from those files.
-val syncSharedStrings = tasks.register<Sync>("syncSharedStrings") {
+// The app keeps no texts, fonts or logos of its own: they live in shared (texts and the logo in ui's
+// composeResources, fonts, geo files and CIDR lists in shared/bundled) and the Android resources and assets
+// that services, notifications, widgets and the manifest read are generated from there.
+val syncSharedResources = tasks.register<Sync>("syncSharedResources") {
     group = "localization"
-    description = "Copies the shared strings into Android resources so R.string is generated from the one source."
+    description = "Copies the shared strings, logo and fonts into Android resources (R.string, R.font, R.drawable)."
     from(rootProject.layout.projectDirectory.dir("shared/ui/src/commonMain/composeResources")) {
         include("values*/strings.xml")
         filter { line -> escapeForAndroidResources(line) }
     }
-    into(layout.buildDirectory.dir("generated/sharedStringsRes"))
+    from(rootProject.layout.projectDirectory.dir("shared/ui/src/commonMain/composeResources")) {
+        include("drawable/ic_about_logo.xml")
+    }
+    from(rootProject.layout.projectDirectory.dir("shared/bundled")) {
+        include("font/*.ttf")
+    }
+    into(layout.buildDirectory.dir("generated/sharedRes"))
 }
-tasks.named("preBuild") { dependsOn(syncSharedStrings) }
+val syncSharedBundledAssets = tasks.register<Sync>("syncSharedBundledAssets") {
+    group = "localization"
+    description = "Copies the geo files and CIDR lists from shared/bundled into the app's assets."
+    from(rootProject.layout.projectDirectory.dir("shared/bundled")) {
+        include("geo/**", "xray/**")
+    }
+    into(layout.buildDirectory.dir("generated/sharedBundledAssets"))
+}
+// updateResourceFileAssets (run by hand to refresh the bundled files) writes into shared/bundled.
+listOf(syncSharedResources, syncSharedBundledAssets).forEach { sync ->
+    sync.configure { mustRunAfter(rootProject.tasks.named("updateResourceFileAssets")) }
+}
+tasks.named("preBuild") { dependsOn(syncSharedResources, syncSharedBundledAssets) }
 
 // Keep Robolectric on its supported runtime without changing Desktop test JVMs.
 val androidTestJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
