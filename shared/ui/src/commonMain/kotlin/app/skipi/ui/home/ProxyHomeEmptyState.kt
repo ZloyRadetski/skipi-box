@@ -26,7 +26,9 @@ import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
+import app.skipi.ui.components.SkipiMenu
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuSection
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -138,26 +140,30 @@ internal fun EmptyServerListActions(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                SkipiHomeDropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    if (canAddSubscription) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.home_action_add_subscription)) },
-                            onClick = {
-                                menuExpanded = false
-                                onAction(ProxyHomeAction.AddSubscription)
+                val addSubscriptionTitle = stringResource(Res.string.home_action_add_subscription)
+                val kindTitles = serverKinds.map { kind -> kind to serverKindTitle(kind) }
+                SkipiMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    sections = listOf(
+                        SkipiMenuSection(
+                            buildList {
+                                if (canAddSubscription) {
+                                    add(
+                                        SkipiMenuItem(
+                                            title = addSubscriptionTitle,
+                                            onClick = { onAction(ProxyHomeAction.AddSubscription) },
+                                        ),
+                                    )
+                                }
+                                kindTitles.forEach { (kind, title) ->
+                                    add(SkipiMenuItem(title = title, onClick = { onAction(ProxyHomeAction.AddServer(kind)) }))
+                                }
                             },
-                        )
-                    }
-                    serverKinds.forEach { kind ->
-                        DropdownMenuItem(
-                            text = { Text(serverKindTitle(kind)) },
-                            onClick = {
-                                menuExpanded = false
-                                onAction(ProxyHomeAction.AddServer(kind))
-                            },
-                        )
-                    }
-                }
+                        ),
+                    ),
+                    closeOnSelection = true,
+                )
             }
         }
         if (actions.paste) {

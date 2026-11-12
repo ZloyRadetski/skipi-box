@@ -19,6 +19,8 @@ data class SkipiMenuItem(
     val onClick: (() -> Unit)? = null,
     /** Identifies the row's level while a submenu is open; two rows of one menu must not share it. */
     val key: String = title,
+    /** Spoken text of the row when it differs from its title (a row with a title and a subtitle). */
+    val contentDescription: String? = null,
 ) {
     val hasChildren: Boolean get() = children.isNotEmpty()
 }

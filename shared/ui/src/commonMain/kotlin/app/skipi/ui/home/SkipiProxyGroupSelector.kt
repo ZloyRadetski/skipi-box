@@ -20,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
+import app.skipi.ui.components.SkipiMenu
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuSection
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -226,25 +228,27 @@ private fun ProxyGroupChip(
                             tint = if (selected) colors.selectedText else colors.text,
                         )
                     }
-                    SkipiHomeDropdownMenu(
+                    SkipiMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
+                        sections = listOf(
+                            SkipiMenuSection(
+                                group.actions.map { action ->
+                                    SkipiMenuItem(
+                                        title = action.title,
+                                        enabled = action.enabled,
+                                        key = action.id.toString(),
+                                        onClick = { onGroupAction(group.id, action.id) },
+                                    )
+                                },
+                            ),
+                        ),
+                        closeOnSelection = true,
                         surface = colors.raisedSurface,
                         text = colors.text,
+                        mutedText = colors.mutedText,
                         outline = colors.border,
-                    ) {
-                        group.actions.forEach { action ->
-                            DropdownMenuItem(
-                                text = { Text(action.title) },
-                                enabled = action.enabled,
-                                colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
-                                onClick = {
-                                    expanded = false
-                                    onGroupAction(group.id, action.id)
-                                },
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }

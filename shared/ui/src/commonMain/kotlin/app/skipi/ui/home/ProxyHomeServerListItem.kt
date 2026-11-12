@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.DropdownMenuItem
+import app.skipi.ui.components.SkipiMenu
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuSection
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -136,23 +138,22 @@ internal fun ServerListItem(
             onLongPress = { menuExpanded = true },
             overlay = {
                 if (menuActions.isNotEmpty()) {
-                    SkipiHomeDropdownMenu(
+                    val moves = menuActions.filter { it == "move-up" || it == "move-down" }
+                    val commandItems = (menuActions - moves.toSet()).map { actionId ->
+                        SkipiMenuItem(
+                            title = serverMenuActionTitle(actionId),
+                            key = actionId,
+                            onClick = { handleServerMenuAction(actionId, server, onAction) },
+                        )
+                    }
+                    SkipiMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
-                    ) {
-                        val moves = menuActions.filter { it == "move-up" || it == "move-down" }
-                        (menuActions - moves.toSet()).forEach { actionId ->
-                            DropdownMenuItem(
-                                text = { Text(serverMenuActionTitle(actionId)) },
-                                colors = skipiHomeDropdownItemColors(),
-                                onClick = {
-                                    menuExpanded = false
-                                    handleServerMenuAction(actionId, server, onAction)
-                                },
-                            )
-                        }
+                        sections = listOf(SkipiMenuSection(commandItems)),
+                        closeOnSelection = true,
                         // Up and down sit side by side. Arrows alone: two labelled items never fit the menu's width.
-                        if (moves.isNotEmpty()) {
+                        footer = if (moves.isEmpty()) null else {
+                            {
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 moves.forEach { actionId ->
                                     val title = serverMenuActionTitle(actionId)
@@ -175,8 +176,9 @@ internal fun ServerListItem(
                                     }
                                 }
                             }
-                        }
-                    }
+                            }
+                        },
+                    )
                 }
             },
             modifier = modifier,

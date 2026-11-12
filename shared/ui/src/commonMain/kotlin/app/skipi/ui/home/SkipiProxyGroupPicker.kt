@@ -32,7 +32,9 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
+import app.skipi.ui.components.SkipiMenu
+import app.skipi.ui.components.SkipiMenuItem
+import app.skipi.ui.components.SkipiMenuSection
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -166,95 +168,75 @@ fun SkipiProxyGroupPicker(
                 tint = if (expanded) colors.accent else colors.mutedText,
             )
         }
-        SkipiHomeDropdownMenu(
+        val visibleGroups = if (query.isBlank()) {
+            groups
+        } else {
+            groups.filter { group -> group.title.contains(query.trim(), ignoreCase = true) }
+        }
+        SkipiMenu(
             expanded = expanded,
             onDismissRequest = {
                 expanded = false
                 query = ""
             },
+            sections = listOf(
+                SkipiMenuSection(
+                    visibleGroups.map { group ->
+                        SkipiMenuItem(
+                            title = group.title,
+                            summary = group.subtitle,
+                            selected = group.id == selectedGroup.id,
+                            key = group.id.toString(),
+                            contentDescription = group.pickerText,
+                            onClick = { onGroupSelected(group.id) },
+                        )
+                    },
+                ),
+            ),
+            closeOnSelection = true,
             surface = colors.raisedSurface,
             text = colors.text,
+            mutedText = colors.mutedText,
             outline = colors.border,
-        ) {
-            if (groups.size > SearchThreshold) {
-                GroupSearchField(
-                    query = query,
-                    onQueryChange = { query = it },
-                    textColor = colors.text,
-                    hintColor = colors.mutedText,
-                    accent = colors.accent,
-                )
-            }
-            val visibleGroups = if (query.isBlank()) {
-                groups
+            accent = colors.accent,
+            header = if (groups.size > SearchThreshold) {
+                {
+                    GroupSearchField(
+                        query = query,
+                        onQueryChange = { query = it },
+                        textColor = colors.text,
+                        hintColor = colors.mutedText,
+                        accent = colors.accent,
+                    )
+                }
             } else {
-                groups.filter { group -> group.title.contains(query.trim(), ignoreCase = true) }
-            }
-            visibleGroups.forEach { group ->
-                val isSelected = group.id == selectedGroup.id
-                DropdownMenuItem(
-                    modifier = Modifier.semantics {
-                        contentDescription = group.pickerText
-                        selected = isSelected
-                    },
-                    text = {
-                        Column {
-                            Text(
-                                text = group.title,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = group.subtitle,
-                                style = SkipiTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = colors.mutedText,
-                            )
-                        }
-                    },
-                    trailingIcon = if (isSelected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Outlined.Check,
-                                contentDescription = null,
-                                tint = colors.accent,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                    colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
-                    onClick = {
-                        expanded = false
-                        query = ""
-                        onGroupSelected(group.id)
-                    },
-                )
-            }
-        }
+                null
+            },
+        )
         val selectedContextGroupId = contextGroupId
         if (selectedContextGroupId != null) {
             val actions = contextActions(selectedContextGroupId)
-            SkipiHomeDropdownMenu(
+            SkipiMenu(
                 expanded = actions.isNotEmpty(),
                 onDismissRequest = { contextGroupId = null },
+                sections = listOf(
+                    SkipiMenuSection(
+                        actions.map { action ->
+                            SkipiMenuItem(
+                                title = action.title,
+                                key = action.id.toString(),
+                                onClick = { onContextAction(selectedContextGroupId, action.id) },
+                            )
+                        },
+                    ),
+                ),
+                closeOnSelection = true,
                 surface = colors.raisedSurface,
                 text = colors.text,
+                mutedText = colors.mutedText,
                 outline = colors.border,
-            ) {
-                actions.forEach { action ->
-                    DropdownMenuItem(
-                        text = { Text(action.title) },
-                        colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
-                        onClick = {
-                            contextGroupId = null
-                            onContextAction(selectedContextGroupId, action.id)
-                        },
-                    )
-                }
-            }
+                accent = colors.accent,
+            )
         }
     }
 }

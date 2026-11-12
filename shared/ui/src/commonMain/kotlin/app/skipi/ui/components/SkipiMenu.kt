@@ -12,6 +12,9 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -43,8 +46,11 @@ import app.skipi.ui.theme.SkipiTheme
 private const val RootLevelKey = ""
 
 /**
- * The menu of the whole app. It is a Material3 dropdown styled with the app's own colors, which opens next to
+ * The menu of the whole app. It is a Material3 popup styled with the app's own colors, which opens next to
  * the layout it is composed in, so compose it right after the control that opens it, inside a `Box`.
+ * [surface], [text], [mutedText] and [outline] recolor the surface and its rows for a screen with its own palette;
+ * [header] and [footer] add free content above and below the rows of the top level (a search field, a row of
+ * buttons).
  *
  * A row with children opens a submenu in place: the two levels slide past each other while the surface
  * glides to the width of the new one, and the text of a level is laid out once, so it never reflows
@@ -58,6 +64,12 @@ fun SkipiMenu(
     modifier: Modifier = Modifier,
     closeOnSelection: Boolean = closesOnSelection(sections.size),
     accent: Color = SkipiTheme.colors.accent,
+    surface: Color = SkipiTheme.colors.surface,
+    text: Color = SkipiTheme.colors.onSurface,
+    mutedText: Color = SkipiTheme.colors.onSurfaceVariant,
+    outline: Color = SkipiTheme.colors.outline,
+    header: (@Composable () -> Unit)? = null,
+    footer: (@Composable () -> Unit)? = null,
 ) {
     // The path to the open submenu, as the keys of the rows that were opened. Keys, not rows: the rows are
     // rebuilt on every recomposition, and the open level must show their latest state.
@@ -72,6 +84,9 @@ fun SkipiMenu(
             onDismissRequest()
         },
         modifier = modifier.then(animatedMenuWidth(levelWidths, openedKeys.lastOrNull() ?: RootLevelKey)),
+        surface = surface,
+        text = text,
+        outline = outline,
     ) {
         AnimatedContent(
             targetState = openedKeys,
@@ -94,6 +109,7 @@ fun SkipiMenu(
             // The level on screen while it slides out is the one of its own keys, not of the current ones.
             val rows = levelKeys.openedRows(sections)
             Column(Modifier.reportMenuLevelWidth(levelWidths, levelKeys.lastOrNull() ?: RootLevelKey)) {
+                if (rows.isEmpty()) header?.invoke()
                 if (rows.isNotEmpty()) {
                     DropdownMenuItem(
                         text = { Text(text = rows.last().title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -104,7 +120,7 @@ fun SkipiMenu(
                                 modifier = Modifier.size(18.dp),
                             )
                         },
-                        colors = skipiHomeDropdownItemColors(),
+                        colors = skipiHomeDropdownItemColors(text, mutedText),
                         onClick = { openedKeys = openedKeys.dropLast(1) },
                     )
                 }
@@ -113,13 +129,15 @@ fun SkipiMenu(
                     if (sectionIndex > 0) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 4.dp),
-                            color = SkipiTheme.colors.outline.copy(alpha = 0.2f),
+                            color = outline.copy(alpha = 0.2f),
                         )
                     }
                     section.items.forEach { item ->
                         SkipiMenuRow(
                             item = item,
                             accent = accent,
+                            text = text,
+                            mutedText = mutedText,
                             onClick = {
                                 if (item.hasChildren) {
                                     openedKeys = openedKeys + item.key
@@ -134,6 +152,7 @@ fun SkipiMenu(
                         )
                     }
                 }
+                if (rows.isEmpty()) footer?.invoke()
             }
         }
     }
@@ -144,8 +163,22 @@ fun SkipiMenu(
 }
 
 @Composable
-private fun SkipiMenuRow(item: SkipiMenuItem, accent: Color, onClick: () -> Unit) {
+private fun SkipiMenuRow(
+    item: SkipiMenuItem,
+    accent: Color,
+    text: Color,
+    mutedText: Color,
+    onClick: () -> Unit,
+) {
     DropdownMenuItem(
+        modifier = if (item.contentDescription == null) {
+            Modifier
+        } else {
+            Modifier.semantics {
+                contentDescription = item.contentDescription
+                selected = item.selected
+            }
+        },
         text = {
             Column {
                 Text(text = item.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -155,7 +188,7 @@ private fun SkipiMenuRow(item: SkipiMenuItem, accent: Color, onClick: () -> Unit
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         style = SkipiTheme.typography.bodySmall,
-                        color = SkipiTheme.colors.onSurfaceVariant,
+                        color = mutedText,
                     )
                 }
             }
@@ -182,7 +215,7 @@ private fun SkipiMenuRow(item: SkipiMenuItem, accent: Color, onClick: () -> Unit
                 else -> Unit
             }
         },
-        colors = skipiHomeDropdownItemColors(),
+        colors = skipiHomeDropdownItemColors(text, mutedText),
         onClick = onClick,
     )
 }
