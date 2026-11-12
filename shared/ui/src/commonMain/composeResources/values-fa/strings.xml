@@ -18,9 +18,7 @@
     <string name="resource_file_download_notification_channel">به روز رسانی فایل منابع</string>
     <string name="resource_file_download_notification_title">در حال به‌روزرسانی فایل‌های منابع</string>
     <string name="resource_file_download_notification_progress">در حال دانلود %1$s</string>
-    <string name="resource_file_download_notification_cancel">لغو</string>
     <string name="resource_file_download_notification_cancelled">به روز رسانی فایل منبع لغو شد</string>
-    <string name="resource_file_download_notification_complete">فایل های منبع به روز شد</string>
     <string name="resource_file_download_notification_failed">به روز رسانی فایل منبع ناموفق بود:%1$s</string>
     <string name="proxy_traffic_stats_notification_channel">اتصال VPN</string>
     <string name="proxy_traffic_stats_notification_speed">سرعت: ↑ %1$s / ↓ %2$s</string>
@@ -52,7 +50,6 @@
     <string name="common_refresh">تازه‌سازی</string>
     <string name="deletion_confirmation_summary">این عمل قابل لغو نیست.</string>
     <string name="deletion_confirmation_delete_proxy_server">سرور پروکسی را حذف کنید</string>
-    <string name="deletion_confirmation_delete_subscription_group">حذف گروه اشتراک</string>
     <string name="deletion_confirmation_delete_resource_file">حذف فایل منبع</string>
     <string name="deletion_confirmation_delete_config">پیکربندی را حذف کنید</string>
     <string name="common_empty">اینجا هنوز چیزی نیست</string>
@@ -382,7 +379,6 @@
     <string name="proxy_app_list_show_system_apps">نمایش برنامه های سیستم</string>
     <string name="proxy_app_list_search_label">جستجوی برنامه‌ها</string>
     <string name="proxy_app_list_entry_summary">{package}</string>
-    <string name="proxy_app_list_pull_to_refresh">برای تازه کردن، پایین بکشید</string>
     <string name="proxy_app_list_release_to_refresh">برای تازه کردن رها کنید</string>
     <string name="proxy_app_list_refreshing">در حال تازه کردن…</string>
     <string name="proxy_app_list_refreshed">تازه کردن کامل شد</string>
@@ -1060,7 +1056,6 @@
     <string name="network_automation_no_rules">هنوز قانونی تنظیم نشده است. برای افزودن روی «+» ضربه بزنید.</string>
     <string name="network_automation_edit_rule">ویرایش قانون</string>
     <string name="network_automation_delete_rule">حذف قانون</string>
-    <string name="network_automation_save">ذخیره</string>
 <!-- Tools: speed test -->
     <string name="settings_category_speed_test">تست سرعت</string>
     <string name="settings_category_speed_test_summary">اندازه‌گیری پینگ، سرعت دانلود و آپلود</string>
@@ -1117,7 +1112,6 @@
     <string name="settings_category_ip_info">اطلاعات آدرس IP</string>
     <string name="settings_category_ip_info_summary">مشاهده IP خارجی، مکان، ISP و شبکه</string>
     <string name="tools_ip_info_title">اطلاعات IP</string>
-    <string name="tools_ip_info_refresh">تازه‌سازی</string>
     <string name="tools_ip_info_copy_all">کپی</string>
     <string name="tools_ip_info_copied_all">جزئیات در کلیپ‌بورد کپی شد</string>
     <string name="tools_ip_info_copied_ip">آدرس IP کپی شد</string>
@@ -1255,7 +1249,6 @@
     <string name="desktop_config_export_failed">صدور پیکربندی ناموفق بود: %1$s</string>
     <string name="desktop_config_copy_failed">کپی پیکربندی ناموفق بود: %1$s</string>
     <string name="desktop_config_selected">«%1$s» انتخاب شد.</string>
-    <string name="desktop_more_actions">بیشتر</string>
     <string name="desktop_config_editor_new_title">پیکربندی جدید</string>
     <string name="desktop_config_editor_edit_title">ویرایشگر پیکربندی</string>
     <string name="desktop_config_editor_subtitle">‏.conf سازگار با Shadowrocket / SKIPI</string>
@@ -1451,12 +1444,10 @@
     <string name="desktop_settings_data_dir">پوشه داده‌های SKIPI</string>
     <string name="desktop_settings_data_dir_not_found">پوشه داده‌ها پیدا نشد.</string>
     <string name="desktop_settings_data_dir_opened">پوشه داده‌ها باز شد.</string>
-    <string name="desktop_settings_data_dir_open_failed">باز کردن پوشه ناموفق بود: %1$s</string>
     <string name="desktop_settings_copy_settings_path">کپی مسیر settings.json</string>
     <string name="desktop_settings_path_copied">مسیر تنظیمات کپی شد.</string>
     <string name="desktop_settings_path_copy_failed">کپی مسیر ناموفق بود: %1$s</string>
     <string name="desktop_settings_storage_header">حافظه</string>
-    <string name="desktop_settings_storage">حافظه</string>
     <string name="desktop_settings_link_open_failed">باز کردن پیوند ناموفق بود: %1$s</string>
     <string name="desktop_settings_folder_open_unsupported">سیستم از باز کردن پوشه پشتیبانی نمی‌کند.</string>
     <string name="desktop_purpose_active_server">سرور فعال</string>
@@ -1577,7 +1568,6 @@
     <string name="routing_table_processes_help">steam.exe. با TUN پشتیبانی نمی‌شود</string>
     <string name="routing_table_move_up">بالاتر</string>
     <string name="routing_table_move_down">پایین‌تر</string>
-    <string name="routing_table_delete">حذف</string>
     <string name="routing_table_needs_condition">قانون دست‌کم به یک دامنه، آدرس، پردازه، پورت، شبکه یا پروتکل نیاز دارد. تا آن زمان ذخیره نمی‌شود.</string>
     <string name="routing_table_unwritable">نادیده گرفته شد؛ خط پروفایل نمی‌تواند این موارد را نگه دارد: {values}</string>
     <string name="routing_table_toggle">فعال کردن قانون {name}</string>
@@ -1589,7 +1579,6 @@
     <string name="routing_table_skip_inbound">{name} (وابسته به یک inbound)</string>
     <string name="routing_table_import_unwritable">نادیده گرفته شد؛ خط پروفایل نمی‌تواند این را نگه دارد: {values}</string>
     <string name="routing_table_import_failed">بارگذاری قوانین ممکن نشد: {reason}</string>
-    <string name="routing_table_apply">اعمال</string>
     <string name="common_back">بازگشت</string>
     <string name="app_update_check_failed">بررسی به‌روزرسانی ممکن نشد. اعلان به‌روزرسانی فعلی حفظ شد.</string>
     <string name="network_automation_wifi_rule_title">Wi-Fi: %1$s</string>
@@ -1604,14 +1593,12 @@
     <string name="custom_themes_import_hint">کد تم یا پیوند</string>
     <string name="custom_themes_import_invalid">این یک تم SKIPI نیست</string>
     <string name="custom_themes_name">نام</string>
-    <string name="custom_themes_save">ذخیره</string>
     <string name="custom_themes_add">افزودن</string>
     <string name="custom_themes_add_apply">افزودن و اعمال</string>
     <string name="custom_themes_active">در حال استفاده</string>
     <string name="custom_themes_options">تم</string>
     <string name="custom_themes_copy_link">کپی پیوند</string>
     <string name="custom_themes_link_copied">پیوند تم کپی شد</string>
-    <string name="custom_themes_delete">حذف</string>
     <string name="custom_themes_delete_confirm">برای حذف دوباره ضربه بزنید</string>
     <string name="custom_themes_full">فهرست پر است (۳۰ تم). ابتدا یکی را حذف کنید.</string>
     <string name="custom_themes_already_saved">این رنگ‌ها از قبل ذخیره شده‌اند.</string>

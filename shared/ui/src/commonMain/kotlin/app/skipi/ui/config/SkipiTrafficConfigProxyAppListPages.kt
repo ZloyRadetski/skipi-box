@@ -32,7 +32,7 @@ import app.modes.ProxyAppListModeGlobal
 import app.skipi.ui.components.AppPullToRefresh
 import app.skipi.ui.layout.pageScrollModifiers
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.proxy_app_list_pull_to_refresh
+import app.skipi.ui.resources.logs_pull_to_refresh
 import app.skipi.ui.resources.proxy_app_list_refreshed
 import app.skipi.ui.resources.proxy_app_list_refreshing
 import app.skipi.ui.resources.proxy_app_list_release_to_refresh
@@ -109,7 +109,7 @@ fun SkipiTrafficConfigProxyAppListPages(
 
     val hapticFeedback = LocalHapticFeedback.current
     val pullToRefreshTexts = listOf(
-        stringResource(Res.string.proxy_app_list_pull_to_refresh),
+        stringResource(Res.string.logs_pull_to_refresh),
         stringResource(Res.string.proxy_app_list_release_to_refresh),
         stringResource(Res.string.proxy_app_list_refreshing),
         stringResource(Res.string.proxy_app_list_refreshed),

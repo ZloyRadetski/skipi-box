@@ -18,9 +18,7 @@
     <string name="resource_file_download_notification_channel">Resource file updates</string>
     <string name="resource_file_download_notification_title">Updating resource files</string>
     <string name="resource_file_download_notification_progress">Downloading %1$s</string>
-    <string name="resource_file_download_notification_cancel">Cancel</string>
     <string name="resource_file_download_notification_cancelled">Resource file update cancelled</string>
-    <string name="resource_file_download_notification_complete">Resource files updated</string>
     <string name="resource_file_download_notification_failed">Resource file update failed: %1$s</string>
     <string name="proxy_traffic_stats_notification_channel">VPN connection</string>
     <string name="proxy_traffic_stats_notification_speed">Speed: ↑ %1$s / ↓ %2$s</string>
@@ -54,7 +52,6 @@
     <string name="common_refresh">Refresh</string>
     <string name="deletion_confirmation_summary">This action cannot be undone.</string>
     <string name="deletion_confirmation_delete_proxy_server">Delete proxy server</string>
-    <string name="deletion_confirmation_delete_subscription_group">Delete subscription group</string>
     <string name="deletion_confirmation_delete_resource_file">Delete resource file</string>
     <string name="deletion_confirmation_delete_config">Delete configuration</string>
     <string name="common_empty">Nothing here yet</string>
@@ -436,7 +433,6 @@
     <string name="proxy_app_list_show_system_apps">Show system apps</string>
     <string name="proxy_app_list_search_label">Search apps</string>
     <string name="proxy_app_list_entry_summary">{package}</string>
-    <string name="proxy_app_list_pull_to_refresh">Pull down to refresh</string>
     <string name="proxy_app_list_release_to_refresh">Release to refresh</string>
     <string name="proxy_app_list_refreshing">Refreshing…</string>
     <string name="proxy_app_list_refreshed">Refresh complete</string>
@@ -1030,7 +1026,6 @@
     <string name="network_automation_no_rules">No automation rules configured. Tap «+» to add.</string>
     <string name="network_automation_edit_rule">Edit rule</string>
     <string name="network_automation_delete_rule">Delete rule</string>
-    <string name="network_automation_save">Save</string>
     <string name="network_automation_no_wifi_detected">Wi-Fi network not detected or location service is off</string>
 
     <!-- DNS Section in Traffic Config -->
@@ -1210,7 +1205,6 @@
     <string name="settings_category_ip_info">IP address info</string>
     <string name="settings_category_ip_info_summary">View external IP, location, ISP and network</string>
     <string name="tools_ip_info_title">IP Information</string>
-    <string name="tools_ip_info_refresh">Refresh</string>
     <string name="tools_ip_info_copy_all">Copy</string>
     <string name="tools_ip_info_copied_all">Details copied to clipboard</string>
     <string name="tools_ip_info_copied_ip">IP address copied</string>
@@ -1347,7 +1341,6 @@
     <string name="routing_table_processes_help">steam.exe. Not supported with TUN</string>
     <string name="routing_table_move_up">Move up</string>
     <string name="routing_table_move_down">Move down</string>
-    <string name="routing_table_delete">Delete</string>
     <string name="routing_table_needs_condition">A rule needs at least one domain, address, process, port, network or protocol. Until then it is not saved.</string>
     <string name="routing_table_unwritable">Left out, a profile line cannot hold these: {values}</string>
     <string name="routing_table_toggle">Enable rule {name}</string>
@@ -1359,7 +1352,6 @@
     <string name="routing_table_skip_inbound">{name} (tied to one inbound)</string>
     <string name="routing_table_import_unwritable">Left out, a profile line cannot hold: {values}</string>
     <string name="routing_table_import_failed">Could not load the rules: {reason}</string>
-    <string name="routing_table_apply">Apply</string>
     <string name="custom_themes_title">My themes</string>
     <string name="custom_themes_empty">No saved themes yet. Save the colors you see now, or import a theme.</string>
     <string name="custom_themes_save_current">Save current colors</string>
@@ -1367,14 +1359,12 @@
     <string name="custom_themes_import_hint">Theme code or link</string>
     <string name="custom_themes_import_invalid">This is not a SKIPI theme</string>
     <string name="custom_themes_name">Name</string>
-    <string name="custom_themes_save">Save</string>
     <string name="custom_themes_add">Add</string>
     <string name="custom_themes_add_apply">Add and apply</string>
     <string name="custom_themes_active">In use</string>
     <string name="custom_themes_options">Theme</string>
     <string name="custom_themes_copy_link">Copy link</string>
     <string name="custom_themes_link_copied">Theme link copied</string>
-    <string name="custom_themes_delete">Delete</string>
     <string name="custom_themes_delete_confirm">Tap again to delete</string>
     <string name="custom_themes_full">The list is full (30 themes). Delete one first.</string>
     <string name="custom_themes_already_saved">These colors are already saved.</string>
@@ -1415,7 +1405,6 @@
     <string name="desktop_config_export_failed">Failed to export the config: %1$s</string>
     <string name="desktop_config_copy_failed">Failed to copy the config: %1$s</string>
     <string name="desktop_config_selected">Selected “%1$s”.</string>
-    <string name="desktop_more_actions">More</string>
     <string name="desktop_config_editor_new_title">New config</string>
     <string name="desktop_config_editor_edit_title">Config editor</string>
     <string name="desktop_config_editor_subtitle">Compatible Shadowrocket / SKIPI .conf</string>
@@ -1611,12 +1600,10 @@
     <string name="desktop_settings_data_dir">SKIPI data folder</string>
     <string name="desktop_settings_data_dir_not_found">The data folder was not found.</string>
     <string name="desktop_settings_data_dir_opened">Data folder opened.</string>
-    <string name="desktop_settings_data_dir_open_failed">Failed to open the folder: %1$s</string>
     <string name="desktop_settings_copy_settings_path">Copy the path to settings.json</string>
     <string name="desktop_settings_path_copied">Settings path copied.</string>
     <string name="desktop_settings_path_copy_failed">Failed to copy the path: %1$s</string>
     <string name="desktop_settings_storage_header">STORAGE</string>
-    <string name="desktop_settings_storage">Storage</string>
     <string name="desktop_settings_link_open_failed">Failed to open the link: %1$s</string>
     <string name="desktop_settings_folder_open_unsupported">Opening folders is not supported by the system.</string>
     <string name="desktop_purpose_active_server">the active server</string>

@@ -74,7 +74,7 @@ import app.skipi.ui.resources.desktop_config_source_url_empty
 import app.skipi.ui.resources.desktop_config_update_failed
 import app.skipi.ui.resources.desktop_config_updated
 import app.skipi.ui.resources.desktop_configs_save_failed
-import app.skipi.ui.resources.desktop_more_actions
+import app.skipi.ui.resources.common_more
 import java.util.Base64
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.Icon
@@ -1021,7 +1021,7 @@ internal fun DesktopConfigsScreen(
                     IconButton(onClick = {
                         contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
                     }) {
-                        Icon(MiuixIcons.More, contentDescription = stringResource(Res.string.desktop_more_actions), tint = MiuixTheme.colorScheme.onSurface)
+                        Icon(MiuixIcons.More, contentDescription = stringResource(Res.string.common_more), tint = MiuixTheme.colorScheme.onSurface)
                     }
                 },
                 statusContent = profileStatusText?.let { text ->

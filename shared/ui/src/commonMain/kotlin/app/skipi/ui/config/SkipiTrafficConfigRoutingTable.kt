@@ -76,7 +76,7 @@ import app.skipi.ui.resources.common_replace_existing
 import app.skipi.ui.resources.configs_rules_add
 import app.skipi.ui.resources.routing_import_clipboard_message
 import app.skipi.ui.resources.routing_import_clipboard_title
-import app.skipi.ui.resources.routing_table_apply
+import app.skipi.ui.resources.color_picker_apply
 import app.skipi.ui.resources.routing_table_col_name
 import app.skipi.ui.resources.routing_table_col_network
 import app.skipi.ui.resources.routing_table_col_port
@@ -87,7 +87,7 @@ import app.skipi.ui.resources.routing_table_complex_label
 import app.skipi.ui.resources.routing_table_complex_open
 import app.skipi.ui.resources.routing_table_complex_text
 import app.skipi.ui.resources.routing_table_complex_title
-import app.skipi.ui.resources.routing_table_delete
+import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.routing_table_domains
 import app.skipi.ui.resources.routing_table_domains_help
 import app.skipi.ui.resources.routing_table_empty
@@ -446,7 +446,7 @@ private fun RoutingTableToolbar(
         Spacer(Modifier.weight(1f))
         if (onApply != null) {
             ToolbarButton(
-                text = stringResource(Res.string.routing_table_apply),
+                text = stringResource(Res.string.color_picker_apply),
                 primary = canApply,
                 enabled = canApply,
                 modifier = Modifier.testTag("routing-apply"),
@@ -714,7 +714,7 @@ private fun RoutingTableEditor(
                         controller.moveRoutingRule(profile.id, index, index + 1)
                         state.moved(to)
                     }
-                    SmallAction(stringResource(Res.string.routing_table_delete)) {
+                    SmallAction(stringResource(Res.string.common_delete)) {
                         state.selectedLine?.let { controller.deleteRoutingRule(profile.id, it) }
                         state.close()
                     }

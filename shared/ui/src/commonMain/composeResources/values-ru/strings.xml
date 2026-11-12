@@ -19,9 +19,7 @@
     <string name="resource_file_download_notification_channel">Обновление файлов ресурсов</string>
     <string name="resource_file_download_notification_title">Обновление файлов ресурсов</string>
     <string name="resource_file_download_notification_progress">Скачивание %1$s</string>
-    <string name="resource_file_download_notification_cancel">Отмена</string>
     <string name="resource_file_download_notification_cancelled">Обновление файлов ресурсов отменено</string>
-    <string name="resource_file_download_notification_complete">Файлы ресурсов успешно обновлены</string>
     <string name="resource_file_download_notification_failed">Ошибка обновления файлов ресурсов: %1$s</string>
     <string name="proxy_traffic_stats_notification_channel">VPN-подключение</string>
     <string name="proxy_traffic_stats_notification_speed">Скорость: ↑ %1$s / ↓ %2$s</string>
@@ -424,7 +422,6 @@
     <string name="proxy_app_list_show_system_apps">Показывать системные приложения</string>
     <string name="proxy_app_list_search_label">Поиск приложений</string>
     <string name="proxy_app_list_entry_summary">{package}</string>
-    <string name="proxy_app_list_pull_to_refresh">Потяните вниз для обновления</string>
     <string name="proxy_app_list_release_to_refresh">Отпустите для обновления</string>
     <string name="proxy_app_list_refreshing">Обновление списка…</string>
     <string name="proxy_app_list_refreshed">Обновление завершено</string>
@@ -709,7 +706,6 @@
     <string name="subscription_install_config_failed">Не удалось импортировать подписку</string>
     <string name="deletion_confirmation_summary">Это действие нельзя отменить.</string>
     <string name="deletion_confirmation_delete_proxy_server">Удалить прокси-сервер</string>
-    <string name="deletion_confirmation_delete_subscription_group">Удалить группу подписки</string>
     <string name="deletion_confirmation_delete_resource_file">Удалить файл ресурсов</string>
     <string name="deletion_confirmation_delete_config">Удалить конфигурацию</string>
     <string name="common_update">Обновить</string>
@@ -1019,7 +1015,6 @@
     <string name="network_automation_no_rules">Нет правил автоматизации. Нажмите «+», чтобы добавить.</string>
     <string name="network_automation_edit_rule">Редактировать правило</string>
     <string name="network_automation_delete_rule">Удалить правило</string>
-    <string name="network_automation_save">Сохранить</string>
     <string name="network_automation_no_wifi_detected">Сеть Wi-Fi не обнаружена или выключена геолокация</string>
 
     <!-- DNS Section in Traffic Config -->
@@ -1199,7 +1194,6 @@
     <string name="settings_category_ip_info">Информация об IP-адресе</string>
     <string name="settings_category_ip_info_summary">Внешний IP, геолокация, провайдер и сеть</string>
     <string name="tools_ip_info_title">Информация об IP</string>
-    <string name="tools_ip_info_refresh">Обновить</string>
     <string name="tools_ip_info_copy_all">Скопировать</string>
     <string name="tools_ip_info_copied_all">Данные скопированы в буфер обмена</string>
     <string name="tools_ip_info_copied_ip">IP-адрес скопирован</string>
@@ -1336,7 +1330,6 @@
     <string name="routing_table_processes_help">steam.exe. Не поддерживает TUN</string>
     <string name="routing_table_move_up">Выше</string>
     <string name="routing_table_move_down">Ниже</string>
-    <string name="routing_table_delete">Удалить</string>
     <string name="routing_table_needs_condition">Нужен хотя бы один домен, адрес, процесс, порт, сеть или протокол. Пока их нет, правило не сохраняется.</string>
     <string name="routing_table_unwritable">Пропущено, в строке профиля такое не записать: {values}</string>
     <string name="routing_table_toggle">Включить правило {name}</string>
@@ -1348,7 +1341,6 @@
     <string name="routing_table_skip_inbound">{name} (привязано к одному входу)</string>
     <string name="routing_table_import_unwritable">Пропущено, в строке профиля такое не записать: {values}</string>
     <string name="routing_table_import_failed">Не удалось загрузить правила: {reason}</string>
-    <string name="routing_table_apply">Применить</string>
     <string name="custom_themes_title">Мои темы</string>
     <string name="custom_themes_empty">Сохранённых тем пока нет. Сохраните текущие цвета или импортируйте тему.</string>
     <string name="custom_themes_save_current">Сохранить текущие цвета</string>
@@ -1356,14 +1348,12 @@
     <string name="custom_themes_import_hint">Код темы или ссылка</string>
     <string name="custom_themes_import_invalid">Это не тема SKIPI</string>
     <string name="custom_themes_name">Название</string>
-    <string name="custom_themes_save">Сохранить</string>
     <string name="custom_themes_add">Добавить</string>
     <string name="custom_themes_add_apply">Добавить и применить</string>
     <string name="custom_themes_active">Используется</string>
     <string name="custom_themes_options">Тема</string>
     <string name="custom_themes_copy_link">Скопировать ссылку</string>
     <string name="custom_themes_link_copied">Ссылка на тему скопирована</string>
-    <string name="custom_themes_delete">Удалить</string>
     <string name="custom_themes_delete_confirm">Нажмите ещё раз, чтобы удалить</string>
     <string name="custom_themes_full">Список заполнен (30 тем). Сначала удалите одну.</string>
     <string name="custom_themes_already_saved">Эти цвета уже сохранены.</string>
@@ -1404,7 +1394,6 @@
     <string name="desktop_config_export_failed">Не удалось экспортировать конфиг: %1$s</string>
     <string name="desktop_config_copy_failed">Не удалось скопировать конфиг: %1$s</string>
     <string name="desktop_config_selected">Выбран «%1$s».</string>
-    <string name="desktop_more_actions">Ещё</string>
     <string name="desktop_config_editor_new_title">Новый конфиг</string>
     <string name="desktop_config_editor_edit_title">Редактор конфига</string>
     <string name="desktop_config_editor_subtitle">Совместимый Shadowrocket / SKIPI .conf</string>
@@ -1600,12 +1589,10 @@
     <string name="desktop_settings_data_dir">Папка данных SKIPI</string>
     <string name="desktop_settings_data_dir_not_found">Папка данных не найдена.</string>
     <string name="desktop_settings_data_dir_opened">Папка данных открыта.</string>
-    <string name="desktop_settings_data_dir_open_failed">Не удалось открыть папку: %1$s</string>
     <string name="desktop_settings_copy_settings_path">Скопировать путь к settings.json</string>
     <string name="desktop_settings_path_copied">Путь к настройкам скопирован.</string>
     <string name="desktop_settings_path_copy_failed">Не удалось скопировать путь: %1$s</string>
     <string name="desktop_settings_storage_header">ХРАНИЛИЩЕ</string>
-    <string name="desktop_settings_storage">Хранилище</string>
     <string name="desktop_settings_link_open_failed">Не удалось открыть ссылку: %1$s</string>
     <string name="desktop_settings_folder_open_unsupported">Открытие папки не поддерживается системой.</string>
     <string name="desktop_purpose_active_server">активного сервера</string>

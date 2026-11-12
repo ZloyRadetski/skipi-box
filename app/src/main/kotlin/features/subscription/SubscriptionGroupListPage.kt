@@ -90,7 +90,7 @@ fun SubscriptionGroupListPage(
         groups = groups.map { it.toSubscriptionGroupUiState(defaultGroupName) },
         title = stringResource(R.string.subscription_group_list_title),
         subtitle = groupCountSubtitle,
-        deletionTitle = stringResource(R.string.deletion_confirmation_delete_subscription_group),
+        deletionTitle = stringResource(R.string.subscription_delete_group),
         padding = padding,
         isWideScreen = isWideScreen,
         confirmDeletion = appState.enableDeletionConfirmation,

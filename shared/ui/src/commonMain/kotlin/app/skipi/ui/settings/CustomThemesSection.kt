@@ -45,7 +45,7 @@ import app.skipi.ui.resources.custom_themes_add
 import app.skipi.ui.resources.custom_themes_add_apply
 import app.skipi.ui.resources.custom_themes_already_saved
 import app.skipi.ui.resources.custom_themes_copy_link
-import app.skipi.ui.resources.custom_themes_delete
+import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.custom_themes_delete_confirm
 import app.skipi.ui.resources.custom_themes_empty
 import app.skipi.ui.resources.custom_themes_full
@@ -59,7 +59,7 @@ import app.skipi.ui.resources.custom_themes_low_contrast
 import app.skipi.ui.resources.custom_themes_name
 import app.skipi.ui.resources.custom_themes_new_theme
 import app.skipi.ui.resources.custom_themes_options
-import app.skipi.ui.resources.custom_themes_save
+import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.custom_themes_save_current
 import app.skipi.ui.resources.custom_themes_save_title
 import app.skipi.ui.resources.custom_themes_title
@@ -224,7 +224,7 @@ internal fun SaveThemeContent(
     ButtonPair(
         cancelText = stringResource(Res.string.common_cancel),
         onCancel = onCancel,
-        confirmText = stringResource(Res.string.custom_themes_save),
+        confirmText = stringResource(Res.string.common_save),
         confirmEnabled = !library.isFull() && library.indexOfColours(current) < 0,
         onConfirm = onSave,
     )
@@ -304,7 +304,7 @@ internal fun ThemeOptionsContent(
     Spacer(Modifier.height(8.dp))
     TextButton(
         text = stringResource(
-            if (confirmDelete) Res.string.custom_themes_delete_confirm else Res.string.custom_themes_delete,
+            if (confirmDelete) Res.string.custom_themes_delete_confirm else Res.string.common_delete,
         ),
         modifier = Modifier.fillMaxWidth(),
         onClick = { if (confirmDelete) onDelete() else confirmDelete = true },
@@ -313,7 +313,7 @@ internal fun ThemeOptionsContent(
     ButtonPair(
         cancelText = stringResource(Res.string.common_cancel),
         onCancel = onCancel,
-        confirmText = stringResource(Res.string.custom_themes_save),
+        confirmText = stringResource(Res.string.common_save),
         confirmEnabled = name.cleanCustomThemeName().isNotEmpty(),
         onConfirm = onSave,
     )

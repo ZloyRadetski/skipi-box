@@ -31,7 +31,7 @@ import app.skipi.ui.config.rememberSkipiRoutingTableState
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_rules_add
 import app.skipi.ui.resources.routing_table_complex_open
-import app.skipi.ui.resources.routing_table_delete
+import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.routing_table_final
 import app.skipi.ui.resources.routing_table_move_down
 import app.skipi.ui.resources.routing_table_port_hint
@@ -367,7 +367,7 @@ class SkipiRoutingTableTest {
     @Test
     fun deletingARuleRemovesItsLine() = withHarness {
         clickText("proxy")
-        runBlocking { clickText(getString(Res.string.routing_table_delete)) }
+        runBlocking { clickText(getString(Res.string.common_delete)) }
 
         assertTrue(rules.none { it.contains("steamdb.info") }, "rules: $rules")
         assertNull(findTag("routing-domains"), "the editor should close with the rule")

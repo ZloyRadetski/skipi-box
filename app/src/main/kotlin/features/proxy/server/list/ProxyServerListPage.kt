@@ -1356,7 +1356,7 @@ fun ProxyServerListPage(
             title = if (isManual) {
                 stringResource(R.string.deletion_confirmation_delete_group)
             } else {
-                stringResource(R.string.deletion_confirmation_delete_subscription_group)
+                stringResource(R.string.subscription_delete_group)
             },
             onDismissRequest = { homeDialogs = homeDialogs.copy(pendingSubscriptionDeletion = null) },
             onConfirm = {

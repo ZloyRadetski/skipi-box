@@ -18,9 +18,7 @@
     <string name="resource_file_download_notification_channel">资源文件更新</string>
     <string name="resource_file_download_notification_title">正在更新资源文件</string>
     <string name="resource_file_download_notification_progress">正在下载 %1$s</string>
-    <string name="resource_file_download_notification_cancel">取消</string>
     <string name="resource_file_download_notification_cancelled">资源文件更新已取消</string>
-    <string name="resource_file_download_notification_complete">资源文件已更新</string>
     <string name="resource_file_download_notification_failed">资源文件更新失败：%1$s</string>
     <string name="proxy_traffic_stats_notification_channel">VPN连接</string>
     <string name="proxy_traffic_stats_notification_speed">速度：↑ %1$s / ↓ %2$s</string>
@@ -52,7 +50,6 @@
     <string name="common_refresh">刷新</string>
     <string name="deletion_confirmation_summary">此操作无法撤销。</string>
     <string name="deletion_confirmation_delete_proxy_server">删除代理服务器</string>
-    <string name="deletion_confirmation_delete_subscription_group">删除订阅组</string>
     <string name="deletion_confirmation_delete_resource_file">删除资源文件</string>
     <string name="deletion_confirmation_delete_config">删除配置</string>
     <string name="common_empty">这里还什么都没有</string>
@@ -390,7 +387,6 @@
     <string name="proxy_app_list_show_system_apps">显示系统应用程序</string>
     <string name="proxy_app_list_search_label">搜索应用程序</string>
     <string name="proxy_app_list_entry_summary">{package}</string>
-    <string name="proxy_app_list_pull_to_refresh">下拉刷新</string>
     <string name="proxy_app_list_release_to_refresh">松开刷新</string>
     <string name="proxy_app_list_refreshing">正在刷新…</string>
     <string name="proxy_app_list_refreshed">刷新完成</string>
@@ -944,7 +940,6 @@
     <string name="network_automation_no_rules">尚未配置自动化规则。点击 «+» 添加。</string>
     <string name="network_automation_edit_rule">编辑规则</string>
     <string name="network_automation_delete_rule">删除规则</string>
-    <string name="network_automation_save">保存</string>
     <string name="about_replay_onboarding">欢迎向导</string>
     <string name="about_replay_onboarding_summary">重新体验初始设置与功能介绍向导</string>
     <string name="about_telegram_channel">Telegram 频道</string>
@@ -1126,7 +1121,6 @@
     <string name="settings_category_ip_info">IP 地址信息</string>
     <string name="settings_category_ip_info_summary">查看外部 IP、位置、ISP 和网络</string>
     <string name="tools_ip_info_title">IP 信息</string>
-    <string name="tools_ip_info_refresh">刷新</string>
     <string name="tools_ip_info_copy_all">复制</string>
     <string name="tools_ip_info_copied_all">信息已复制到剪贴板</string>
     <string name="tools_ip_info_copied_ip">IP 地址已复制</string>
@@ -1264,7 +1258,6 @@
     <string name="desktop_config_export_failed">无法导出配置：%1$s</string>
     <string name="desktop_config_copy_failed">无法复制配置：%1$s</string>
     <string name="desktop_config_selected">已选择“%1$s”。</string>
-    <string name="desktop_more_actions">更多</string>
     <string name="desktop_config_editor_new_title">新建配置</string>
     <string name="desktop_config_editor_edit_title">配置编辑器</string>
     <string name="desktop_config_editor_subtitle">兼容 Shadowrocket / SKIPI 的 .conf</string>
@@ -1460,12 +1453,10 @@
     <string name="desktop_settings_data_dir">SKIPI 数据文件夹</string>
     <string name="desktop_settings_data_dir_not_found">未找到数据文件夹。</string>
     <string name="desktop_settings_data_dir_opened">数据文件夹已打开。</string>
-    <string name="desktop_settings_data_dir_open_failed">无法打开文件夹：%1$s</string>
     <string name="desktop_settings_copy_settings_path">复制 settings.json 的路径</string>
     <string name="desktop_settings_path_copied">设置路径已复制。</string>
     <string name="desktop_settings_path_copy_failed">无法复制路径：%1$s</string>
     <string name="desktop_settings_storage_header">存储</string>
-    <string name="desktop_settings_storage">存储</string>
     <string name="desktop_settings_link_open_failed">无法打开链接：%1$s</string>
     <string name="desktop_settings_folder_open_unsupported">系统不支持打开文件夹。</string>
     <string name="desktop_purpose_active_server">当前服务器</string>
@@ -1578,7 +1569,6 @@
     <string name="routing_table_processes_help">steam.exe。TUN 模式下不支持</string>
     <string name="routing_table_move_up">上移</string>
     <string name="routing_table_move_down">下移</string>
-    <string name="routing_table_delete">删除</string>
     <string name="routing_table_needs_condition">规则至少需要一个域名、地址、进程、端口、网络或协议。在此之前不会保存。</string>
     <string name="routing_table_unwritable">已略过，配置文件的一行无法容纳这些内容：{values}</string>
     <string name="routing_table_toggle">启用规则 {name}</string>
@@ -1590,7 +1580,6 @@
     <string name="routing_table_skip_inbound">{name}（绑定到单个 inbound）</string>
     <string name="routing_table_import_unwritable">已略过，配置文件的一行无法容纳：{values}</string>
     <string name="routing_table_import_failed">无法加载规则：{reason}</string>
-    <string name="routing_table_apply">应用</string>
     <string name="common_back">返回</string>
     <string name="app_update_check_failed">无法检查更新。当前的更新提示已保留。</string>
     <string name="network_automation_wifi_rule_title">Wi-Fi: %1$s</string>
@@ -1605,14 +1594,12 @@
     <string name="custom_themes_import_hint">主题代码或链接</string>
     <string name="custom_themes_import_invalid">这不是 SKIPI 主题</string>
     <string name="custom_themes_name">名称</string>
-    <string name="custom_themes_save">保存</string>
     <string name="custom_themes_add">添加</string>
     <string name="custom_themes_add_apply">添加并应用</string>
     <string name="custom_themes_active">使用中</string>
     <string name="custom_themes_options">主题</string>
     <string name="custom_themes_copy_link">复制链接</string>
     <string name="custom_themes_link_copied">主题链接已复制</string>
-    <string name="custom_themes_delete">删除</string>
     <string name="custom_themes_delete_confirm">再次点击以删除</string>
     <string name="custom_themes_full">列表已满（30 个主题）。请先删除一个。</string>
     <string name="custom_themes_already_saved">这些颜色已保存。</string>

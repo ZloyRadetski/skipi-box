@@ -445,7 +445,7 @@ fun SubscriptionGroupEditorDialog(
             title = if (isManual) {
                 stringResource(Res.string.subscription_delete_group)
             } else {
-                stringResource(Res.string.deletion_confirmation_delete_subscription_group)
+                stringResource(Res.string.subscription_delete_group)
             },
             onDismissRequest = { showDeleteConfirmation = false },
             onConfirm = {

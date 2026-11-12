@@ -75,7 +75,7 @@ import app.skipi.ui.resources.tools_ip_info_loading
 import app.skipi.ui.resources.tools_ip_info_local_time
 import app.skipi.ui.resources.tools_ip_info_org
 import app.skipi.ui.resources.tools_ip_info_postal
-import app.skipi.ui.resources.tools_ip_info_refresh
+import app.skipi.ui.resources.common_refresh
 import app.skipi.ui.resources.tools_ip_info_region
 import app.skipi.ui.resources.tools_ip_info_timezone
 import app.skipi.ui.resources.tools_ip_info_title
@@ -349,7 +349,7 @@ private fun IpInfoFailureCard(errorMessage: String?, onRefresh: () -> Unit) {
                 )
             }
             Spacer(Modifier.height(16.dp))
-            TextButton(text = stringResource(Res.string.tools_ip_info_refresh), onClick = onRefresh)
+            TextButton(text = stringResource(Res.string.common_refresh), onClick = onRefresh)
         }
     }
 }
@@ -399,7 +399,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.ipInfoItems(
         Spacer(Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(
-                text = stringResource(Res.string.tools_ip_info_refresh),
+                text = stringResource(Res.string.common_refresh),
                 modifier = Modifier.weight(1f),
                 onClick = onRefresh,
             )

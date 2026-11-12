@@ -19,10 +19,9 @@ import app.skipi.ui.resources.desktop_settings_core_found
 import app.skipi.ui.resources.desktop_settings_core_not_found
 import app.skipi.ui.resources.desktop_settings_data_dir
 import app.skipi.ui.resources.desktop_settings_data_dir_not_found
-import app.skipi.ui.resources.desktop_settings_data_dir_open_failed
+import app.skipi.ui.resources.desktop_settings_folder_open_failed
 import app.skipi.ui.resources.desktop_settings_data_dir_opened
 import app.skipi.ui.resources.desktop_settings_data_header
-import app.skipi.ui.resources.desktop_settings_folder_open_failed
 import app.skipi.ui.resources.desktop_settings_folder_open_unsupported
 import app.skipi.ui.resources.desktop_settings_general_saved
 import app.skipi.ui.resources.desktop_settings_hide_log
@@ -47,7 +46,6 @@ import app.skipi.ui.resources.desktop_settings_save_failed
 import app.skipi.ui.resources.desktop_settings_show_recent_log
 import app.skipi.ui.resources.desktop_settings_socks_port_conflict
 import app.skipi.ui.resources.desktop_settings_state_header
-import app.skipi.ui.resources.desktop_settings_storage
 import app.skipi.ui.resources.desktop_settings_storage_header
 import app.skipi.ui.resources.desktop_settings_subscriptions_saved
 import app.skipi.ui.resources.desktop_settings_system_proxy_header
@@ -122,7 +120,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -1070,7 +1067,7 @@ private fun DesktopDiagnosticsContent(
             onClick = {
                 val result = dataDirectory?.let(::openDirectory)
                     ?: Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_data_dir_not_found)))
-                onMessage(result.fold({ desktopText(Res.string.desktop_settings_data_dir_opened) }, { desktopText(Res.string.desktop_settings_data_dir_open_failed, it.message.orEmpty()) }))
+                onMessage(result.fold({ desktopText(Res.string.desktop_settings_data_dir_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
             },
         )
         SkipiSettingsActionRow(
@@ -1174,7 +1171,7 @@ private fun DesktopAboutSettings(
         capabilities = AboutSettingsCapabilities(),
         platformContent = {
             SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_storage_header)) {
-                SkipiSettingsInfoRow(stringResource(Res.string.desktop_settings_storage), settingsPath.toString())
+                SkipiSettingsInfoRow(stringResource(Res.string.desktop_settings_storage_header), settingsPath.toString())
             }
             SkipiSettingsStatusMessage(message)
         },

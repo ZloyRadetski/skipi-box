@@ -60,7 +60,7 @@ import app.skipi.ui.resources.network_automation_on_demand_title
 import app.skipi.ui.resources.network_automation_rule_action
 import app.skipi.ui.resources.network_automation_rule_type
 import app.skipi.ui.resources.network_automation_rules_section
-import app.skipi.ui.resources.network_automation_save
+import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.network_automation_server_label
 import app.skipi.ui.resources.network_automation_ssid_exists_error
 import app.skipi.ui.resources.network_automation_ssid_label
@@ -453,7 +453,7 @@ private fun NetworkAutomationRuleDialog(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 TextButton(
-                    text = stringResource(Res.string.network_automation_save),
+                    text = stringResource(Res.string.common_save),
                     enabled = validation.canSave,
                     onClick = {
                         val target = servers.getOrNull(selectedServerIndex.coerceIn(0, (servers.size - 1).coerceAtLeast(0)))?.id
