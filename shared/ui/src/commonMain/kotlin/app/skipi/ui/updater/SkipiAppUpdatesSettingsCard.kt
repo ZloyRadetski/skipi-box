@@ -3,6 +3,7 @@
 
 package app.skipi.ui.updater
 
+import app.skipi.ui.settings.SkipiSettingsReveal
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.NightsStay
@@ -56,12 +57,12 @@ fun SkipiAppUpdatesSettingsCard(
             checked = autoCheckEnabled,
             onCheckedChange = onAutoCheckChange,
         )
-        if (autoCheckEnabled && nightInstallEnabled != null) {
+        SkipiSettingsReveal(visible = autoCheckEnabled && nightInstallEnabled != null) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_auto_install_night_title),
                 startAction = settingIcon(Icons.Rounded.NightsStay),
                 summary = stringResource(Res.string.settings_auto_install_night_summary),
-                checked = nightInstallEnabled,
+                checked = nightInstallEnabled == true,
                 onCheckedChange = onNightInstallChange,
             )
         }

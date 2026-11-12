@@ -130,7 +130,7 @@ fun TunSettingsBottomSheet(
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
                 )
-                if (showVpnDns) {
+                SkipiSettingsReveal(visible = showVpnDns) {
                     SettingsTextField(
                         value = vpnDns,
                         onValueChange = onVpnDnsChange,

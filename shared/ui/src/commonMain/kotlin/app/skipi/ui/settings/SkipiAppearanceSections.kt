@@ -136,11 +136,7 @@ internal fun AppearanceThemeSection(
                     updateAppState { it.copy(fontSizeMode = mode) }
                 },
             )
-            AnimatedVisibility(
-                visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode),
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
+            SkipiSettingsReveal(visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode)) {
                 SkipiDropdownPreference(
                     title = stringResource(Res.string.settings_font_weight),
                     startAction = settingIcon(Icons.Rounded.FormatBold),
@@ -158,11 +154,7 @@ internal fun AppearanceThemeSection(
                 onClick = onRequestAppIconSelection,
             )
         }
-        AnimatedVisibility(
-            visible = capabilities.dynamicColors && !isNamedThemeSelected,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
+        SkipiSettingsReveal(visible = capabilities.dynamicColors && !isNamedThemeSelected) {
             // Only the system accent: no seed colour to choose. The seed index goes back to "system", which also
             // clears a colour that onboarding picked.
             SwitchPreference(
@@ -175,11 +167,7 @@ internal fun AppearanceThemeSection(
                 },
             )
         }
-        AnimatedVisibility(
-            visible = capabilities.customColors && !appState.enableMaterialYou && !isNamedThemeSelected,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
+        SkipiSettingsReveal(visible = capabilities.customColors && !appState.enableMaterialYou && !isNamedThemeSelected) {
             SettingsColorItem(
                 title = stringResource(Res.string.settings_color_accent),
                 summary = stringResource(Res.string.settings_color_accent_summary),
@@ -228,11 +216,7 @@ internal fun AppearanceBackgroundSection(
                 }
             },
         )
-        AnimatedVisibility(
-            visible = appState.backgroundStyle == AppearanceSettingValues.BackgroundStylePhoto,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
+        SkipiSettingsReveal(visible = appState.backgroundStyle == AppearanceSettingValues.BackgroundStylePhoto) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 ArrowPreference(
                     title = stringResource(Res.string.settings_background_photo_pick),
@@ -250,7 +234,7 @@ internal fun AppearanceBackgroundSection(
                         }
                     },
                 )
-                if (hasCustomBackgroundPhoto) {
+                SkipiSettingsReveal(visible = hasCustomBackgroundPhoto) {
                     ArrowPreference(
                         title = stringResource(Res.string.settings_background_photo_remove),
                         startAction = settingIcon(Icons.Rounded.HideImage),
@@ -292,11 +276,7 @@ internal fun AppearanceCustomColorsSection(
                     updateAppState { it.copy(enableCustomColors = enabled) }
                 },
             )
-            AnimatedVisibility(
-                visible = appState.enableCustomColors,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
+            SkipiSettingsReveal(visible = appState.enableCustomColors) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // With the system accent on, an accent chosen here would be ignored, so it is not offered.
                     if (!(capabilities.dynamicColors && appState.enableMaterialYou)) {
@@ -341,11 +321,7 @@ internal fun AppearanceCustomColorsSection(
             }
         }
 
-        AnimatedVisibility(
-            visible = appState.enableCustomColors,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
+        SkipiSettingsReveal(visible = appState.enableCustomColors) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_status_title))
                 SkipiSettingsSectionCard {
@@ -562,18 +538,10 @@ internal fun AppearanceLayoutSection(
                 updateAppState { it.copy(connectionDisplayMode = mode) }
             },
         )
-        AnimatedVisibility(
-            visible = appState.connectionDisplayMode != AppearanceSettingValues.ConnectionDisplayModeCompact,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
+        SkipiSettingsReveal(visible = appState.connectionDisplayMode != AppearanceSettingValues.ConnectionDisplayModeCompact) {
             Column {
                 // The size applies to the classic widget only; the legacy card has a fixed layout.
-                AnimatedVisibility(
-                    visible = appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeClassic,
-                    enter = fadeIn() + expandVertically(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
+                SkipiSettingsReveal(visible = appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeClassic) {
                     SkipiDropdownPreference(
                         title = stringResource(Res.string.settings_classic_button_size),
                         startAction = settingIcon(Icons.Rounded.SmartButton),
@@ -636,7 +604,7 @@ internal fun AppearanceLayoutSection(
                 updateAppState { it.copy(showTunnelIpOnHome = enabled) }
             },
         )
-        if (appState.showTunnelIpOnHome) {
+        SkipiSettingsReveal(visible = appState.showTunnelIpOnHome) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_tunnel_ip_mask_on_home),
                 startAction = settingIcon(Icons.Rounded.VisibilityOff),

@@ -259,7 +259,7 @@ fun SkipiGeneralSettingsScreen(
                                         onSettingsChange { it.copy(enableTrafficStatsNotification = enabled) }
                                     },
                                 )
-                                if (state.enableTrafficStatsNotification) {
+                                SkipiSettingsReveal(visible = state.enableTrafficStatsNotification) {
                                     TrafficStatsRefreshIntervalPreference(
                                         refreshIntervalSeconds = state.trafficStatsNotificationRefreshIntervalSeconds,
                                         onRefreshIntervalSecondsChange = { seconds ->

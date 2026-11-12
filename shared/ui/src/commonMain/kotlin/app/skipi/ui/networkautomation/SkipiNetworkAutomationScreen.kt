@@ -3,6 +3,7 @@
 
 package app.skipi.ui.networkautomation
 
+import app.skipi.ui.settings.SkipiSettingsReveal
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.AutoMode
 import androidx.compose.material.icons.rounded.Add
@@ -408,7 +409,7 @@ private fun NetworkAutomationRuleDialog(
                             )
                         }
                     }
-                    if (validation.ssidDuplicate) {
+                    SkipiSettingsReveal(visible = validation.ssidDuplicate) {
                         Text(
                             text = stringResource(Res.string.network_automation_ssid_exists_error),
                             color = MiuixTheme.colorScheme.error,
@@ -419,7 +420,7 @@ private fun NetworkAutomationRuleDialog(
                 }
             }
 
-            if (validation.typeDuplicate) {
+            SkipiSettingsReveal(visible = validation.typeDuplicate) {
                 Text(
                     text = stringResource(Res.string.network_automation_type_exists_error),
                     color = MiuixTheme.colorScheme.error,
@@ -438,7 +439,7 @@ private fun NetworkAutomationRuleDialog(
                     selectedIndex = selectedActionIndex.coerceIn(actionOptions.indices),
                     onSelectedIndexChange = { selectedActionIndex = it },
                 )
-                if (requiresServer && servers.isNotEmpty()) {
+                SkipiSettingsReveal(visible = requiresServer && servers.isNotEmpty()) {
                     SkipiDropdownPreference(
                         title = stringResource(Res.string.network_automation_server_label),
                         items = serverNames,

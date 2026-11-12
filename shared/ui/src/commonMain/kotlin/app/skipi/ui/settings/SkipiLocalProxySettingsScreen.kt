@@ -3,6 +3,7 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Public
@@ -214,11 +215,7 @@ fun SkipiLocalProxySettingsScreen(
                                     checked = state.enableHttpEndpoint,
                                     onCheckedChange = onHttpEnabledChange,
                                 )
-                                AnimatedVisibility(
-                                    visible = httpOn,
-                                    enter = expandVertically() + fadeIn(),
-                                    exit = shrinkVertically() + fadeOut(),
-                                ) {
+                                SkipiSettingsReveal(visible = httpOn) {
                                     Column {
                                         PortRow(portsEditable, labels.httpPortLabel, state.httpPort, state.httpPortError, onHttpPortChange)
                                         if (capabilities.authentication) {
@@ -234,7 +231,7 @@ fun SkipiLocalProxySettingsScreen(
                                                 onGenerate = onGenerateHttpCredentials,
                                                 onCopy = onCopy,
                                             )
-                                            if (state.httpAuthMode != LocalProxyAuthMode.Off) {
+                                            SkipiSettingsReveal(visible = state.httpAuthMode != LocalProxyAuthMode.Off) {
                                                 Text(
                                                     text = labels.httpAuthSystemNote,
                                                     fontSize = 12.sp,
@@ -252,30 +249,34 @@ fun SkipiLocalProxySettingsScreen(
                     }
                 }
 
-                if (capabilities.lanEndpoints && state.listenAllInterfaces) {
-                    item(key = "local_proxy_lan_title") { SmallTitle(text = labels.lanSectionTitle) }
-                    item(key = "local_proxy_lan_card") {
-                        SkipiSettingsSectionCard {
-                            Column(Modifier.padding(vertical = 4.dp)) {
-                                Text(
-                                    text = labels.lanInstruction,
-                                    fontSize = 13.sp,
-                                    lineHeight = 18.sp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                                ValueRow(labels.ipLabel, state.displayIp, onCopy = { onCopy(state.displayIp, labels.ipLabel) })
-                                ValueRow(
-                                    labels.socksEndpointLabel,
-                                    state.socksEndpoint,
-                                    onCopy = { onCopy(state.socksEndpoint, labels.socksEndpointLabel) },
-                                )
-                                if (httpOn) {
-                                    ValueRow(
-                                        labels.httpEndpointLabel,
-                                        state.httpEndpoint,
-                                        onCopy = { onCopy(state.httpEndpoint, labels.httpEndpointLabel) },
-                                    )
+                if (capabilities.lanEndpoints) {
+                    item(key = "local_proxy_lan") {
+                        SkipiSettingsReveal(visible = state.listenAllInterfaces) {
+                            Column {
+                                SmallTitle(text = labels.lanSectionTitle)
+                                SkipiSettingsSectionCard {
+                                    Column(Modifier.padding(vertical = 4.dp)) {
+                                        Text(
+                                            text = labels.lanInstruction,
+                                            fontSize = 13.sp,
+                                            lineHeight = 18.sp,
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        )
+                                        ValueRow(labels.ipLabel, state.displayIp, onCopy = { onCopy(state.displayIp, labels.ipLabel) })
+                                        ValueRow(
+                                            labels.socksEndpointLabel,
+                                            state.socksEndpoint,
+                                            onCopy = { onCopy(state.socksEndpoint, labels.socksEndpointLabel) },
+                                        )
+                                        SkipiSettingsReveal(visible = httpOn) {
+                                            ValueRow(
+                                                labels.httpEndpointLabel,
+                                                state.httpEndpoint,
+                                                onCopy = { onCopy(state.httpEndpoint, labels.httpEndpointLabel) },
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -295,11 +296,7 @@ fun SkipiLocalProxySettingsScreen(
 /** A port is a compact row, title on the left and a short numeric field on the right, so it fits a phone. */
 @Composable
 private fun PortRow(visible: Boolean, label: String, value: String, error: String?, onValueChange: (String) -> Unit) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
-    ) {
+    SkipiSettingsReveal(visible = visible) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
@@ -350,13 +347,9 @@ private fun AuthBlock(
         selectedIndex = LocalProxyAuthModeOptions.indexOf(mode).coerceAtLeast(0),
         onSelectedIndexChange = { index -> onModeChange(LocalProxyAuthModeOptions[index]) },
     )
-    AnimatedVisibility(
-        visible = showCredentials && mode.showsCredentials(),
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
-    ) {
+    SkipiSettingsReveal(visible = showCredentials && mode.showsCredentials()) {
         var passwordVisible by remember { mutableStateOf(false) }
-        Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().animateContentSize()) {
             if (mode == LocalProxyAuthMode.Manual) {
                 TextField(
                     value = username,

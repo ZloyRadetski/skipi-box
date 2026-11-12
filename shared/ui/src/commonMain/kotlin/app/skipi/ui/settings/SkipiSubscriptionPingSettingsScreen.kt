@@ -278,9 +278,9 @@ fun SkipiSubscriptionPingSettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             )
 
-                            if (urlError != null) {
+                            SkipiSettingsReveal(visible = urlError != null) {
                                 Text(
-                                    text = urlError,
+                                    text = urlError.orEmpty(),
                                     fontSize = 12.sp,
                                     color = MiuixTheme.colorScheme.error,
                                     modifier = Modifier.padding(top = 4.dp, start = 4.dp),
