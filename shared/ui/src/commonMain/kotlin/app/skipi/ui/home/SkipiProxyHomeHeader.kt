@@ -112,7 +112,7 @@ fun SkipiProxyHomeHeader(
             .padding(horizontal = SkipiTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SkipiHeaderMark(glyphColor = colors.text, contentDescription = state.title, easterEgg = easterEgg)
+        SkipiHeaderMark(glyphColor = colors.text, accentColor = colors.accent, contentDescription = state.title, easterEgg = easterEgg)
         Spacer(Modifier.weight(1f))
         Row(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -215,11 +215,12 @@ private fun SkipiProxyHomeHeaderAction.toMenuItem(onAction: (String) -> Unit): S
 )
 /**
  * The app icon without its tile, the header's only title: the glyph takes the text color of the header so it reads on any theme,
- * the three dots keep the logo's own green.
+ * the frame and the dots take the theme's accent.
  */
 @Composable
 private fun SkipiHeaderMark(
     glyphColor: Color,
+    accentColor: Color,
     contentDescription: String,
     easterEgg: HeaderEasterEggState?,
     modifier: Modifier = Modifier,
@@ -242,6 +243,7 @@ private fun SkipiHeaderMark(
         Image(
             painter = painterResource(Res.drawable.ic_skipi_mark_dots),
             contentDescription = null,
+            colorFilter = ColorFilter.tint(accentColor),
             modifier = Modifier.fillMaxSize(),
         )
     }
