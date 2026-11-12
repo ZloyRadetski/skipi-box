@@ -202,8 +202,8 @@ fun AppContent(
         LocalIsWideScreen provides isWideScreen,
         LocalProxyPageScrollToTopRequest provides mainPagerState.proxyPageScrollToTopRequest,
     ) {
-        val backgroundStyle = LocalAppChromeState.current.backgroundStyle
-        val entryProvider = remember(backStack, languageMode, backgroundStyle) {
+        // The background reads its own style; keying the entries on it would rebuild the open page on every change.
+        val entryProvider = remember(backStack, languageMode) {
             entryProvider<NavKey> {
                 appEntry<Route.Onboarding> {
                     key(languageMode) {
