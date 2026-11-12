@@ -101,7 +101,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
     private var frameTimeNanos = 1_000_000_000L
 
     @Test
-    fun sourcedGroupOpensItsInactiveProfileAndBackReturnsToCatalogWithoutWrites() = runBlocking {
+    fun sourcedGroupOpensItsOwnEditorAndBackReturnsToCatalog() = runBlocking {
         val groupsTitle = getString(Res.string.configs_proxy_groups_title)
         val profilesTitle = getString(Res.string.configs_profiles)
         val proxyServers = emptyList<CatalogProxyServerRecord>()
@@ -110,8 +110,15 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertNotNull(awaitText(screen.scene, ActiveProfileGroupName), "The collection fixture should include the active profile's group too")
 
             clickTextAction(screen.scene, TargetProfileGroupName)
-            assertNotNull(awaitText(screen.scene, groupsTitle))
-            assertNotNull(awaitText(screen.scene, TargetProfileGroupName), "The source row should open that profile's groups")
+            repeat(10) { render(screen.scene); delay(20L) }
+            assertFalse(
+                hasVisibleText(screen.scene, profilesTitle),
+                "The source row should leave the catalog for that one group's editor",
+            )
+            assertFalse(
+                hasVisibleText(screen.scene, groupsTitle),
+                "Editing one group must open its editor, not the profile's whole group list",
+            )
             assertFalse(
                 hasVisibleText(screen.scene, ActiveProfileGroupName),
                 "Opening the inactive profile's source row must not substitute the active profile's groups",
@@ -122,9 +129,13 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertNotNull(awaitText(screen.scene, TargetProfileGroupName), "The collection catalog should be restored after Back")
             assertNotNull(awaitText(screen.scene, ActiveProfileGroupName))
 
-            assertEquals(screen.initialLibrary, screen.persistedLibrary(), "Opening and leaving a source group must not write profile data")
+            // The group editor saves the group on the way out, so the profile text may be rewritten; the selected profile never is.
             assertEquals(screen.initialLibrary.selectedConfigId, screen.persistedLibrary().selectedConfigId)
-            assertEquals(0, screen.libraryTransformCount(), "Catalog navigation must not invoke the profile persistence callback")
+            assertEquals(
+                screen.initialLibrary.configs.first { it.id == 3 },
+                screen.persistedLibrary().configs.first { it.id == 3 },
+                "Editing the inactive profile's group must not touch the active profile",
+            )
             assertEquals(proxyServers, screen.proxyServers, "Viewing source groups must not mutate the proxy catalog input")
         }
     }
