@@ -66,4 +66,34 @@ class SkipiMenuPositionTest {
             skipiMenuPosition(anchor, window, popup, rtl = true, shadowPad = pad),
         )
     }
+
+    @Test
+    fun aButtonInTheTrailingHalfOpensItsMenuAlignedToTheButtonsEnd() {
+        val anchor = IntRect(700, 50, 780, 90)
+
+        assertEquals(
+            IntOffset(780 - 200 - pad, 90 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = false, shadowPad = pad),
+        )
+    }
+
+    @Test
+    fun aCardWiderThanTheMenuOpensItAtTheCardsTrailingEnd() {
+        val anchor = IntRect(100, 300, 600, 380)
+
+        assertEquals(
+            IntOffset(600 - 200 - pad, 380 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = false, shadowPad = pad),
+        )
+    }
+
+    @Test
+    fun aCardWiderThanTheMenuOpensItAtTheCardsLeftEndWhenRightToLeft() {
+        val anchor = IntRect(100, 300, 600, 380)
+
+        assertEquals(
+            IntOffset(100 - pad, 380 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = true, shadowPad = pad),
+        )
+    }
 }

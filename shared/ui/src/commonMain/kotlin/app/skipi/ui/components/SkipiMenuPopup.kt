@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -52,6 +53,7 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import app.skipi.ui.home.MenuMaxWidth
 import app.skipi.ui.theme.SkipiTheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Room around the surface that holds its shadow, so the popup window does not cut it off. */
 private val ShadowMargin: Dp = 8.dp
@@ -61,7 +63,8 @@ private val RowMinHeight: Dp = 48.dp
 
 /**
  * Where the popup window goes so its surface (the popup minus [shadowPad] on every side) opens under the
- * [anchor], aligned to its start: flipped to its end when the surface would leave the window, above the anchor
+ * [anchor], aligned to the side of the window the anchor is in: flipped to the other side
+ * when the surface would leave the window, above the anchor
  * when there is no room below, and inside the window when neither fits.
  */
 internal fun skipiMenuPosition(
@@ -73,10 +76,13 @@ internal fun skipiMenuPosition(
 ): IntOffset {
     val surfaceWidth = popup.width - 2 * shadowPad
     val surfaceHeight = popup.height - 2 * shadowPad
-    val startAligned = anchor.left
-    val endAligned = anchor.right - surfaceWidth
-    val preferred = if (rtl) endAligned else startAligned
-    val alternative = if (rtl) startAligned else endAligned
+    val leftAligned = anchor.left
+    val rightAligned = anchor.right - surfaceWidth
+    // A card wider than the menu opens it at the card's trailing end, where its action buttons are. A button
+    // opens it on the side of the window it sits in, so the menu grows toward the middle of the window.
+    val preferRight = if (anchor.width > surfaceWidth) !rtl else anchor.center.x * 2 > window.width
+    val preferred = if (preferRight) rightAligned else leftAligned
+    val alternative = if (preferRight) leftAligned else rightAligned
     val x = when {
         preferred >= 0 && preferred + surfaceWidth <= window.width -> preferred
         alternative >= 0 && alternative + surfaceWidth <= window.width -> alternative
@@ -157,8 +163,12 @@ internal fun SkipiMenuPopup(
                         .heightIn(max = MenuMaxHeight)
                         .verticalScroll(rememberScrollState()),
                 ) {
-                    CompositionLocalProvider(LocalContentColor provides text) {
-                        content()
+                    // A popup is not under a Material surface, so the text style the rows read would be the library
+                    // default, not the font the appearance settings chose. The app's text style is passed in here.
+                    ProvideTextStyle(menuTextStyle()) {
+                        CompositionLocalProvider(LocalContentColor provides text) {
+                            content()
+                        }
                     }
                 }
             }
@@ -200,8 +210,19 @@ internal fun SkipiMenuRowItem(
     }
 }
 
-/** The text style of a menu row, smaller than the Material default in every menu of the app. */
+/**
+ * The app's own text style without its color: a row takes its color from the menu (muted when disabled, accent when
+ * selected), which the style's own color would override.
+ */
+@Composable
+private fun menuTextStyle(): TextStyle = MiuixTheme.textStyles.main.copy(color = Color.Unspecified)
+
+/** The size of a menu row's text, smaller than the Material default in every menu of the app. */
 internal val MenuRowTextStyle: TextStyle = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
+
+/** [MenuRowTextStyle] on the app's own text style, so a row has the font, weight and scale the settings chose. */
+@Composable
+internal fun menuRowTextStyle(): TextStyle = menuTextStyle().merge(MenuRowTextStyle)
 
 /** A single-line or wrapped menu row label in the menu's row text style. */
 @Composable
@@ -213,7 +234,7 @@ internal fun SkipiMenuRowLabel(
     Text(
         text = text,
         modifier = modifier,
-        style = MenuRowTextStyle,
+        style = menuRowTextStyle(),
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
