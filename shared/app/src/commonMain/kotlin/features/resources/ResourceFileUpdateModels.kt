@@ -31,6 +31,12 @@ sealed interface ResourceFileUpdateTarget {
     data class Custom(val id: Int) : ResourceFileUpdateTarget
 }
 
+/** The card a finished download belongs to. */
+fun ResourceFileUpdateDownload.toUpdateTarget(): ResourceFileUpdateTarget = when (this) {
+    is ResourceFileUpdateDownload.BuiltIn -> ResourceFileUpdateTarget.BuiltIn(kind)
+    is ResourceFileUpdateDownload.Custom -> ResourceFileUpdateTarget.Custom(file.id)
+}
+
 sealed interface ResourceFileUpdateRequest {
     val targets: Set<ResourceFileUpdateTarget>
 
@@ -90,6 +96,8 @@ data class ResourceFileUpdateQueueState(
     val running: ResourceFileUpdateQueueEntry? = null,
     val pending: List<ResourceFileUpdateQueueEntry> = emptyList(),
     val completionRevision: Long = 0,
+    /** Targets of the running request that are already on disk: their update is over though the request is not. */
+    val finishedTargets: Set<ResourceFileUpdateTarget> = emptySet(),
 )
 
 val ResourceFileUpdateQueueState.isBusy: Boolean
@@ -98,6 +106,7 @@ val ResourceFileUpdateQueueState.isBusy: Boolean
 fun ResourceFileUpdateQueueState.displayStateOf(
     target: ResourceFileUpdateTarget,
 ): ResourceFileUpdateDisplayState = when {
+    target in finishedTargets -> ResourceFileUpdateDisplayState.Idle
     target in running?.request?.targets.orEmpty() -> ResourceFileUpdateDisplayState.Running
     pending.any { entry -> target in entry.request.targets } -> ResourceFileUpdateDisplayState.Queued
     else -> ResourceFileUpdateDisplayState.Idle

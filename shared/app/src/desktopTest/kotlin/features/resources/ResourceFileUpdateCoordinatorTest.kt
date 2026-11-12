@@ -32,7 +32,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -84,7 +84,7 @@ class ResourceFileUpdateCoordinatorTest {
         val executed = mutableListOf<ResourceFileUpdateRequest>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === running) {
                     runningStarted.complete(Unit)
@@ -170,7 +170,7 @@ class ResourceFileUpdateCoordinatorTest {
         var executed: ResourceFileUpdateRequest? = null
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { captured ->
+            execute = { captured, _ ->
                 executed = captured
                 ResourceFilesStatus()
             },
@@ -208,7 +208,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -247,7 +247,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === cancelledRequest) {
                     throw ResourceFileDownloadCancelledException()
@@ -282,7 +282,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -327,7 +327,7 @@ class ResourceFileUpdateCoordinatorTest {
         var cancellationCallbacks = 0
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === running) {
                     started.complete(Unit)
@@ -358,6 +358,44 @@ class ResourceFileUpdateCoordinatorTest {
         assertEquals(listOf<ResourceFileUpdateRequest>(running), executed)
         assertFalse(coordinator.state.value.isBusy)
         assertEquals(1L, coordinator.state.value.completionRevision)
+    }
+
+    @Test
+    fun aFinishedTargetStopsRunningWhileTheRestOfTheRequestGoesOn() = runTest {
+        val request = all(scope(id = 1))
+        val geoIp = ResourceFileUpdateTarget.BuiltIn(ResourceFileKind.GeoIp)
+        val geoSite = ResourceFileUpdateTarget.BuiltIn(ResourceFileKind.GeoSite)
+        val geoIpDone = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val coordinator = ResourceFileUpdateCoordinator(
+            scope = this,
+            execute = { _, onTargetFinished ->
+                onTargetFinished(geoIp)
+                geoIpDone.complete(Unit)
+                release.await()
+                ResourceFilesStatus()
+            },
+            cancelRunning = {},
+        )
+
+        assertTrue(coordinator.enqueue(request))
+        runCurrent()
+        assertTrue(geoIpDone.isCompleted)
+
+        val midway = coordinator.state.value
+        assertEquals(ResourceFileUpdateDisplayState.Idle, midway.displayStateOf(geoIp))
+        assertEquals(ResourceFileUpdateDisplayState.Running, midway.displayStateOf(geoSite))
+        assertEquals(setOf(geoIp), midway.finishedTargets)
+        assertEquals(0L, midway.completionRevision)
+        assertTrue(midway.isBusy)
+
+        release.complete(Unit)
+        runCurrent()
+
+        val done = coordinator.state.value
+        assertFalse(done.isBusy)
+        assertTrue(done.finishedTargets.isEmpty())
+        assertEquals(ResourceFileUpdateDisplayState.Idle, done.displayStateOf(geoSite))
     }
 
     private fun builtIn(

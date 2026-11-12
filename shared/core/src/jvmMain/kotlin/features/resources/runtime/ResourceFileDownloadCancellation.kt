@@ -6,30 +6,30 @@ package features.resources.runtime
 import features.resources.ResourceFileDownloadCancelledException
 import java.net.HttpURLConnection
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.ConcurrentHashMap
 
-/** Global cancellation state for the one active resource-file download. */
+/** Global cancellation state for the active resource-file downloads, which may run side by side. */
 object ResourceFileDownloadCancellation {
     private val cancelled = AtomicBoolean(false)
-    private val connection = AtomicReference<HttpURLConnection?>(null)
+    private val connections = ConcurrentHashMap.newKeySet<HttpURLConnection>()
 
     fun begin() {
         cancelled.set(false)
-        connection.set(null)
+        connections.clear()
     }
 
     fun cancel() {
         cancelled.set(true)
-        connection.get()?.disconnect()
+        connections.forEach { it.disconnect() }
     }
 
     fun track(connection: HttpURLConnection) {
-        this.connection.set(connection)
+        connections.add(connection)
         throwIfCancelled()
     }
 
     fun untrack(connection: HttpURLConnection) {
-        this.connection.compareAndSet(connection, null)
+        connections.remove(connection)
     }
 
     fun isCancelled(): Boolean {

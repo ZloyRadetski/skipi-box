@@ -20,6 +20,8 @@ import features.resources.ResourceFileDownloadCancelledException
 import features.resources.ResourceFileUpdateDownload
 import features.resources.ResourceFileUpdateDownloadPlan
 import features.resources.ResourceFileUpdateOptions
+import features.resources.ResourceFileUpdateTarget
+import features.resources.toUpdateTarget
 import features.resources.planAllResourceFileDownloads
 import features.resources.planBuiltInResourceFileDownload
 import features.resources.planCustomResourceFileDownload
@@ -73,6 +75,7 @@ internal class AndroidResourceFileRepository(
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planAllResourceFileDownloads(
@@ -82,6 +85,7 @@ internal class AndroidResourceFileRepository(
             ),
             options = options,
             customResourceFiles = customResourceFiles,
+            onTargetFinished = onTargetFinished,
         )
     }
 
@@ -91,6 +95,7 @@ internal class AndroidResourceFileRepository(
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planBuiltInResourceFileDownload(
@@ -100,6 +105,7 @@ internal class AndroidResourceFileRepository(
             ),
             options = options,
             customResourceFiles = customResourceFiles,
+            onTargetFinished = onTargetFinished,
         )
     }
 
@@ -108,6 +114,7 @@ internal class AndroidResourceFileRepository(
         customFile: TrafficConfigCustomResourceFile,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planCustomResourceFileDownload(
@@ -116,6 +123,7 @@ internal class AndroidResourceFileRepository(
             ),
             options = options,
             customResourceFiles = customResourceFiles,
+            onTargetFinished = onTargetFinished,
         )
     }
 
@@ -123,10 +131,12 @@ internal class AndroidResourceFileRepository(
         plan: ResourceFileUpdateDownloadPlan,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<TrafficConfigCustomResourceFile>,
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit,
     ): ResourceFilesStatus {
         val scope = plan.scope
         val store = store(scope)
         val downloads = plan.downloads.map { download -> download.toDownloadTarget(store) }
+        val progress = ResourceFileBatchProgress(downloads.map { it.displayName })
         return executeResourceFileUpdateBatch(
             plan = plan,
             currentStatus = { store.currentStatus(customResourceFiles) },
@@ -145,21 +155,16 @@ internal class AndroidResourceFileRepository(
                 }
                 val userAgent = options.userAgent.ifBlank { null }
                 ResourceFileUpdateBatchSession(
-                    updateFile = { _, index, count ->
+                    updateFile = { _, index, _ ->
                         val download = downloads[index]
-                        notifier.showProgress(download.displayName, progress = null, force = true)
+                        val started = progress.snapshot()
+                        notifier.showProgress(started.fileName, progress = started.percent, force = true)
                         downloader.download(download.url, download.targetFile, downloadProxy, userAgent) { downloadedBytes, totalBytes ->
-                            notifier.showProgress(
-                                fileName = download.displayName,
-                                progress = overallProgress(
-                                    fileIndex = index,
-                                    fileCount = count,
-                                    downloadedBytes = downloadedBytes,
-                                    totalBytes = totalBytes,
-                                ),
-                            )
+                            val shown = progress.report(index, downloadedBytes, totalBytes)
+                            notifier.showProgress(fileName = shown.fileName, progress = shown.percent)
                         }
                         download.applyPermissions()
+                        progress.finish(index)
                     },
                     notifyComplete = { notifier.showComplete() },
                     reportFailure = { error ->
@@ -179,6 +184,8 @@ internal class AndroidResourceFileRepository(
                     appContext.getString(R.string.resource_file_download_notification_cancelled),
                 )
             },
+            runTasks = parallelResourceFileTaskRunner(),
+            onFileUpdated = { download -> onTargetFinished(download.toUpdateTarget()) },
         )
     }
 

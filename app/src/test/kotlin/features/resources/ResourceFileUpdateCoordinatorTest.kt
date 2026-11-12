@@ -34,7 +34,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -86,7 +86,7 @@ class ResourceFileUpdateCoordinatorTest {
         val executed = mutableListOf<ResourceFileUpdateRequest>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === running) {
                     runningStarted.complete(Unit)
@@ -172,7 +172,7 @@ class ResourceFileUpdateCoordinatorTest {
         var executed: ResourceFileUpdateRequest? = null
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { captured ->
+            execute = { captured, _ ->
                 executed = captured
                 ResourceFilesStatus()
             },
@@ -210,7 +210,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -249,7 +249,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === cancelledRequest) {
                     throw ResourceFileDownloadCancelledException()
@@ -284,7 +284,7 @@ class ResourceFileUpdateCoordinatorTest {
         val results = mutableListOf<ResourceFileUpdateResult>()
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === first) {
                     firstStarted.complete(Unit)
@@ -329,7 +329,7 @@ class ResourceFileUpdateCoordinatorTest {
         var cancellationCallbacks = 0
         val coordinator = ResourceFileUpdateCoordinator(
             scope = this,
-            execute = { request ->
+            execute = { request, _ ->
                 executed += request
                 if (request === running) {
                     started.complete(Unit)

@@ -78,7 +78,7 @@ fun App(
     val resourceFileUpdateCoordinator = remember(appScope, resourceFileUseCase) {
         ResourceFileUpdateCoordinator(
             scope = appScope,
-            execute = { request ->
+            execute = { request, onTargetFinished ->
                 when (request) {
                     is ResourceFileUpdateRequest.BuiltIn -> resourceFileUseCase.update(
                         scope = request.scope,
@@ -86,18 +86,21 @@ fun App(
                         source = request.source,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,
+                        onTargetFinished = onTargetFinished,
                     )
                     is ResourceFileUpdateRequest.Custom -> resourceFileUseCase.updateCustom(
                         scope = request.scope,
                         customFile = request.file,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,
+                        onTargetFinished = onTargetFinished,
                     )
                     is ResourceFileUpdateRequest.All -> resourceFileUseCase.update(
                         scope = request.scope,
                         source = request.source,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,
+                        onTargetFinished = onTargetFinished,
                     )
                 }
             },

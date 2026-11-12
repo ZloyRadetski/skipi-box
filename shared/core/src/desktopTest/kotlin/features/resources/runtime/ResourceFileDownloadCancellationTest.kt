@@ -35,7 +35,7 @@ class ResourceFileDownloadCancellationTest {
     }
 
     @Test
-    fun cancelDisconnectsTheMostRecentlyTrackedConnection() = withCleanState {
+    fun cancelDisconnectsEveryTrackedConnectionBecauseFilesDownloadSideBySide() = withCleanState {
         val first = FakeConnection()
         val latest = FakeConnection()
         ResourceFileDownloadCancellation.track(first)
@@ -43,13 +43,13 @@ class ResourceFileDownloadCancellationTest {
 
         ResourceFileDownloadCancellation.cancel()
 
-        assertEquals(0, first.disconnectCount.get())
+        assertEquals(1, first.disconnectCount.get())
         assertEquals(1, latest.disconnectCount.get())
         assertTrue(ResourceFileDownloadCancellation.isCancelled())
     }
 
     @Test
-    fun untrackingAnOlderConnectionDoesNotClearTheNewerTrackedConnection() = withCleanState {
+    fun untrackingAConnectionLeavesTheOtherTrackedConnectionsAlone() = withCleanState {
         val older = FakeConnection()
         val newer = FakeConnection()
         ResourceFileDownloadCancellation.track(older)

@@ -35,8 +35,9 @@ internal class ResourceFileUseCase(
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus {
-        return repository.update(scope, source, options, customResourceFiles)
+        return repository.update(scope, source, options, customResourceFiles, onTargetFinished)
     }
 
     suspend fun update(
@@ -45,8 +46,9 @@ internal class ResourceFileUseCase(
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus {
-        return repository.update(scope, kind, source, options, customResourceFiles)
+        return repository.update(scope, kind, source, options, customResourceFiles, onTargetFinished)
     }
 
     suspend fun updateCustom(
@@ -54,8 +56,9 @@ internal class ResourceFileUseCase(
         customFile: TrafficConfigCustomResourceFile,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
         customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
     ): ResourceFilesStatus {
-        return repository.updateCustom(scope, customFile, options, customResourceFiles)
+        return repository.updateCustom(scope, customFile, options, customResourceFiles, onTargetFinished)
     }
 
     override suspend fun renameCustom(

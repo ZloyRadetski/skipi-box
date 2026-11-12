@@ -9,14 +9,17 @@ import features.resources.ResourceFileUpdateDownload
 import features.resources.ResourceFileUpdateDownloadPlan
 import features.resources.ResourceFileUpdateOptions
 import features.resources.ResourceFileUpdateRequest
+import features.resources.ResourceFileUpdateTarget
 import features.resources.ResourceFilesStatus
 import features.resources.planAllResourceFileDownloads
 import features.resources.planBuiltInResourceFileDownload
 import features.resources.planCustomResourceFileDownload
+import features.resources.toUpdateTarget
 import features.resources.runtime.ResourceFileDownloadCancellation
 import features.resources.runtime.ResourceFileUpdateBatchSession
 import features.resources.runtime.executeResourceFileUpdateBatch
-import features.resources.runtime.resourceFileUpdateOverallProgress
+import features.resources.runtime.ResourceFileBatchProgress
+import features.resources.runtime.parallelResourceFileTaskRunner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -35,12 +38,18 @@ internal class DesktopResourceFileUpdateRunner(
     private val resolveProxy: (ResourceFileUpdateOptions) -> DesktopSubscriptionSocksProxy?,
     private val prepareFeedback: (ResourceFileUpdateOptions) -> DesktopResourceFileUpdateFeedback,
 ) {
-    suspend fun execute(request: ResourceFileUpdateRequest): ResourceFilesStatus =
+    suspend fun execute(
+        request: ResourceFileUpdateRequest,
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
+    ): ResourceFilesStatus =
         withContext(Dispatchers.IO) {
-            runCatching { executeOnIo(request) }
+            runCatching { executeOnIo(request, onTargetFinished) }
         }.getOrThrow()
 
-    private fun executeOnIo(request: ResourceFileUpdateRequest): ResourceFilesStatus {
+    private fun executeOnIo(
+        request: ResourceFileUpdateRequest,
+        onTargetFinished: (ResourceFileUpdateTarget) -> Unit,
+    ): ResourceFilesStatus {
         val (plan, options, customResourceFiles) = request.toExecutionInputs()
         val snapshot = resourceFiles.snapshot(plan.scope)
         val targets = plan.downloads.map { download ->
@@ -58,6 +67,7 @@ internal class DesktopResourceFileUpdateRunner(
                 )
             }
         }
+        val progress = ResourceFileBatchProgress(targets.map { it.displayName })
         var feedback: DesktopResourceFileUpdateFeedback? = null
 
         return executeResourceFileUpdateBatch(
@@ -78,21 +88,15 @@ internal class DesktopResourceFileUpdateRunner(
                 val userAgent = options.userAgent.ifBlank { null }
                 val downloader = resourceFiles.createDownloader()
                 ResourceFileUpdateBatchSession(
-                    updateFile = { _, fileIndex, fileCount ->
+                    updateFile = { _, fileIndex, _ ->
                         val target = targets[fileIndex]
-                        preparedFeedback.onProgress(target.displayName, null, true)
+                        val started = progress.snapshot()
+                        preparedFeedback.onProgress(started.fileName, started.percent, true)
                         downloader.download(target.url, target.file, proxy, userAgent) { downloadedBytes, totalBytes ->
-                            preparedFeedback.onProgress(
-                                target.displayName,
-                                resourceFileUpdateOverallProgress(
-                                    fileIndex = fileIndex,
-                                    fileCount = fileCount,
-                                    downloadedBytes = downloadedBytes,
-                                    totalBytes = totalBytes,
-                                ),
-                                false,
-                            )
+                            val shown = progress.report(fileIndex, downloadedBytes, totalBytes)
+                            preparedFeedback.onProgress(shown.fileName, shown.percent, false)
                         }
+                        progress.finish(fileIndex)
                     },
                     notifyComplete = preparedFeedback.onComplete,
                     reportFailure = { error ->
@@ -109,6 +113,8 @@ internal class DesktopResourceFileUpdateRunner(
             mapCancellationError = { error ->
                 checkNotNull(feedback).mapCancellationError(error)
             },
+            runTasks = parallelResourceFileTaskRunner(),
+            onFileUpdated = { download -> onTargetFinished(download.toUpdateTarget()) },
         )
     }
 

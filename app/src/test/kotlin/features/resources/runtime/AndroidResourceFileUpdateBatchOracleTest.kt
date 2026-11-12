@@ -83,15 +83,20 @@ class AndroidResourceFileUpdateBatchOracleTest {
     }
 
     @Test
-    fun cancellationOnSecondAllDownloadKeepsPublishedPrefixAndDoesNotMarkSource() {
-        withLoopbackServer(cancelPath = "/geosite") { server, requests ->
+    fun cancellationOnSecondAllDownloadKeepsTheFileThatAlreadyFinishedAndDoesNotMarkSource() {
+        val geoIpFile = java.util.concurrent.atomic.AtomicReference<File?>(null)
+        withLoopbackServer(
+            cancelPath = "/geosite",
+            // The files download side by side: cancel only once the first one has been published.
+            readyToCancel = { geoIpFile.get()?.takeIf { it.exists() }?.readText() == "response:/geoip" },
+        ) { server, requests ->
             withFilesContext { context, root ->
                 val scope = ResourceFileScope(trafficConfigId = 89, resourceFileSource = 999)
                 val store = AndroidResourceFileStore(context, scope)
+                geoIpFile.set(store.file(ResourceFileKind.GeoIp))
                 store.dataDir.mkdirs()
                 store.file(ResourceFileKind.GeoIp).writeText("old geoip")
                 store.file(ResourceFileKind.GeoSite).writeText("old geosite")
-                store.file(ResourceFileKind.DirectCidrIpv4).writeText("old direct-v4")
 
                 val error = runCatching {
                     runBlocking {
@@ -108,10 +113,9 @@ class AndroidResourceFileUpdateBatchOracleTest {
                     context.getString(app.R.string.resource_file_download_notification_cancelled),
                     error?.message,
                 )
-                assertEquals(listOf("/geoip", "/geosite"), requests.toList())
+                assertTrue(requests.containsAll(listOf("/geoip", "/geosite")))
                 assertEquals("response:/geoip", store.file(ResourceFileKind.GeoIp).readText())
                 assertEquals("old geosite", store.file(ResourceFileKind.GeoSite).readText())
-                assertEquals("old direct-v4", store.file(ResourceFileKind.DirectCidrIpv4).readText())
                 assertFalse(sourceMarker(root, scope).exists())
                 assertTrue(ResourceFileDownloadCancellation.isCancelled())
             }
@@ -148,15 +152,20 @@ class AndroidResourceFileUpdateBatchOracleTest {
 
     private inline fun withLoopbackServer(
         cancelPath: String,
+        crossinline readyToCancel: () -> Boolean = { true },
         block: (HttpServer, List<String>) -> Unit,
     ) {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        // The files download side by side, so one handler may wait for another request.
+        server.executor = java.util.concurrent.Executors.newCachedThreadPool()
         val requests = CopyOnWriteArrayList<String>()
         server.createContext("/") { exchange ->
             val path = exchange.requestURI.rawPath
             requests += path
             val bytes = "response:$path".encodeToByteArray()
             if (path == cancelPath) {
+                val deadline = System.nanoTime() + 5_000_000_000L
+                while (!readyToCancel() && System.nanoTime() < deadline) Thread.sleep(5)
                 ResourceFileDownloadCancellation.cancel()
                 try {
                     exchange.sendResponseHeaders(200, bytes.size.toLong())

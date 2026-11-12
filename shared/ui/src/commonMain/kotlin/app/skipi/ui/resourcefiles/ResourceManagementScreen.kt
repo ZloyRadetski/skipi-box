@@ -285,7 +285,7 @@ fun ResourceManagementScreen(
         request.deleteImmediately?.let(::deleteCustomFile)
     }
 
-    LaunchedEffect(resourceSettings.customFiles, queueState.completionRevision) {
+    LaunchedEffect(resourceSettings.customFiles, queueState.completionRevision, queueState.finishedTargets) {
         status = operations.status(resourceScope, resourceSettings.customFiles)
     }
     LaunchedEffect(queue, updatedMessage, updatedOneMessage) {

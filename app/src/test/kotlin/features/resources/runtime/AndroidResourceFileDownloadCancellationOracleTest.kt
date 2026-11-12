@@ -47,7 +47,7 @@ class AndroidResourceFileDownloadCancellationOracleTest {
     }
 
     @Test
-    fun cancelDisconnectsTheMostRecentlyTrackedConnection() {
+    fun cancelDisconnectsEveryTrackedConnectionBecauseFilesDownloadSideBySide() {
         val first = FakeConnection()
         val latest = FakeConnection()
         ResourceFileDownloadCancellation.track(first)
@@ -55,7 +55,7 @@ class AndroidResourceFileDownloadCancellationOracleTest {
 
         ResourceFileDownloadCancellation.cancel()
 
-        assertEquals(0, first.disconnectCount.get())
+        assertEquals(1, first.disconnectCount.get())
         assertEquals(1, latest.disconnectCount.get())
         assertTrue(ResourceFileDownloadCancellation.isCancelled())
     }

@@ -83,7 +83,7 @@ class DesktopResourceFileUpdateRunnerTest {
         }
 
     @Test
-    fun allPlanDownloadsBuiltInsThenCustomInCapturedScopeAndMarksRawSourceAfterSuccess() =
+    fun allPlanDownloadsEveryFileInCapturedScopeSideBySideAndMarksRawSourceAfterSuccess() =
         withFreshCancellation {
             withXrayRoot { root ->
                 val scope = ResourceFileScope(trafficConfigId = 42, resourceFileSource = 999)
@@ -153,7 +153,8 @@ class DesktopResourceFileUpdateRunnerTest {
                     }
                     proxyServer.awaitFinished()
 
-                    assertEquals(expectedPaths, proxyServer.requestPaths.toList())
+                    // The files download side by side, so the order they reach the proxy in is not fixed.
+                    assertEquals(expectedPaths.sorted(), proxyServer.requestPaths.toList().sorted())
                     assertEquals(
                         List(expectedPaths.size) { options.userAgent },
                         proxyServer.userAgents.toList(),
@@ -161,17 +162,17 @@ class DesktopResourceFileUpdateRunnerTest {
                     assertEquals(listOf("feedback", "proxy"), setupOrder.toList())
                     assertEquals(listOf(options), feedbackOptions.toList())
                     assertEquals(listOf(options), resolvedOptions.toList())
-                    assertEquals(
-                        listOf(
-                            ResourceFileKind.GeoIp.displayName,
-                            ResourceFileKind.GeoSite.displayName,
-                            ResourceFileKind.GeoIpOnlyCnPrivate.displayName,
-                            ResourceFileKind.DirectCidrIpv4.displayName,
-                            ResourceFileKind.DirectCidrIpv6.displayName,
-                            custom.name,
-                        ),
-                        forcedNames.toList(),
+                    // Each start is shown under the first file of the batch that is not done yet.
+                    val batchNames = setOf(
+                        ResourceFileKind.GeoIp.displayName,
+                        ResourceFileKind.GeoSite.displayName,
+                        ResourceFileKind.GeoIpOnlyCnPrivate.displayName,
+                        ResourceFileKind.DirectCidrIpv4.displayName,
+                        ResourceFileKind.DirectCidrIpv6.displayName,
+                        custom.name,
                     )
+                    assertEquals(expectedPaths.size, forcedNames.size)
+                    assertTrue(batchNames.containsAll(forcedNames))
                     assertEquals(1, completed.get())
                     assertEquals(null, reportedFailure.get())
                     assertEquals("999", File(root, "profiles/42/.resource-source").readText())
@@ -263,19 +264,27 @@ class DesktopResourceFileUpdateRunnerTest {
         }
 
     @Test
-    fun allPlanFailureOnSecondFileKeepsPublishedPrefixStopsLaterTargetsAndDoesNotMarkSource() =
+    fun allPlanFailureOnSecondFileKeepsFilesThatAlreadyFinishedAndDoesNotMarkSource() =
         withFreshCancellation {
             withXrayRoot { root ->
                 withHttpServer { server ->
                     val requestedPaths = java.util.concurrent.CopyOnWriteArrayList<String>()
                     val successfulBody = "new-geoip".encodeToByteArray()
+                    // The files download side by side: the failing one waits until the first one is on its way.
+                    val geoIpRequested = java.util.concurrent.CountDownLatch(1)
                     server.createContext("/") { exchange ->
                         val path = exchange.requestURI.path
                         requestedPaths += path
                         when (path) {
-                            "/geoip" -> respond(exchange, 200, successfulBody)
-                            "/geosite" -> respond(exchange, 500, "server-error".encodeToByteArray())
-                            else -> respond(exchange, 200, "should-not-run".encodeToByteArray())
+                            "/geoip" -> {
+                                geoIpRequested.countDown()
+                                respond(exchange, 200, successfulBody)
+                            }
+                            "/geosite" -> {
+                                geoIpRequested.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                                respond(exchange, 500, "server-error".encodeToByteArray())
+                            }
+                            else -> respond(exchange, 200, "other-file".encodeToByteArray())
                         }
                     }
                     val scope = ResourceFileScope(trafficConfigId = 46, resourceFileSource = 4)
@@ -286,7 +295,6 @@ class DesktopResourceFileUpdateRunnerTest {
                         writeText("old-geoip")
                     }
                     val geoSite = snapshot.file(ResourceFileKind.GeoSite).apply { writeText("old-geosite") }
-                    val third = snapshot.file(ResourceFileKind.GeoIpOnlyCnPrivate).apply { writeText("old-third") }
                     val options = ResourceFileUpdateOptions(userAgent = "Failure test agent")
                     val reportedFailure = AtomicReference<Throwable?>()
                     val completed = AtomicInteger()
@@ -319,10 +327,9 @@ class DesktopResourceFileUpdateRunnerTest {
                     assertEquals("${ResourceFileKind.GeoSite.displayName}: HTTP 500", failure.message)
                     assertEquals("HTTP 500", failure.cause?.message)
                     assertSame(failure, reportedFailure.get())
-                    assertEquals(listOf("/geoip", "/geosite"), requestedPaths.toList())
+                    assertTrue(requestedPaths.containsAll(listOf("/geoip", "/geosite")))
                     assertContentEquals(successfulBody, geoIp.readBytes())
                     assertEquals("old-geosite", geoSite.readText())
-                    assertEquals("old-third", third.readText())
                     assertFalse(File(root, "profiles/46/.resource-source").exists())
                     assertEquals(0, completed.get())
                 }
@@ -330,7 +337,7 @@ class DesktopResourceFileUpdateRunnerTest {
         }
 
     @Test
-    fun cancellationReportsOriginalThenThrowsMappedErrorAndPreservesCurrentTarget() =
+    fun cancellationReportsOriginalThenThrowsMappedErrorAndPreservesTheFileItStopped() =
         withFreshCancellation {
             withXrayRoot { root ->
                 withHttpServer { server ->
@@ -351,7 +358,7 @@ class DesktopResourceFileUpdateRunnerTest {
                                     exchange.close()
                                 }
                             }
-                            else -> respond(exchange, 200, "should-not-run".encodeToByteArray())
+                            else -> respond(exchange, 200, "other-file".encodeToByteArray())
                         }
                     }
                     val scope = ResourceFileScope(trafficConfigId = 47, resourceFileSource = 5)
@@ -412,7 +419,7 @@ class DesktopResourceFileUpdateRunnerTest {
                     assertSame(mappedCancellation, thrown)
                     assertEquals("mapped cancellation", thrown.message)
                     assertEquals(0, completed.get())
-                    assertEquals(listOf("/geoip", "/geosite"), requestedPaths.toList())
+                    assertTrue(requestedPaths.containsAll(listOf("/geoip", "/geosite")))
                     assertEquals("first-complete", geoIp.readText())
                     assertEquals("old-geosite", geoSite.readText())
                     assertFalse(File(root, "profiles/47/.resource-source").exists())

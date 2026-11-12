@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
 )
 class AndroidResourceFileUpdatePlanOracleTest {
     @Test
-    fun allUpdateDownloadsBuiltInsThenEligibleCustomsAndMarksRawScopeSource() {
+    fun allUpdateDownloadsBuiltInsAndEligibleCustomsSideBySideAndMarksRawScopeSource() {
         withLoopbackServer { server, requests ->
             withFilesContext { context, root ->
                 val scope = ResourceFileScope(trafficConfigId = 77, resourceFileSource = 999)
@@ -89,6 +89,7 @@ class AndroidResourceFileUpdatePlanOracleTest {
                     )
                 }
 
+                // The files download side by side, so the order the requests arrive in is not fixed.
                 assertEquals(
                     listOf(
                         "/geoip",
@@ -100,15 +101,19 @@ class AndroidResourceFileUpdatePlanOracleTest {
                         "/same-id-second",
                         "/same-name-different-id",
                         "/fallback-name",
-                    ),
-                    requests.toList(),
+                    ).sorted(),
+                    requests.toList().sorted(),
                 )
                 assertEquals(body("/geoip"), store.file(ResourceFileKind.GeoIp).readBytes().toStringUtf8())
                 assertEquals(body("/geosite"), store.file(ResourceFileKind.GeoSite).readBytes().toStringUtf8())
                 assertEquals(body("/geoip-only-cn-private"), store.file(ResourceFileKind.GeoIpOnlyCnPrivate).readBytes().toStringUtf8())
                 assertEquals(body("/direct-v4"), store.file(ResourceFileKind.DirectCidrIpv4).readBytes().toStringUtf8())
                 assertEquals(body("/direct-v6"), store.file(ResourceFileKind.DirectCidrIpv6).readBytes().toStringUtf8())
-                assertEquals(body("/same-name-different-id"), store.file(duplicateIdFirst).readBytes().toStringUtf8())
+                // Three custom files share this target; whichever finished last holds it.
+                assertTrue(
+                    store.file(duplicateIdFirst).readBytes().toStringUtf8() in
+                        setOf(body("/same-id-first"), body("/same-id-second"), body("/same-name-different-id")),
+                )
                 assertEquals("custom-resource-22.dat", store.file(fallbackName).name)
                 assertEquals(body("/fallback-name"), store.file(fallbackName).readBytes().toStringUtf8())
                 assertEquals("999", sourceMarker(root, scope).readText())
@@ -117,7 +122,7 @@ class AndroidResourceFileUpdatePlanOracleTest {
     }
 
     @Test
-    fun allUpdateKeepsPublishedPrefixAndDoesNotMarkOrContinueAfterFailure() {
+    fun allUpdateKeepsFilesThatAlreadyFinishedAndDoesNotMarkSourceAfterFailure() {
         withLoopbackServer(failingPaths = setOf("/geosite")) { server, requests ->
             withFilesContext { context, root ->
                 val scope = ResourceFileScope(trafficConfigId = 78, resourceFileSource = 999)
@@ -135,10 +140,9 @@ class AndroidResourceFileUpdatePlanOracleTest {
 
                 assertTrue(error is RuntimeException)
                 assertTrue(error?.message.orEmpty().contains(ResourceFileKind.GeoSite.fileName))
-                assertEquals(listOf("/geoip", "/geosite"), requests.toList())
+                assertTrue(requests.containsAll(listOf("/geoip", "/geosite")))
                 assertEquals(body("/geoip"), store.file(ResourceFileKind.GeoIp).readBytes().toStringUtf8())
                 assertFalse(store.file(ResourceFileKind.GeoSite).exists())
-                assertFalse(store.file(ResourceFileKind.DirectCidrIpv4).exists())
                 assertFalse(sourceMarker(root, scope).exists())
             }
         }
@@ -271,11 +275,18 @@ class AndroidResourceFileUpdatePlanOracleTest {
         block: (HttpServer, List<String>) -> Unit,
     ) {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        // The files download side by side, so one handler may wait for another request.
+        server.executor = java.util.concurrent.Executors.newCachedThreadPool()
         val requests = CopyOnWriteArrayList<String>()
         server.createContext("/") { exchange ->
             val path = exchange.requestURI.rawPath
             requests += path
             val bytes = body(path).encodeToByteArray()
+            if (path in failingPaths) {
+                // The files download side by side: fail only once the first file is on its way.
+                val deadline = System.nanoTime() + 5_000_000_000L
+                while ("/geoip" !in requests && System.nanoTime() < deadline) Thread.sleep(5)
+            }
             exchange.sendResponseHeaders(if (path in failingPaths) 503 else 200, bytes.size.toLong())
             exchange.responseBody.use { output -> output.write(bytes) }
         }

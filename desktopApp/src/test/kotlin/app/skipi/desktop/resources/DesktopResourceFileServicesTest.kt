@@ -326,6 +326,7 @@ class DesktopResourceFileServicesTest {
                         )
                         services.updateAutomatically(profileId)
 
+                        // The files download side by side, so the order the requests arrive in is not fixed.
                         assertEquals(
                             listOf(
                                 "/latest/geoip",
@@ -333,8 +334,8 @@ class DesktopResourceFileServicesTest {
                                 "/latest/geoip-only-cn-private",
                                 "/latest/direct-cidr-ipv4",
                                 "/latest/direct-cidr-ipv6",
-                            ),
-                            requests.map { (path, _) -> path },
+                            ).sorted(),
+                            requests.map { (path, _) -> path }.sorted(),
                         )
                         assertEquals(
                             List(5) { "latest profile agent" },

@@ -258,7 +258,8 @@ class DesktopResourceFileManualUpdateScreenIntegrationTest {
                                     request.source.directCidrIpv4Url,
                                     request.source.directCidrIpv6Url,
                                 ))
-                                assertEquals(expectedPaths, observedRequests.map { (path, _) -> path })
+                                // The files download side by side, so the order the requests arrive in is not fixed.
+                                assertEquals(expectedPaths.sorted(), observedRequests.map { (path, _) -> path }.sorted())
                                 assertEquals(List<String?>(5) { userAgent }, observedRequests.map { (_, agent) -> agent })
                                 assertTrue("complete" in completionEvents)
                                 assertTrue(request.customResourceFiles.isEmpty())

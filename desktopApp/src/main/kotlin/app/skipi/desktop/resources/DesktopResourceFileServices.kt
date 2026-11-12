@@ -44,7 +44,7 @@ internal class DesktopResourceFileServices(
 
     val queue = ResourceFileUpdateCoordinator(
         scope = scope,
-        execute = runner::execute,
+        execute = { request, onTargetFinished -> runner.execute(request, onTargetFinished) },
         cancelRunning = { ResourceFileDownloadCancellation.cancel() },
     )
 
