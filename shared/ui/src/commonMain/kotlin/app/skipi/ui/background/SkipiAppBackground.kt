@@ -76,81 +76,89 @@ fun SkipiAppBackground(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    when (style) {
-        AppearanceSettingValues.BackgroundStylePhoto -> Box(modifier.fillMaxSize().background(solidColor)) {
-            if (photo != null) {
-                Image(bitmap = photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+    // The page is composed once, after the style switch: a `content()` inside each branch would leave and
+    // re-enter the composition on every style change and rebuild the whole app, back stack included.
+    Box(modifier.fillMaxSize().background(solidColor)) {
+        when (style) {
+            AppearanceSettingValues.BackgroundStylePhoto -> {
+                if (photo != null) {
+                    Image(bitmap = photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    if (dimPercent.coerceIn(0, 100) > 0) DimLayer(dimPercent)
+                } else {
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(photoFallbackGradient(isDark) + solidColor)))
+                }
+            }
+
+            AppearanceSettingValues.BackgroundStyleConnection -> ConnectionLayer(isDark, isConnected)
+
+            AppearanceSettingValues.BackgroundStyleAurora -> {
+                AuroraLayer(isDark, reduceMotion)
                 if (dimPercent.coerceIn(0, 100) > 0) DimLayer(dimPercent)
-            } else {
-                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(photoFallbackGradient(isDark) + solidColor)))
             }
-            content()
-        }
 
-        AppearanceSettingValues.BackgroundStyleConnection -> {
-            // Breathing runs only while connected; when idle the background rests statically.
-            val pulse = rememberInfinitePulse(
-                enabled = isConnected,
-                initialValue = 0.90f,
-                targetValue = 1.10f,
-                durationMillis = 2400,
-                restingValue = 1.00f,
-            )
-            val spec = connectionBackgroundSpec(isConnected, isDark)
-            val first = animateColorAsState(spec.firstColor, tween(500), label = "activeColor1")
-            val second = animateColorAsState(spec.secondColor, tween(500), label = "activeColor2")
-            // Pulse and colour are read while drawing so the breathing never recomposes the page. The
-            // gradient lives in its own layer next to the content: drawn behind it in the same layer,
-            // every breathing frame would re-record the whole UI.
-            Box(modifier.fillMaxSize().background(solidColor)) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { }
-                        .drawBehind {
-                            val breathing = pulse.value
-                            drawRect(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        first.value.copy(alpha = (spec.primaryAlpha * breathing).coerceIn(0f, 1f)),
-                                        second.value.copy(alpha = (spec.secondaryAlpha * breathing).coerceIn(0f, 1f)),
-                                        Color.Transparent,
-                                    ),
-                                    startY = 0f,
-                                    endY = 1400f,
-                                ),
-                            )
-                        },
+            else -> Unit
+        }
+        content()
+    }
+}
+
+@Composable
+private fun ConnectionLayer(isDark: Boolean, isConnected: Boolean) {
+    // Breathing runs only while connected; when idle the background rests statically.
+    val pulse = rememberInfinitePulse(
+        enabled = isConnected,
+        initialValue = 0.90f,
+        targetValue = 1.10f,
+        durationMillis = 2400,
+        restingValue = 1.00f,
+    )
+    val spec = connectionBackgroundSpec(isConnected, isDark)
+    val first = animateColorAsState(spec.firstColor, tween(500), label = "activeColor1")
+    val second = animateColorAsState(spec.secondColor, tween(500), label = "activeColor2")
+    // Pulse and colour are read while drawing so the breathing never recomposes the page. The gradient
+    // lives in its own layer next to the content: drawn behind it in the same layer, every breathing
+    // frame would re-record the whole UI.
+    Box(
+        Modifier
+            .fillMaxSize()
+            .graphicsLayer { }
+            .drawBehind {
+                val breathing = pulse.value
+                drawRect(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            first.value.copy(alpha = (spec.primaryAlpha * breathing).coerceIn(0f, 1f)),
+                            second.value.copy(alpha = (spec.secondaryAlpha * breathing).coerceIn(0f, 1f)),
+                            Color.Transparent,
+                        ),
+                        startY = 0f,
+                        endY = 1400f,
+                    ),
                 )
-                content()
+            },
+    )
+}
+
+@Composable
+private fun AuroraLayer(isDark: Boolean, reduceMotion: Boolean) {
+    if (reduceMotion) {
+        Canvas(Modifier.fillMaxSize()) { drawAuroraMesh(isDark, t1 = 0.50f, t2 = 0.35f, t3 = 0.65f, t4 = 0.45f) }
+    } else {
+        // The mesh drifts over tens of seconds, so ~20 redraws per second look identical to 60
+        // while costing a third of the GPU work; time is read only while drawing.
+        val elapsed = remember { mutableLongStateOf(0L) }
+        LaunchedEffect(Unit) {
+            val started = TimeSource.Monotonic.markNow()
+            while (true) {
+                // Waiting for a frame means a stopped or covered window costs nothing.
+                withFrameNanos { elapsed.longValue = started.elapsedNow().inWholeMilliseconds }
+                delay(AuroraFrameMillis)
             }
         }
-
-        AppearanceSettingValues.BackgroundStyleAurora -> Box(modifier.fillMaxSize().background(solidColor)) {
-            if (reduceMotion) {
-                Canvas(Modifier.fillMaxSize()) { drawAuroraMesh(isDark, t1 = 0.50f, t2 = 0.35f, t3 = 0.65f, t4 = 0.45f) }
-            } else {
-                // The mesh drifts over tens of seconds, so ~20 redraws per second look identical to 60
-                // while costing a third of the GPU work; time is read only while drawing.
-                val elapsed = remember { mutableLongStateOf(0L) }
-                LaunchedEffect(Unit) {
-                    val started = TimeSource.Monotonic.markNow()
-                    while (true) {
-                        // Waiting for a frame means a stopped or covered window costs nothing.
-                        withFrameNanos { elapsed.longValue = started.elapsedNow().inWholeMilliseconds }
-                        delay(AuroraFrameMillis)
-                    }
-                }
-                Canvas(Modifier.fillMaxSize().graphicsLayer { }) {
-                    val phases = auroraPhases(elapsed.longValue)
-                    drawAuroraMesh(isDark, phases.t1, phases.t2, phases.t3, phases.t4)
-                }
-            }
-            if (dimPercent.coerceIn(0, 100) > 0) DimLayer(dimPercent)
-            content()
+        Canvas(Modifier.fillMaxSize().graphicsLayer { }) {
+            val phases = auroraPhases(elapsed.longValue)
+            drawAuroraMesh(isDark, phases.t1, phases.t2, phases.t3, phases.t4)
         }
-
-        else -> Box(modifier.fillMaxSize().background(solidColor)) { content() }
     }
 }
 
