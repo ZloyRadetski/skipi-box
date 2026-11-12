@@ -6,7 +6,7 @@ package app.skipi.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,12 +36,15 @@ fun ProvideSettingsIconColor(argb: Long?, content: @Composable () -> Unit) {
 }
 
 /** Edge of the small tile in front of a settings row, and the shape every such tile shares. */
-private val SettingIconTileSize = 32.dp
-private val SettingIconGlyphSize = 18.dp
-private val SettingIconTileShape = RoundedCornerShape(10.dp)
+private val SettingIconTileSize = 38.dp
+private val SettingIconGlyphSize = 22.dp
+private val SettingIconTileShape = RoundedCornerShape(12.dp)
 
-/** Miuix leaves 8 dp between a row's start action and its text; this much more makes the gap read as one step. */
-private val SettingIconTextGap = 6.dp
+/**
+ * The tile is drawn this far left of where Miuix lays out a start action, into the row's own inset, so it sits
+ * closer to the card edge while the text stays where it was; that also widens the gap to the text to 14 dp.
+ */
+private val SettingIconShiftLeft = 6.dp
 
 @Composable
 private fun settingIconColor(): Color = LocalSettingsIconColor.current ?: MiuixTheme.colorScheme.primary
@@ -55,7 +58,7 @@ fun SkipiSettingIcon(icon: ImageVector, modifier: Modifier = Modifier) {
     val color = settingIconColor()
     Box(
         modifier = modifier
-            .padding(end = SettingIconTextGap)
+            .offset(x = -SettingIconShiftLeft)
             .size(SettingIconTileSize)
             .clip(SettingIconTileShape)
             .background(color),
@@ -75,7 +78,7 @@ fun SkipiSettingIcon(icon: ImageVector, modifier: Modifier = Modifier) {
 fun SkipiSettingColorSwatch(color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .padding(end = SettingIconTextGap)
+            .offset(x = -SettingIconShiftLeft)
             .size(SettingIconTileSize)
             .clip(SettingIconTileShape)
             .background(color)
