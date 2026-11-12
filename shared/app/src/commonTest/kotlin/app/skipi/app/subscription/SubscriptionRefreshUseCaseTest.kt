@@ -78,6 +78,61 @@ class SubscriptionRefreshUseCaseTest {
     }
 
     @Test
+    fun batchRunsAtMostTenLoadsAtOnceAndStartsQueuedOnesAsSlotsFree() = runTest {
+        val requests = (1..25).map { "sub$it" }
+        val releases = requests.associateWith { CompletableDeferred<Unit>() }
+        val started = mutableListOf<String>()
+        var running = 0
+        var peak = 0
+        val batch = async {
+            refreshSubscriptions(
+                requests = requests,
+                loader = SubscriptionRefreshLoader { request ->
+                    started += request
+                    running++
+                    peak = maxOf(peak, running)
+                    try {
+                        releases.getValue(request).await()
+                    } finally {
+                        running--
+                    }
+                    request.uppercase()
+                },
+                updatedAtMillis = { 1L },
+            )
+        }
+
+        runCurrent()
+        assertEquals(10, started.size)
+        assertEquals(10, running)
+
+        releases.getValue(started.first()).complete(Unit)
+        runCurrent()
+        assertEquals(11, started.size)
+
+        releases.values.forEach { it.complete(Unit) }
+        val result = batch.await()
+        assertEquals(10, peak)
+        assertEquals(requests.map { it.uppercase() }, result.updates)
+    }
+
+    @Test
+    fun failedLoadFreesItsSlotForQueuedRequests() = runTest {
+        val requests = (1..12).map { "sub$it" }
+        val result = refreshSubscriptions(
+            requests = requests,
+            loader = SubscriptionRefreshLoader { request ->
+                if (request in setOf("sub1", "sub2")) error("fetch failed")
+                request
+            },
+            updatedAtMillis = { 1L },
+        )
+
+        assertEquals(10, result.updates.size)
+        assertEquals(listOf("sub1", "sub2"), result.failures.map { it.request })
+    }
+
+    @Test
     fun cancellingBatchCancelsEveryOutstandingLoadAndDoesNotSampleCompletionTime() = runTest {
         val requests = listOf("first", "second")
         val started = mutableSetOf<String>()

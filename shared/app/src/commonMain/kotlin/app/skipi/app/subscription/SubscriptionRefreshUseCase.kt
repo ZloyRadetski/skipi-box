@@ -6,6 +6,8 @@ package app.skipi.app.subscription
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /** Platform boundary for loading and decoding one subscription refresh. */
 fun interface SubscriptionRefreshLoader<Request, Update> {
@@ -43,20 +45,30 @@ data class SubscriptionRefreshBatchResult<Request, Update>(
     val updatedAtMillis: Long,
 )
 
-/** Loads requests concurrently while keeping failures isolated to their request. */
+/** Upper bound of subscriptions fetched at the same time in one bulk refresh. */
+const val MAX_CONCURRENT_SUBSCRIPTION_REFRESHES = 10
+
+/**
+ * Loads requests concurrently (at most [MAX_CONCURRENT_SUBSCRIPTION_REFRESHES] at a time,
+ * the rest wait for a free slot) while keeping failures isolated to their request.
+ * Results keep the request order.
+ */
 suspend fun <Request, Update> refreshSubscriptions(
     requests: List<Request>,
     loader: SubscriptionRefreshLoader<Request, Update>,
     updatedAtMillis: () -> Long,
 ): SubscriptionRefreshBatchResult<Request, Update> = coroutineScope {
+    val slots = Semaphore(MAX_CONCURRENT_SUBSCRIPTION_REFRESHES)
     val results = requests.map { request ->
         async {
-            request to try {
-                Result.success(loader.load(request))
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                Result.failure(error)
+            slots.withPermit {
+                request to try {
+                    Result.success(loader.load(request))
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (error: Throwable) {
+                    Result.failure(error)
+                }
             }
         }
     }.awaitAll()
