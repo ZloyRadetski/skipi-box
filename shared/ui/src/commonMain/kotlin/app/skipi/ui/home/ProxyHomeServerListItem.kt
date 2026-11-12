@@ -130,7 +130,6 @@ internal fun ServerListItem(
             colors = SkipiProxyServerCompactListCardColors(
                 surface = SkipiTheme.colors.surface,
                 selectedSurface = SkipiTheme.colors.surfaceVariant,
-                selectedBorder = SkipiTheme.colors.accent,
             ),
             titleFontWeight = themedFontWeight(FontWeight.SemiBold),
             latencyFontWeight = themedFontWeight(FontWeight.Medium),

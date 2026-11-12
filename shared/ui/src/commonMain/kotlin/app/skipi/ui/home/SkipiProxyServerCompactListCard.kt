@@ -5,7 +5,6 @@ package app.skipi.ui.home
 
 import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -69,7 +68,6 @@ data class SkipiProxyServerCompactListCardState(
 data class SkipiProxyServerCompactListCardColors(
     val surface: Color,
     val selectedSurface: Color,
-    val selectedBorder: Color,
 )
 
 /**
@@ -197,15 +195,6 @@ fun SkipiProxyServerCompactListCard(
                             }
                         }
                     }
-                }
-                if (state.selected) {
-                    Spacer(Modifier.width(SkipiTheme.spacing.small))
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(colors.selectedBorder),
-                    )
                 }
             }
         }
