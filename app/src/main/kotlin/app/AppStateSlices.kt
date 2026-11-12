@@ -53,6 +53,7 @@ data class AppChromeState(
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
     val classicButtonSize: Int = app.modes.ClassicButtonSizeMedium,
     val enableHaptics: Boolean = true,
+    val enableDeletionConfirmation: Boolean = true,
 )
 
 data class ProxyServerListState(
@@ -151,6 +152,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
         bottomBarSize = bottomBarSize,
         classicButtonSize = classicButtonSize,
         enableHaptics = enableHaptics,
+        enableDeletionConfirmation = enableDeletionConfirmation,
     )
 }
 

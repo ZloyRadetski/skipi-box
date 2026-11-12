@@ -646,6 +646,7 @@ fun ProxyServerListPage(
         else services.appScope.launch { operation() }
     }
 
+    features.config.HomeProfileProxyGroupEditResultHandler()
     ProxyServerEditResultHandler(
         navigator = navigator,
         resultKey = ProxyServerEditResultKey,
@@ -1009,12 +1010,20 @@ fun ProxyServerListPage(
                         } ?: return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Proxy server no longer exists."))
                         val sourceTrafficConfigId = (server.server as? StrategyGroup)?.sourceTrafficConfigId
                         if (sourceTrafficConfigId != null) {
-                            navigator.push(
-                                app.navigation.Route.TrafficConfigSection(
-                                    trafficConfigId = sourceTrafficConfigId,
-                                    section = TrafficConfigEditorSection.ProxyGroups,
-                                ),
+                            // The group itself, not the list of every group of its profile.
+                            val opened = features.config.openProfileProxyGroupEditor(
+                                navigator = navigator,
+                                state = stateStore.state.value,
+                                strategy = server.server as StrategyGroup,
                             )
+                            if (!opened) {
+                                navigator.push(
+                                    app.navigation.Route.TrafficConfigSection(
+                                        trafficConfigId = sourceTrafficConfigId,
+                                        section = TrafficConfigEditorSection.ProxyGroups,
+                                    ),
+                                )
+                            }
                         } else {
                             navigator.navigateForResult(
                                 route = app.navigation.Route.ProxyServerEditor(

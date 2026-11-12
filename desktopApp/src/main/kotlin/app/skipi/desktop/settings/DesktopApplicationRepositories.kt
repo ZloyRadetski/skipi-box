@@ -71,9 +71,6 @@ class DesktopSettingsRepository(
         val oldConfigs = readConfigs()
         val before = oldSettings.toPersistedSettings(oldServers, oldConfigs)
         val requested = transform(before)
-        require(requested.appearance.dynamicColors == before.appearance.dynamicColors) {
-            "Dynamic colors are not supported by Desktop settings"
-        }
         var newSettings = oldSettings.withAppearance(requested.appearance).withHomeDisplay(requested.home)
         if (requested.application != before.application) {
             newSettings = newSettings.withApplicationPreferences(requested.application)
@@ -425,7 +422,7 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
             DesktopThemeMode.Light -> ThemeMode.Light
             DesktopThemeMode.Aurora, DesktopThemeMode.Sakura, DesktopThemeMode.Forest, DesktopThemeMode.Sunset -> ThemeMode.Named
         },
-        dynamicColors = false,
+        dynamicColors = dynamicColors,
         amoledBlack = themeMode == DesktopThemeMode.Amoled,
         themeVariant = when (themeMode) {
             DesktopThemeMode.Aurora -> "aurora"
@@ -570,7 +567,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     customTextSecondaryColor = customTextSecondaryColor,
     enableAllProxyGroup = enableAllProxyGroup,
     enableCustomColors = customColorsEnabled,
-    enableMaterialYou = false,
+    enableMaterialYou = dynamicColors,
     enableSubscriptionSwipe = enableSubscriptionSwipe,
     fontFamilyMode = fontFamilyMode ?: 0,
     fontSizeMode = fontSizeMode ?: FontSizeModeSmall,
@@ -622,9 +619,6 @@ internal fun DesktopAppSettings.withSubscriptionSettingsState(state: Subscriptio
     subscriptionExpiryReminders = state.expiryReminders,
 )
 internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsState): DesktopAppSettings {
-    require(!state.enableMaterialYou) {
-        "Material You color selection is not supported by Desktop settings"
-    }
     val nextTheme = when (AppearanceSettingValues.normalizeColorMode(state.colorMode)) {
         AppearanceSettingValues.ColorModeLight -> DesktopThemeMode.Light
         AppearanceSettingValues.ColorModeDark -> DesktopThemeMode.Dark
@@ -637,6 +631,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
     }
     return copy(
         themeMode = nextTheme,
+        dynamicColors = state.enableMaterialYou,
         compactHome = state.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeCompact,
         connectionDisplayMode = state.connectionDisplayMode,
         classicShowFloatingPowerButton = state.classicShowFloatingPowerButton,
@@ -704,6 +699,7 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
     }
     return copy(
         themeMode = nextTheme,
+        dynamicColors = appearance.dynamicColors,
         seedIndex = appearance.seedIndex,
         customMaterialYouSeed = appearance.customMaterialYouSeed,
         customColorsEnabled = appearance.customColorsEnabled,
@@ -899,4 +895,16 @@ fun desktopRuntimeState(
     testingServerIds = testingServerIds,
     refreshingSubscriptionIds = refreshingSubscriptionIds,
     message = message.takeIf(String::isNotBlank)?.let { RuntimeMessage(it, isMessageError) },
+)
+
+/** The theme as the custom-colour overrides Desktop draws: custom colours on, its six colours and its light or dark base. */
+internal fun DesktopAppSettings.withCustomTheme(theme: features.config.CustomThemeShare): DesktopAppSettings = copy(
+    themeMode = if (theme.dark) DesktopThemeMode.Dark else DesktopThemeMode.Light,
+    customColorsEnabled = true,
+    customAccentColor = theme.accent,
+    customBackgroundColor = theme.background,
+    customSurfaceColor = theme.surface,
+    customSurfaceVariantColor = theme.surfaceVariant,
+    customTextColor = theme.text,
+    customTextSecondaryColor = theme.textSecondary,
 )

@@ -70,3 +70,29 @@ private fun List<CustomThemeShare>.uniqueName(wanted: String, ignoreIndex: Int):
         number++
     }
 }
+
+/** The theme as the custom-colour overrides every host draws: custom colours on, its six colours, and its light or dark base. */
+fun app.AppState.withCustomTheme(theme: CustomThemeShare): app.AppState = copy(
+    enableCustomColors = true,
+    colorMode = if (theme.dark) app.modes.ColorModeDark else app.modes.ColorModeLight,
+    customAccentColor = theme.accent,
+    customBackgroundColor = theme.background,
+    customSurfaceColor = theme.surface,
+    customSurfaceVariantColor = theme.surfaceVariant,
+    customTextColor = theme.text,
+    customTextSecondaryColor = theme.textSecondary,
+)
+
+data class CustomThemeImportedState(val state: app.AppState, val outcome: CustomThemeImport)
+
+/**
+ * Adds a theme that arrived from a link and switches the app to it: a theme the user adds is a theme the user
+ * wants to see. A theme that is already saved is applied too; a full library changes nothing.
+ */
+fun app.AppState.withImportedCustomTheme(theme: CustomThemeShare): CustomThemeImportedState {
+    val result = importCustomTheme(customThemes, theme)
+    return when (result.outcome) {
+        CustomThemeImport.LibraryFull -> CustomThemeImportedState(this, result.outcome)
+        else -> CustomThemeImportedState(copy(customThemes = result.storage).withCustomTheme(theme), result.outcome)
+    }
+}

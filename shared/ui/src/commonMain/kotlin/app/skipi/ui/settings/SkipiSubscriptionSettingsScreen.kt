@@ -49,7 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.components.SkipiDropdownPreference
+import androidx.compose.ui.unit.sp
+import app.skipi.ui.components.AppSlider
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.subscription.SubscriptionExpiryReminderList
 import app.skipi.ui.text.themedFontWeight
@@ -80,7 +81,6 @@ data class SubscriptionSettingsLabels(
     val generalSectionTitle: String,
     val fetchTimeoutTitle: String,
     val fetchTimeoutSummary: String,
-    val timeoutOptions: List<String>,
     val userAgentsTitle: String,
     val userAgentsSummary: String,
     val deviceHeadersTitle: String,
@@ -127,10 +127,6 @@ fun SkipiSubscriptionSettingsScreen(
     val listState = rememberLazyListState()
     var showDisableHeadersConfirmation by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
-    val timeoutValues = listOf(10, 15, 20, 30, 45, 60, 90, 120)
-    val selectedTimeoutIndex = timeoutValues.indexOf(state.fetchTimeoutSeconds).let { index ->
-        if (index >= 0) index else timeoutValues.indexOf(30)
-    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -149,12 +145,11 @@ fun SkipiSubscriptionSettingsScreen(
                     SmallTitle(text = labels.generalSectionTitle)
                     SkipiSettingsSectionCard {
                         if (capabilities.fetchTimeout) {
-                            SkipiDropdownPreference(
+                            FetchTimeoutSlider(
                                 title = labels.fetchTimeoutTitle,
                                 summary = labels.fetchTimeoutSummary,
-                                items = labels.timeoutOptions,
-                                selectedIndex = selectedTimeoutIndex.coerceIn(labels.timeoutOptions.indices),
-                                onSelectedIndexChange = { index -> timeoutValues.getOrNull(index)?.let(onFetchTimeoutChange) },
+                                seconds = state.fetchTimeoutSeconds,
+                                onSecondsChange = onFetchTimeoutChange,
                             )
                         }
                         if (capabilities.userAgents) {
@@ -264,7 +259,6 @@ fun rememberSubscriptionSettingsLabels(userAgentCount: Int): SubscriptionSetting
         generalSectionTitle = stringResource(Res.string.settings_header_subscriptions),
         fetchTimeoutTitle = stringResource(Res.string.settings_subscription_fetch_timeout),
         fetchTimeoutSummary = stringResource(Res.string.settings_subscription_fetch_timeout_summary),
-        timeoutOptions = listOf(10, 15, 20, 30, 45, 60, 90, 120).map { "$it ${stringResource(Res.string.unit_seconds_short)}" },
         userAgentsTitle = stringResource(Res.string.settings_user_agents),
         userAgentsSummary = stringResource(Res.string.settings_user_agents_summary, userAgentCount),
         deviceHeadersTitle = stringResource(Res.string.settings_subscription_device_headers),
@@ -281,3 +275,55 @@ fun rememberSubscriptionSettingsLabels(userAgentCount: Int): SubscriptionSetting
         cancelText = stringResource(Res.string.common_cancel),
         disableHeadersAction = stringResource(Res.string.settings_subscription_device_headers_disable_action),
     )
+
+/** The range of the subscription fetch timeout, in seconds. */
+internal object SubscriptionFetchTimeout {
+    const val Min = 1
+    const val Max = 60
+
+    /** A value saved before the range was narrowed (up to 120 s) is shown, and next saved, inside it. */
+    fun normalize(seconds: Int): Int = seconds.coerceIn(Min, Max)
+}
+
+/** A title and summary with the chosen seconds beside them and a one-second-step slider under them. */
+@Composable
+private fun FetchTimeoutSlider(
+    title: String,
+    summary: String,
+    seconds: Int,
+    onSecondsChange: (Int) -> Unit,
+) {
+    val stored = SubscriptionFetchTimeout.normalize(seconds)
+    var sliderValue by androidx.compose.runtime.remember(stored) { androidx.compose.runtime.mutableFloatStateOf(stored.toFloat()) }
+    val shown = SubscriptionFetchTimeout.normalize(kotlin.math.round(sliderValue).toInt())
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = themedFontWeight(FontWeight.Medium),
+                color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "$shown ${stringResource(Res.string.unit_seconds_short)}",
+                fontSize = 14.sp,
+                fontWeight = themedFontWeight(FontWeight.Bold),
+                color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
+            )
+        }
+        Text(
+            text = summary,
+            fontSize = 13.sp,
+            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+        AppSlider(
+            value = sliderValue,
+            onValueChange = { value -> sliderValue = value },
+            onValueChangeFinished = { onSecondsChange(SubscriptionFetchTimeout.normalize(kotlin.math.round(sliderValue).toInt())) },
+            valueRange = SubscriptionFetchTimeout.Min.toFloat()..SubscriptionFetchTimeout.Max.toFloat(),
+            steps = SubscriptionFetchTimeout.Max - SubscriptionFetchTimeout.Min - 1,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        )
+    }
+}

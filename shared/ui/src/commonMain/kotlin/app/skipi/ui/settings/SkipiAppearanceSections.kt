@@ -37,14 +37,11 @@ internal fun AppearanceThemeSection(
     onSettingsChange: ((AppearanceSettingsState) -> AppearanceSettingsState) -> Unit,
     capabilities: AppearanceSettingsCapabilities,
     appIconTitle: String,
-    currentKeyColor: Color,
     onRequestAppIconSelection: () -> Unit,
     onPickColor: (AppearanceColorTarget) -> Unit,
 ) {
     val appState = state
     val updateAppState = onSettingsChange
-    val customSeedIndex = AppearanceSettingValues.CustomMaterialYouSeedIndex
-
     val colorModeOptions = listOf(
         AppearanceSettingValues.ColorModeSystem to stringResource(Res.string.option_follow_system),
         AppearanceSettingValues.ColorModeLight to stringResource(Res.string.option_light),
@@ -61,18 +58,6 @@ internal fun AppearanceThemeSection(
     }.coerceAtLeast(0)
 
     val isNamedThemeSelected = AppearanceSettingValues.isNamedColorTheme(appState.colorMode)
-
-    val keyColorOptions = listOf(
-        stringResource(Res.string.theme_color_default),
-        stringResource(Res.string.theme_color_blue),
-        stringResource(Res.string.theme_color_green),
-        stringResource(Res.string.theme_color_violet),
-        stringResource(Res.string.theme_color_yellow),
-        stringResource(Res.string.theme_color_orange),
-        stringResource(Res.string.theme_color_rose),
-        stringResource(Res.string.theme_color_cyan),
-        stringResource(Res.string.settings_theme_color_custom),
-    )
 
     val fontFamilyOptions = listOf(
         stringResource(Res.string.settings_font_family_default),
@@ -149,45 +134,16 @@ internal fun AppearanceThemeSection(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
+            // Only the system accent: no seed colour to choose. The seed index goes back to "system", which also
+            // clears a colour that onboarding picked.
             SwitchPreference(
                 title = stringResource(Res.string.settings_enable_material_you),
                 summary = stringResource(Res.string.settings_enable_material_you_summary),
                 checked = appState.enableMaterialYou,
-                onCheckedChange = { enabled -> updateAppState { it.copy(enableMaterialYou = enabled) } },
+                onCheckedChange = { enabled ->
+                    updateAppState { it.copy(enableMaterialYou = enabled, seedIndex = if (enabled) 0 else it.seedIndex) }
+                },
             )
-        }
-        AnimatedVisibility(
-            visible = capabilities.dynamicColors && capabilities.customColors && appState.enableMaterialYou && !isNamedThemeSelected,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                SkipiDropdownPreference(
-                    title = stringResource(Res.string.settings_theme_color),
-                    items = keyColorOptions,
-                    selectedIndex = appState.seedIndex.coerceIn(0, keyColorOptions.lastIndex),
-                    onSelectedIndexChange = { index ->
-                        updateAppState { state ->
-                            if (index == customSeedIndex && state.customMaterialYouSeed == null) {
-                                state.copy(seedIndex = index, customMaterialYouSeed = currentKeyColor.toArgb().toLong() and 0xFFFFFFFFL)
-                            } else {
-                                state.copy(seedIndex = index)
-                            }
-                        }
-                        if (index == customSeedIndex) {
-                            onPickColor(AppearanceColorTarget.MATERIAL_YOU_SEED)
-                        }
-                    },
-                )
-                if (appState.seedIndex == customSeedIndex) {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_theme_color_custom_seed),
-                        summary = stringResource(Res.string.settings_theme_color_custom_seed_summary),
-                        color = currentKeyColor,
-                        onClick = { onPickColor(AppearanceColorTarget.MATERIAL_YOU_SEED) },
-                    )
-                }
-            }
         }
         AnimatedVisibility(
             visible = capabilities.customColors && !appState.enableMaterialYou && !isNamedThemeSelected,
@@ -307,12 +263,15 @@ internal fun AppearanceCustomColorsSection(
                 exit = shrinkVertically() + fadeOut(),
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_accent),
-                        summary = stringResource(Res.string.settings_color_accent_summary),
-                        color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
-                        onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
-                    )
+                    // With the system accent on, an accent chosen here would be ignored, so it is not offered.
+                    if (!(capabilities.dynamicColors && appState.enableMaterialYou)) {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_accent),
+                            summary = stringResource(Res.string.settings_color_accent_summary),
+                            color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
+                            onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
+                        )
+                    }
                     SettingsColorItem(
                         title = stringResource(Res.string.settings_color_background),
                         summary = stringResource(Res.string.settings_color_background_summary),
@@ -673,17 +632,14 @@ internal fun AppearanceColorPickerDialog(
     target: AppearanceColorTarget?,
     state: AppearanceSettingsState,
     onSettingsChange: ((AppearanceSettingsState) -> AppearanceSettingsState) -> Unit,
-    currentKeyColor: Color,
     onDismiss: () -> Unit,
 ) {
     val appState = state
     val updateAppState = onSettingsChange
     val isDark = LocalAppColors.current.isDark
-    val customSeedIndex = AppearanceSettingValues.CustomMaterialYouSeedIndex
     val pickerTarget = target ?: return
 
         val dialogTitle = when (pickerTarget) {
-            AppearanceColorTarget.MATERIAL_YOU_SEED -> stringResource(Res.string.settings_theme_color_custom_seed)
             AppearanceColorTarget.ACCENT -> stringResource(Res.string.settings_color_accent)
             AppearanceColorTarget.BACKGROUND -> stringResource(Res.string.settings_color_background)
             AppearanceColorTarget.SURFACE -> stringResource(Res.string.settings_color_surface)
@@ -709,7 +665,6 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PROTOCOL_JSON -> stringResource(Res.string.settings_color_protocol_json)
         }
         val initialColor = when (pickerTarget) {
-            AppearanceColorTarget.MATERIAL_YOU_SEED -> currentKeyColor
             AppearanceColorTarget.ACCENT -> appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent
             AppearanceColorTarget.BACKGROUND -> appState.customBackgroundColor?.let { Color(it) } ?: SkipiTheme.colors.background
             AppearanceColorTarget.SURFACE -> appState.customSurfaceColor?.let { Color(it) } ?: SkipiTheme.colors.surface
@@ -743,10 +698,6 @@ internal fun AppearanceColorPickerDialog(
                 val colorLong = selectedColor.toArgb().toLong() and 0xFFFFFFFFL
                 updateAppState { state ->
                     when (pickerTarget) {
-                        AppearanceColorTarget.MATERIAL_YOU_SEED -> state.copy(
-                            seedIndex = customSeedIndex,
-                            customMaterialYouSeed = colorLong,
-                            )
                         AppearanceColorTarget.ACCENT -> state.copy(customAccentColor = colorLong)
                         AppearanceColorTarget.BACKGROUND -> state.copy(customBackgroundColor = colorLong)
                         AppearanceColorTarget.SURFACE -> state.copy(customSurfaceColor = colorLong)

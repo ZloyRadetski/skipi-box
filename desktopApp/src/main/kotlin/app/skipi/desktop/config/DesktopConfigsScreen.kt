@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.platform.LocalLayoutDirection
+import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
@@ -1046,12 +1047,9 @@ internal fun DesktopConfigsScreen(
         )
     }
     pendingDeletion?.let { config ->
-        WarningConfirmDialog(
+        DeleteConfirmationDialog(
             show = true,
             title = stringResource(Res.string.deletion_confirmation_delete_config),
-            summary = stringResource(Res.string.deletion_confirmation_summary),
-            confirmText = stringResource(Res.string.common_delete),
-            dismissText = stringResource(Res.string.common_cancel),
             onDismissRequest = { pendingDeletion = null },
             onConfirm = {
                 pendingDeletion = null

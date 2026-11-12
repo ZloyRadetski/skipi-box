@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
 /**
@@ -21,6 +22,9 @@ import kotlin.math.roundToInt
  * the next slides in the menu would snap to the wider of the two. Each level reports its own
  * width here, and [animatedMenuWidth] then glides the menu surface between the levels.
  */
+/** The widest a menu is allowed to be; longer row text wraps. The same 280 dp as Material's own menus. */
+internal val MenuMaxWidth = 280.dp
+
 internal class MenuLevelWidths {
     private val measured = mutableStateMapOf<String, Int>()
 
@@ -46,7 +50,8 @@ internal fun menuLevelConstraints(incoming: Constraints, naturalWidth: Int): Con
  */
 internal fun Modifier.reportMenuLevelWidth(widths: MenuLevelWidths, levelKey: String): Modifier =
     layout { measurable, constraints ->
-        val natural = measurable.maxIntrinsicWidth(Constraints.Infinity)
+        // A row wider than the cap wraps (two lines) instead of being laid out on one line and cut by the surface.
+        val natural = measurable.maxIntrinsicWidth(Constraints.Infinity).coerceAtMost(MenuMaxWidth.roundToPx())
         widths.report(levelKey, natural)
         val placeable = measurable.measure(menuLevelConstraints(constraints, natural))
         // The size reported to the parent still follows the surface; whatever is wider is clipped by it.

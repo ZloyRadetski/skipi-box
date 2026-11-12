@@ -38,6 +38,5 @@ class AppearanceSettingValuesTest {
     fun photoAndCustomSeedKeepTheirPersistedSlots() {
         assertEquals(1, AppearanceSettingValues.normalizeBackgroundStyle(1))
         assertEquals(AppearanceSettingValues.BackgroundStyleClassic, AppearanceSettingValues.normalizeBackgroundStyle(99))
-        assertEquals(8, AppearanceSettingValues.CustomMaterialYouSeedIndex)
     }
 }

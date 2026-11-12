@@ -48,7 +48,13 @@ data class TrafficConfigCatalogProfileItem(
     val updating: Boolean,
     val canDelete: Boolean,
     val hasUnsupportedSections: Boolean = false,
-)
+) {
+    /** Only a config that came from a web link can be updated from it; a pasted or created one has nothing to fetch. */
+    val hasUpdateLink: Boolean
+        get() = sourceUrl.trim().let { url ->
+            url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)
+        }
+}
 
 /** Shared profile card. The optional slots let a platform add actions or metadata without duplicating its layout. */
 @Composable
@@ -95,7 +101,7 @@ fun SkipiTrafficConfigProfileCard(
                 supportingContent?.invoke(this)
             }
             Spacer(Modifier.width(6.dp))
-            if (showUpdateAction && item.sourceUrl.isNotBlank()) {
+            if (showUpdateAction && item.hasUpdateLink) {
                 IconButton(onClick = onUpdate, enabled = !item.updating) {
                     if (item.updating) InfiniteProgressIndicator(modifier = Modifier.size(20.dp))
                     else Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.common_refresh), tint = MiuixTheme.colorScheme.onSurface)

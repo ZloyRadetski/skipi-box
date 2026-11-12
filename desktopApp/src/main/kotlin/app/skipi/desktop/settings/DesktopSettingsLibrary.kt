@@ -101,6 +101,8 @@ data class DesktopAppSettings(
     val sendDeviceHeaders: Boolean = true,
     val installationUuid: String = "",
     // Shared appearance fields are stored as additive JSON keys so older settings.json files remain readable.
+    /** Paint the app in the operating system's accent colour. */
+    val dynamicColors: Boolean = false,
     val seedIndex: Int = 0,
     val customMaterialYouSeed: Long? = null,
     val customColorsEnabled: Boolean = false,

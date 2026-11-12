@@ -4,6 +4,10 @@
 package app.skipi.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
@@ -12,6 +16,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * The "Deletion confirmation" setting, offered to every deletion dialog below it. With it off such a dialog does
+ * not appear: asking to show it confirms at once, so a caller that forgot to check the setting still obeys it.
+ */
+val LocalConfirmDeletion = compositionLocalOf { true }
+
 @Composable
 fun DeleteConfirmationDialog(
     show: Boolean,
@@ -19,6 +29,11 @@ fun DeleteConfirmationDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    if (!LocalConfirmDeletion.current) {
+        val confirm by rememberUpdatedState(onConfirm)
+        LaunchedEffect(show) { if (show) confirm() }
+        return
+    }
     val haptics = LocalHapticFeedback.current
     WarningConfirmDialog(
         show = show,

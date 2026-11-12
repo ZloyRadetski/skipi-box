@@ -115,55 +115,62 @@ suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
         }.getOrDefault(false)
     }
 
-private fun decodeBitmapFromUri(context: Context, uri: Uri): Bitmap? {
-    return runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                val width = info.size.width
-                val height = info.size.height
-                var sampleSize = 1
-                while (width / (sampleSize * 2) >= MaxPhotoDimension || height / (sampleSize * 2) >= MaxPhotoDimension) {
-                    sampleSize *= 2
-                }
-                if (sampleSize > 1) {
-                    decoder.setTargetSampleSize(sampleSize)
-                }
-            }
-        } else {
-            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, boundsOptions)
-            }
-            val width = boundsOptions.outWidth
-            val height = boundsOptions.outHeight
-            if (width <= 0 || height <= 0) return null
+private fun decodeBitmapFromUri(context: Context, uri: Uri): Bitmap? =
+    decodeBitmapWithImageDecoder(context, uri) ?: decodeBitmapWithBitmapFactory(context, uri)
 
+/** ImageDecoder reads more formats and applies the orientation itself; it can still refuse a file. */
+private fun decodeBitmapWithImageDecoder(context: Context, uri: Uri): Bitmap? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+    return runCatching {
+        val source = ImageDecoder.createSource(context.contentResolver, uri)
+        ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            val width = info.size.width
+            val height = info.size.height
             var sampleSize = 1
             while (width / (sampleSize * 2) >= MaxPhotoDimension || height / (sampleSize * 2) >= MaxPhotoDimension) {
                 sampleSize *= 2
             }
-
-            val decodeOptions = BitmapFactory.Options().apply {
-                inSampleSize = sampleSize
-                inPreferredConfig = Bitmap.Config.ARGB_8888
+            if (sampleSize > 1) {
+                decoder.setTargetSampleSize(sampleSize)
             }
-            val decoded = context.contentResolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, decodeOptions)
-            } ?: return null
+        }
+    }.getOrNull()
+}
 
-            val rotationDegrees = getExifRotation(context, uri)
-            if (rotationDegrees != 0) {
-                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
-                if (rotated != decoded) {
-                    decoded.recycle()
-                }
-                rotated
-            } else {
-                decoded
+private fun decodeBitmapWithBitmapFactory(context: Context, uri: Uri): Bitmap? {
+    return runCatching {
+        val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, boundsOptions)
+        }
+        val width = boundsOptions.outWidth
+        val height = boundsOptions.outHeight
+        if (width <= 0 || height <= 0) return null
+
+        var sampleSize = 1
+        while (width / (sampleSize * 2) >= MaxPhotoDimension || height / (sampleSize * 2) >= MaxPhotoDimension) {
+            sampleSize *= 2
+        }
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val decoded = context.contentResolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, decodeOptions)
+        } ?: return null
+
+        val rotationDegrees = getExifRotation(context, uri)
+        if (rotationDegrees != 0) {
+            val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+            val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+            if (rotated != decoded) {
+                decoded.recycle()
             }
+            rotated
+        } else {
+            decoded
         }
     }.getOrNull()
 }

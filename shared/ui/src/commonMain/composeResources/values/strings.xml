@@ -304,7 +304,7 @@
     <string name="settings_core">Core settings</string>
     <string name="settings_resource_files_files">Resource files</string>
     <!-- Resource file update notifications -->
-    <string name="settings_resource_files_notifications">Update notifications</string>
+    <string name="settings_resource_files_notifications">GEO update notifications</string>
     <string name="settings_resource_files_notifications_summary">Show notifications while resource files are being updated</string>
     <string name="settings_resource_files_source">Update source</string>
     <string name="settings_header_appearance">Appearance</string>
@@ -1125,7 +1125,7 @@
     <string name="common_show">Show</string>
     <string name="common_hide">Hide</string>
     <string name="settings_enable_material_you">Dynamic colors</string>
-    <string name="settings_enable_material_you_summary">Palette based on wallpaper</string>
+    <string name="settings_enable_material_you_summary">Use the system accent colour</string>
     <string name="settings_enable_haptics">Haptic feedback</string>
     <string name="settings_enable_haptics_summary">Vibrate on connection, server selection and key actions</string>
     <string name="settings_custom_colors_status_title">Connection Status &amp; Latency</string>

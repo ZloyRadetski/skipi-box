@@ -113,6 +113,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
+import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.components.WarningConfirmDialog
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
@@ -547,12 +548,9 @@ fun TrafficConfigPage(
     }
 
     pendingConfigDeletion?.let { config ->
-        WarningConfirmDialog(
+        DeleteConfirmationDialog(
             show = true,
             title = stringResource(R.string.deletion_confirmation_delete_config),
-            summary = stringResource(R.string.deletion_confirmation_summary),
-            confirmText = stringResource(R.string.common_delete),
-            dismissText = stringResource(R.string.common_cancel),
             onDismissRequest = { pendingConfigDeletion = null },
             onConfirm = {
                 pendingConfigDeletion = null
@@ -581,12 +579,9 @@ fun TrafficConfigPage(
     }
 
     pendingAutoBalancerDeletion?.let { proxyGroup ->
-        WarningConfirmDialog(
+        DeleteConfirmationDialog(
             show = true,
             title = stringResource(R.string.deletion_confirmation_delete_proxy_server),
-            summary = stringResource(R.string.deletion_confirmation_summary),
-            confirmText = stringResource(R.string.common_delete),
-            dismissText = stringResource(R.string.common_cancel),
             onDismissRequest = { pendingAutoBalancerDeletion = null },
             onConfirm = {
                 pendingAutoBalancerDeletion = null

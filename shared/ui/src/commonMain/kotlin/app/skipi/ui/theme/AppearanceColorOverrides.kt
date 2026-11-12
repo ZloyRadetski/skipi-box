@@ -13,12 +13,14 @@ fun applyAppearanceSettings(
     appearance: AppearanceSettings,
 ): AppColors {
     val customAccent = appearance.customAccentColor?.let(::Color)
+    // The system accent is what "dynamic colors" asks for, so an accent picked by hand never hides it; a named
+    // theme keeps its own unless the custom colors set one. Otherwise a custom accent (from the custom colors or the plain accent row) wins.
     val accent = when {
-        appearance.customColorsEnabled && customAccent != null -> customAccent
-        appearance.themeMode == ThemeMode.Named -> base.accent
-        !appearance.dynamicColors && customAccent != null -> customAccent
-        !appearance.dynamicColors -> DefaultAppAccentColor
-        else -> base.accent
+        appearance.themeMode == ThemeMode.Named ->
+            if (appearance.customColorsEnabled && customAccent != null) customAccent else base.accent
+        appearance.dynamicColors -> base.accent
+        customAccent != null -> customAccent
+        else -> DefaultAppAccentColor
     }
 
     if (!appearance.customColorsEnabled) return base.copy(accent = accent)

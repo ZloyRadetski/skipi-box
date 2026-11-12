@@ -58,7 +58,6 @@ data class AppearanceSettingsState(
 )
 
 enum class AppearanceColorTarget {
-    MATERIAL_YOU_SEED,
     ACCENT,
     BACKGROUND,
     SURFACE,
@@ -111,7 +110,6 @@ object AppearanceSettingValues {
     const val FontSizeModeTiny = 55
     const val FontSizeModeExtraLarge = 145
     const val FontSizeModeStepPercent = 5
-    const val CustomMaterialYouSeedIndex = 8
 
     fun normalizeColorMode(value: Int): Int = when (value) {
         3 -> ColorModeSystem

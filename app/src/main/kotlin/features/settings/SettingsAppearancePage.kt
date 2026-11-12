@@ -51,29 +51,24 @@ fun SettingsAppearancePage(padding: PaddingValues) {
     var showIconPicker by remember { mutableStateOf(false) }
 
     val appearance = appState.toAppearanceSettingsState()
-    val customSeed = appState.customMaterialYouSeed
-    val currentKeyColor = remember(appState.seedIndex, customSeed) {
-        if (appState.seedIndex == KeyColors.size + 1 && customSeed != null) {
-            Color(customSeed)
-        } else {
-            keyColorFor(appState.seedIndex) ?: resolveSystemAccentColor(context)
-        }
-    }
-
     SkipiAppearanceSettingsScreen(
         state = appearance,
         padding = padding,
         isWideScreen = isWideScreen,
-        currentKeyColor = currentKeyColor,
-        hasCustomBackgroundPhoto = customBackgroundPhotoExists(context),
+        // Read the update seed so the page follows a photo that was just saved or removed.
+        hasCustomBackgroundPhoto = remember(ui.background.backgroundPhotoUpdateSeed) { customBackgroundPhotoExists(context) },
         appIconTitle = stringResource(appIconDescriptorForMode(appState.appIcon).titleRes),
         onSettingsChange = { transform -> updateAppState { current -> current.withAppearanceSettings(transform(current.toAppearanceSettingsState())) } },
         onBack = { navigator.pop() },
         onChooseBackgroundPhoto = {
             scope.launch {
                 val uri = services.photoFilePicker()
-                if (uri != null && saveCustomBackgroundPhoto(context, uri)) {
-                    updateAppState { it.copy(backgroundStyle = BackgroundStylePhoto) }
+                if (uri != null) {
+                    if (saveCustomBackgroundPhoto(context, uri)) {
+                        updateAppState { it.copy(backgroundStyle = BackgroundStylePhoto) }
+                    } else {
+                        services.tipNotifier.show(context.getString(R.string.settings_background_photo_failed))
+                    }
                 }
             }
         },

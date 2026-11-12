@@ -29,6 +29,7 @@ import engine.vpn.AndroidVpnPermissionRequester
 import features.networkautomation.engine.AndroidWifiSsidPermissionRequester
 import features.config.DeepLinkGate
 import features.config.SkipiDeepLink
+import features.config.withImportedCustomTheme
 import features.config.confirmationTarget
 import features.config.gate
 import features.config.toSkipiDeepLinkOrNull
@@ -452,9 +453,9 @@ class MainActivity : ComponentActivity() {
             is SkipiDeepLink.Theme -> {
                 var outcome = features.config.CustomThemeImport.Added
                 application.stateStore.update { state ->
-                    val result = features.config.importCustomTheme(state.customThemes, link.theme)
+                    val result = state.withImportedCustomTheme(link.theme)
                     outcome = result.outcome
-                    state.copy(customThemes = result.storage)
+                    result.state
                 }
                 tipNotifier.show(
                     getString(

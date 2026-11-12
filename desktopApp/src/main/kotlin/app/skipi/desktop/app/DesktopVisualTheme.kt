@@ -38,8 +38,9 @@ internal val DesktopContentBackground: androidx.compose.ui.graphics.Color
 internal fun DesktopAppTheme(content: @Composable () -> Unit) {
     val themeMode = LocalDesktopThemeMode.current
     val appearance = LocalDesktopAppearanceSettings.current
-    val appColors = remember(themeMode, appearance) {
-        desktopAppearanceColors(themeMode, appearance)
+    val systemAccent = rememberDesktopSystemAccent(enabled = appearance.dynamicColors)
+    val appColors = remember(themeMode, appearance, systemAccent) {
+        desktopAppearanceColors(themeMode, appearance, systemAccent)
     }
 
     val fontFamilyMode = appearance.fontFamilyMode ?: FontFamilyModeDefault
@@ -60,12 +61,15 @@ internal fun DesktopAppTheme(content: @Composable () -> Unit) {
 internal fun desktopAppearanceColors(
     themeMode: DesktopThemeMode,
     appearance: AppearanceSettings,
+    /** The operating system's accent, used while the dynamic colors switch is on. */
+    systemAccent: androidx.compose.ui.graphics.Color? = null,
 ): AppColors {
     val namedPalette = desktopNamedThemePalette(themeMode)
     val base = resolveBaseAppearanceColors(
         isDark = desktopThemeIsDark(themeMode),
         amoledBlack = themeMode == DesktopThemeMode.Amoled,
         namedPalette = namedPalette,
+        dynamicAccent = systemAccent.takeIf { appearance.dynamicColors },
     )
     val resolvedAppearance = appearance.copy(
         themeMode = if (namedPalette != null) ThemeMode.Named else ThemeMode.System,

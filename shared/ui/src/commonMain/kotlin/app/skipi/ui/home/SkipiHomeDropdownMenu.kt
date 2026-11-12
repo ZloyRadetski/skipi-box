@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.runtime.CompositionLocalProvider
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.skipi.ui.theme.SkipiTheme
 
 /** Dropdown surface and item palette shared by the custom-colored Home controls. */
@@ -37,8 +39,18 @@ internal fun SkipiHomeDropdownMenu(
         shadowElevation = 8.dp,
         border = BorderStroke(1.dp, outline.copy(alpha = 0.2f)),
         content = {
-            CompositionLocalProvider(LocalContentColor provides text) {
-                content()
+            // Menu rows are set in a smaller type than the Material default (14 sp), in every menu of the app.
+            val typography = MaterialTheme.typography
+            MaterialTheme(
+                colorScheme = MaterialTheme.colorScheme,
+                shapes = MaterialTheme.shapes,
+                typography = typography.copy(
+                    labelLarge = typography.labelLarge.copy(fontSize = 13.sp, lineHeight = 18.sp),
+                ),
+            ) {
+                CompositionLocalProvider(LocalContentColor provides text) {
+                    content()
+                }
             }
         },
     )

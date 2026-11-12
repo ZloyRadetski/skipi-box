@@ -233,6 +233,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     }
     val windowState = remember { WindowState(size = DpSize(DesktopInitialWindowWidth.dp, DesktopInitialWindowHeight.dp), isMinimized = hidden) }
     val escapeHandler = remember { DesktopEscapeHandler() }
+    // Escape and the mouse's back button go to the newest screen that shows a back arrow, then to a page that
+    // registered with the escape handler.
+    val backActions = remember { app.skipi.ui.components.BackActions() }
+    val goBack: () -> Boolean = { backActions.invokeNewest() || escapeHandler.onEscape() }
     // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
     val connectionClock = remember { ConnectionClock() }
     val homeSortSaveMutex = remember { Mutex() }
@@ -1277,7 +1281,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     if (windowShown) Window(
         state = windowState,
         onKeyEvent = { event ->
-            isEscapeBack(event.key, event.type) && escapeHandler.onEscape()
+            isEscapeBack(event.key, event.type) && goBack()
         },
         // Closing is handled from the composable below so it can serialize with an
         // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
@@ -1298,6 +1302,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
             LocalDesktopThemeMode provides desktopSettings.themeMode,
             LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
             LocalNavigationReselectToken provides (reselectTokens[currentSection] ?: 0),
+            app.skipi.ui.components.LocalBackActions provides backActions,
+            app.skipi.ui.components.LocalConfirmDeletion provides desktopSettings.confirmDeletion,
         ) {
             DesktopAppTheme {
                 DesktopWindowChrome(
@@ -1310,7 +1316,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                         library = desktopSettings.customThemes.toCustomThemes(),
                         onAdd = {
                             val imported = features.config.importCustomTheme(desktopSettings.customThemes, incoming)
-                            val next = desktopSettings.copy(customThemes = imported.storage)
+                            // Adding a theme switches to it.
+                            val next = desktopSettings.copy(customThemes = imported.storage).withCustomTheme(incoming)
                             DesktopSettingsLibraries.saveDefault(next).onSuccess { desktopSettings = next }
                             pendingThemeLink = null
                         },
@@ -1321,7 +1328,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 Surface(
                     modifier = Modifier.fillMaxSize().onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
                         // The mouse's back button does what Escape does.
-                        if (event.button == PointerButton.Back && escapeHandler.onEscape()) {
+                        if (event.button == PointerButton.Back && goBack()) {
                             event.changes.forEach { change -> change.consume() }
                         }
                     },

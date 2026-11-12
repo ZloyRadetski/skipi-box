@@ -288,7 +288,8 @@
     <string name="settings_core">Настройки ядра</string>
     <string name="settings_resource_files_files">Файлы ресурсов</string>
     <!-- Уведомления при обновлении файлов ресурсов -->
-    <string name="settings_resource_files_notifications">Уведомления при обновлении</string>
+    <string name="settings_background_photo_failed">Не удалось использовать это фото. Выберите другое изображение.</string>
+    <string name="settings_resource_files_notifications">Уведомления при обновлении GEO</string>
     <string name="settings_resource_files_notifications_summary">Показывать уведомления при обновлении файлов ресурсов</string>
     <string name="settings_resource_files_source">Источник обновлений</string>
     <string name="settings_header_appearance">Оформление</string>
@@ -1085,7 +1086,7 @@
     <string name="common_show">Показать</string>
     <string name="common_hide">Скрыть</string>
     <string name="settings_enable_material_you">Динамические цвета</string>
-    <string name="settings_enable_material_you_summary">Палитра темы на основе обоев</string>
+    <string name="settings_enable_material_you_summary">Использовать системный акцентный цвет</string>
     <string name="settings_enable_haptics">Тактильный отклик</string>
     <string name="settings_enable_haptics_summary">Вибрация при подключении, смене серверов и действиях</string>
     <string name="settings_custom_colors_status_title">Статусы подключения и задержка</string>

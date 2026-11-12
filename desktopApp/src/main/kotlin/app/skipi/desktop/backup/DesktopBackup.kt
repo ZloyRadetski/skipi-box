@@ -265,6 +265,7 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
     val base = AppBackupSettings()
     return base.copy(
         languageMode = languageTag.toLanguageMode(),
+        enableMaterialYou = dynamicColors,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         enableCustomColors = customColorsEnabled,
@@ -369,6 +370,7 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
     val routeRules = data.routeRules.map { it.toRouteRule() }
     return current.copy(
         languageTag = languageMode.toLanguageTag(),
+        dynamicColors = enableMaterialYou,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         customColorsEnabled = enableCustomColors,
@@ -432,7 +434,7 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         subscriptionPingConcurrency = subscriptionPingConcurrency,
         subscriptionUserAgents = subscriptionUserAgents,
         sendDeviceHeaders = enableSubscriptionDeviceHeaders,
-        subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
+        subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(1, 60),
         routeDomainStrategy = routeDomainStrategy,
         defaultRouteOutboundTag = defaultRouteOutboundTag,
         routeRules = routeRules,

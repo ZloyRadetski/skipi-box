@@ -236,7 +236,7 @@
     <string name="settings_core">تنظیمات اصلی</string>
     <string name="settings_resource_files_files">فایل های منبع</string>
     <!-- اعلان‌های به‌روزرسانی فایل‌های منبع -->
-    <string name="settings_resource_files_notifications">اعلان‌های به‌روزرسانی</string>
+    <string name="settings_resource_files_notifications">اعلان‌های به‌روزرسانی GEO</string>
     <string name="settings_resource_files_notifications_summary">هنگام به‌روزرسانی فایل‌های منبع اعلان نشان داده شود</string>
     <string name="settings_resource_files_source">منبع به روز رسانی</string>
     <string name="settings_header_appearance">ظاهر</string>
@@ -1001,7 +1001,7 @@
     <string name="common_show">نمایش دهید</string>
     <string name="common_hide">پنهان کردن</string>
     <string name="settings_enable_material_you">مواد شما (رنگ پویا)</string>
-    <string name="settings_enable_material_you_summary">از رنگ ها و پالت پویا مونه بر اساس کاغذ دیواری یا رنگ تم استفاده کنید</string>
+    <string name="settings_enable_material_you_summary">از رنگ تأکید سیستم استفاده کنید</string>
     <string name="settings_enable_haptics">بازخورد لمسی</string>
     <string name="settings_enable_haptics_summary">لرزش هنگام اتصال، انتخاب سرور و اقدامات کلیدی</string>
     <string name="settings_custom_colors_status_title">وضعیت اتصال و تأخیر</string>

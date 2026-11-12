@@ -164,4 +164,34 @@ class AppearanceColorOverridesTest {
         assertEquals(base.onSurfaceVariant, actual.onSurfaceVariant)
         assertEquals(base.isDark, actual.isDark)
     }
+
+    @Test
+    fun dynamicColorsKeepTheSystemAccentWhileCustomColorsStillPaintTheRest() {
+        val base = AppColors(
+            background = Color(0xFF101112),
+            onBackground = Color(0xFF202122),
+            accent = Color(0xFF303132),
+            onAccent = Color(0xFF404142),
+            surface = Color(0xFF505152),
+            onSurface = Color(0xFF606162),
+            surfaceVariant = Color(0xFF707172),
+            onSurfaceVariant = Color(0xFF808182),
+            isDark = true,
+        )
+
+        val actual = applyAppearanceSettings(
+            base,
+            AppearanceSettings(
+                dynamicColors = true,
+                customColorsEnabled = true,
+                // An accent chosen before the system one was switched on must not hide it.
+                customAccentColor = 0xFF111213L,
+                customBackgroundColor = 0xFF212223L,
+            ),
+        )
+
+        assertEquals(base.accent, actual.accent)
+        assertEquals(Color(0xFF212223), actual.background)
+        assertEquals(base.surface, actual.surface)
+    }
 }

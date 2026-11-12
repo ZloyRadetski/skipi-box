@@ -86,7 +86,6 @@ fun SkipiAppearanceSettingsScreen(
     state: AppearanceSettingsState,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    currentKeyColor: Color,
     hasCustomBackgroundPhoto: Boolean,
     appIconTitle: String,
     onSettingsChange: ((AppearanceSettingsState) -> AppearanceSettingsState) -> Unit,
@@ -152,7 +151,6 @@ fun SkipiAppearanceSettingsScreen(
                         onSettingsChange = updateAppState,
                         capabilities = capabilities,
                         appIconTitle = appIconTitle,
-                        currentKeyColor = currentKeyColor,
                         onRequestAppIconSelection = onRequestAppIconSelection,
                         onPickColor = { activeAppearanceColorTarget = it },
                     )
@@ -210,7 +208,6 @@ fun SkipiAppearanceSettingsScreen(
                 target = activeAppearanceColorTarget,
                 state = appState,
                 onSettingsChange = updateAppState,
-                currentKeyColor = currentKeyColor,
                 onDismiss = { activeAppearanceColorTarget = null },
             )
 

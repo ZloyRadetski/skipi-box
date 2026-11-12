@@ -138,4 +138,41 @@ class CustomThemeLibraryTest {
         assertEquals(CustomThemeImport.LibraryFull, result.outcome)
         assertEquals(storage, result.storage)
     }
+
+    @Test
+    fun applyingAThemeTurnsCustomColorsOnAndTakesItsBaseAndSixColours() {
+        val state = app.AppState(colorMode = app.modes.ColorModeSystem)
+
+        val applied = state.withCustomTheme(theme("Light one", dark = false))
+
+        assertTrue(applied.enableCustomColors)
+        assertEquals(app.modes.ColorModeLight, applied.colorMode)
+        assertEquals(0xFF3B82F6, applied.customAccentColor)
+        assertEquals(0xFF081427, applied.customBackgroundColor)
+        assertEquals(0xFF102443, applied.customSurfaceColor)
+        assertEquals(0xFF18345E, applied.customSurfaceVariantColor)
+        assertEquals(0xFFE7F1FF, applied.customTextColor)
+        assertEquals(0xFFB2C8EA, applied.customTextSecondaryColor)
+        assertEquals(app.modes.ColorModeDark, state.withCustomTheme(theme("Dark one", dark = true)).colorMode)
+    }
+
+    @Test
+    fun aThemeFromALinkIsAppliedWhenItIsAddedOrAlreadySavedButNotWhenTheLibraryIsFull() {
+        val state = app.AppState(customThemes = "")
+        val fresh = state.withImportedCustomTheme(theme("Fresh"))
+        assertEquals(CustomThemeImport.Added, fresh.outcome)
+        assertTrue(fresh.state.enableCustomColors)
+        assertEquals(0xFF3B82F6, fresh.state.customAccentColor)
+
+        val again = fresh.state.copy(customAccentColor = null, enableCustomColors = false).withImportedCustomTheme(theme("Fresh"))
+        assertEquals(CustomThemeImport.AlreadySaved, again.outcome)
+        assertTrue(again.state.enableCustomColors)
+
+        val full = (1..CustomThemeLibraryLimit).fold(app.AppState()) { acc, n ->
+            acc.copy(customThemes = importCustomTheme(acc.customThemes, theme("T$n", accent = 0xFF000000L + n)).storage)
+        }
+        val rejected = full.withImportedCustomTheme(theme("Extra", accent = 0xFF123456))
+        assertEquals(CustomThemeImport.LibraryFull, rejected.outcome)
+        assertEquals(full, rejected.state)
+    }
 }

@@ -270,6 +270,7 @@ fun App(
             CompositionLocalProvider(
                 LocalAppStateStore provides stateStore,
                 LocalAppChromeState provides chromeState,
+                app.skipi.ui.components.LocalConfirmDeletion provides chromeState.enableDeletionConfirmation,
                 LocalUpdateAppState provides updateAppState,
                 LocalAppServices provides services,
                 LocalAppHaptics provides haptics,

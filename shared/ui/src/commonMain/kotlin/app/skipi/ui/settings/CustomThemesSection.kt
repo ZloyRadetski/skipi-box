@@ -167,10 +167,6 @@ internal fun CustomThemesSection(
                     onTextChange = { text = it },
                     library = themes,
                     onCancel = { dialog = null },
-                    onAdd = { theme ->
-                        save(themes.withAdded(theme))
-                        dialog = null
-                    },
                     onAddAndApply = { theme ->
                         // Colours that are already saved are applied without a second copy.
                         val next = themes.withAdded(theme)
@@ -240,7 +236,6 @@ internal fun ImportThemeContent(
     onTextChange: (String) -> Unit,
     library: List<CustomThemeShare>,
     onCancel: () -> Unit,
-    onAdd: (CustomThemeShare) -> Unit,
     onAddAndApply: (CustomThemeShare) -> Unit,
 ) {
     val parsed = remember(text) { parseCustomThemeCodeOrNull(text) }
@@ -278,20 +273,11 @@ internal fun ImportThemeContent(
         )
     }
     Spacer(Modifier.height(8.dp))
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        TextButton(
-            text = stringResource(Res.string.common_cancel),
-            modifier = Modifier.weight(1f),
-            onClick = onCancel,
-        )
-        Spacer(Modifier.width(8.dp))
-        TextButton(
-            text = stringResource(Res.string.custom_themes_add),
-            modifier = Modifier.weight(1f),
-            enabled = parsed != null && !library.isFull() && library.indexOfColours(parsed) < 0,
-            onClick = { if (parsed != null) onAdd(parsed) },
-        )
-    }
+    TextButton(
+        text = stringResource(Res.string.common_cancel),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onCancel,
+    )
 }
 
 @Composable

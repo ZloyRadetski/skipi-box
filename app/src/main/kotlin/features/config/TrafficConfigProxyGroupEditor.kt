@@ -96,6 +96,55 @@ internal fun TrafficConfigProxyGroupsPage(
     )
 }
 
+/** The key under which a profile's own proxy group edited from Home returns its result. */
+internal const val HomeConfigProxyGroupEditResultKey = "home-config-proxy-group-edit-result"
+
+/**
+ * Opens the editor of the one profile-owned group [strategy] stands for, for the Home list: the group is found
+ * by its policy name in the profile and its result comes back under [HomeConfigProxyGroupEditResultKey].
+ * Returns false when the profile or the group is gone.
+ */
+internal fun openProfileProxyGroupEditor(
+    navigator: app.navigation.Navigator,
+    state: AppState,
+    strategy: features.proxy.server.model.StrategyGroup,
+): Boolean {
+    val config = state.trafficConfigs.firstOrNull { it.id == strategy.sourceTrafficConfigId } ?: return false
+    val group = config.rawConfig.analyzeShadowrocketConfig().proxyGroups
+        .firstOrNull { it.name.equals(strategy.sourcePolicyGroupName, ignoreCase = true) } ?: return false
+    navigator.navigateForResult(
+        route = Route.ProxyServerEditor(
+            ps = group.toEditableStrategyGroup(config.id, state.trafficConfigProxyGroupServerChoices()),
+            serverId = group.lineNumber,
+            resultKey = HomeConfigProxyGroupEditResultKey,
+        ),
+        requestKey = HomeConfigProxyGroupEditResultKey,
+    )
+    return true
+}
+
+private fun AppState.trafficConfigProxyGroupServerChoices() = trafficConfigProxyGroupServerChoices(
+    proxyServers.map { state -> TrafficConfigProxyGroupServerInput(id = state.id, server = state.server) },
+)
+
+/** Saves what the Home-opened profile group editor returns into the profile that owns the group. */
+@Composable
+internal fun HomeProfileProxyGroupEditResultHandler() {
+    val stateStore = LocalAppStateStore.current
+    val updateAppState = LocalUpdateAppState.current
+    val navigator = LocalNavigator.current
+    val editor = rememberTrafficConfigProxyGroupEditorController(updateAppState)
+    LaunchedEffect(navigator, editor) {
+        navigator.observeResult<ProxyServerEditResult>(HomeConfigProxyGroupEditResultKey).collect { result ->
+            navigator.clearResult(HomeConfigProxyGroupEditResultKey)
+            val state = stateStore.state.value
+            val configId = (result.server as? features.proxy.server.model.StrategyGroup)?.sourceTrafficConfigId
+            val config = state.trafficConfigs.firstOrNull { it.id == configId } ?: return@collect
+            editor.saveProxyGroupResult(config, result, state.trafficConfigProxyGroupServerChoices())
+        }
+    }
+}
+
 @Composable
 private fun rememberTrafficConfigProxyGroupEditorController(
     updateAppState: ((AppState) -> AppState) -> Unit,

@@ -532,7 +532,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     systemTheme = false,
     appIcon = false,
     wallpaper = true,
-    dynamicColors = false,
+    dynamicColors = true,
     customColors = true,
     fonts = true,
     bottomBarSize = true,
@@ -631,7 +631,6 @@ private fun DesktopAppearanceSettings(
         state = draft.toAppearanceSettingsState(),
         padding = contentPadding,
         isWideScreen = true,
-        currentKeyColor = SkipiTheme.colors.accent,
         hasCustomBackgroundPhoto = DesktopBackgroundPhoto.version >= 0L && DesktopBackgroundPhoto.exists(),
         appIconTitle = "",
         onSettingsChange = { transform ->

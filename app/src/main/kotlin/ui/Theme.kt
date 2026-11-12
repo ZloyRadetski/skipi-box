@@ -159,7 +159,7 @@ fun AppTheme(
     }
 
     val miuixColors = remember(baseMiuixColors, appColors, namedThemePalette, enableCustomColors, enableMaterialYou, customAccentColor, backgroundStyle) {
-        val overridePrimary = namedThemePalette != null || !enableMaterialYou || (enableCustomColors && customAccentColor != null)
+        val overridePrimary = namedThemePalette != null || !enableMaterialYou
         baseMiuixColors.copy(
             surface = appColors.surface,
             surfaceContainer = appColors.surface,
