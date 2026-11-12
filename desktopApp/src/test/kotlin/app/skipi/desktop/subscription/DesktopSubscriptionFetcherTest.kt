@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_subscription_provider_failed
 import engine.network.toBasicAuthHeaderOrNull
 import engine.network.toIdnUrl
 import features.subscription.DefaultSubscriptionUserAgent
@@ -166,7 +168,7 @@ class DesktopSubscriptionFetcherTest {
 
             assertEquals(0, update.importResult.servers.size)
             assertEquals(0, providerRequests)
-            assertTrue(update.importDiagnostics.any { diagnostic -> diagnostic.contains("Провайдер 'remote'") })
+            assertTrue(update.importDiagnostics.any { diagnostic -> diagnostic.contains(desktopText(Res.string.desktop_subscription_provider_failed, "remote")) })
         }
     }
 

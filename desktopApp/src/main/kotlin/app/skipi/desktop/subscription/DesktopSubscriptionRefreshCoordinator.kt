@@ -10,6 +10,9 @@ import app.skipi.app.subscription.SubscriptionInstallOperations
 import app.skipi.app.subscription.SubscriptionWorkerOutcome
 import app.skipi.app.subscription.shouldFetchScheduledSubscription
 import app.skipi.app.subscription.subscriptionWorkerOutcome
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_subscription_gone
+import app.skipi.ui.resources.desktop_subscription_group_no_url
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -26,11 +29,11 @@ internal class DesktopSubscriptionRefreshCoordinator(
     suspend fun refresh(subscriptionId: Int): Result<DesktopSubscriptionRefreshOperationResult> = admission.withLock {
         val subscription = latestSubscription(subscriptionId)
             ?: return@withLock Result.failure(
-                DesktopSubscriptionRefreshPreconditionException("Подписка больше не существует."),
+                DesktopSubscriptionRefreshPreconditionException(desktopText(Res.string.desktop_subscription_gone)),
             )
         if (subscription.url.isBlank()) {
             return@withLock Result.failure(
-                DesktopSubscriptionRefreshPreconditionException("У группы нет ссылки для обновления."),
+                DesktopSubscriptionRefreshPreconditionException(desktopText(Res.string.desktop_subscription_group_no_url)),
             )
         }
         refreshResult(subscription)

@@ -10,6 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_settings_vpn_saved
+import app.skipi.ui.resources.desktop_vpn_autostart_failed
+import app.skipi.ui.resources.desktop_vpn_elevation_required
 import app.skipi.ui.resources.settings_launch_on_login_summary
 import app.skipi.ui.resources.settings_launch_on_login_title
 import app.skipi.ui.resources.settings_tun_mode_summary
@@ -70,7 +73,7 @@ internal fun DesktopVpnSettings(
 ) {
     var showTunSheet by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf(settings.toTunDraft()) }
-    val saved = "Параметры VPN сохранены."
+    val saved = desktopText(Res.string.desktop_settings_vpn_saved)
     val tunAvailable = tunUnavailableReason == null
     val labels = rememberVpnSettingsLabels().let { shared ->
         shared.copy(
@@ -81,7 +84,7 @@ internal fun DesktopVpnSettings(
     val tunModeSummary = if (tunAvailable) {
         stringResource(Res.string.settings_tun_mode_summary)
     } else if (tunNeedsElevation) {
-        "Нужны права администратора: включение перезапустит SKIPI с запросом UAC."
+        desktopText(Res.string.desktop_vpn_elevation_required)
     } else {
         stringResource(Res.string.settings_tun_mode_unavailable, tunUnavailableReason.orEmpty())
     }
@@ -120,7 +123,7 @@ internal fun DesktopVpnSettings(
             onApplyLaunchOnLogin(enabled).fold(
                 onSuccess = { onPersist(settings.copy(launchOnLogin = enabled), saved) },
                 onFailure = { error ->
-                    onPersist(settings, "Не удалось изменить автозапуск: ${error.message.orEmpty()}")
+                    onPersist(settings, desktopText(Res.string.desktop_vpn_autostart_failed, error.message.orEmpty()))
                 },
             )
         },

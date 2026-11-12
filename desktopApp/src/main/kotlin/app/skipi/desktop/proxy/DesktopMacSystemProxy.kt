@@ -3,6 +3,13 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_system_proxy_activated
+import app.skipi.ui.resources.desktop_system_proxy_already_owned
+import app.skipi.ui.resources.desktop_system_proxy_no_active_lease
+import app.skipi.ui.resources.desktop_system_proxy_no_saved_lease
+import app.skipi.ui.resources.desktop_system_proxy_recovered
+import app.skipi.ui.resources.desktop_system_proxy_restored
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -107,7 +114,7 @@ class DesktopMacSystemProxyLeaseManager(
                 if (existing.phase == DesktopSystemProxyLeasePhase.Active && existing.endpoints == endpoints) {
                     return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                         action = DesktopSystemProxyLeaseAction.AlreadyAcquired,
-                        message = "macOS system proxy is already owned by SKIPI.",
+                        message = desktopText(Res.string.desktop_system_proxy_already_owned, "macOS"),
                     )
                 }
                 restore(existing.services).getOrThrow()
@@ -126,7 +133,7 @@ class DesktopMacSystemProxyLeaseManager(
 
             DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.Acquired,
-                message = "Системный прокси macOS активирован.",
+                message = desktopText(Res.string.desktop_system_proxy_activated, "macOS"),
             ).also {
                 DesktopLogger.info("SystemProxy", "Acquired macOS system proxy (HTTP ${endpoints.httpPort}, SOCKS ${endpoints.socksPort})")
             }
@@ -136,13 +143,13 @@ class DesktopMacSystemProxyLeaseManager(
         val lease = DesktopMacSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.NothingToRelease,
-                message = "Нет активной аренды системного прокси macOS.",
+                message = desktopText(Res.string.desktop_system_proxy_no_active_lease, "macOS"),
             )
         restore(lease.services).getOrThrow()
         DesktopMacSystemProxyLeaseStore.clear(leasePath).getOrThrow()
         DesktopSystemProxyLeaseResult(
             action = DesktopSystemProxyLeaseAction.Released,
-            message = "Системный прокси macOS возвращен в исходное состояние.",
+            message = desktopText(Res.string.desktop_system_proxy_restored, "macOS"),
         ).also { DesktopLogger.info("SystemProxy", "Released macOS system proxy") }
     }
 
@@ -150,13 +157,13 @@ class DesktopMacSystemProxyLeaseManager(
         val lease = DesktopMacSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.NothingToRelease,
-                message = "Нет сохраненной аренды для восстановления.",
+                message = desktopText(Res.string.desktop_system_proxy_no_saved_lease),
             )
         restore(lease.services).getOrThrow()
         DesktopMacSystemProxyLeaseStore.clear(leasePath).getOrThrow()
         DesktopSystemProxyLeaseResult(
             action = DesktopSystemProxyLeaseAction.Recovered,
-            message = "Восстановлены системные настройки прокси macOS после предыдущей сессии.",
+            message = desktopText(Res.string.desktop_system_proxy_recovered, "macOS"),
         ).also { DesktopLogger.info("SystemProxy", "Recovered macOS system proxy from previous session") }
     }
 

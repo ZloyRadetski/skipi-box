@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_reason_network_automation
 import features.networkautomation.policy.NetworkAutomationAction
 import features.networkautomation.policy.NetworkObservationPlan
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +47,7 @@ internal suspend fun runDesktopNetworkAutomation(
             }
             is NetworkAutomationAction.Restart -> {
                 runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
-                tunnel.requestReconnect("Автоматизация сети: смена сервера.")
+                tunnel.requestReconnect(desktopText(Res.string.desktop_reason_network_automation))
             }
             is NetworkAutomationAction.Start -> {
                 runCatching { proxyServerRepository.selectAndCommit(action.serverId) }

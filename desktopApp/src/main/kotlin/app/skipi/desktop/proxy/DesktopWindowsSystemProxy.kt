@@ -3,6 +3,15 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_system_proxy_already_owned
+import app.skipi.ui.resources.desktop_system_proxy_no_interrupted_lease
+import app.skipi.ui.resources.desktop_system_proxy_no_lease_stored
+import app.skipi.ui.resources.desktop_system_proxy_windows_changed_outside
+import app.skipi.ui.resources.desktop_system_proxy_windows_points
+import app.skipi.ui.resources.desktop_system_proxy_windows_recovered
+import app.skipi.ui.resources.desktop_system_proxy_windows_restored
+import app.skipi.ui.resources.desktop_system_proxy_windows_stale_lease
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -281,7 +290,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                     }
                     return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
                         action = DesktopWindowsSystemProxyLeaseAction.AlreadyAcquired,
-                        message = "Windows system proxy is already owned by SKIPI.",
+                        message = desktopText(Res.string.desktop_system_proxy_already_owned, "Windows"),
                     )
                 }
                 if (ownership == DesktopWindowsSystemProxyOwnership.Restorable) {
@@ -329,7 +338,7 @@ class DesktopWindowsSystemProxyLeaseManager(
             }
             DesktopWindowsSystemProxyLeaseResult(
                 action = DesktopWindowsSystemProxyLeaseAction.Acquired,
-                message = "Windows HTTP/HTTPS proxy points to ${endpoint.host}:${endpoint.port}.",
+                message = desktopText(Res.string.desktop_system_proxy_windows_points, endpoint.host, endpoint.port),
             )
         }
 
@@ -338,7 +347,7 @@ class DesktopWindowsSystemProxyLeaseManager(
         val lease = DesktopWindowsSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
                 action = DesktopWindowsSystemProxyLeaseAction.NothingToRelease,
-                message = "No SKIPI system proxy lease is stored.",
+                message = desktopText(Res.string.desktop_system_proxy_no_lease_stored),
             )
         when (ownershipOf(lease).getOrThrow()) {
             DesktopWindowsSystemProxyOwnership.Active,
@@ -347,7 +356,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                 restoreOwnedLease(lease).getOrThrow()
                 DesktopWindowsSystemProxyLeaseResult(
                     action = DesktopWindowsSystemProxyLeaseAction.Released,
-                    message = "Windows proxy settings were restored.",
+                    message = desktopText(Res.string.desktop_system_proxy_windows_restored),
                 )
             }
 
@@ -355,7 +364,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                 discardUnownedLease(lease).getOrThrow()
                 DesktopWindowsSystemProxyLeaseResult(
                     action = DesktopWindowsSystemProxyLeaseAction.SkippedNotOwner,
-                    message = "Windows proxy changed outside SKIPI; the current settings were not overwritten.",
+                    message = desktopText(Res.string.desktop_system_proxy_windows_changed_outside),
                 )
             }
         }
@@ -366,7 +375,7 @@ class DesktopWindowsSystemProxyLeaseManager(
         val lease = DesktopWindowsSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
                 action = DesktopWindowsSystemProxyLeaseAction.NothingToRelease,
-                message = "No interrupted system proxy lease was found.",
+                message = desktopText(Res.string.desktop_system_proxy_no_interrupted_lease),
             )
         when (ownershipOf(lease).getOrThrow()) {
             DesktopWindowsSystemProxyOwnership.Active,
@@ -375,7 +384,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                 restoreOwnedLease(lease).getOrThrow()
                 DesktopWindowsSystemProxyLeaseResult(
                     action = DesktopWindowsSystemProxyLeaseAction.Recovered,
-                    message = "Recovered the Windows proxy settings left by an interrupted SKIPI session.",
+                    message = desktopText(Res.string.desktop_system_proxy_windows_recovered),
                 )
             }
 
@@ -383,7 +392,7 @@ class DesktopWindowsSystemProxyLeaseManager(
                 discardUnownedLease(lease).getOrThrow()
                 DesktopWindowsSystemProxyLeaseResult(
                     action = DesktopWindowsSystemProxyLeaseAction.SkippedNotOwner,
-                    message = "A stale SKIPI lease was discarded without changing Windows proxy settings.",
+                    message = desktopText(Res.string.desktop_system_proxy_windows_stale_lease),
                 )
             }
         }

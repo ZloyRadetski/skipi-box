@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_select_server_before_connect
 import platform.buildLogJson
 import engine.xray.CustomXrayDnsRewriteRequest
 import engine.xray.XrayResourceRoutingRuleValidator
@@ -135,7 +137,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
             amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
             tunVpnDns = effectiveTunDns,
         )?.getOrThrow()
-            ?: error("Select a working server before connecting")
+            ?: error(desktopText(Res.string.desktop_select_server_before_connect))
     }
 }
 

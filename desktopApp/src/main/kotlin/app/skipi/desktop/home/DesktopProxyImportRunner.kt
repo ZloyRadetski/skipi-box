@@ -6,6 +6,15 @@ package app.skipi.desktop
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.store.SharedApplicationStore
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_import_changed_profile
+import app.skipi.ui.resources.desktop_import_changed_server
+import app.skipi.ui.resources.desktop_import_not_saved
+import app.skipi.ui.resources.desktop_import_partially_saved
+import app.skipi.ui.resources.desktop_import_section_configs
+import app.skipi.ui.resources.desktop_import_section_servers
+import app.skipi.ui.resources.desktop_import_section_subscriptions
+import app.skipi.ui.resources.desktop_import_subscriptions_hint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -87,7 +96,7 @@ internal class DesktopProxyImportRunner(
                     SharedApplicationAction.ImportProxyServerBatch(plan.servers),
                 )
                 when (val outcome = actionResult.outcome) {
-                    SharedApplicationActionOutcome.Completed -> savedSections += "серверы"
+                    SharedApplicationActionOutcome.Completed -> savedSections += desktopText(Res.string.desktop_import_section_servers)
                     is SharedApplicationActionOutcome.Rejected ->
                         throw IllegalStateException(outcome.reason)
 
@@ -100,31 +109,33 @@ internal class DesktopProxyImportRunner(
             if (committed.subscriptionLibrary != readSubscriptions()) {
                 DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary).getOrThrow()
                 publishSubscriptions(committed.subscriptionLibrary)
-                savedSections += "подписки"
+                savedSections += desktopText(Res.string.desktop_import_section_subscriptions)
             }
             if (committed.configLibrary != readConfigs()) {
                 val activeBefore = readConfigs().selectedConfigId
                 DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
                 publishConfigs(committed.configLibrary)
-                savedSections += "конфиги"
+                savedSections += desktopText(Res.string.desktop_import_section_configs)
                 if (isTunnelRunning() && activeBefore != committed.configLibrary.selectedConfigId) {
-                    requestReconnect("Импорт изменил активный профиль.")
+                    requestReconnect(desktopText(Res.string.desktop_import_changed_profile))
                 }
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
-            val prefix = if (savedSections.isEmpty()) {
-                "Импорт не сохранён"
+            val failure = if (savedSections.isEmpty()) {
+                desktopText(Res.string.desktop_import_not_saved, error.message.orEmpty())
             } else {
-                "Часть импорта уже сохранена (${savedSections.joinToString()})"
+                desktopText(
+                    Res.string.desktop_import_partially_saved,
+                    savedSections.joinToString(),
+                    error.message.orEmpty(),
+                )
             }
-            return Result.failure(
-                IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
-            )
+            return Result.failure(IllegalStateException(failure, error))
         }
         if (isTunnelRunning() && importedServerSelectionChanged) {
-            requestReconnect("Импорт изменил выбранный сервер.")
+            requestReconnect(desktopText(Res.string.desktop_import_changed_server))
         }
         val diagnostics = plan.diagnostics
             .filter { diagnostic -> diagnostic.severity != DesktopProxyImportDiagnosticSeverity.Error }
@@ -132,7 +143,7 @@ internal class DesktopProxyImportRunner(
             .take(2)
             .joinToString(" ")
         val subscriptionHint = if (committed.counts.addedSubscriptions + committed.counts.updatedSubscriptions > 0) {
-            " Подписки сохранены; их можно обновить из карточки."
+            " " + desktopText(Res.string.desktop_import_subscriptions_hint)
         } else {
             ""
         }

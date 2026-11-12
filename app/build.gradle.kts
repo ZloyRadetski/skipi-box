@@ -202,6 +202,7 @@ val syncSharedStrings = tasks.register<Sync>("syncSharedStrings") {
     description = "Copies the shared strings into Android resources so R.string is generated from the one source."
     from(rootProject.layout.projectDirectory.dir("shared/ui/src/commonMain/composeResources")) {
         include("values*/strings.xml")
+        filter { line -> escapeForAndroidResources(line) }
     }
     into(layout.buildDirectory.dir("generated/sharedStringsRes"))
 }

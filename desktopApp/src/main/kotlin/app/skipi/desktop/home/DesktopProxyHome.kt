@@ -6,6 +6,67 @@ package app.skipi.desktop
 import app.skipi.app.home.ProxyHomeServerMove
 import app.skipi.app.home.resolveProxyHomeServerDrag
 import app.skipi.app.home.resolveProxyHomeServerStep
+import app.skipi.ui.resources.desktop_home_action_failed
+import app.skipi.ui.resources.desktop_home_builtin_group_delete
+import app.skipi.ui.resources.desktop_home_builtin_group_edit
+import app.skipi.ui.resources.desktop_home_builtin_group_move
+import app.skipi.ui.resources.desktop_home_bulk_refresh_not_connected
+import app.skipi.ui.resources.desktop_home_clear_list_not_connected
+import app.skipi.ui.resources.desktop_home_clipboard_no_text
+import app.skipi.ui.resources.desktop_home_clipboard_read_failed
+import app.skipi.ui.resources.desktop_home_connection_test_unavailable
+import app.skipi.ui.resources.desktop_home_delete_confirmation_not_connected
+import app.skipi.ui.resources.desktop_home_file_read_failed
+import app.skipi.ui.resources.desktop_home_format_unavailable
+import app.skipi.ui.resources.desktop_home_group_change_failed
+import app.skipi.ui.resources.desktop_home_group_delete_failed
+import app.skipi.ui.resources.desktop_home_group_move_failed
+import app.skipi.ui.resources.desktop_home_group_move_out_of_range
+import app.skipi.ui.resources.desktop_home_group_not_found
+import app.skipi.ui.resources.desktop_home_group_save_failed
+import app.skipi.ui.resources.desktop_home_import_data_too_large
+import app.skipi.ui.resources.desktop_home_import_dialog_title
+import app.skipi.ui.resources.desktop_home_import_error
+import app.skipi.ui.resources.desktop_home_import_failed
+import app.skipi.ui.resources.desktop_home_import_file_too_large
+import app.skipi.ui.resources.desktop_home_invalid_server_id
+import app.skipi.ui.resources.desktop_home_invalid_strategy_group_id
+import app.skipi.ui.resources.desktop_home_invalid_strategy_member_id
+import app.skipi.ui.resources.desktop_home_invalid_subscription_id
+import app.skipi.ui.resources.desktop_home_manual_group_no_url
+import app.skipi.ui.resources.desktop_home_no_delete_confirmation
+import app.skipi.ui.resources.desktop_home_no_servers_for_tcp
+import app.skipi.ui.resources.desktop_home_not_ready
+import app.skipi.ui.resources.desktop_home_path_not_file
+import app.skipi.ui.resources.desktop_home_qr_import_unsupported
+import app.skipi.ui.resources.desktop_home_qr_not_connected
+import app.skipi.ui.resources.desktop_home_qr_unavailable
+import app.skipi.ui.resources.desktop_home_reorder_default_sort_only
+import app.skipi.ui.resources.desktop_home_restart_not_connected
+import app.skipi.ui.resources.desktop_home_select_server
+import app.skipi.ui.resources.desktop_home_server_data_copied
+import app.skipi.ui.resources.desktop_home_server_group_not_found
+import app.skipi.ui.resources.desktop_home_server_move_not_visible
+import app.skipi.ui.resources.desktop_home_server_move_out_of_range
+import app.skipi.ui.resources.desktop_home_server_move_same
+import app.skipi.ui.resources.desktop_home_server_not_found
+import app.skipi.ui.resources.desktop_home_server_params_invalid
+import app.skipi.ui.resources.desktop_home_strategy_member_not_found
+import app.skipi.ui.resources.desktop_home_subscription_group_not_found
+import app.skipi.ui.resources.desktop_home_subscription_not_found
+import app.skipi.ui.resources.desktop_home_subscription_prepare_failed
+import app.skipi.ui.resources.desktop_home_subscription_save_failed
+import app.skipi.ui.resources.desktop_home_tcp_cancel_unavailable
+import app.skipi.ui.resources.desktop_home_wait_subscription_check
+import app.skipi.ui.resources.desktop_home_wait_subscription_update
+import app.skipi.ui.resources.desktop_link_https_host_required
+import app.skipi.ui.resources.desktop_link_https_no_credentials
+import app.skipi.ui.resources.desktop_link_mailto_invalid_address
+import app.skipi.ui.resources.desktop_link_mailto_single_address
+import app.skipi.ui.resources.desktop_link_unsupported_scheme
+import app.skipi.ui.resources.desktop_open_link_unsupported
+import app.skipi.ui.resources.desktop_status_error_markers
+import app.skipi.ui.resources.desktop_strategy_group_not_found
 import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -211,15 +272,13 @@ internal fun DesktopProxyHome(
     }
     val combinedStatusMessage = listOf(tunnelMessage, subscriptionMessage, serverMessage, localMessage)
         .firstOrNull { it.isNotBlank() }
+    val errorMarkers = stringResource(Res.string.desktop_status_error_markers)
     val isStatusError = combinedStatusMessage?.let { msg ->
-        msg.contains("не удалось", ignoreCase = true) ||
-            msg.contains("ошибка", ignoreCase = true) ||
-            msg.contains("failed", ignoreCase = true) ||
-            msg.contains("rejected", ignoreCase = true)
+        desktopStatusMessageIsError(msg, errorMarkers)
     } ?: false
 
     val selectedServer = decodedServers.firstOrNull { (stored, _) -> stored.id == serverLibrary.selectedServerId }?.second
-    val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { "Выберите сервер" }
+    val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { stringResource(Res.string.desktop_home_select_server) }
     var sortMode by remember(desktopSettings.proxyServerListSort) {
         mutableStateOf(proxyHomeSortModeFromAndroidValue(desktopSettings.proxyServerListSort))
     }
@@ -402,7 +461,7 @@ internal fun DesktopProxyHome(
             scope = scope,
             effectHandler = ProxyHomeEffectHandler { effect ->
                 effectContextState.value?.handle(effect)
-                    ?: Result.failure(IllegalStateException("Главный экран Desktop ещё не готов к этому действию."))
+                    ?: Result.failure(IllegalStateException(desktopText(Res.string.desktop_home_not_ready)))
             },
         )
     }
@@ -439,15 +498,15 @@ internal fun DesktopProxyHome(
                 if (install != null) {
                     onPrepareSubscription(install).fold(
                         onSuccess = { message -> localMessage = message },
-                        onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
+                        onFailure = { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_subscription_save_failed) },
                     )
                 } else {
                     onImport(DesktopProxyImportInput.Clipboard(text)).fold(
                         onSuccess = { summary -> localMessage = summary },
-                        onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                        onFailure = { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_import_failed) },
                     )
                 }
-            }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать буфер обмена." }
+            }.onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_clipboard_read_failed) }
         }
     }
     val importFromFile: () -> Unit = {
@@ -456,10 +515,10 @@ internal fun DesktopProxyHome(
                 if (file != null) {
                     onImport(DesktopProxyImportInput.File(file.name, file.content)).fold(
                         onSuccess = { summary -> localMessage = summary },
-                        onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                        onFailure = { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_import_failed) },
                     )
                 }
-            }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать файл." }
+            }.onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_file_read_failed) }
         }
     }
 
@@ -519,7 +578,7 @@ internal fun DesktopProxyHome(
         onSetSubscriptionEnabled = { id, enabled ->
             scope.launch {
                 runCatchingCancellable { onSetSubscriptionEnabled(id, enabled) }
-                    .onFailure { error -> localMessage = error.message ?: "Не удалось изменить группу." }
+                    .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_change_failed) }
             }
             Result.success(Unit)
         },
@@ -556,7 +615,7 @@ internal fun DesktopProxyHome(
         onEditSubscription = { subscription ->
             val record = subscriptionCatalog.subscriptions.firstOrNull { it.id == subscription.id }
             if (record == null) {
-                localMessage = "Группа не найдена."
+                localMessage = desktopText(Res.string.desktop_home_group_not_found)
             } else {
                 editingSubscriptionGroup = record.toSubscriptionGroupUiState(defaultGroupName)
                 editingManualGroup = record.url.isBlank()
@@ -582,7 +641,7 @@ internal fun DesktopProxyHome(
                     editingManualGroup = record.builtIn || record.url.isBlank()
                     subscriptionEditorVisible = true
                 } else {
-                    localMessage = "Группа не найдена."
+                    localMessage = desktopText(Res.string.desktop_home_group_not_found)
                 }
             }
         },
@@ -594,7 +653,7 @@ internal fun DesktopProxyHome(
                 requestDelete = {
                     scope.launch {
                         runCatchingCancellable { onDeleteSubscription(id) }
-                            .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                            .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_delete_failed) }
                     }
                 },
                 selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
@@ -603,7 +662,7 @@ internal fun DesktopProxyHome(
         onMoveGroup = { id, offset ->
             scope.launch {
                 runCatchingCancellable { onMoveGroup(id, offset) }
-                    .onFailure { error -> localMessage = error.message ?: "Не удалось переместить группу." }
+                    .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_move_failed) }
             }
             Result.success(Unit)
         },
@@ -751,7 +810,7 @@ internal fun DesktopProxyHome(
                                 addDialogVisible = false
                             },
                             onFailure = { error ->
-                                localMessage = error.message ?: "Не удалось подготовить подписку."
+                                localMessage = error.message ?: desktopText(Res.string.desktop_home_subscription_prepare_failed)
                             },
                         )
                     }
@@ -784,7 +843,7 @@ internal fun DesktopProxyHome(
                             importText = ""
                         },
                         onFailure = { error ->
-                            localMessage = error.message ?: "Ошибка импорта."
+                            localMessage = error.message ?: desktopText(Res.string.desktop_home_import_error)
                         },
                     )
                 }
@@ -853,7 +912,7 @@ internal fun DesktopProxyHome(
                     requestDelete = {
                         scope.launch {
                             runCatchingCancellable { onDeleteSubscription(subscriptionId) }
-                                .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                                .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_delete_failed) }
                         }
                     },
                     selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
@@ -876,7 +935,7 @@ internal fun DesktopProxyHome(
             onConfirm = {
                 pendingToolDeletion = null
                 effectContextState.value?.confirmToolDeletion(tool)
-                    ?.onFailure { error -> localMessage = error.message ?: "Не удалось выполнить действие." }
+                    ?.onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_action_failed) }
             },
         )
     }
@@ -905,10 +964,10 @@ internal fun DesktopProxyHome(
                         if (result.shouldStartRefresh && saved != null) {
                             onUpdateSubscriptionById(saved.id)
                         } else if (saved == null) {
-                            localMessage = "Группа не найдена."
+                            localMessage = desktopText(Res.string.desktop_home_group_not_found)
                         }
                     }
-                    .onFailure { error -> localMessage = error.message ?: "Не удалось сохранить группу." }
+                    .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_save_failed) }
             }
         },
         onDelete = { group ->
@@ -919,7 +978,7 @@ internal fun DesktopProxyHome(
                 requestDelete = {
                     scope.launch {
                         runCatchingCancellable { onDeleteSubscription(group.id) }
-                            .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                            .onFailure { error -> localMessage = error.message ?: desktopText(Res.string.desktop_home_group_delete_failed) }
                     }
                 },
                 selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
@@ -946,21 +1005,21 @@ internal fun requestDesktopProxyHomeSubscriptionDeletion(
 private fun readDesktopClipboardText(): Result<String> = runCatching {
     val clipboard = Toolkit.getDefaultToolkit().systemClipboard
     val text = clipboard.getData(DataFlavor.stringFlavor) as? String
-        ?: error("Буфер обмена не содержит текст.")
+        ?: error(desktopText(Res.string.desktop_home_clipboard_no_text))
     require(text.toByteArray(StandardCharsets.UTF_8).size <= MaxDesktopImportBytes) {
-        "Данные импорта превышают ${MaxDesktopImportBytes / 1024 / 1024} МБ."
+        desktopText(Res.string.desktop_home_import_data_too_large, MaxDesktopImportBytes / 1024 / 1024)
     }
     text
 }
 
 private fun chooseDesktopImportFile(): Result<DesktopImportFile?> = runCatching {
-    val dialog = FileDialog(null as Frame?, "Импортировать прокси", FileDialog.LOAD)
+    val dialog = FileDialog(null as Frame?, desktopText(Res.string.desktop_home_import_dialog_title), FileDialog.LOAD)
     dialog.isVisible = true
     val fileName = dialog.file ?: return@runCatching null
     val file = Path.of(dialog.directory.orEmpty(), fileName).normalize()
-    require(Files.isRegularFile(file)) { "Выбранный путь не является файлом." }
+    require(Files.isRegularFile(file)) { desktopText(Res.string.desktop_home_path_not_file) }
     require(Files.size(file) <= MaxDesktopImportBytes) {
-        "Файл импорта превышает ${MaxDesktopImportBytes / 1024 / 1024} МБ."
+        desktopText(Res.string.desktop_home_import_file_too_large, MaxDesktopImportBytes / 1024 / 1024)
     }
     DesktopImportFile(name = file.fileName.toString(), content = Files.readString(file, StandardCharsets.UTF_8))
 }
@@ -968,7 +1027,7 @@ private fun chooseDesktopImportFile(): Result<DesktopImportFile?> = runCatching 
 private const val MaxDesktopImportBytes = 8 * 1024 * 1024
 
 private fun openExternalLink(value: String): Result<Unit> = runCatching {
-    check(Desktop.isDesktopSupported()) { "Открытие ссылки не поддерживается системой." }
+    check(Desktop.isDesktopSupported()) { desktopText(Res.string.desktop_open_link_unsupported) }
     Desktop.getDesktop().browse(requireSafeDesktopExternalUri(value))
 }
 
@@ -1040,63 +1099,63 @@ internal class DesktopProxyHomeEffectContext(
         ProxyHomeEffect.ToggleTunnel -> invoke(onToggleTunnel)
         is ProxyHomeEffect.SelectServer -> effect.serverId.toIntOrNull()?.let { id ->
             if (id == selectedServerId) Result.success(Unit) else invoke { onSelectServer(id) }
-        } ?: unsupported("Некорректный идентификатор сервера.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.TestServer -> testVisibleServers(listOf(effect.serverId))
         is ProxyHomeEffect.TestConnection -> effect.serverId.toIntOrNull()?.let { id ->
             onTestConnection?.let { test -> invoke { test(id) } }
-                ?: unsupported("Проверка текущего соединения недоступна.")
-        } ?: unsupported("Некорректный идентификатор сервера.")
+                ?: unsupported(desktopText(Res.string.desktop_home_connection_test_unavailable))
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.TestVisibleServers -> testVisibleServers(effect.serverIds)
         is ProxyHomeEffect.TestGroup -> onTestGroup?.let { callback ->
             runCatching { callback(effect.groupId) }.getOrElse { Result.failure(it) }
         } ?: groupCatalog.group(effect.groupId)?.let { group ->
             testServers(group.serverIds.map(Int::toString))
-        } ?: unsupported("Группа серверов не найдена.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_server_group_not_found))
         is ProxyHomeEffect.PingSubscription -> effect.id.toIntOrNull()?.let { id ->
             if (pingingSubscriptionIds.isNotEmpty()) {
-                unsupported("Дождитесь завершения текущей проверки подписки.")
+                unsupported(desktopText(Res.string.desktop_home_wait_subscription_check))
             } else {
                 val groupId = DesktopProxyGroupIds.subscription(id)
                 groupCatalog.group(groupId)?.let { group -> pingSubscription(id, group.serverIds.map(Int::toString)) }
-                    ?: unsupported("Группа подписки не найдена.")
+                    ?: unsupported(desktopText(Res.string.desktop_home_subscription_group_not_found))
             }
-        } ?: unsupported("Некорректный идентификатор подписки.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_subscription_id))
         ProxyHomeEffect.CancelLatencyTests -> onCancelLatencyTests?.let(::invoke)
-            ?: unsupported("Отмена TCP-проверок не подключена в Desktop.")
+            ?: unsupported(desktopText(Res.string.desktop_home_tcp_cancel_unavailable))
         is ProxyHomeEffect.RefreshSubscription -> findSubscription(effect.id)?.let { subscription ->
-            if (subscription.url.isBlank()) unsupported("Ручные группы не имеют URL для обновления.")
-            else if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.")
+            if (subscription.url.isBlank()) unsupported(desktopText(Res.string.desktop_home_manual_group_no_url))
+            else if (updatingSubscription) unsupported(desktopText(Res.string.desktop_home_wait_subscription_update))
             else invoke { onUpdateSubscriptionById(subscription.id) }
-        } ?: unsupported("Подписка не найдена.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_subscription_not_found))
         ProxyHomeEffect.RefreshAllSubscriptions -> refreshAllSubscriptions()
         is ProxyHomeEffect.ToggleSubscriptionEnabled -> findSubscription(effect.id)?.let { subscription ->
             onSetSubscriptionEnabled(subscription.id, !subscription.enabled)
-        } ?: unsupported("Подписка не найдена.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_subscription_not_found))
         is ProxyHomeEffect.AddServer -> invoke { onCreateServerDraft(effect.kind) }
         ProxyHomeEffect.AddSubscription -> invoke { onOpenAdd(SkipiAddSourceMode.Subscription) }
         is ProxyHomeEffect.ImportServers -> when (effect.source) {
             ProxyHomeImportSource.ManualInput -> invoke(onOpenImportDialog)
-            ProxyHomeImportSource.QrCode -> unsupported("Импорт по QR-коду не поддерживается в Desktop.")
+            ProxyHomeImportSource.QrCode -> unsupported(desktopText(Res.string.desktop_home_qr_import_unsupported))
             ProxyHomeImportSource.Clipboard -> invoke(onImportFromClipboard)
             ProxyHomeImportSource.File -> invoke(onImportFromFile)
         }
         is ProxyHomeEffect.EditServer -> effect.id.toIntOrNull()?.let { id ->
             if (decodedServers.any { it.first.id == id && it.second != null }) invoke { onEditServer(id) }
-            else unsupported("Сервер не найден.")
-        } ?: unsupported("Некорректный идентификатор сервера.")
+            else unsupported(desktopText(Res.string.desktop_home_server_not_found))
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.DeleteServer -> effect.id.toIntOrNull()?.let { id ->
             if (decodedServers.any { it.first.id == id }) {
                 invoke { if (confirmDeletion) onDeleteServerConfirm(id) else onDeleteServer(id) }
-            } else unsupported("Сервер не найден.")
-        } ?: unsupported("Некорректный идентификатор сервера.")
+            } else unsupported(desktopText(Res.string.desktop_home_server_not_found))
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.ShowServerQr -> showServerQr(effect.id)
         is ProxyHomeEffect.CopyServer -> effect.id.toIntOrNull()?.let { id ->
             if (effect.format == ProxyHomeCopyFormat.QrCode) showServerQr(effect.id)
             else copyServer(id, effect.format)
-        } ?: unsupported("Некорректный идентификатор сервера.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.EditSubscription -> findSubscription(effect.id)?.let { subscription ->
             invoke { onEditSubscription(subscription) }
-        } ?: unsupported("Подписка не найдена.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_subscription_not_found))
         is ProxyHomeEffect.EditGroup -> {
             val groupId = effect.groupId
             if (groupId == null) {
@@ -1104,9 +1163,9 @@ internal class DesktopProxyHomeEffectContext(
             } else {
                 val subscriptionId = groupId.removePrefix("subscription:").toIntOrNull()
                 if (subscriptionId == null) {
-                    unsupported("Встроенные группы нельзя редактировать.")
+                    unsupported(desktopText(Res.string.desktop_home_builtin_group_edit))
                 } else if (subscriptions.none { it.id == subscriptionId }) {
-                    unsupported("Группа не найдена.")
+                    unsupported(desktopText(Res.string.desktop_home_group_not_found))
                 } else {
                     invoke { onOpenEditGroup(groupId) }
                 }
@@ -1115,9 +1174,9 @@ internal class DesktopProxyHomeEffectContext(
         is ProxyHomeEffect.DeleteGroup -> {
             val subscriptionId = effect.groupId.removePrefix("subscription:").toIntOrNull()
             if (subscriptionId == null) {
-                unsupported("Встроенные группы нельзя удалять.")
+                unsupported(desktopText(Res.string.desktop_home_builtin_group_delete))
             } else if (subscriptions.none { it.id == subscriptionId }) {
-                unsupported("Группа не найдена.")
+                unsupported(desktopText(Res.string.desktop_home_group_not_found))
             } else {
                 invoke {
                     if (confirmDeletion) onDeleteSubscriptionConfirm(subscriptionId)
@@ -1128,12 +1187,12 @@ internal class DesktopProxyHomeEffectContext(
         is ProxyHomeEffect.MoveGroup -> {
             val subscriptionId = effect.groupId.removePrefix("subscription:").toIntOrNull()
             if (subscriptionId == null) {
-                unsupported("Встроенные группы нельзя перемещать.")
+                unsupported(desktopText(Res.string.desktop_home_builtin_group_move))
             } else {
                 val index = subscriptions.indexOfFirst { it.id == subscriptionId }
                 val targetIndex = index + effect.offset
                 if (index == -1 || targetIndex !in subscriptions.indices || effect.offset == 0) {
-                    unsupported("Невозможно переместить группу за пределы списка.")
+                    unsupported(desktopText(Res.string.desktop_home_group_move_out_of_range))
                 } else {
                     onMoveGroup(subscriptionId, effect.offset)
                 }
@@ -1141,7 +1200,7 @@ internal class DesktopProxyHomeEffectContext(
         }
         is ProxyHomeEffect.MoveServer -> effect.serverId.toIntOrNull()?.let { id ->
             performMove(resolveProxyHomeServerStep(sortMode, orderedVisibleServerIds, id, effect.offset))
-        } ?: unsupported("Некорректный идентификатор сервера.")
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         is ProxyHomeEffect.ReorderServer -> {
             val fromServerId = effect.fromServerId.toIntOrNull()
             val toServerId = effect.toServerId.toIntOrNull()
@@ -1150,7 +1209,7 @@ internal class DesktopProxyHomeEffectContext(
                 if (sortMode != ProxyHomeSortMode.Default) {
                     performMove(ProxyHomeServerMove.NotDefaultSort)
                 } else {
-                    unsupported("Некорректный идентификатор сервера.")
+                    unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
                 }
             } else {
                 performMove(resolveProxyHomeServerDrag(sortMode, orderedVisibleServerIds, fromServerId, toServerId))
@@ -1158,14 +1217,14 @@ internal class DesktopProxyHomeEffectContext(
         }
         is ProxyHomeEffect.OpenStrategyMemberPicker -> effect.serverId.toIntOrNull()?.let { id ->
             if (decodedServers.firstOrNull { it.first.id == id }?.second is StrategyGroup) invoke { onOpenStrategyMemberPicker(id) }
-            else unsupported("Группа стратегий не найдена.")
-        } ?: unsupported("Некорректный идентификатор группы стратегий.")
+            else unsupported(desktopText(Res.string.desktop_strategy_group_not_found))
+        } ?: unsupported(desktopText(Res.string.desktop_home_invalid_strategy_group_id))
         is ProxyHomeEffect.SelectStrategyMember -> {
             val id = effect.serverId.toIntOrNull()
             val memberId = effect.memberId.toIntOrNull()
-            if (id == null || memberId == null) unsupported("Некорректный идентификатор участника стратегии.")
-            else if (decodedServers.firstOrNull { it.first.id == id }?.second !is StrategyGroup) unsupported("Группа стратегий не найдена.")
-            else if (decodedServers.none { it.first.id == memberId } || memberId == id) unsupported("Участник стратегии не найден.")
+            if (id == null || memberId == null) unsupported(desktopText(Res.string.desktop_home_invalid_strategy_member_id))
+            else if (decodedServers.firstOrNull { it.first.id == id }?.second !is StrategyGroup) unsupported(desktopText(Res.string.desktop_strategy_group_not_found))
+            else if (decodedServers.none { it.first.id == memberId } || memberId == id) unsupported(desktopText(Res.string.desktop_home_strategy_member_not_found))
             else invoke { onSelectStrategyMember(id, memberId) }
         }
         is ProxyHomeEffect.SetSort -> invoke { onSetSortMode(effect.mode) }
@@ -1177,15 +1236,15 @@ internal class DesktopProxyHomeEffectContext(
     private fun performMove(move: ProxyHomeServerMove): Result<Unit> = when (move) {
         is ProxyHomeServerMove.Swap -> onMoveServer(move.fromId, move.toId)
         ProxyHomeServerMove.NotDefaultSort ->
-            unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
-        ProxyHomeServerMove.OutOfRange -> unsupported("Невозможно переместить сервер за пределы группы.")
-        ProxyHomeServerMove.SameServer -> unsupported("Нельзя переместить сервер на ту же позицию.")
-        ProxyHomeServerMove.NotVisible -> unsupported("Перетаскиваемые серверы больше не видны в текущей группе.")
+            unsupported(desktopText(Res.string.desktop_home_reorder_default_sort_only))
+        ProxyHomeServerMove.OutOfRange -> unsupported(desktopText(Res.string.desktop_home_server_move_out_of_range))
+        ProxyHomeServerMove.SameServer -> unsupported(desktopText(Res.string.desktop_home_server_move_same))
+        ProxyHomeServerMove.NotVisible -> unsupported(desktopText(Res.string.desktop_home_server_move_not_visible))
     }
     private fun testServers(serverIds: Iterable<String>): Result<Unit> {
         val targets = subscriptionTestTargets(serverIds)
         if (targets.isEmpty()) {
-            onSetLocalMessage("В текущей группе нет серверов для TCP-проверки.")
+            onSetLocalMessage(desktopText(Res.string.desktop_home_no_servers_for_tcp))
             return Result.success(Unit)
         }
         return invoke { onMeasureServers(targets) }
@@ -1198,7 +1257,7 @@ internal class DesktopProxyHomeEffectContext(
     private fun pingSubscription(subscriptionId: Int, serverIds: Iterable<String>): Result<Unit> {
         val targets = subscriptionTestTargets(serverIds)
         if (targets.isEmpty()) {
-            onSetLocalMessage("В текущей группе нет серверов для TCP-проверки.")
+            onSetLocalMessage(desktopText(Res.string.desktop_home_no_servers_for_tcp))
             return Result.success(Unit)
         }
         return invoke { onPingSubscription(subscriptionId, targets) }
@@ -1213,33 +1272,33 @@ internal class DesktopProxyHomeEffectContext(
 
     private fun copyServer(serverId: Int, format: ProxyHomeCopyFormat): Result<Unit> {
         val server = decodedServers.firstOrNull { it.first.id == serverId }?.second
-            ?: return unsupported("Сервер не найден.")
+            ?: return unsupported(desktopText(Res.string.desktop_home_server_not_found))
         val copyText = when (format) {
             ProxyHomeCopyFormat.Url -> server.getUrlOrNull()
             ProxyHomeCopyFormat.FullJson -> server.encodePersistedProxyServer()
             ProxyHomeCopyFormat.QrCode -> null
-        } ?: return unsupported("Для этого сервера нельзя сформировать выбранный формат.")
+        } ?: return unsupported(desktopText(Res.string.desktop_home_format_unavailable))
         return runCatching {
             Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
-            onSetLocalMessage("Данные сервера скопированы.")
+            onSetLocalMessage(desktopText(Res.string.desktop_home_server_data_copied))
         }
     }
 
     private fun showServerQr(serverIdValue: String): Result<Unit> {
         val serverId = serverIdValue.toIntOrNull()
-            ?: return unsupported("Некорректный идентификатор сервера.")
+            ?: return unsupported(desktopText(Res.string.desktop_home_invalid_server_id))
         val server = decodedServers.firstOrNull { (stored, _) -> stored.id == serverId }?.second
-            ?: return unsupported("Сервер не найден.")
+            ?: return unsupported(desktopText(Res.string.desktop_home_server_not_found))
         if (server !is UrlProxyServer<*>) {
-            return unsupported("Для этого сервера нельзя сформировать QR-код.")
+            return unsupported(desktopText(Res.string.desktop_home_qr_unavailable))
         }
         if (server.validateBasic().isNotEmpty()) {
-            return unsupported("Параметры сервера некорректны.")
+            return unsupported(desktopText(Res.string.desktop_home_server_params_invalid))
         }
         val text = runCatching { server.getUrlOrNull() }.getOrNull()
-            ?: return unsupported("Для этого сервера нельзя сформировать QR-код.")
+            ?: return unsupported(desktopText(Res.string.desktop_home_qr_unavailable))
         val callback = onShowServerQr
-            ?: return unsupported("Показ QR-кода сервера не подключён в Desktop.")
+            ?: return unsupported(desktopText(Res.string.desktop_home_qr_not_connected))
         return runCatching {
             callback(ProxyHomeQrPayload(title = server.getInfo().remarks, text = text))
         }.getOrElse { error -> Result.failure(error) }
@@ -1253,18 +1312,18 @@ internal class DesktopProxyHomeEffectContext(
         ProxyHomeServerTool.DeleteDuplicateServers -> deleteCurrentGroup(onDeleteDuplicateServers)
         ProxyHomeServerTool.DeleteInvalidServers -> deleteCurrentGroup(onDeleteInvalidServers)
         ProxyHomeServerTool.DeleteAllServers -> deleteCurrentGroup(onDeleteAllServers)
-        else -> unsupported("Выбранная операция не требует подтверждения удаления.")
+        else -> unsupported(desktopText(Res.string.desktop_home_no_delete_confirmation))
     }
 
     private fun runServerTool(tool: ProxyHomeServerTool): Result<Unit> = when (tool) {
         ProxyHomeServerTool.UpdateSubscriptions -> refreshAllSubscriptions()
         ProxyHomeServerTool.RestartService -> onRestartService?.let(::invoke)
-            ?: unsupported("Перезапуск службы не подключён в Desktop.")
+            ?: unsupported(desktopText(Res.string.desktop_home_restart_not_connected))
         ProxyHomeServerTool.DeleteDuplicateServers,
         ProxyHomeServerTool.DeleteInvalidServers,
         ProxyHomeServerTool.DeleteAllServers -> if (confirmDeletion) {
             onConfirmToolDeletion?.let { callback -> invoke { callback(tool) } }
-                ?: unsupported("Подтверждение удаления не подключено в Desktop.")
+                ?: unsupported(desktopText(Res.string.desktop_home_delete_confirmation_not_connected))
         } else {
             when (tool) {
                 ProxyHomeServerTool.DeleteDuplicateServers -> deleteCurrentGroup(onDeleteDuplicateServers)
@@ -1277,12 +1336,12 @@ internal class DesktopProxyHomeEffectContext(
 
     private fun deleteCurrentGroup(callback: ((Set<Int>) -> Unit)?): Result<Unit> = callback?.let { action ->
         invoke { action(currentGroupServerIds) }
-    } ?: unsupported("Очистка списка серверов не подключена в Desktop.")
+    } ?: unsupported(desktopText(Res.string.desktop_home_clear_list_not_connected))
 
     private fun refreshAllSubscriptions(): Result<Unit> {
         val callback = onRefreshAllSubscriptions
             ?: return Result.failure(
-                UnsupportedOperationException("Массовое обновление подписок не подключено в Desktop."),
+                UnsupportedOperationException(desktopText(Res.string.desktop_home_bulk_refresh_not_connected)),
             )
         return invoke(callback)
     }
@@ -1300,21 +1359,21 @@ internal fun requireSafeDesktopExternalUri(value: String): URI {
     val uri = URI(value.trim())
     when (uri.scheme?.lowercase()) {
         "https" -> {
-            require(uri.host?.isNotBlank() == true) { "HTTPS ссылка должна содержать хост." }
-            require(uri.userInfo.isNullOrBlank()) { "HTTPS ссылка не должна содержать учётные данные." }
+            require(uri.host?.isNotBlank() == true) { desktopText(Res.string.desktop_link_https_host_required) }
+            require(uri.userInfo.isNullOrBlank()) { desktopText(Res.string.desktop_link_https_no_credentials) }
         }
 
         "mailto" -> {
             val recipient = uri.rawSchemeSpecificPart
             require(!recipient.isNullOrBlank() && !recipient.contains('?') && !recipient.contains('#')) {
-                "Mailto ссылка должна содержать один адрес без параметров."
+                desktopText(Res.string.desktop_link_mailto_single_address)
             }
             require(SafeDesktopMailtoRecipient.matches(recipient)) {
-                "Mailto ссылка содержит некорректный адрес."
+                desktopText(Res.string.desktop_link_mailto_invalid_address)
             }
         }
 
-        else -> error("Поддерживаются только HTTPS и корректные mailto ссылки.")
+        else -> error(desktopText(Res.string.desktop_link_unsupported_scheme))
     }
     return uri
 }

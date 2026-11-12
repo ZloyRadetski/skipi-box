@@ -5,6 +5,39 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.desktop_active_group_server_changed
+import app.skipi.ui.resources.desktop_group_member_change_failed
+import app.skipi.ui.resources.desktop_group_member_save_failed
+import app.skipi.ui.resources.desktop_groups_sync_failed
+import app.skipi.ui.resources.desktop_reason_active_group_member_changed
+import app.skipi.ui.resources.desktop_reason_active_profile_changed
+import app.skipi.ui.resources.desktop_reason_active_server_changed
+import app.skipi.ui.resources.desktop_reason_connection_settings_changed
+import app.skipi.ui.resources.desktop_reason_restart_core
+import app.skipi.ui.resources.desktop_reason_subscription_updated
+import app.skipi.ui.resources.desktop_reason_subscriptions_updated
+import app.skipi.ui.resources.desktop_select_working_server_first
+import app.skipi.ui.resources.desktop_server_added_to_list
+import app.skipi.ui.resources.desktop_server_changed
+import app.skipi.ui.resources.desktop_server_changes_save_failed
+import app.skipi.ui.resources.desktop_server_deleted
+import app.skipi.ui.resources.desktop_server_save_failed
+import app.skipi.ui.resources.desktop_server_selected
+import app.skipi.ui.resources.desktop_server_selection_save_failed
+import app.skipi.ui.resources.desktop_servers_delete_failed
+import app.skipi.ui.resources.desktop_settings_save_failed
+import app.skipi.ui.resources.desktop_strategy_group_not_found
+import app.skipi.ui.resources.desktop_subscription_delete_failed
+import app.skipi.ui.resources.desktop_subscription_deleted
+import app.skipi.ui.resources.desktop_subscription_refreshing
+import app.skipi.ui.resources.desktop_subscription_update_failed
+import app.skipi.ui.resources.desktop_subscriptions_update_failed
+import app.skipi.ui.resources.desktop_system_proxy_reset
+import app.skipi.ui.resources.desktop_system_proxy_reset_failed
+import app.skipi.ui.resources.desktop_update_install_failed
+import app.skipi.ui.resources.desktop_update_installer_opened
+import app.skipi.ui.resources.desktop_wait_subscription_update_done
+import app.skipi.ui.resources.subscriptions_refreshing
 import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
@@ -459,9 +492,9 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 // The tunnel is stopped the usual way first; the helper waits for this process to end.
                                 DesktopUpdateInstallResult.Restarting -> tunnel.closeRequested = true
                                 DesktopUpdateInstallResult.HandedOver ->
-                                    tunnel.coreMessage = "Установщик открыт: завершите обновление в нём."
+                                    tunnel.coreMessage = desktopText(Res.string.desktop_update_installer_opened)
                                 is DesktopUpdateInstallResult.Failed ->
-                                    tunnel.coreMessage = "Не удалось установить обновление: ${result.message}"
+                                    tunnel.coreMessage = desktopText(Res.string.desktop_update_install_failed, result.message)
                             }
                         }
                         else -> appUpdater.download()
@@ -593,7 +626,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 currentSelectedServerId = runner.currentSelectedServerId,
                             )
                             if (selectionChanged) {
-                                tunnel.requestReconnect("Подписки обновлены.")
+                                tunnel.requestReconnect(desktopText(Res.string.desktop_reason_subscriptions_updated))
                             }
                         },
                     )
@@ -711,7 +744,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             subscriptionUi.updateInProgress = true
                             subscriptionUi.refreshingId = subscription.id
                             try {
-                                subscriptionUi.message = "Обновление подписки…"
+                                subscriptionUi.message = desktopText(Res.string.desktop_subscription_refreshing)
                                 subscriptionUi.update = null
                                 val result = desktopSubscriptionRefreshOperation.run(
                                     request = SubscriptionRefreshLoadRequest(
@@ -730,13 +763,13 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         currentSelectedServerId = result.currentSelectedServerId,
                                     )
                                 ) {
-                                    tunnel.requestReconnect("Подписка обновлена.")
+                                    tunnel.requestReconnect(desktopText(Res.string.desktop_reason_subscription_updated))
                                 }
                                 result
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (error: Throwable) {
-                                subscriptionUi.message = "Не удалось обновить подписку: ${error.message.orEmpty()}"
+                                subscriptionUi.message = desktopText(Res.string.desktop_subscription_update_failed, error.message.orEmpty())
                                 throw error
                             } finally {
                                 subscriptionUi.refreshingId = null
@@ -1054,7 +1087,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     ) -> Unit,
                 ) = tunnel.withServerDeletionRuntime(
                     onStopFailed = { error ->
-                        serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                        serverLibraryMessage = desktopText(Res.string.desktop_servers_delete_failed, error.message.orEmpty())
                     },
                     operation = operation,
                 )
@@ -1088,7 +1121,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 serverLibraryMessage = deletedTemplate.formatTemplate("count" to serverIds.size)
                             },
                             onDeleteError = { error ->
-                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                                serverLibraryMessage = desktopText(Res.string.desktop_servers_delete_failed, error.message.orEmpty())
                             },
                             onStopFailed = onStopFailed,
                         )
@@ -1101,7 +1134,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     val refreshMessage = installed.refreshResult.fold(
                                         onSuccess = { result -> desktopSubscriptionRefreshResultMessage(result.refresh) },
                                         onFailure = { error ->
-                                            "Не удалось обновить подписку: ${error.message.orEmpty()}"
+                                            desktopText(Res.string.desktop_subscription_update_failed, error.message.orEmpty())
                                         },
                                     )
                                     val message = formatSubscriptionInstallMessage(
@@ -1480,7 +1513,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             onServerLinkChange = { serverLink = it },
                             onSubscriptionUrlChange = { url ->
                                 if (subscriptionUi.updateInProgress) {
-                                    subscriptionUi.message = "Дождитесь завершения обновления подписки."
+                                    subscriptionUi.message = desktopText(Res.string.desktop_wait_subscription_update_done)
                                 } else {
                                     subscriptionUi.url = url
                                     subscriptionUi.update = null
@@ -1493,13 +1526,13 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     proxyServerRepository.selectAndCommit(serverId)
                                 }
                                     .onSuccess {
-                                        serverLibraryMessage = "Сервер выбран."
+                                        serverLibraryMessage = desktopText(Res.string.desktop_server_selected)
                                         if (tunnel.coreState.isRunning) {
-                                            tunnel.requestReconnect("Сервер изменён.")
+                                            tunnel.requestReconnect(desktopText(Res.string.desktop_server_changed))
                                         }
                                     }
                                     .onFailure { error ->
-                                        serverLibraryMessage = "Не удалось сохранить выбор: ${error.message.orEmpty()}"
+                                        serverLibraryMessage = desktopText(Res.string.desktop_server_selection_save_failed, error.message.orEmpty())
                                     }
                             },
                             onDeleteServer = { serverId ->
@@ -1526,9 +1559,9 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                                 }
                                             },
                                             applyStoppedState = applyStoppedState,
-                                            onDeleted = { serverLibraryMessage = "Сервер удалён." },
+                                            onDeleted = { serverLibraryMessage = desktopText(Res.string.desktop_server_deleted) },
                                             onMissingServer = {
-                                                serverLibraryMessage = "Сначала выберите работающий сервер или профиль."
+                                                serverLibraryMessage = desktopText(Res.string.desktop_select_working_server_first)
                                             },
                                             onStopFailed = onStopFailed,
                                         )
@@ -1546,28 +1579,28 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         is ProxyServerEditApplyOutcome.Saved -> {
                                             if (result.serverId == null) {
                                                 serverLink = ""
-                                                val addedMessage = "Сервер ${result.server.getInfo().remarks} добавлен в список."
+                                                val addedMessage = desktopText(Res.string.desktop_server_added_to_list, result.server.getInfo().remarks)
                                                 serverLibraryMessage = addedMessage
                                                 if (tunnel.coreState.isRunning && serverLibrary.selectedServerId == outcome.serverId) {
                                                     tunnel.requestReconnect(addedMessage)
                                                 }
                                             } else {
-                                                serverLibraryMessage = "Сервер изменён."
+                                                serverLibraryMessage = desktopText(Res.string.desktop_server_changed)
                                                 if (serverLibrary.selectedServerId == result.serverId && tunnel.coreState.isRunning) {
-                                                    tunnel.requestReconnect("Активный сервер изменён.")
+                                                    tunnel.requestReconnect(desktopText(Res.string.desktop_reason_active_server_changed))
                                                 }
                                             }
                                         }
 
                                         ProxyServerEditApplyOutcome.Deleted -> {
-                                            serverLibraryMessage = "Сервер удалён."
+                                            serverLibraryMessage = desktopText(Res.string.desktop_server_deleted)
                                         }
 
                                         is ProxyServerEditApplyOutcome.Failed -> {
                                             serverLibraryMessage = if (result.serverId == null) {
-                                                "Не удалось сохранить сервер: ${outcome.reason}"
+                                                desktopText(Res.string.desktop_server_save_failed, outcome.reason)
                                             } else {
-                                                "Не удалось сохранить изменения сервера: ${outcome.reason}"
+                                                desktopText(Res.string.desktop_server_changes_save_failed, outcome.reason)
                                             }
                                         }
                                     }
@@ -1580,7 +1613,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     ?.decode()
                                     ?.getOrNull() as? StrategyGroup
                                 if (strategy == null) {
-                                    serverLibraryMessage = "Группа стратегий не найдена."
+                                    serverLibraryMessage = desktopText(Res.string.desktop_strategy_group_not_found)
                                 } else {
                                     runCatching {
                                         DesktopServerLibraries.update(
@@ -1593,18 +1626,18 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                             DesktopServerLibraries.saveDefault(updated).fold(
                                                 onSuccess = {
                                                     serverLibrary = updated
-                                                    serverLibraryMessage = "Активный сервер группы изменён."
+                                                    serverLibraryMessage = desktopText(Res.string.desktop_active_group_server_changed)
                                                     if (tunnel.coreState.isRunning) {
-                                                        tunnel.requestReconnect("Участник активной группы изменён.")
+                                                        tunnel.requestReconnect(desktopText(Res.string.desktop_reason_active_group_member_changed))
                                                     }
                                                 },
                                                 onFailure = { error ->
-                                                    serverLibraryMessage = "Не удалось сохранить участника группы: ${error.message.orEmpty()}"
+                                                    serverLibraryMessage = desktopText(Res.string.desktop_group_member_save_failed, error.message.orEmpty())
                                                 },
                                             )
                                         },
                                         onFailure = { error ->
-                                            serverLibraryMessage = "Не удалось изменить участника группы: ${error.message.orEmpty()}"
+                                            serverLibraryMessage = desktopText(Res.string.desktop_group_member_change_failed, error.message.orEmpty())
                                         },
                                     )
                                 }
@@ -1623,13 +1656,13 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                     return@restartService
                                 }
                                 if (selectedServerConfig?.isSuccess != true) {
-                                    tunnel.coreMessage = "Сначала выберите работающий сервер или профиль."
+                                    tunnel.coreMessage = desktopText(Res.string.desktop_select_working_server_first)
                                     return@restartService
                                 }
                                 desktopHomeLatencyJobOwner.cancel()
                                 tunnel.desiredRunning = true
                                 tunnel.intentVersion += 1
-                                tunnel.requestReconnect("Перезапуск SKIPI Core.")
+                                tunnel.requestReconnect(desktopText(Res.string.desktop_reason_restart_core))
                             },
                             onPrepareSubscription = desktopPrepareSubscription,
                             onDeleteDuplicateServers = { currentGroupServerIds ->
@@ -1678,7 +1711,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                             },
                                             onNoInvalidServers = { serverLibraryMessage = noInvalidMessage },
                                             onDeleteError = { error ->
-                                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                                                serverLibraryMessage = desktopText(Res.string.desktop_servers_delete_failed, error.message.orEmpty())
                                             },
                                             onStopFailed = onStopFailed,
                                         )
@@ -1762,14 +1795,14 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                             applyStoppedState = applyStoppedState,
                                             onDeleted = {
                                                 if (removedSubscription?.url == subscriptionUi.url) subscriptionUi.url = ""
-                                                subscriptionUi.message = "Подписка и её серверы удалены."
+                                                subscriptionUi.message = desktopText(Res.string.desktop_subscription_deleted)
                                             },
                                             onMissingServer = {
-                                                serverLibraryMessage = "Сначала выберите работающий сервер или профиль."
+                                                serverLibraryMessage = desktopText(Res.string.desktop_select_working_server_first)
                                             },
                                             onStopFailed = onStopFailed,
                                             onDeleteError = { error ->
-                                                subscriptionUi.message = "Не удалось удалить подписку: ${error.message.orEmpty()}"
+                                                subscriptionUi.message = desktopText(Res.string.desktop_subscription_delete_failed, error.message.orEmpty())
                                             },
                                         )
                                     }
@@ -1792,7 +1825,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         subscriptionUi.refreshingId = null
                                         subscriptionUi.url = ""
                                         try {
-                                            subscriptionUi.message = "Обновление подписок…"
+                                            subscriptionUi.message = desktopText(Res.string.subscriptions_refreshing)
                                             subscriptionUi.update = null
                                             val result = desktopSubscriptionRefreshBatchRunner.run()
                                             val loaded = result.refresh.updates
@@ -1812,7 +1845,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled
                                         } catch (error: Throwable) {
-                                            subscriptionUi.message = "Не удалось обновить подписки: ${error.message.orEmpty()}"
+                                            subscriptionUi.message = desktopText(Res.string.desktop_subscriptions_update_failed, error.message.orEmpty())
                                         } finally {
                                             subscriptionUi.updateInProgress = false
                                         }
@@ -1853,7 +1886,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                         withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) }
                                             .onSuccess { desktopSettings = updated }
                                             .onFailure { error ->
-                                                tunnel.coreMessage = "Не удалось сохранить настройки: ${error.message.orEmpty()}"
+                                                tunnel.coreMessage = desktopText(Res.string.desktop_settings_save_failed, error.message.orEmpty())
                                             }
                                     }
                                 }
@@ -1877,12 +1910,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                             throw cancelled
                                         } catch (error: Throwable) {
                                             serverLibraryMessage =
-                                                "Не удалось синхронизировать группы серверов: ${error.message.orEmpty()}"
+                                                desktopText(Res.string.desktop_groups_sync_failed, error.message.orEmpty())
                                         }
                                     }
                                 }
                                 if (tunnel.coreState.isRunning && result.updated.activeProfileChangedFrom(result.previous)) {
-                                    tunnel.requestReconnect("Активный профиль изменён.")
+                                    tunnel.requestReconnect(desktopText(Res.string.desktop_reason_active_profile_changed))
                                 }
                                 result.updated
                             },
@@ -1928,7 +1961,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 val restartRequired = desktopSettingsNeedReconnect(desktopSettings, updated)
                                 desktopSettings = updated
                                 if (restartRequired && tunnel.coreState.isRunning) {
-                                    tunnel.requestReconnect("Настройки подключения изменены.")
+                                    tunnel.requestReconnect(desktopText(Res.string.desktop_reason_connection_settings_changed))
                                 }
                             },
                             contentPadding = contentPadding,
@@ -1940,10 +1973,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 subscriptionScope.launch {
                                     withContext(Dispatchers.IO) { systemProxyManager.forceClear() }
                                         .onSuccess {
-                                            tunnel.coreMessage = "Системный прокси успешно сброшен."
+                                            tunnel.coreMessage = desktopText(Res.string.desktop_system_proxy_reset)
                                         }
                                         .onFailure { error ->
-                                            tunnel.coreMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
+                                            tunnel.coreMessage = desktopText(Res.string.desktop_system_proxy_reset_failed, error.message.orEmpty())
                                         }
                                 }
                             },

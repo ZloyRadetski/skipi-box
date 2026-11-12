@@ -11,6 +11,10 @@ import app.skipi.app.proxy.ProxyServerGroupingRequest
 import app.skipi.app.proxy.ProxyServerGroupingResult
 import app.skipi.app.proxy.groupProxyServersForHome
 import app.skipi.app.home.proxyHomeGroupMemberships
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_group_all_proxies
+import app.skipi.ui.resources.desktop_group_auto_balancers
+import app.skipi.ui.resources.subscription_default_group
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
 
@@ -28,9 +32,9 @@ data class DesktopProxyGroup(
 enum class DesktopProxyGroupKind { All, Manual, Subscription, AutoBalancer }
 
 data class DesktopProxyGroupLabels(
-    val allProxies: String = "Все прокси",
-    val manualServers: String = "Ручные серверы",
-    val autoBalancers: String = "Автобалансировщики",
+    val allProxies: String = desktopText(Res.string.desktop_group_all_proxies),
+    val manualServers: String = desktopText(Res.string.subscription_default_group),
+    val autoBalancers: String = desktopText(Res.string.desktop_group_auto_balancers),
 )
 
 data class DesktopProxyGroupOptions(

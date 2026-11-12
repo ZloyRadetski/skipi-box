@@ -13,6 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.skipi.ui.logs.SkipiLogViewerScreen
 import app.skipi.ui.logs.exportText
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_log_save_failed
+import app.skipi.ui.resources.desktop_log_saved
 import features.logs.CoreLogEntry
 import features.logs.CoreLogRepository
 import features.logs.CoreLogTailerPollingPolicy
@@ -60,8 +63,8 @@ internal fun DesktopLogViewer(
         },
         onExport = { exportEntries, exportTitle ->
             exportDesktopLogEntries(exportEntries, exportTitle)
-                .onSuccess { saved -> if (saved) onMessage("Журнал сохранён.") }
-                .onFailure { error -> onMessage("Не удалось сохранить журнал: ${error.message.orEmpty()}") }
+                .onSuccess { saved -> if (saved) onMessage(desktopText(Res.string.desktop_log_saved)) }
+                .onFailure { error -> onMessage(desktopText(Res.string.desktop_log_save_failed, error.message.orEmpty())) }
         },
         onCopy = { text, confirmation ->
             runCatching {

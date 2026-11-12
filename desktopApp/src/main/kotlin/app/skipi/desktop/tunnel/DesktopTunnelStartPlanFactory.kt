@@ -5,6 +5,8 @@ package app.skipi.desktop
 
 import app.ProjectInfo
 import app.skipi.app.config.toTrafficConfigState
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_select_server_before_connect
 import java.nio.file.Path
 
 /** Captures one selected-profile resource directory and rebuildable Core configuration. */
@@ -58,7 +60,7 @@ internal fun prepareDesktopTunnelStartPlan(
             strictFullTunnel = settings.enableStrictFullTunnel,
             tunVpnDns = settings.tunVpnDns,
         )?.getOrThrow()
-            ?: error("Select a working server before connecting")
+            ?: error(desktopText(Res.string.desktop_select_server_before_connect))
         return DesktopTunnelStartPlan(
             configuration = generated.json,
             dynamicPortEnabled = settings.enableDynamicLocalProxyPort,

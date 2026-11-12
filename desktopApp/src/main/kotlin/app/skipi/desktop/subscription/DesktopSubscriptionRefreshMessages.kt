@@ -8,14 +8,21 @@ import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshResult
 import app.skipi.ui.home.SubscriptionRefreshMessageSummary
 import app.skipi.ui.home.formatSubscriptionRefreshMessage
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_subscription_changed_after_servers
+import app.skipi.ui.resources.desktop_subscription_changed_during_load
+import app.skipi.ui.resources.desktop_subscription_commit_metadata_failed
+import app.skipi.ui.resources.desktop_subscription_commit_profile_failed
+import app.skipi.ui.resources.desktop_subscription_commit_servers_failed
+import app.skipi.ui.resources.desktop_subscription_refreshed
 
 private fun SubscriptionRefreshCommitFailure.userMessage(): String = when (scope) {
     SubscriptionRefreshCommitScope.SERVERS ->
-        "Список получен, но серверы не сохранены: ${error.message.orEmpty()}"
+        desktopText(Res.string.desktop_subscription_commit_servers_failed, error.message.orEmpty())
     SubscriptionRefreshCommitScope.SUBSCRIPTION ->
-        "Серверы обновлены, но метаданные подписки не сохранены: ${error.message.orEmpty()}"
+        desktopText(Res.string.desktop_subscription_commit_metadata_failed, error.message.orEmpty())
     SubscriptionRefreshCommitScope.PROFILE ->
-        "Серверы и подписка обновлены, но обновление профиля не завершено: ${error.message.orEmpty()}"
+        desktopText(Res.string.desktop_subscription_commit_profile_failed, error.message.orEmpty())
 }
 
 internal fun desktopSubscriptionRefreshResultMessage(result: SubscriptionRefreshResult): String {
@@ -24,11 +31,11 @@ internal fun desktopSubscriptionRefreshResultMessage(result: SubscriptionRefresh
     val failure = commit.failure
     return when {
         !commit.applicable && serverWasApplied ->
-            "Серверы обновлены (${result.loaded.servers.size}), но подписка была изменена или удалена до сохранения метаданных."
+            desktopText(Res.string.desktop_subscription_changed_after_servers, result.loaded.servers.size)
         !commit.applicable ->
-            "Подписка была изменена или удалена во время загрузки; ответ не применён."
+            desktopText(Res.string.desktop_subscription_changed_during_load)
         failure != null -> failure.userMessage()
-        else -> "Подписка обновлена: ${result.loaded.servers.size} серверов из ${result.loaded.urlCount} ссылок."
+        else -> desktopText(Res.string.desktop_subscription_refreshed, result.loaded.servers.size, result.loaded.urlCount)
     }
 }
 

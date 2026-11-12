@@ -7,6 +7,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.skipi.app.proxy.ProxyServerStopOutcome
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_core_already_connected
+import app.skipi.ui.resources.desktop_core_close_proxy_failed
+import app.skipi.ui.resources.desktop_core_connect_queued
+import app.skipi.ui.resources.desktop_core_connecting
+import app.skipi.ui.resources.desktop_core_disconnect_queued
+import app.skipi.ui.resources.desktop_core_disconnecting
+import app.skipi.ui.resources.desktop_core_local_tunnel_stopped
+import app.skipi.ui.resources.desktop_core_proxy_restore_failed
+import app.skipi.ui.resources.desktop_core_reconnect_failed
+import app.skipi.ui.resources.desktop_core_reconnected
+import app.skipi.ui.resources.desktop_core_reconnected_with_proxy
+import app.skipi.ui.resources.desktop_core_reconnecting
+import app.skipi.ui.resources.desktop_core_safe_shutdown
+import app.skipi.ui.resources.desktop_core_stop_failed
+import app.skipi.ui.resources.desktop_core_stopped
+import app.skipi.ui.resources.desktop_core_stopped_for_deletion
+import app.skipi.ui.resources.desktop_core_stopped_for_deletion_with_proxy
+import app.skipi.ui.resources.desktop_core_tunnel_proxy_started
+import app.skipi.ui.resources.desktop_core_tunnel_proxy_stopped
+import app.skipi.ui.resources.desktop_core_tunnel_started
+import app.skipi.ui.resources.desktop_core_wait_before_server_deletion
+import app.skipi.ui.resources.desktop_core_wait_operation
+import app.skipi.ui.resources.desktop_purpose_active_server
+import app.skipi.ui.resources.desktop_purpose_servers
+import app.skipi.ui.resources.desktop_reason_last_tunnel_action
+import app.skipi.ui.resources.error_skipi_core_start_failed
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,9 +94,9 @@ internal class DesktopTunnelSession(
     }
 
     private fun stoppedMessage(purpose: String): String = if (readUseSystemProxy()) {
-        "Туннель SKIPI Core и системный прокси остановлены для удаления $purpose."
+        desktopText(Res.string.desktop_core_stopped_for_deletion_with_proxy, purpose)
     } else {
-        "Локальный туннель SKIPI Core остановлен для удаления $purpose."
+        desktopText(Res.string.desktop_core_stopped_for_deletion, purpose)
     }
 
     private suspend fun waitUntilIdle() {
@@ -90,7 +117,7 @@ internal class DesktopTunnelSession(
                 }
             }
             .onFailure { error ->
-                coreMessage = "Не удалось восстановить системный прокси: ${error.message.orEmpty()}"
+                coreMessage = desktopText(Res.string.desktop_core_proxy_restore_failed, error.message.orEmpty())
             }
         systemProxyRecoveryInProgress = false
     }
@@ -108,7 +135,7 @@ internal class DesktopTunnelSession(
                     desiredRunning = false
                     val detail = snapshot.failure?.message.orEmpty()
                         .ifBlank { current.lastError }
-                    coreMessage = "SKIPI Core остановлен. $detail"
+                    coreMessage = desktopText(Res.string.desktop_core_stopped, detail)
                 }
             }
         }
@@ -117,20 +144,20 @@ internal class DesktopTunnelSession(
     /** Stops the tunnel so the active subscription server can be deleted. */
     suspend fun stopForActiveServerDeletion() {
         check(!operationInProgress) {
-            "Дождитесь завершения операции SKIPI Core перед удалением активного сервера."
+            desktopText(Res.string.desktop_core_wait_before_server_deletion)
         }
         while (systemProxyRecoveryInProgress) {
             delay(50)
         }
         check(!operationInProgress) {
-            "Дождитесь завершения операции SKIPI Core перед удалением активного сервера."
+            desktopText(Res.string.desktop_core_wait_before_server_deletion)
         }
         operationInProgress = true
         try {
             val stopResult = withContext(Dispatchers.IO) { tunnel.disconnect() }
             stopResult.getOrThrow()
             stoppedDeliberately()
-            coreMessage = stoppedMessage("активного сервера")
+            coreMessage = stoppedMessage(desktopText(Res.string.desktop_purpose_active_server))
         } catch (cancelled: CancellationException) {
             coreState = coreController.state()
             desiredRunning = coreState.isRunning
@@ -138,7 +165,7 @@ internal class DesktopTunnelSession(
         } catch (error: Throwable) {
             coreState = coreController.state()
             desiredRunning = coreState.isRunning
-            coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
+            coreMessage = desktopText(Res.string.desktop_core_stop_failed, error.message.orEmpty())
             throw error
         } finally {
             operationInProgress = false
@@ -165,14 +192,16 @@ internal class DesktopTunnelSession(
         operationInProgress = true
         try {
             val shouldRun = desiredRunning
-            coreMessage = if (shouldRun) "$reason Переподключение SKIPI Core…" else "$reason Отключение SKIPI Core…"
+            coreMessage = "$reason " + desktopText(
+                if (shouldRun) Res.string.desktop_core_reconnecting else Res.string.desktop_core_disconnecting,
+            )
             val stopFailure = withContext(Dispatchers.IO) { tunnel.disconnect() }.exceptionOrNull()
             if (stopFailure != null) {
                 coreState = coreController.state()
                 if (operationIntentVersion == intentVersion) {
                     desiredRunning = coreState.isRunning
                 }
-                coreMessage = "Не удалось остановить SKIPI Core: ${stopFailure.message.orEmpty()}"
+                coreMessage = desktopText(Res.string.desktop_core_stop_failed, stopFailure.message.orEmpty())
                 return
             }
             coreState = coreController.state()
@@ -184,7 +213,7 @@ internal class DesktopTunnelSession(
             ) {
                 if (operationIntentVersion == intentVersion) {
                     desiredRunning = false
-                    coreMessage = "$reason Локальный туннель SKIPI Core остановлен."
+                    coreMessage = "$reason " + desktopText(Res.string.desktop_core_local_tunnel_stopped)
                 }
                 return
             }
@@ -192,14 +221,15 @@ internal class DesktopTunnelSession(
                 tunnel.connect(TunnelConnectRequest(selectedProfileId))
             }.onSuccess {
                 coreState = coreController.state()
-                val systemProxySuffix = if (systemProxyEnabled()) " и системный прокси" else ""
-                coreMessage = "$reason SKIPI Core переподключён$systemProxySuffix."
+                coreMessage = "$reason " + desktopText(
+                    if (systemProxyEnabled()) Res.string.desktop_core_reconnected_with_proxy else Res.string.desktop_core_reconnected,
+                )
             }.onFailure { error ->
                 coreState = coreController.state()
                 if (operationIntentVersion == intentVersion) {
                     desiredRunning = coreState.isRunning
                 }
-                coreMessage = "Не удалось переподключить SKIPI Core: ${error.message.orEmpty()}"
+                coreMessage = desktopText(Res.string.desktop_core_reconnect_failed, error.message.orEmpty())
             }
         } finally {
             operationInProgress = false
@@ -208,7 +238,7 @@ internal class DesktopTunnelSession(
                 operationIntentVersion != intentVersion &&
                 desiredRunning != coreController.state().isRunning
             ) {
-                requestReconnect("Выполняю последнее действие с туннелем.")
+                requestReconnect(desktopText(Res.string.desktop_reason_last_tunnel_action))
             } else if (
                 pendingReconnectRevision == reconnectRevision &&
                 pendingReconnectReason == reason
@@ -225,7 +255,7 @@ internal class DesktopTunnelSession(
         waitUntilIdle()
         operationInProgress = true
         try {
-            coreMessage = "Безопасное завершение SKIPI…"
+            coreMessage = desktopText(Res.string.desktop_core_safe_shutdown)
             withContext(Dispatchers.IO) { tunnel.disconnect() }
                 .onSuccess {
                     coreState = coreController.state()
@@ -234,8 +264,7 @@ internal class DesktopTunnelSession(
                 .onFailure { error ->
                     coreState = coreController.state()
                     coreMessage =
-                        "Не удалось вернуть системный прокси; SKIPI Core оставлен запущенным. " +
-                            "Повторите закрытие: ${error.message.orEmpty()}"
+                        desktopText(Res.string.desktop_core_close_proxy_failed, error.message.orEmpty())
                     closeRequested = false
                 }
         } finally {
@@ -272,7 +301,7 @@ internal class DesktopTunnelSession(
                     while (systemProxyRecoveryInProgress) delay(50)
                     if (closeRequested || operationInProgress) {
                         ProxyServerStopOutcome.Failed(
-                            IllegalStateException("Дождитесь завершения операции SKIPI Core."),
+                            IllegalStateException(desktopText(Res.string.desktop_core_wait_operation)),
                         )
                     } else {
                         operationInProgress = true
@@ -295,12 +324,12 @@ internal class DesktopTunnelSession(
                 },
                 {
                     stoppedDeliberately()
-                    coreMessage = stoppedMessage("серверов")
+                    coreMessage = stoppedMessage(desktopText(Res.string.desktop_purpose_servers))
                 },
                 { error ->
                     coreState = coreController.state()
                     desiredRunning = coreState.isRunning
-                    coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
+                    coreMessage = desktopText(Res.string.desktop_core_stop_failed, error.message.orEmpty())
                     onStopFailed(error)
                 },
             )
@@ -323,9 +352,9 @@ internal class DesktopTunnelSession(
         pendingReconnectReason = null
         if (operationInProgress) {
             coreMessage = if (desiredRunning) {
-                "Подключение будет выполнено после текущей операции SKIPI Core."
+                desktopText(Res.string.desktop_core_connect_queued)
             } else {
-                "Отключение будет выполнено после текущей операции SKIPI Core."
+                desktopText(Res.string.desktop_core_disconnect_queued)
             }
         } else scope.launch {
             operationInProgress = true
@@ -333,32 +362,29 @@ internal class DesktopTunnelSession(
                 if (desiredRunning) {
                     if (coreController.state().isRunning) {
                         coreState = coreController.state()
-                        coreMessage = "Туннель SKIPI Core уже подключён."
+                        coreMessage = desktopText(Res.string.desktop_core_already_connected)
                     } else {
-                        coreMessage = "Подключение SKIPI Core…"
+                        coreMessage = desktopText(Res.string.desktop_core_connecting)
                         DesktopLogger.info("Tunnel", "Connecting to profile $profileId")
                         withContext(Dispatchers.IO) {
                             tunnel.connect(TunnelConnectRequest(profileId))
                         }.onSuccess {
                             coreState = coreController.state()
-                            val systemProxySuffix = if (systemProxyEnabled()) {
-                                " и системный прокси"
-                            } else {
-                                ""
-                            }
-                            coreMessage = "Туннель SKIPI Core$systemProxySuffix запущен."
+                            coreMessage = desktopText(
+                                if (systemProxyEnabled()) Res.string.desktop_core_tunnel_proxy_started else Res.string.desktop_core_tunnel_started,
+                            )
                             DesktopLogger.info("Tunnel", "Connected to in-process SKIPI Core")
                         }.onFailure { error ->
                             coreState = coreController.state()
                             if (operationIntentVersion == intentVersion) {
                                 desiredRunning = coreState.isRunning
                             }
-                            coreMessage = "Не удалось запустить SKIPI Core: ${error.message.orEmpty()}"
+                            coreMessage = desktopText(Res.string.error_skipi_core_start_failed, error.message.orEmpty())
                             DesktopLogger.error("Tunnel", "Connection failed", error)
                         }
                     }
                 } else {
-                    coreMessage = "Отключение SKIPI Core…"
+                    coreMessage = desktopText(Res.string.desktop_core_disconnecting)
                     DesktopLogger.info("Tunnel", "Disconnecting tunnel")
                     withContext(Dispatchers.IO) { tunnel.disconnect() }
                         .onSuccess {
@@ -367,9 +393,9 @@ internal class DesktopTunnelSession(
                                 desiredRunning = false
                             }
                             coreMessage = if (systemProxyEnabled()) {
-                                "Туннель SKIPI Core и системный прокси остановлены."
+                                desktopText(Res.string.desktop_core_tunnel_proxy_stopped)
                             } else {
-                                "Локальный туннель SKIPI Core остановлен."
+                                desktopText(Res.string.desktop_core_local_tunnel_stopped)
                             }
                             DesktopLogger.info("Tunnel", "Disconnected successfully")
                         }
@@ -378,7 +404,7 @@ internal class DesktopTunnelSession(
                             if (operationIntentVersion == intentVersion) {
                                 desiredRunning = coreState.isRunning
                             }
-                            coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
+                            coreMessage = desktopText(Res.string.desktop_core_stop_failed, error.message.orEmpty())
                             DesktopLogger.error("Tunnel", "Disconnect failed", error)
                         }
                 }
@@ -389,7 +415,7 @@ internal class DesktopTunnelSession(
                     operationIntentVersion != intentVersion &&
                     desiredRunning != coreController.state().isRunning
                 ) {
-                    requestReconnect("Выполняю последнее действие с туннелем.")
+                    requestReconnect(desktopText(Res.string.desktop_reason_last_tunnel_action))
                 }
             }
         }
@@ -397,7 +423,7 @@ internal class DesktopTunnelSession(
 
     private fun reconnectIfIntentDiverged() {
         if (!closeRequested && desiredRunning != coreController.state().isRunning) {
-            requestReconnect("Выполняю последнее действие с туннелем.")
+            requestReconnect(desktopText(Res.string.desktop_reason_last_tunnel_action))
         }
     }
 }

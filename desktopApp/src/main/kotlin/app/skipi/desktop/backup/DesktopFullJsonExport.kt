@@ -6,6 +6,8 @@ package app.skipi.desktop
 import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_select_server_before_export
 import engine.xray.XrayExportConfig
 import engine.xray.XrayExportInput
 import features.proxy.server.model.Custom
@@ -21,9 +23,9 @@ internal fun buildDesktopFullJsonExport(
     trafficConfigContentById: Map<Int, String>,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
 ): Result<String> = runCatching {
-    val selectedId = serverLibrary.selectedServerId ?: error("Select a working server before exporting")
+    val selectedId = serverLibrary.selectedServerId ?: error(desktopText(Res.string.desktop_select_server_before_export))
     val selectedStored = serverLibrary.servers.firstOrNull { it.id == selectedId }
-        ?: error("Select a working server before exporting")
+        ?: error(desktopText(Res.string.desktop_select_server_before_export))
     val selectedServer = selectedStored.decode().getOrThrow()
     val localProxyPort = settings.localProxyPortRaw ?: settings.localProxyPort.toString()
 

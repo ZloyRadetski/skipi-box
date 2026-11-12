@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_group_all_proxies
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
@@ -58,7 +60,7 @@ class DesktopProxyGroupsTest {
             ),
             catalog.groups.map(DesktopProxyGroup::id),
         )
-        assertEquals("Все прокси", catalog.group(DesktopProxyGroupIds.All)?.title)
+        assertEquals(desktopText(Res.string.desktop_group_all_proxies), catalog.group(DesktopProxyGroupIds.All)?.title)
         assertEquals(3, catalog.group(DesktopProxyGroupIds.All)?.serverCount)
         assertEquals(listOf(10, 11, 20), catalog.group(DesktopProxyGroupIds.All)?.serverIds)
         assertEquals(listOf(20, 21), catalog.group(DesktopProxyGroupIds.AutoBalancers)?.serverIds)

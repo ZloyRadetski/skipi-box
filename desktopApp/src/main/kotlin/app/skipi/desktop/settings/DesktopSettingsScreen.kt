@@ -6,6 +6,59 @@ package app.skipi.desktop
 import app.ProjectInfo
 import app.skipi.ui.networkautomation.NetworkAutomationServerOption
 import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
+import app.skipi.ui.resources.common_refresh
+import app.skipi.ui.resources.desktop_open_link_unsupported
+import app.skipi.ui.resources.desktop_settings_admin_rights_failed
+import app.skipi.ui.resources.desktop_settings_app_log_header
+import app.skipi.ui.resources.desktop_settings_appearance_saved
+import app.skipi.ui.resources.desktop_settings_automation_saved
+import app.skipi.ui.resources.desktop_settings_check_app_resources
+import app.skipi.ui.resources.desktop_settings_copy_failed
+import app.skipi.ui.resources.desktop_settings_copy_settings_path
+import app.skipi.ui.resources.desktop_settings_core_found
+import app.skipi.ui.resources.desktop_settings_core_not_found
+import app.skipi.ui.resources.desktop_settings_data_dir
+import app.skipi.ui.resources.desktop_settings_data_dir_not_found
+import app.skipi.ui.resources.desktop_settings_data_dir_open_failed
+import app.skipi.ui.resources.desktop_settings_data_dir_opened
+import app.skipi.ui.resources.desktop_settings_data_header
+import app.skipi.ui.resources.desktop_settings_folder_open_failed
+import app.skipi.ui.resources.desktop_settings_folder_open_unsupported
+import app.skipi.ui.resources.desktop_settings_general_saved
+import app.skipi.ui.resources.desktop_settings_hide_log
+import app.skipi.ui.resources.desktop_settings_http_port_conflict
+import app.skipi.ui.resources.desktop_settings_launcher_unknown
+import app.skipi.ui.resources.desktop_settings_link_open_failed
+import app.skipi.ui.resources.desktop_settings_local_proxy_saved
+import app.skipi.ui.resources.desktop_settings_log_empty
+import app.skipi.ui.resources.desktop_settings_log_file_size
+import app.skipi.ui.resources.desktop_settings_log_not_created
+import app.skipi.ui.resources.desktop_settings_logs_folder_opened
+import app.skipi.ui.resources.desktop_settings_logs_saved
+import app.skipi.ui.resources.desktop_settings_open_logs_folder
+import app.skipi.ui.resources.desktop_settings_path_copied
+import app.skipi.ui.resources.desktop_settings_path_copy_failed
+import app.skipi.ui.resources.desktop_settings_ping_saved
+import app.skipi.ui.resources.desktop_settings_recheck_runtime
+import app.skipi.ui.resources.desktop_settings_recheck_runtime_summary
+import app.skipi.ui.resources.desktop_settings_reset_system_proxy
+import app.skipi.ui.resources.desktop_settings_reset_system_proxy_summary
+import app.skipi.ui.resources.desktop_settings_save_failed
+import app.skipi.ui.resources.desktop_settings_show_recent_log
+import app.skipi.ui.resources.desktop_settings_socks_port_conflict
+import app.skipi.ui.resources.desktop_settings_state_header
+import app.skipi.ui.resources.desktop_settings_storage
+import app.skipi.ui.resources.desktop_settings_storage_header
+import app.skipi.ui.resources.desktop_settings_subscriptions_saved
+import app.skipi.ui.resources.desktop_settings_system_proxy_header
+import app.skipi.ui.resources.desktop_settings_tunnel_running
+import app.skipi.ui.resources.desktop_settings_tunnel_running_summary
+import app.skipi.ui.resources.desktop_settings_tunnel_stopped
+import app.skipi.ui.resources.desktop_settings_tunnel_stopped_summary
+import app.skipi.ui.resources.desktop_settings_use_system_proxy
+import app.skipi.ui.resources.desktop_settings_use_system_proxy_summary
+import app.skipi.ui.resources.desktop_settings_user_agents_saved
+import app.skipi.ui.resources.desktop_settings_vpn_saved
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
@@ -217,12 +270,12 @@ internal fun DesktopSettingsScreen(
             }
             // Android applies settings silently; only failures are reported.
             result.onSuccess { message = "" }
-                .onFailure { error -> message = "Не удалось сохранить настройки: ${error.message.orEmpty()}" }
+                .onFailure { error -> message = desktopText(Res.string.desktop_settings_save_failed, error.message.orEmpty()) }
         }
     }
 
     val noWifiMessage = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.network_automation_no_wifi_detected)
-    val automationSavedMessage = "Правила сети сохранены."
+    val automationSavedMessage = stringResource(Res.string.desktop_settings_automation_saved)
     val goBack: () -> Unit = {
         desktopSettingsParent(destination)?.let { parent -> destination = parent }
     }
@@ -258,7 +311,7 @@ internal fun DesktopSettingsScreen(
                 tunNeedsElevation = tunHost?.needsElevation() == true,
                 onRequestTunElevation = {
                     // The elevated instance starts with TUN on; a declined UAC prompt puts the setting back.
-                    persist(currentSettings.copy(enableTunMode = true), "Параметры VPN сохранены.")
+                    persist(currentSettings.copy(enableTunMode = true), desktopText(Res.string.desktop_settings_vpn_saved))
                     scope.launch {
                         val launcher = ProcessHandle.current().info().command().orElse(null)
                         val currentArguments = ProcessHandle.current().info().arguments().orElse(emptyArray()).toList()
@@ -266,7 +319,7 @@ internal fun DesktopSettingsScreen(
                         val arguments = currentArguments.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
                         val result = withContext(Dispatchers.IO) {
                             if (launcher == null) {
-                                Result.failure(IllegalStateException("The application launcher is unknown"))
+                                Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_launcher_unknown)))
                             } else {
                                 relaunchElevated(launcher, arguments, exitDelaySeconds = 0)
                             }
@@ -274,7 +327,7 @@ internal fun DesktopSettingsScreen(
                         result.onSuccess { onExitApplication() }
                             .onFailure { error ->
                                 persist(currentSettings.copy(enableTunMode = false), "")
-                                message = "Не удалось получить права администратора: ${error.message.orEmpty()}"
+                                message = desktopText(Res.string.desktop_settings_admin_rights_failed, error.message.orEmpty())
                             }
                     }
                 },
@@ -579,7 +632,7 @@ private fun DesktopGeneralSettings(
                 confirmDeletion = updated.enableDeletionConfirmation,
                 closeToBackground = updated.closeToBackground,
             )
-            onPersist(next, "Общие настройки сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_general_saved))
             next.toGeneralSettingsState()
         },
         onBack = onBack,
@@ -636,7 +689,7 @@ private fun DesktopAppearanceSettings(
         onSettingsChange = { transform ->
             val next = draft.withAppearanceState(transform(draft.toAppearanceSettingsState()))
             draft = next
-            onPersist(next, "Настройки оформления сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_appearance_saved))
             next.toAppearanceSettingsState()
         },
         onBack = onBack,
@@ -645,7 +698,7 @@ private fun DesktopAppearanceSettings(
                 if (DesktopBackgroundPhoto.save(source)) {
                     val next = draft.copy(backgroundStyle = AppearanceSettingValues.BackgroundStylePhoto)
                     draft = next
-                    onPersist(next, "Настройки оформления сохранены.")
+                    onPersist(next, desktopText(Res.string.desktop_settings_appearance_saved))
                 }
             }
         },
@@ -672,7 +725,7 @@ private fun DesktopLocalProxySettings(
     contentPadding: PaddingValues,
 ) {
     val supportsSystemProxy = isDesktopSystemProxySupported()
-    val saved = "Параметры локального прокси сохранены."
+    val saved = stringResource(Res.string.desktop_settings_local_proxy_saved)
     val portInvalid = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_port_invalid)
     val copiedTemplate = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_copied_toast)
     val generatedToast = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_generated_toast)
@@ -686,12 +739,12 @@ private fun DesktopLocalProxySettings(
     val portError = when {
         settings.enableDynamicLocalProxyPort -> null
         !isValidLocalProxyPort(portText) -> portInvalid
-        portText.toInt() == settings.localHttpProxyPort -> "Порт SOCKS5 должен отличаться от порта HTTP-прокси."
+        portText.toInt() == settings.localHttpProxyPort -> desktopText(Res.string.desktop_settings_socks_port_conflict)
         else -> null
     }
     val httpPortError = when {
         !isValidLocalProxyPort(httpPortText) -> portInvalid
-        httpPortText.toInt() == settings.localProxyPort -> "HTTP-порт должен отличаться от порта SOCKS5."
+        httpPortText.toInt() == settings.localProxyPort -> desktopText(Res.string.desktop_settings_http_port_conflict)
         else -> null
     }
     val displayIp = lanAddress ?: settings.localProxyListenAddress
@@ -731,7 +784,7 @@ private fun DesktopLocalProxySettings(
         onCopy = { text, label ->
             copyToClipboard(text).fold(
                 onSuccess = { feedbackMessage = copiedTemplate.replace("%s", label).replace("%1\$s", label) },
-                onFailure = { feedbackMessage = "Не удалось скопировать $label: ${it.message.orEmpty()}" },
+                onFailure = { feedbackMessage = desktopText(Res.string.desktop_settings_copy_failed, label, it.message.orEmpty()) },
             )
         },
         capabilities = LocalProxySettingsCapabilities(
@@ -746,8 +799,8 @@ private fun DesktopLocalProxySettings(
         httpPlatformContent = if (supportsSystemProxy) {
             {
                 SkipiSettingsSwitchRow(
-                    title = "Использовать системный прокси",
-                    summary = "SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.",
+                    title = stringResource(Res.string.desktop_settings_use_system_proxy),
+                    summary = stringResource(Res.string.desktop_settings_use_system_proxy_summary),
                     checked = settings.useSystemProxy,
                     onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
                 )
@@ -757,10 +810,10 @@ private fun DesktopLocalProxySettings(
         },
         platformContent = {
             if (supportsSystemProxy && onClearSystemProxy != null) {
-                SkipiSettingsGroup(title = "СИСТЕМНЫЙ ПРОКСИ") {
+                SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_system_proxy_header)) {
                     SkipiSettingsActionRow(
-                        title = "Сбросить системный прокси",
-                        summary = "Вернуть прежние настройки прокси Windows.",
+                        title = stringResource(Res.string.desktop_settings_reset_system_proxy),
+                        summary = stringResource(Res.string.desktop_settings_reset_system_proxy_summary),
                         onClick = onClearSystemProxy,
                     )
                 }
@@ -792,23 +845,23 @@ private fun DesktopSubscriptionSettings(
         onFetchTimeoutChange = { seconds ->
             val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(fetchTimeoutSeconds = seconds))
             draft = next
-            onPersist(next, "Параметры подписок сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onOpenUserAgents = onOpenUserAgents,
         onDeviceHeadersChange = { enabled ->
             val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deviceHeadersEnabled = enabled))
             draft = next
-            onPersist(next, "Параметры подписок сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onExpiryNotificationsChange = { enabled ->
             val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryNotificationsEnabled = enabled))
             draft = next
-            onPersist(next, "Параметры подписок сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onExpiryRemindersChange = { reminders ->
             val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryReminders = reminders))
             draft = next
-            onPersist(next, "Параметры подписок сохранены.")
+            onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onOpenPingSettings = onOpenPingSettings,
         capabilities = SubscriptionSettingsCapabilities(
@@ -841,10 +894,10 @@ private fun DesktopSubscriptionPingSettings(
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
-        onModeChange = { value -> onPersist(settings.copy(subscriptionPingMode = value), "Параметры проверки ping сохранены.") },
-        onConcurrencyChange = { value -> onPersist(settings.copy(subscriptionPingConcurrency = value), "Параметры проверки ping сохранены.") },
-        onTimeoutMillisChange = { value -> onPersist(settings.copy(subscriptionPingTimeoutMillis = value), "Параметры проверки ping сохранены.") },
-        onUrlChange = { value -> onPersist(settings.copy(subscriptionPingUrl = value.trim()), "Параметры проверки ping сохранены.") },
+        onModeChange = { value -> onPersist(settings.copy(subscriptionPingMode = value), desktopText(Res.string.desktop_settings_ping_saved)) },
+        onConcurrencyChange = { value -> onPersist(settings.copy(subscriptionPingConcurrency = value), desktopText(Res.string.desktop_settings_ping_saved)) },
+        onTimeoutMillisChange = { value -> onPersist(settings.copy(subscriptionPingTimeoutMillis = value), desktopText(Res.string.desktop_settings_ping_saved)) },
+        onUrlChange = { value -> onPersist(settings.copy(subscriptionPingUrl = value.trim()), desktopText(Res.string.desktop_settings_ping_saved)) },
         onPresetSelected = {},
     )
 }
@@ -861,7 +914,7 @@ private fun DesktopSubscriptionUserAgents(
         padding = contentPadding,
         isWideScreen = true,
         onValuesChange = { values ->
-            onPersist(settings.copy(subscriptionUserAgents = values), "User-Agent сохранены.")
+            onPersist(settings.copy(subscriptionUserAgents = values), desktopText(Res.string.desktop_settings_user_agents_saved))
         },
         onBack = onBack,
     )
@@ -880,7 +933,7 @@ private fun DesktopLogsSettings(
     onOpenAccessLogs: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val saved = "Параметры журналов сохранены."
+    val saved = stringResource(Res.string.desktop_settings_logs_saved)
     SkipiLogsSettingsScreen(
         state = LogsSettingsState(
             coreLogLevelIndex = DesktopCoreLogLevels.indexOf(settings.coreLogLevel).coerceAtLeast(0),
@@ -958,38 +1011,38 @@ private fun DesktopDiagnosticsContent(
     val logDir = remember { DesktopLogger.logDirectory() }
     val logSize = remember(logFile) { runCatching { Files.size(logFile) }.getOrNull() }
 
-    SkipiSettingsGroup(title = "СОСТОЯНИЕ DESKTOP") {
+    SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_state_header)) {
         SkipiSettingsInfoRow(
-            title = if (isTunnelRunning) "Локальный туннель запущен" else "Локальный туннель остановлен",
+            title = if (isTunnelRunning) stringResource(Res.string.desktop_settings_tunnel_running) else stringResource(Res.string.desktop_settings_tunnel_stopped),
             summary = if (isTunnelRunning) {
-                "SKIPI Core работает в процессе приложения. Изменения применятся после переподключения."
+                stringResource(Res.string.desktop_settings_tunnel_running_summary)
             } else {
-                "Выберите сервер на главном экране и подключитесь для запуска SKIPI Core."
+                stringResource(Res.string.desktop_settings_tunnel_stopped_summary)
             },
         )
         SkipiSettingsInfoRow(
-            title = if (runtime != null) "SKIPI Core найден" else "SKIPI Core не найден",
+            title = if (runtime != null) stringResource(Res.string.desktop_settings_core_found) else stringResource(Res.string.desktop_settings_core_not_found),
             summary = runtime?.directory?.toString()
-                ?: runtimeCheck.exceptionOrNull()?.message.orEmpty().ifBlank { "Проверьте ресурсы установленного приложения." },
+                ?: runtimeCheck.exceptionOrNull()?.message.orEmpty().ifBlank { stringResource(Res.string.desktop_settings_check_app_resources) },
         )
         SkipiSettingsActionRow(
-            title = "Проверить runtime снова",
-            summary = "Найти библиотеку SKIPI Core и файлы geoip.dat/geosite.dat.",
+            title = stringResource(Res.string.desktop_settings_recheck_runtime),
+            summary = stringResource(Res.string.desktop_settings_recheck_runtime_summary),
             onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
         )
     }
-    SkipiSettingsGroup(title = "ЖУРНАЛ ПРИЛОЖЕНИЯ") {
+    SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_app_log_header)) {
         SkipiSettingsActionRow(
-            title = "Открыть папку с логами",
+            title = stringResource(Res.string.desktop_settings_open_logs_folder),
             summary = logDir.toString(),
             onClick = {
                 val result = openDirectory(logDir)
-                onMessage(result.fold({ "Папка журналов открыта." }, { "Не удалось открыть папку: ${it.message.orEmpty()}" }))
+                onMessage(result.fold({ desktopText(Res.string.desktop_settings_logs_folder_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
             },
         )
         SkipiSettingsActionRow(
-            title = if (showRecentLogs) "Скрыть журнал" else "Показать последние записи журнала",
-            summary = logSize?.let { "Размер файла: $it байт" } ?: "Файл журнала ещё не создан",
+            title = if (showRecentLogs) stringResource(Res.string.desktop_settings_hide_log) else stringResource(Res.string.desktop_settings_show_recent_log),
+            summary = logSize?.let { stringResource(Res.string.desktop_settings_log_file_size, it) } ?: stringResource(Res.string.desktop_settings_log_not_created),
             onClick = {
                 recentLogs = DesktopLogger.recentEntries(40)
                 showRecentLogs = !showRecentLogs
@@ -997,36 +1050,36 @@ private fun DesktopDiagnosticsContent(
         )
         if (showRecentLogs) {
             Text(
-                text = recentLogs.ifEmpty { listOf("Записей пока нет") }.joinToString("\n"),
+                text = recentLogs.ifEmpty { listOf(stringResource(Res.string.desktop_settings_log_empty)) }.joinToString("\n"),
                 fontSize = 11.sp,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 lineHeight = 15.sp,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             SkipiSettingsActionRow(
-                title = "Обновить",
+                title = stringResource(Res.string.common_refresh),
                 summary = "",
                 onClick = { recentLogs = DesktopLogger.recentEntries(40) },
             )
         }
     }
-    SkipiSettingsGroup(title = "ДАННЫЕ") {
+    SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_data_header)) {
         SkipiSettingsActionRow(
-            title = "Каталог данных SKIPI",
+            title = stringResource(Res.string.desktop_settings_data_dir),
             summary = dataDirectory?.toString().orEmpty(),
             onClick = {
                 val result = dataDirectory?.let(::openDirectory)
-                    ?: Result.failure(IllegalStateException("Каталог данных не найден."))
-                onMessage(result.fold({ "Каталог данных открыт." }, { "Не удалось открыть каталог: ${it.message.orEmpty()}" }))
+                    ?: Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_data_dir_not_found)))
+                onMessage(result.fold({ desktopText(Res.string.desktop_settings_data_dir_opened) }, { desktopText(Res.string.desktop_settings_data_dir_open_failed, it.message.orEmpty()) }))
             },
         )
         SkipiSettingsActionRow(
-            title = "Скопировать путь к settings.json",
+            title = stringResource(Res.string.desktop_settings_copy_settings_path),
             summary = settingsPath.toString(),
             onClick = {
                 copyToClipboard(settingsPath.toString()).fold(
-                    onSuccess = { onMessage("Путь к настройкам скопирован.") },
-                    onFailure = { onMessage("Не удалось скопировать путь: ${it.message.orEmpty()}") },
+                    onSuccess = { onMessage(desktopText(Res.string.desktop_settings_path_copied)) },
+                    onFailure = { onMessage(desktopText(Res.string.desktop_settings_path_copy_failed, it.message.orEmpty())) },
                 )
             },
         )
@@ -1120,8 +1173,8 @@ private fun DesktopAboutSettings(
         },
         capabilities = AboutSettingsCapabilities(),
         platformContent = {
-            SkipiSettingsGroup(title = "ХРАНИЛИЩЕ") {
-                SkipiSettingsInfoRow("Хранилище", settingsPath.toString())
+            SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_storage_header)) {
+                SkipiSettingsInfoRow(stringResource(Res.string.desktop_settings_storage), settingsPath.toString())
             }
             SkipiSettingsStatusMessage(message)
         },
@@ -1131,15 +1184,15 @@ private fun DesktopAboutSettings(
 internal fun browse(uri: String, onMessage: (String) -> Unit) {
     runCatching {
         check(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            "Открытие ссылок не поддерживается системой."
+            desktopText(Res.string.desktop_open_link_unsupported)
         }
         Desktop.getDesktop().browse(java.net.URI(uri))
-    }.onFailure { onMessage("Не удалось открыть ссылку: ${it.message.orEmpty()}") }
+    }.onFailure { onMessage(desktopText(Res.string.desktop_settings_link_open_failed, it.message.orEmpty())) }
 }
 
 private fun openDirectory(path: java.nio.file.Path): Result<Unit> = runCatching {
     Files.createDirectories(path)
-    check(Desktop.isDesktopSupported()) { "Открытие папки не поддерживается системой." }
+    check(Desktop.isDesktopSupported()) { desktopText(Res.string.desktop_settings_folder_open_unsupported) }
     Desktop.getDesktop().open(path.toFile())
 }
 

@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_subscription_provider_failed
+import app.skipi.ui.resources.desktop_subscription_provider_unnamed
 import engine.network.SocksProxyEndpoint
 import engine.network.withAuthenticator
 import engine.network.readUtf8Limited
@@ -202,8 +205,10 @@ class DesktopSubscriptionFetcher(
                 ).body
             },
             onProviderFetchFailureMessage = { providerName ->
-                "Провайдер '${providerName.ifBlank { "без названия" }}' " +
-                    "не удалось загрузить; остальные серверы сохранены."
+                desktopText(
+                    Res.string.desktop_subscription_provider_failed,
+                    providerName.ifBlank { desktopText(Res.string.desktop_subscription_provider_unnamed) },
+                )
             },
         )
         DesktopFetchedSubscriptionImport(

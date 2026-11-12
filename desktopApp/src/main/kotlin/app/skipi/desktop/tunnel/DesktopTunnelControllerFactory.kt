@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_select_server_before_connect
+import app.skipi.ui.resources.desktop_system_proxy_unsupported_platform
 import platform.LocalProxyXrayConfigOptions
 
 /** Wires the Desktop tunnel controller to Core, the system proxy and the latest user data. */
@@ -54,7 +57,7 @@ internal fun createDesktopTunnelController(
                     routingDataDirectory = globalAssetsDirectory,
                     strictFullTunnel = settingsSnapshot.enableStrictFullTunnel,
                 )?.getOrThrow()
-                    ?: error("Select a working server before connecting")
+                    ?: error(desktopText(Res.string.desktop_select_server_before_connect))
             }
         },
         startPlanForProfile = { _ ->
@@ -108,7 +111,7 @@ internal fun createDesktopTunnelController(
             when {
                 !readSettings().useSystemProxy -> Result.success(Unit)
                 !systemProxyManager.isSupportedHost() -> Result.failure(
-                    IllegalStateException("Системный прокси не поддерживается на этой платформе"),
+                    IllegalStateException(desktopText(Res.string.desktop_system_proxy_unsupported_platform)),
                 )
 
                 else -> runningHttpProxyOptions().mapCatching { options ->

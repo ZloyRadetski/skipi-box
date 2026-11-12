@@ -3,6 +3,22 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_import_conf_no_sections
+import app.skipi.ui.resources.desktop_import_config_exists
+import app.skipi.ui.resources.desktop_import_default_config_name
+import app.skipi.ui.resources.desktop_import_duplicate_servers_skipped
+import app.skipi.ui.resources.desktop_import_duplicate_subscriptions_skipped
+import app.skipi.ui.resources.desktop_import_invalid_wireguard
+import app.skipi.ui.resources.desktop_import_invalid_xray_json
+import app.skipi.ui.resources.desktop_import_mihomo_providers
+import app.skipi.ui.resources.desktop_import_no_data
+import app.skipi.ui.resources.desktop_import_nothing_found
+import app.skipi.ui.resources.desktop_import_rejected_servers
+import app.skipi.ui.resources.desktop_import_sections_as_text
+import app.skipi.ui.resources.desktop_import_xray_json_no_objects
+import app.skipi.ui.resources.desktop_import_xray_json_none_valid
+import app.skipi.ui.resources.desktop_import_xray_json_rejected
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
 import features.proxy.server.model.Custom
@@ -69,7 +85,7 @@ object DesktopProxyImportPlanner {
                 DesktopProxyImportDiagnostic(
                     severity = DesktopProxyImportDiagnosticSeverity.Error,
                     code = DesktopProxyImportDiagnosticCode.EmptyInput,
-                    message = "Нет данных для импорта.",
+                    message = desktopText(Res.string.desktop_import_no_data),
                 ),
             ),
         )
@@ -132,7 +148,7 @@ object DesktopProxyImportPlanner {
                         DesktopProxyImportDiagnostic(
                             severity = DesktopProxyImportDiagnosticSeverity.Error,
                             code = DesktopProxyImportDiagnosticCode.RejectedProxy,
-                            message = "Invalid WireGuard / AmneziaWG configuration.",
+                            message = desktopText(Res.string.desktop_import_invalid_wireguard),
                         ),
                     ),
                 )
@@ -166,14 +182,14 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Warning,
                 code = DesktopProxyImportDiagnosticCode.RejectedProxy,
-                message = "Не удалось разобрать серверов: ${imported.rejectedProxyCount}.",
+                message = desktopText(Res.string.desktop_import_rejected_servers, imported.rejectedProxyCount),
             )
         }
         if (imported.pendingProviders.isNotEmpty()) {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Info,
                 code = DesktopProxyImportDiagnosticCode.PendingMihomoProvider,
-                message = "Найдены внешние Mihomo-провайдеры (${imported.pendingProviders.size}); они не загружались автоматически.",
+                message = desktopText(Res.string.desktop_import_mihomo_providers, imported.pendingProviders.size),
             )
         }
 
@@ -189,7 +205,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Info,
                 code = DesktopProxyImportDiagnosticCode.DuplicateServers,
-                message = "Повторяющиеся серверы пропущены: $duplicates.",
+                message = desktopText(Res.string.desktop_import_duplicate_servers_skipped, duplicates),
             )
         }
 
@@ -213,7 +229,7 @@ object DesktopProxyImportPlanner {
                 diagnostics += DesktopProxyImportDiagnostic(
                     severity = DesktopProxyImportDiagnosticSeverity.Info,
                     code = DesktopProxyImportDiagnosticCode.DuplicateSubscriptions,
-                    message = "Повторяющиеся подписки пропущены: $duplicates.",
+                    message = desktopText(Res.string.desktop_import_duplicate_subscriptions_skipped, duplicates),
                 )
             }
         }
@@ -228,7 +244,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Error,
                 code = DesktopProxyImportDiagnosticCode.UnsupportedFormat,
-                message = "Не найдены ссылки серверов, подписки или совместимый конфиг.",
+                message = desktopText(Res.string.desktop_import_nothing_found),
             )
         }
         return DesktopProxyImportPlan(
@@ -279,7 +295,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Error,
                 code = DesktopProxyImportDiagnosticCode.InvalidConfig,
-                message = "Файл .conf не содержит секций Shadowrocket.",
+                message = desktopText(Res.string.desktop_import_conf_no_sections),
             )
         }
         analysis.diagnostics.forEach { diagnostic ->
@@ -298,7 +314,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Warning,
                 code = DesktopProxyImportDiagnosticCode.UnsupportedConfigSection,
-                message = "Некоторые разделы будут сохранены как текст: ${analysis.unsupportedSections.joinToString(", ")}.",
+                message = desktopText(Res.string.desktop_import_sections_as_text, analysis.unsupportedSections.joinToString(", ")),
             )
         }
         if (diagnostics.any { it.severity == DesktopProxyImportDiagnosticSeverity.Error }) {
@@ -310,7 +326,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Info,
                 code = DesktopProxyImportDiagnosticCode.DuplicateConfigs,
-                message = "Такой конфиг уже есть в библиотеке.",
+                message = desktopText(Res.string.desktop_import_config_exists),
             )
             return DesktopProxyImportPlan(source = input.source, diagnostics = diagnostics.distinct())
         }
@@ -324,7 +340,7 @@ object DesktopProxyImportPlanner {
         val suggestedName = metadata.name
             ?: analysis.general["name"]?.trim()?.takeIf(String::isNotBlank)
             ?: fileName.takeIf(String::isNotBlank)
-            ?: DefaultImportedConfigName
+            ?: desktopText(Res.string.desktop_import_default_config_name)
         return DesktopProxyImportPlan(
             source = input.source,
             actions = listOf(
@@ -361,7 +377,7 @@ object DesktopProxyImportPlanner {
                         DesktopProxyImportDiagnostic(
                             severity = DesktopProxyImportDiagnosticSeverity.Error,
                             code = DesktopProxyImportDiagnosticCode.InvalidJson,
-                            message = "Некорректный JSON-конфиг Xray.",
+                            message = desktopText(Res.string.desktop_import_invalid_xray_json),
                         ),
                     ),
                 )
@@ -374,7 +390,7 @@ object DesktopProxyImportPlanner {
                         DesktopProxyImportDiagnostic(
                             severity = DesktopProxyImportDiagnosticSeverity.Error,
                             code = DesktopProxyImportDiagnosticCode.InvalidConfig,
-                            message = "JSON-массив не содержит объектов конфигурации Xray.",
+                            message = desktopText(Res.string.desktop_import_xray_json_no_objects),
                         ),
                     ),
                 )
@@ -389,14 +405,14 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Warning,
                 code = DesktopProxyImportDiagnosticCode.RejectedProxy,
-                message = "Не удалось разобрать JSON-конфигов Xray: $rejectedCount.",
+                message = desktopText(Res.string.desktop_import_xray_json_rejected, rejectedCount),
             )
         }
         if (parsedServers.isEmpty()) {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Error,
                 code = DesktopProxyImportDiagnosticCode.InvalidConfig,
-                message = "JSON не содержит корректных конфигураций Xray.",
+                message = desktopText(Res.string.desktop_import_xray_json_none_valid),
             )
             return DesktopProxyImportPlan(source = source, diagnostics = diagnostics)
         }
@@ -412,7 +428,7 @@ object DesktopProxyImportPlanner {
             diagnostics += DesktopProxyImportDiagnostic(
                 severity = DesktopProxyImportDiagnosticSeverity.Info,
                 code = DesktopProxyImportDiagnosticCode.DuplicateServers,
-                message = "Повторяющиеся серверы пропущены: $duplicates.",
+                message = desktopText(Res.string.desktop_import_duplicate_servers_skipped, duplicates),
             )
         }
         return DesktopProxyImportPlan(
@@ -608,4 +624,3 @@ private fun String.removeSuffixIgnoreCase(suffix: String): String =
     if (endsWith(suffix, ignoreCase = true)) dropLast(suffix.length) else this
 
 private const val ImportByteOrderMark = "\uFEFF"
-private const val DefaultImportedConfigName = "Импортированный конфиг"

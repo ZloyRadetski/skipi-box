@@ -3,6 +3,14 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_import_added
+import app.skipi.ui.resources.desktop_import_added_updated
+import app.skipi.ui.resources.desktop_import_count_configs
+import app.skipi.ui.resources.desktop_import_count_servers
+import app.skipi.ui.resources.desktop_import_count_subscriptions
+import app.skipi.ui.resources.desktop_import_nothing_new
+import app.skipi.ui.resources.desktop_import_updated
 import features.subscription.DefaultSubscriptionUserAgent
 
 /**
@@ -91,19 +99,19 @@ data class DesktopProxyImportCommitCounts(
     val summary: String
         get() {
             val added = listOfNotNull(
-                addedServers.takeIf { it > 0 }?.let { "серверов: $it" },
-                addedSubscriptions.takeIf { it > 0 }?.let { "подписок: $it" },
-                addedConfigs.takeIf { it > 0 }?.let { "конфигов: $it" },
+                addedServers.takeIf { it > 0 }?.let { desktopText(Res.string.desktop_import_count_servers, it) },
+                addedSubscriptions.takeIf { it > 0 }?.let { desktopText(Res.string.desktop_import_count_subscriptions, it) },
+                addedConfigs.takeIf { it > 0 }?.let { desktopText(Res.string.desktop_import_count_configs, it) },
             )
             val updated = listOfNotNull(
-                updatedSubscriptions.takeIf { it > 0 }?.let { "подписок: $it" },
-                updatedConfigs.takeIf { it > 0 }?.let { "конфигов: $it" },
+                updatedSubscriptions.takeIf { it > 0 }?.let { desktopText(Res.string.desktop_import_count_subscriptions, it) },
+                updatedConfigs.takeIf { it > 0 }?.let { desktopText(Res.string.desktop_import_count_configs, it) },
             )
             return when {
-                added.isEmpty() && updated.isEmpty() -> "Новых элементов для импорта нет."
-                updated.isEmpty() -> "Добавлено: ${added.joinToString()}."
-                added.isEmpty() -> "Обновлено: ${updated.joinToString()}."
-                else -> "Добавлено: ${added.joinToString()}; обновлено: ${updated.joinToString()}."
+                added.isEmpty() && updated.isEmpty() -> desktopText(Res.string.desktop_import_nothing_new)
+                updated.isEmpty() -> desktopText(Res.string.desktop_import_added, added.joinToString())
+                added.isEmpty() -> desktopText(Res.string.desktop_import_updated, updated.joinToString())
+                else -> desktopText(Res.string.desktop_import_added_updated, added.joinToString(), updated.joinToString())
             }
         }
 }

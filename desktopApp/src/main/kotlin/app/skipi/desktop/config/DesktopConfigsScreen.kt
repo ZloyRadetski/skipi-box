@@ -42,8 +42,39 @@ import app.skipi.ui.resources.configs_import_clipboard
 import app.skipi.ui.resources.configs_import_file
 import app.skipi.ui.resources.configs_import_url
 import app.skipi.ui.resources.common_delete
+import app.skipi.ui.resources.configs_name
 import app.skipi.ui.resources.deletion_confirmation_delete_config
 import app.skipi.ui.resources.deletion_confirmation_summary
+import app.skipi.ui.resources.desktop_config_added_to_library
+import app.skipi.ui.resources.desktop_config_copy_failed
+import app.skipi.ui.resources.desktop_config_deleted
+import app.skipi.ui.resources.desktop_config_download_failed
+import app.skipi.ui.resources.desktop_config_downloading
+import app.skipi.ui.resources.desktop_config_editor_content
+import app.skipi.ui.resources.desktop_config_editor_diagnostics
+import app.skipi.ui.resources.desktop_config_editor_edit_title
+import app.skipi.ui.resources.desktop_config_editor_groups
+import app.skipi.ui.resources.desktop_config_editor_invalid
+import app.skipi.ui.resources.desktop_config_editor_lock_updates
+import app.skipi.ui.resources.desktop_config_editor_lock_updates_summary
+import app.skipi.ui.resources.desktop_config_editor_new_title
+import app.skipi.ui.resources.desktop_config_editor_parsed
+import app.skipi.ui.resources.desktop_config_editor_rules
+import app.skipi.ui.resources.desktop_config_editor_source_url
+import app.skipi.ui.resources.desktop_config_editor_subtitle
+import app.skipi.ui.resources.desktop_config_export_failed
+import app.skipi.ui.resources.desktop_config_exported_to
+import app.skipi.ui.resources.desktop_config_import_failed
+import app.skipi.ui.resources.desktop_config_imported
+import app.skipi.ui.resources.desktop_config_not_saved
+import app.skipi.ui.resources.desktop_config_open_file_failed
+import app.skipi.ui.resources.desktop_config_saved
+import app.skipi.ui.resources.desktop_config_selected
+import app.skipi.ui.resources.desktop_config_source_url_empty
+import app.skipi.ui.resources.desktop_config_update_failed
+import app.skipi.ui.resources.desktop_config_updated
+import app.skipi.ui.resources.desktop_configs_save_failed
+import app.skipi.ui.resources.desktop_more_actions
 import java.util.Base64
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.Icon
@@ -113,6 +144,7 @@ import app.skipi.ui.resources.resource_file_download_notification_failed
 import app.skipi.ui.resources.configs_update_locked_warning_title
 import app.skipi.ui.resources.configs_update_locked_warning_summary
 import app.skipi.ui.resources.configs_update_anyway
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import app.ProjectInfo
 import app.skipi.app.config.TrafficConfigProfileRefreshOperations
@@ -253,12 +285,12 @@ internal fun DesktopConfigsScreen(
                 val saved = desktopEditorProfileStore.update(profileId, transform)
                 if (saved) {
                     editorSaveError = null
-                    message = "Конфиг сохранён."
+                    message = desktopText(Res.string.desktop_config_saved)
                 }
                 saved
             },
             onSaveFailure = { error ->
-                val description = "Не удалось сохранить конфиги: ${error.message.orEmpty()}"
+                val description = desktopText(Res.string.desktop_configs_save_failed, error.message.orEmpty())
                 message = description
                 editorSaveError = description
             },
@@ -307,7 +339,7 @@ internal fun DesktopConfigsScreen(
     fun persist(
         transform: (DesktopConfigLibrary) -> DesktopConfigLibrary,
         successMessage: String,
-        failurePrefix: String = "Не удалось сохранить конфиги: ",
+        failureMessage: StringResource = Res.string.desktop_configs_save_failed,
         afterSave: (() -> Unit)? = null,
     ): Boolean {
         return runCatching { onTransformConfigLibrary(transform) }.fold(
@@ -318,9 +350,9 @@ internal fun DesktopConfigsScreen(
             },
             onFailure = { error ->
                 message = if (error is DesktopConfigEditorSaveRejected) {
-                    "Конфиг не сохранён: ${error.message.orEmpty()}"
+                    desktopText(Res.string.desktop_config_not_saved, error.message.orEmpty())
                 } else {
-                    "$failurePrefix${error.message.orEmpty()}"
+                    desktopText(failureMessage, error.message.orEmpty())
                 }
                 false
             },
@@ -336,7 +368,7 @@ internal fun DesktopConfigsScreen(
                 updated
             },
             successMessage = "",
-            afterSave = { if (removed) message = "Конфиг удалён." },
+            afterSave = { if (removed) message = desktopText(Res.string.desktop_config_deleted) },
         )
     }
 
@@ -351,8 +383,8 @@ internal fun DesktopConfigsScreen(
                     sourceUrl = sourceUrl,
                 )
             },
-            successMessage = "Конфиг добавлен в библиотеку.",
-            failurePrefix = "Конфиг не импортирован: ",
+            successMessage = desktopText(Res.string.desktop_config_added_to_library),
+            failureMessage = Res.string.desktop_config_import_failed,
         )
     }
 
@@ -372,16 +404,16 @@ internal fun DesktopConfigsScreen(
     ) {
         val normalizedUrl = url.trim()
         if (normalizedUrl.isBlank()) {
-            message = "Ссылка на источник пуста."
+            message = desktopText(Res.string.desktop_config_source_url_empty)
             return
         }
         scope.launch {
-            message = "Загрузка конфига…"
+            message = desktopText(Res.string.desktop_config_downloading)
             updatingConfigId?.let { updatingConfigIds = updatingConfigIds + it }
             try {
                 val fetched = runCatchingCancellable { fetchDocument(normalizedUrl) }
                 fetched.onSuccess { content -> onSuccess(normalizedUrl, content) }
-                    .onFailure { error -> message = "Не удалось загрузить конфиг: ${error.message.orEmpty()}" }
+                    .onFailure { error -> message = desktopText(Res.string.desktop_config_download_failed, error.message.orEmpty()) }
             } finally {
                 updatingConfigId?.let { updatingConfigIds = updatingConfigIds - it }
             }
@@ -403,8 +435,8 @@ internal fun DesktopConfigsScreen(
                         sourceUrl = normalizedUrl,
                     )
                 },
-                successMessage = "Конфиг импортирован.",
-                failurePrefix = "Конфиг не импортирован: ",
+                successMessage = desktopText(Res.string.desktop_config_imported),
+                failureMessage = Res.string.desktop_config_import_failed,
             )
         }
     }
@@ -419,7 +451,7 @@ internal fun DesktopConfigsScreen(
                 it.severity == ShadowrocketConfigDiagnosticSeverity.Error
             }
             if (error != null) {
-                message = "Конфиг не импортирован: ${error.message}"
+                message = desktopText(Res.string.desktop_config_import_failed, error.message)
                 return@fetchConfigFromUrl
             }
             val profile = ConfigProfile(
@@ -431,8 +463,8 @@ internal fun DesktopConfigsScreen(
             )
             persist(
                 transform = { latest -> DesktopConfigLibraries.create(latest, profile) },
-                successMessage = "Конфиг импортирован.",
-                failurePrefix = "Конфиг не импортирован: ",
+                successMessage = desktopText(Res.string.desktop_config_imported),
+                failureMessage = Res.string.desktop_config_import_failed,
             )
         }
     }
@@ -450,7 +482,7 @@ internal fun DesktopConfigsScreen(
                 it.severity == ShadowrocketConfigDiagnosticSeverity.Error
             }
             if (error != null) {
-                message = "Конфиг не импортирован: ${error.message}"
+                message = desktopText(Res.string.desktop_config_import_failed, error.message)
                 return@fetchConfigFromUrl
             }
             persist(
@@ -475,8 +507,8 @@ internal fun DesktopConfigsScreen(
                         lastUpdatedAtMillis = refreshed.lastUpdatedAtMillis,
                     )
                 },
-                successMessage = "Конфиг обновлён.",
-                failurePrefix = "Конфиг не обновлён: ",
+                successMessage = desktopText(Res.string.desktop_config_updated),
+                failureMessage = Res.string.desktop_config_update_failed,
             )
         }
     }
@@ -795,7 +827,7 @@ internal fun DesktopConfigsScreen(
                             is DesktopConfigEditorSaveResult.Saved -> save.library
                         }
                     },
-                    successMessage = "Конфиг сохранён.",
+                    successMessage = desktopText(Res.string.desktop_config_saved),
                     afterSave = {
                         editorSaveError = null
                         editorDraft = null
@@ -835,7 +867,7 @@ internal fun DesktopConfigsScreen(
                                     DesktopProfileFiles.read(path).onSuccess { content ->
                                         importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
                                     }.onFailure { error ->
-                                        message = "Не удалось открыть файл: ${error.message.orEmpty()}"
+                                        message = desktopText(Res.string.desktop_config_open_file_failed, error.message.orEmpty())
                                     }
                                 }
                             },
@@ -895,8 +927,8 @@ internal fun DesktopConfigsScreen(
                     contextMenuConfig = null
                     DesktopProfileFiles.chooseProfileToSave()?.let { path ->
                         DesktopProfileFiles.write(path, config.content).onSuccess {
-                            message = "Конфиг экспортирован: ${path.fileName}"
-                        }.onFailure { error -> message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}" }
+                            message = desktopText(Res.string.desktop_config_exported_to, path.fileName)
+                        }.onFailure { error -> message = desktopText(Res.string.desktop_config_export_failed, error.message.orEmpty()) }
                     }
                 },
                 onExportBase64 = {
@@ -906,7 +938,7 @@ internal fun DesktopConfigsScreen(
                         Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(encoded), null)
                     }.onSuccess {
                         message = exportedBase64Message
-                    }.onFailure { error -> message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}" }
+                    }.onFailure { error -> message = desktopText(Res.string.desktop_config_copy_failed, error.message.orEmpty()) }
                 },
             )
         }
@@ -961,7 +993,7 @@ internal fun DesktopConfigsScreen(
                     configLibrary.configs.firstOrNull { config -> config.id == id }?.let { config ->
                         persist(
                             transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
-                            successMessage = "Выбран «${config.name}».",
+                            successMessage = desktopText(Res.string.desktop_config_selected, config.name),
                         )
                     }
                 },
@@ -989,7 +1021,7 @@ internal fun DesktopConfigsScreen(
                     IconButton(onClick = {
                         contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
                     }) {
-                        Icon(MiuixIcons.More, contentDescription = "Ещё", tint = MiuixTheme.colorScheme.onSurface)
+                        Icon(MiuixIcons.More, contentDescription = stringResource(Res.string.desktop_more_actions), tint = MiuixTheme.colorScheme.onSurface)
                     }
                 },
                 statusContent = profileStatusText?.let { text ->
@@ -1090,20 +1122,20 @@ private fun DesktopConfigEditor(
             diagnostics = analysis.diagnostics,
         ),
         labels = SkipiTrafficConfigRawEditorLabels(
-            newConfigTitle = "Новый конфиг",
-            editConfigTitle = "Редактор конфига",
-            subtitle = "Совместимый Shadowrocket / SKIPI .conf",
-            save = "Сохранить",
-            name = "Название",
-            sourceUrl = "Источник URL (необязательно)",
-            lockUpdates = "Блокировать обновление",
-            lockUpdatesSummary = "URL-профиль нельзя обновить, пока переключатель включён.",
-            parsedTitle = "Конфиг разобран",
-            invalidTitle = "В конфиге есть ошибки",
-            rules = "Правила",
-            proxyGroups = "Группы",
-            diagnostics = "Диагностика",
-            content = "Содержимое .conf",
+            newConfigTitle = stringResource(Res.string.desktop_config_editor_new_title),
+            editConfigTitle = stringResource(Res.string.desktop_config_editor_edit_title),
+            subtitle = stringResource(Res.string.desktop_config_editor_subtitle),
+            save = stringResource(Res.string.common_save),
+            name = stringResource(Res.string.configs_name),
+            sourceUrl = stringResource(Res.string.desktop_config_editor_source_url),
+            lockUpdates = stringResource(Res.string.desktop_config_editor_lock_updates),
+            lockUpdatesSummary = stringResource(Res.string.desktop_config_editor_lock_updates_summary),
+            parsedTitle = stringResource(Res.string.desktop_config_editor_parsed),
+            invalidTitle = stringResource(Res.string.desktop_config_editor_invalid),
+            rules = stringResource(Res.string.desktop_config_editor_rules),
+            proxyGroups = stringResource(Res.string.desktop_config_editor_groups),
+            diagnostics = stringResource(Res.string.desktop_config_editor_diagnostics),
+            content = stringResource(Res.string.desktop_config_editor_content),
         ),
         padding = contentPadding,
         isWideScreen = true,

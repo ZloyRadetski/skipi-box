@@ -3,6 +3,11 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_import_added_updated
+import app.skipi.ui.resources.desktop_import_count_configs
+import app.skipi.ui.resources.desktop_import_count_servers
+import app.skipi.ui.resources.desktop_import_count_subscriptions
 import features.proxy.server.model.ProxyServer
 import features.subscription.SubscriptionMetadata
 import kotlin.test.Test
@@ -94,7 +99,18 @@ class DesktopProxyImportCommitterTest {
         assertEquals(3, result.addedCount)
         assertEquals(2, result.updatedCount)
         assertEquals(
-            "Добавлено: серверов: 1, подписок: 1, конфигов: 1; обновлено: подписок: 1, конфигов: 1.",
+            desktopText(
+                Res.string.desktop_import_added_updated,
+                listOf(
+                    desktopText(Res.string.desktop_import_count_servers, 1),
+                    desktopText(Res.string.desktop_import_count_subscriptions, 1),
+                    desktopText(Res.string.desktop_import_count_configs, 1),
+                ).joinToString(),
+                listOf(
+                    desktopText(Res.string.desktop_import_count_subscriptions, 1),
+                    desktopText(Res.string.desktop_import_count_configs, 1),
+                ).joinToString(),
+            ),
             result.summary,
         )
 

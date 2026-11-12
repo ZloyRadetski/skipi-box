@@ -3,6 +3,13 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_system_proxy_activated
+import app.skipi.ui.resources.desktop_system_proxy_already_owned
+import app.skipi.ui.resources.desktop_system_proxy_no_active_lease
+import app.skipi.ui.resources.desktop_system_proxy_no_saved_lease
+import app.skipi.ui.resources.desktop_system_proxy_recovered
+import app.skipi.ui.resources.desktop_system_proxy_restored
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -121,7 +128,7 @@ class DesktopLinuxSystemProxyLeaseManager(
                 if (existing.phase == DesktopSystemProxyLeasePhase.Active && existing.endpoints == endpoints) {
                     return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                         action = DesktopSystemProxyLeaseAction.AlreadyAcquired,
-                        message = "Linux system proxy is already owned by SKIPI.",
+                        message = desktopText(Res.string.desktop_system_proxy_already_owned, "Linux"),
                     )
                 }
                 restoreSnapshot(existing.snapshot).getOrThrow()
@@ -146,7 +153,7 @@ class DesktopLinuxSystemProxyLeaseManager(
 
             DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.Acquired,
-                message = "Системный прокси Linux активирован.",
+                message = desktopText(Res.string.desktop_system_proxy_activated, "Linux"),
             ).also {
                 DesktopLogger.info("SystemProxy", "Acquired Linux system proxy (HTTP ${endpoints.httpPort}, SOCKS ${endpoints.socksPort})")
             }
@@ -156,7 +163,7 @@ class DesktopLinuxSystemProxyLeaseManager(
         val lease = DesktopLinuxSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.NothingToRelease,
-                message = "Нет активной аренды системного прокси Linux.",
+                message = desktopText(Res.string.desktop_system_proxy_no_active_lease, "Linux"),
             )
 
         restoreSnapshot(lease.snapshot).getOrThrow()
@@ -164,7 +171,7 @@ class DesktopLinuxSystemProxyLeaseManager(
 
         DesktopSystemProxyLeaseResult(
             action = DesktopSystemProxyLeaseAction.Released,
-            message = "Системный прокси Linux возвращен в исходное состояние.",
+            message = desktopText(Res.string.desktop_system_proxy_restored, "Linux"),
         ).also {
             DesktopLogger.info("SystemProxy", "Released Linux system proxy")
         }
@@ -174,7 +181,7 @@ class DesktopLinuxSystemProxyLeaseManager(
         val lease = DesktopLinuxSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopSystemProxyLeaseResult(
                 action = DesktopSystemProxyLeaseAction.NothingToRelease,
-                message = "Нет сохраненной аренды для восстановления.",
+                message = desktopText(Res.string.desktop_system_proxy_no_saved_lease),
             )
 
         restoreSnapshot(lease.snapshot).getOrThrow()
@@ -182,7 +189,7 @@ class DesktopLinuxSystemProxyLeaseManager(
 
         DesktopSystemProxyLeaseResult(
             action = DesktopSystemProxyLeaseAction.Recovered,
-            message = "Восстановлены системные настройки прокси Linux после предыдущей сессии.",
+            message = desktopText(Res.string.desktop_system_proxy_recovered, "Linux"),
         ).also {
             DesktopLogger.info("SystemProxy", "Recovered Linux system proxy from previous session")
         }

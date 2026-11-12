@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_autostart_remove_failed
 import utils.powerShellLiteral
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +37,7 @@ internal class DesktopWindowsAutostart(
             run(listOf("reg", "delete", RunKey, "/v", RunValueName, "/f"))
             run(listOf("schtasks", "/delete", "/tn", TaskName, "/f"))
             return if (isEnabled()) {
-                Result.failure(IllegalStateException("Start at login could not be removed"))
+                Result.failure(IllegalStateException(desktopText(Res.string.desktop_autostart_remove_failed)))
             } else {
                 Result.success(Unit)
             }

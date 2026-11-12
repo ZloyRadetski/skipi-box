@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_settings_launcher_unknown
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -38,7 +40,7 @@ internal fun resolveAutostartLauncher(
 ): Result<String> = runCatching {
     appImagePath?.takeIf(String::isNotBlank)?.takeIf { path -> Files.isRegularFile(Path.of(path)) }
         ?.let { return@runCatching it }
-    val launcher = command?.takeIf(String::isNotBlank) ?: error("The application launcher is unknown")
+    val launcher = command?.takeIf(String::isNotBlank) ?: error(desktopText(Res.string.desktop_settings_launcher_unknown))
     val name = Path.of(launcher).fileName?.toString().orEmpty()
     val bareName = name.removeSuffix(".exe").removeSuffix(".EXE")
     require(!bareName.equals("java", ignoreCase = true) && !bareName.equals("javaw", ignoreCase = true)) {

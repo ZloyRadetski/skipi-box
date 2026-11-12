@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_import_default_config_name
 import features.proxy.server.model.Custom
 import features.proxy.server.model.Socks
 import features.proxy.server.model.VLESS
@@ -208,7 +210,7 @@ class DesktopProxyImportTest {
         val plan = DesktopProxyImportPlanner.planText(raw)
 
         val config = assertIs<DesktopProxyImportAction.AddConfig>(plan.actions.single())
-        assertEquals("Импортированный конфиг", config.name)
+        assertEquals(desktopText(Res.string.desktop_import_default_config_name), config.name)
         assertEquals("$raw\n", config.content)
         assertTrue(plan.servers.isEmpty())
         assertTrue(plan.diagnostics.isEmpty())
