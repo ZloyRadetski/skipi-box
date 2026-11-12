@@ -3,12 +3,12 @@
 
 package app.skipi.ui.settings
 
-import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.layout.pageScrollModifiers
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.PaddingValues
@@ -119,11 +119,14 @@ fun SkipiSettingsHomeScreen(
         containerColor = Color.Transparent,
         modifier = modifier.fillMaxSize(),
         topBar = {
-            AdaptiveTopAppBar(
+            // A compact bar: the large collapsing title left a tall empty band between the status bar
+            // and the title. It still sits below the status bar on a phone.
+            SmallTopAppBar(
                 title = stringResource(Res.string.settings_title),
                 subtitle = state.versionLabel,
-                isWideScreen = isWideScreen,
+                color = Color.Transparent,
                 scrollBehavior = scrollBehavior,
+                defaultWindowInsetsPadding = !isWideScreen,
             )
         },
     ) { innerPadding ->
