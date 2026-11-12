@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.rounded.SaveAlt
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -131,10 +134,12 @@ internal fun CustomThemesSection(
         }
         ArrowPreference(
             title = stringResource(Res.string.custom_themes_save_current),
+            startAction = settingIcon(Icons.Rounded.SaveAlt),
             onClick = { dialog = ThemeDialog.Save },
         )
         ArrowPreference(
             title = stringResource(Res.string.custom_themes_import),
+            startAction = settingIcon(Icons.Rounded.FileDownload),
             onClick = { dialog = ThemeDialog.Import },
         )
     }
@@ -518,7 +523,7 @@ private fun ButtonPair(
 }
 
 /** Black or white, whichever reads better on [background]; the host's own on-accent colour can be dark on dark. */
-private fun readableOn(background: Color): Color {
+internal fun readableOn(background: Color): Color {
     val light = contrastRatio(0xFFFFFFFF, background.toArgb().toLong() and 0xFFFFFFFFL)
     val dark = contrastRatio(0xFF000000, background.toArgb().toLong() and 0xFFFFFFFFL)
     return if (light >= dark) Color.White else Color.Black

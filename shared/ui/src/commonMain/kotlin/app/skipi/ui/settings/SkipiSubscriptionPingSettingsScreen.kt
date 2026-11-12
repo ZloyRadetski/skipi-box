@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.Icons
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.background
@@ -217,68 +220,20 @@ fun SkipiSubscriptionPingSettingsScreen(
 
                 item(key = "section_concurrency_card") {
                     SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.subscription_ping_concurrency_label),
-                                    fontSize = 14.sp,
-                                    fontWeight = themedFontWeight(FontWeight.Medium),
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = "${concurrencySliderValue.roundToInt()}",
-                                        fontSize = 14.sp,
-                                        fontWeight = themedFontWeight(FontWeight.Bold),
-                                        color = MiuixTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            AppSlider(
-                                value = concurrencySliderValue,
-                                onValueChange = { newValue ->
-                                    concurrencySliderValue = newValue
-                                },
-                                onValueChangeFinished = {
-                                    val concurrency = concurrencySliderValue.roundToInt().coerceIn(1, 32)
-                                    onConcurrencyChange(concurrency)
-                                },
-                                valueRange = 1f..32f,
-                                steps = 30,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "1",
-                                    fontSize = 11.sp,
-                                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                )
-                                Text(
-                                    text = "32",
-                                    fontSize = 11.sp,
-                                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                )
-                            }
-                        }
+                        SkipiSliderPreference(
+                            title = stringResource(Res.string.subscription_ping_concurrency_label),
+                            startAction = settingIcon(Icons.Rounded.Bolt),
+                            valueLabel = "${concurrencySliderValue.roundToInt()}",
+                            value = concurrencySliderValue,
+                            onValueChange = { newValue -> concurrencySliderValue = newValue },
+                            onValueChangeFinished = {
+                                onConcurrencyChange(concurrencySliderValue.roundToInt().coerceIn(1, 32))
+                            },
+                            valueRange = 1f..32f,
+                            steps = 30,
+                            minLabel = "1",
+                            maxLabel = "32",
+                        )
                     }
                 }
 
@@ -289,69 +244,22 @@ fun SkipiSubscriptionPingSettingsScreen(
 
                 item(key = "section_timeout_card") {
                     SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            val secondsUnit = stringResource(Res.string.unit_seconds_short)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.subscription_ping_timeout_label),
-                                    fontSize = 14.sp,
-                                    fontWeight = themedFontWeight(FontWeight.Medium),
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = "${sliderValue.roundToInt()} $secondsUnit",
-                                        fontSize = 14.sp,
-                                        fontWeight = themedFontWeight(FontWeight.Bold),
-                                        color = MiuixTheme.colorScheme.primary,
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            AppSlider(
-                                value = sliderValue,
-                                onValueChange = { newValue ->
-                                    sliderValue = newValue
-                                },
-                                onValueChangeFinished = {
-                                    val seconds = sliderValue.roundToInt().coerceIn(1, 30)
-                                    onTimeoutMillisChange("${seconds * 1000}")
-                                },
-                                valueRange = 1f..30f,
-                                steps = 28,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = "1 $secondsUnit",
-                                    fontSize = 11.sp,
-                                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                )
-                                Text(
-                                    text = "30 $secondsUnit",
-                                    fontSize = 11.sp,
-                                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                )
-                            }
-                        }
+                        val secondsUnit = stringResource(Res.string.unit_seconds_short)
+                        SkipiSliderPreference(
+                            title = stringResource(Res.string.subscription_ping_timeout_label),
+                            startAction = settingIcon(Icons.Rounded.Timer),
+                            valueLabel = "${sliderValue.roundToInt()} $secondsUnit",
+                            value = sliderValue,
+                            onValueChange = { newValue -> sliderValue = newValue },
+                            onValueChangeFinished = {
+                                val seconds = sliderValue.roundToInt().coerceIn(1, 30)
+                                onTimeoutMillisChange("${seconds * 1000}")
+                            },
+                            valueRange = 1f..30f,
+                            steps = 28,
+                            minLabel = "1 $secondsUnit",
+                            maxLabel = "30 $secondsUnit",
+                        )
                     }
                 }
 

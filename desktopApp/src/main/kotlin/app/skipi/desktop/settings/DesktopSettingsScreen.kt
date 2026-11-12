@@ -3,12 +3,12 @@
 
 package app.skipi.desktop
 
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.ContentCopy
 import app.ProjectInfo
 import app.skipi.ui.networkautomation.NetworkAutomationServerOption
 import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
@@ -806,7 +806,7 @@ private fun DesktopLocalProxySettings(
             {
                 SkipiSettingsSwitchRow(
                     title = stringResource(Res.string.desktop_settings_use_system_proxy),
-                    icon = Icons.Filled.Language,
+                    icon = Icons.Rounded.Language,
                     summary = stringResource(Res.string.desktop_settings_use_system_proxy_summary),
                     checked = settings.useSystemProxy,
                     onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
@@ -820,7 +820,7 @@ private fun DesktopLocalProxySettings(
                 SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_system_proxy_header)) {
                     SkipiSettingsActionRow(
                         title = stringResource(Res.string.desktop_settings_reset_system_proxy),
-                        icon = Icons.Filled.RestartAlt,
+                        icon = Icons.Rounded.RestartAlt,
                         summary = stringResource(Res.string.desktop_settings_reset_system_proxy_summary),
                         onClick = onClearSystemProxy,
                     )
@@ -1035,7 +1035,7 @@ private fun DesktopDiagnosticsContent(
         )
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_recheck_runtime),
-            icon = Icons.Filled.Refresh,
+            icon = Icons.Rounded.Refresh,
             summary = stringResource(Res.string.desktop_settings_recheck_runtime_summary),
             onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
         )
@@ -1043,7 +1043,7 @@ private fun DesktopDiagnosticsContent(
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_app_log_header)) {
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_open_logs_folder),
-            icon = Icons.Filled.FolderOpen,
+            icon = Icons.Rounded.FolderOpen,
             summary = logDir.toString(),
             onClick = {
                 val result = openDirectory(logDir)
@@ -1068,7 +1068,7 @@ private fun DesktopDiagnosticsContent(
             )
             SkipiSettingsActionRow(
                 title = stringResource(Res.string.common_refresh),
-                icon = Icons.Filled.Refresh,
+                icon = Icons.Rounded.Refresh,
                 summary = "",
                 onClick = { recentLogs = DesktopLogger.recentEntries(40) },
             )
@@ -1077,7 +1077,7 @@ private fun DesktopDiagnosticsContent(
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_data_header)) {
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_data_dir),
-            icon = Icons.Filled.Folder,
+            icon = Icons.Rounded.Folder,
             summary = dataDirectory?.toString().orEmpty(),
             onClick = {
                 val result = dataDirectory?.let(::openDirectory)
@@ -1087,7 +1087,7 @@ private fun DesktopDiagnosticsContent(
         )
         SkipiSettingsActionRow(
             title = stringResource(Res.string.desktop_settings_copy_settings_path),
-            icon = Icons.Filled.ContentCopy,
+            icon = Icons.Rounded.ContentCopy,
             summary = settingsPath.toString(),
             onClick = {
                 copyToClipboard(settingsPath.toString()).fold(

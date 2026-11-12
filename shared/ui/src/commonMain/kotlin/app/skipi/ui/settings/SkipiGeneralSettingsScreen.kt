@@ -3,14 +3,16 @@
 
 package app.skipi.ui.settings
 
-import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.SettingsRemote
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.Minimize
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.rounded.Timelapse
+import androidx.compose.material.icons.rounded.Translate
+import androidx.compose.material.icons.rounded.Vibration
+import androidx.compose.material.icons.rounded.SettingsRemote
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Minimize
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Backup
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
@@ -216,6 +218,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.Language in visibleControls) {
                                 SkipiDropdownPreference(
                                     title = stringResource(Res.string.settings_language),
+                                    startAction = settingIcon(Icons.Rounded.Translate),
                                     items = languageOptions,
                                     selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),
                                     onSelectedIndexChange = { index ->
@@ -228,7 +231,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.Haptics in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_enable_haptics),
-                                    startAction = settingIcon(Icons.Filled.Vibration),
+                                    startAction = settingIcon(Icons.Rounded.Vibration),
                                     summary = stringResource(Res.string.settings_enable_haptics_summary),
                                     checked = state.enableHaptics,
                                     onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
@@ -249,7 +252,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.TrafficStatsNotifications in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_traffic_stats_notification),
-                                    startAction = settingIcon(Icons.Filled.Insights),
+                                    startAction = settingIcon(Icons.Rounded.Insights),
                                     summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
                                     checked = state.enableTrafficStatsNotification,
                                     onCheckedChange = { enabled ->
@@ -270,7 +273,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.ResourceFileNotifications in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_resource_files_notifications),
-                                    startAction = settingIcon(Icons.Filled.NotificationsActive),
+                                    startAction = settingIcon(Icons.Rounded.NotificationsActive),
                                     summary = stringResource(Res.string.settings_resource_files_notifications_summary),
                                     checked = state.enableResourceFileNotifications,
                                     onCheckedChange = { enabled ->
@@ -281,7 +284,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.DeletionConfirmation in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_deletion_confirmation),
-                                    startAction = settingIcon(Icons.Filled.Delete),
+                                    startAction = settingIcon(Icons.Rounded.Delete),
                                     summary = stringResource(Res.string.settings_deletion_confirmation_summary),
                                     checked = state.enableDeletionConfirmation,
                                     onCheckedChange = { enabled ->
@@ -304,7 +307,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.UrlSchemes in visibleControls) {
                                 ArrowPreference(
                                     title = stringResource(Res.string.settings_url_schemes),
-                                    startAction = settingIcon(Icons.Filled.Link),
+                                    startAction = settingIcon(Icons.Rounded.Link),
                                     summary = stringResource(Res.string.settings_url_schemes_summary),
                                     onClick = onOpenUrlSchemes,
                                 )
@@ -312,7 +315,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.BroadcastControl in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_broadcast_control),
-                                    startAction = settingIcon(Icons.Filled.SettingsRemote),
+                                    startAction = settingIcon(Icons.Rounded.SettingsRemote),
                                     summary = stringResource(Res.string.settings_broadcast_control_summary),
                                     checked = state.enableBroadcastControl,
                                     onCheckedChange = { enabled ->
@@ -323,7 +326,7 @@ fun SkipiGeneralSettingsScreen(
                             if (GeneralSettingsControl.CloseToBackground in visibleControls) {
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_close_to_background),
-                                    startAction = settingIcon(Icons.Filled.Minimize),
+                                    startAction = settingIcon(Icons.Rounded.Minimize),
                                     summary = stringResource(Res.string.settings_close_to_background_summary),
                                     checked = state.closeToBackground,
                                     onCheckedChange = { enabled ->
@@ -341,7 +344,7 @@ fun SkipiGeneralSettingsScreen(
                         SkipiSettingsSectionCard(bottomPadding = 0.dp) {
                             ArrowPreference(
                                 title = stringResource(Res.string.settings_category_backup_reset),
-                                startAction = settingIcon(Icons.Filled.Backup),
+                                startAction = settingIcon(Icons.Rounded.Backup),
                                 summary = stringResource(Res.string.settings_category_backup_reset_summary),
                                 onClick = onOpenBackupReset,
                             )
@@ -369,52 +372,20 @@ private fun TrafficStatsRefreshIntervalPreference(
     var sliderValue by remember(refreshIntervalSeconds) { mutableFloatStateOf(current.toFloat()) }
     val secondsUnit = stringResource(Res.string.unit_seconds_short)
 
-    Column(Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(Res.string.settings_traffic_stats_notification_refresh_interval),
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-                maxLines = 3,
-                fontSize = 14.sp,
-                fontWeight = themedFontWeight(FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurface,
+    SkipiSliderPreference(
+        title = stringResource(Res.string.settings_traffic_stats_notification_refresh_interval),
+        startAction = settingIcon(Icons.Rounded.Timelapse),
+        valueLabel = "${sliderValue.roundToInt()} $secondsUnit",
+        value = sliderValue,
+        onValueChange = { sliderValue = it },
+        onValueChangeFinished = {
+            onRefreshIntervalSecondsChange(
+                GeneralSettingsValues.normalizeTrafficRefreshIntervalSeconds(sliderValue.roundToInt()),
             )
-            Box(
-                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    text = "${sliderValue.roundToInt()} $secondsUnit",
-                    fontSize = 14.sp,
-                    fontWeight = themedFontWeight(FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.primary,
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        AppSlider(
-            value = sliderValue,
-            onValueChange = { sliderValue = it },
-            onValueChangeFinished = {
-                onRefreshIntervalSecondsChange(
-                    GeneralSettingsValues.normalizeTrafficRefreshIntervalSeconds(sliderValue.roundToInt()),
-                )
-            },
-            valueRange = minimum.toFloat()..maximum.toFloat(),
-            steps = maximum - minimum - 1,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("$minimum $secondsUnit", fontSize = 11.sp, color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-            Text("$maximum $secondsUnit", fontSize = 11.sp, color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-        }
-    }
+        },
+        valueRange = minimum.toFloat()..maximum.toFloat(),
+        steps = maximum - minimum - 1,
+        minLabel = "$minimum $secondsUnit",
+        maxLabel = "$maximum $secondsUnit",
+    )
 }

@@ -3,9 +3,11 @@
 
 package app.skipi.ui.settings
 
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.NetworkPing
-import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.rounded.EventBusy
+import androidx.compose.material.icons.rounded.HourglassBottom
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.NetworkPing
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.Icons
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
@@ -159,7 +161,7 @@ fun SkipiSubscriptionSettingsScreen(
                         if (capabilities.userAgents) {
                             ArrowPreference(
                                 title = labels.userAgentsTitle,
-                                startAction = settingIcon(Icons.Filled.Fingerprint),
+                                startAction = settingIcon(Icons.Rounded.Fingerprint),
                                 summary = labels.userAgentsSummary,
                                 onClick = onOpenUserAgents,
                             )
@@ -167,7 +169,7 @@ fun SkipiSubscriptionSettingsScreen(
                         if (capabilities.deviceHeaders) {
                             SwitchPreference(
                                 title = labels.deviceHeadersTitle,
-                                startAction = settingIcon(Icons.Filled.PhoneAndroid),
+                                startAction = settingIcon(Icons.Rounded.PhoneAndroid),
                                 summary = labels.deviceHeadersSummary,
                                 checked = state.deviceHeadersEnabled,
                                 onCheckedChange = { enabled ->
@@ -180,31 +182,16 @@ fun SkipiSubscriptionSettingsScreen(
                 if (capabilities.expiryNotifications) item(key = "subscriptions_expiry") {
                     SmallTitle(text = labels.expirySectionTitle)
                     SkipiSettingsSectionCard {
-                        Column(Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                                    Text(
-                                        text = labels.expiryEnabledTitle,
-                                        style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
-                                        color = SkipiTheme.colors.onSurface,
-                                    )
-                                    Text(
-                                        text = labels.expiryEnabledSummary,
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = SkipiTheme.colors.onSurfaceVariant,
-                                    )
-                                }
-                                Switch(
-                                    checked = state.expiryNotificationsEnabled,
-                                    onCheckedChange = onExpiryNotificationsChange,
-                                )
-                            }
+                        Column(Modifier.fillMaxWidth()) {
+                            SwitchPreference(
+                                title = labels.expiryEnabledTitle,
+                                startAction = settingIcon(Icons.Rounded.EventBusy),
+                                summary = labels.expiryEnabledSummary,
+                                checked = state.expiryNotificationsEnabled,
+                                onCheckedChange = onExpiryNotificationsChange,
+                            )
                             androidx.compose.animation.AnimatedVisibility(visible = state.expiryNotificationsEnabled) {
-                                Column(Modifier.padding(top = 16.dp)) {
+                                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)) {
                                     Text(
                                         text = labels.expiryRemindersTitle,
                                         style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
@@ -230,7 +217,7 @@ fun SkipiSubscriptionSettingsScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = labels.pingTitle,
-                            startAction = settingIcon(Icons.Filled.NetworkPing),
+                            startAction = settingIcon(Icons.Rounded.NetworkPing),
                             summary = state.pingSummary,
                             onClick = onOpenPingSettings,
                         )
@@ -303,34 +290,17 @@ private fun FetchTimeoutSlider(
     val stored = SubscriptionFetchTimeout.normalize(seconds)
     var sliderValue by androidx.compose.runtime.remember(stored) { androidx.compose.runtime.mutableFloatStateOf(stored.toFloat()) }
     val shown = SubscriptionFetchTimeout.normalize(kotlin.math.round(sliderValue).toInt())
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = themedFontWeight(FontWeight.Medium),
-                color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "$shown ${stringResource(Res.string.unit_seconds_short)}",
-                fontSize = 14.sp,
-                fontWeight = themedFontWeight(FontWeight.Bold),
-                color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-            )
-        }
-        Text(
-            text = summary,
-            fontSize = 13.sp,
-            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        AppSlider(
-            value = sliderValue,
-            onValueChange = { value -> sliderValue = value },
-            onValueChangeFinished = { onSecondsChange(SubscriptionFetchTimeout.normalize(kotlin.math.round(sliderValue).toInt())) },
-            valueRange = SubscriptionFetchTimeout.Min.toFloat()..SubscriptionFetchTimeout.Max.toFloat(),
-            steps = SubscriptionFetchTimeout.Max - SubscriptionFetchTimeout.Min - 1,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        )
-    }
+    SkipiSliderPreference(
+        title = title,
+        summary = summary,
+        startAction = settingIcon(Icons.Rounded.HourglassBottom),
+        valueLabel = "$shown ${stringResource(Res.string.unit_seconds_short)}",
+        value = sliderValue,
+        onValueChange = { value -> sliderValue = value },
+        onValueChangeFinished = { onSecondsChange(SubscriptionFetchTimeout.normalize(kotlin.math.round(sliderValue).toInt())) },
+        valueRange = SubscriptionFetchTimeout.Min.toFloat()..SubscriptionFetchTimeout.Max.toFloat(),
+        steps = SubscriptionFetchTimeout.Max - SubscriptionFetchTimeout.Min - 1,
+        minLabel = "${SubscriptionFetchTimeout.Min} ${stringResource(Res.string.unit_seconds_short)}",
+        maxLabel = "${SubscriptionFetchTimeout.Max} ${stringResource(Res.string.unit_seconds_short)}",
+    )
 }

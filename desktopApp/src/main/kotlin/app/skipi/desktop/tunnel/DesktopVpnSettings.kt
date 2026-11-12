@@ -3,7 +3,7 @@
 
 package app.skipi.desktop
 
-import androidx.compose.material.icons.filled.SettingsEthernet
+import androidx.compose.material.icons.rounded.SettingsEthernet
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -141,7 +141,7 @@ internal fun DesktopVpnSettings(
             SkipiHostSwitchSection(
                 sectionTitle = tunModeTitle,
                 title = tunModeTitle,
-                icon = Icons.Filled.SettingsEthernet,
+                icon = Icons.Rounded.SettingsEthernet,
                 summary = tunModeSummary,
                 checked = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
                 enabled = tunSwitchEnabled(tunAvailable, settings.enableTunMode, tunNeedsElevation),

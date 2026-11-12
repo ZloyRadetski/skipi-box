@@ -3,9 +3,10 @@
 
 package app.skipi.ui.settings
 
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Http
+import androidx.compose.material.icons.rounded.Password
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Http
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -158,7 +159,7 @@ fun SkipiLocalProxySettingsScreen(
                                 if (capabilities.dynamicPort) {
                                     SwitchPreference(
                                         title = labels.dynamicPortTitle,
-                                        startAction = settingIcon(Icons.Filled.Shuffle),
+                                        startAction = settingIcon(Icons.Rounded.Shuffle),
                                         summary = labels.dynamicPortSummary,
                                         checked = state.dynamicPort,
                                         onCheckedChange = onDynamicPortChange,
@@ -167,7 +168,7 @@ fun SkipiLocalProxySettingsScreen(
                                 if (capabilities.listenAllInterfaces) {
                                     SwitchPreference(
                                         title = labels.listenAllTitle,
-                                        startAction = settingIcon(Icons.Filled.Public),
+                                        startAction = settingIcon(Icons.Rounded.Public),
                                         summary = labels.listenAllSummary,
                                         checked = state.listenAllInterfaces,
                                         onCheckedChange = onListenAllInterfacesChange,
@@ -208,7 +209,7 @@ fun SkipiLocalProxySettingsScreen(
                             Column(Modifier.padding(vertical = 4.dp)) {
                                 SwitchPreference(
                                     title = labels.httpInboundTitle,
-                                    startAction = settingIcon(Icons.Filled.Http),
+                                    startAction = settingIcon(Icons.Rounded.Http),
                                     summary = labels.httpInboundSummary,
                                     checked = state.enableHttpEndpoint,
                                     onCheckedChange = onHttpEnabledChange,
@@ -343,6 +344,7 @@ private fun AuthBlock(
 ) {
     SkipiDropdownPreference(
         title = title,
+        startAction = settingIcon(Icons.Rounded.Password),
         summary = labels.modeHint(mode),
         items = LocalProxyAuthModeOptions.map(labels::modeName),
         selectedIndex = LocalProxyAuthModeOptions.indexOf(mode).coerceAtLeast(0),

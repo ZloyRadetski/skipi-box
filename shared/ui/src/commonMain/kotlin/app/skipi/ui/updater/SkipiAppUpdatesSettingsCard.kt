@@ -3,6 +3,12 @@
 
 package app.skipi.ui.updater
 
+import androidx.compose.material.icons.rounded.Update
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.NightsStay
+import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.Icons
+import app.skipi.ui.settings.settingIcon
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -45,6 +51,7 @@ fun SkipiAppUpdatesSettingsCard(
     SkipiSettingsSectionCard(modifier = modifier, bottomPadding = 12.dp) {
         SwitchPreference(
             title = stringResource(Res.string.settings_auto_check_updates_title),
+            startAction = settingIcon(Icons.Rounded.Update),
             summary = stringResource(Res.string.settings_auto_check_updates_summary),
             checked = autoCheckEnabled,
             onCheckedChange = onAutoCheckChange,
@@ -52,6 +59,7 @@ fun SkipiAppUpdatesSettingsCard(
         if (autoCheckEnabled && nightInstallEnabled != null) {
             SwitchPreference(
                 title = stringResource(Res.string.settings_auto_install_night_title),
+                startAction = settingIcon(Icons.Rounded.NightsStay),
                 summary = stringResource(Res.string.settings_auto_install_night_summary),
                 checked = nightInstallEnabled,
                 onCheckedChange = onNightInstallChange,
@@ -59,6 +67,7 @@ fun SkipiAppUpdatesSettingsCard(
         }
         SkipiDropdownPreference(
             title = stringResource(Res.string.settings_update_channel_title),
+            startAction = settingIcon(Icons.Rounded.NewReleases),
             summary = stringResource(channel.summaryRes()),
             items = AppUpdateChannel.entries.map { stringResource(it.labelRes()) },
             selectedIndex = AppUpdateChannel.entries.indexOf(channel),
@@ -66,6 +75,7 @@ fun SkipiAppUpdatesSettingsCard(
         )
         ArrowPreference(
             title = stringResource(Res.string.settings_check_updates_now_action),
+            startAction = settingIcon(Icons.Rounded.Refresh),
             summary = checkSummary,
             onClick = onCheckNow,
         )

@@ -4,11 +4,13 @@
 package app.skipi.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Http
+import androidx.compose.material.icons.rounded.Http
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -19,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -34,37 +35,61 @@ fun ProvideSettingsIconColor(argb: Long?, content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalSettingsIconColor provides argb?.let(::Color), content = content)
 }
 
-/** Edge of the small icon tile in front of a settings row. */
+/** Edge of the small tile in front of a settings row, and the shape every such tile shares. */
 private val SettingIconTileSize = 32.dp
 private val SettingIconGlyphSize = 18.dp
+private val SettingIconTileShape = RoundedCornerShape(10.dp)
 
-/** The small colored tile with an icon that opens a settings row. */
+/** Miuix leaves 8 dp between a row's start action and its text; this much more makes the gap read as one step. */
+private val SettingIconTextGap = 6.dp
+
+@Composable
+private fun settingIconColor(): Color = LocalSettingsIconColor.current ?: MiuixTheme.colorScheme.primary
+
+/**
+ * The small tile with an icon in front of a settings row: the user's icon color with a glyph that reads on it, like the
+ * tiles of the settings home. A soft tint was tried first, but a dark icon color vanished on a dark card.
+ */
 @Composable
 fun SkipiSettingIcon(icon: ImageVector, modifier: Modifier = Modifier) {
-    val tileColor = LocalSettingsIconColor.current ?: MiuixTheme.colorScheme.primary
+    val color = settingIconColor()
     Box(
         modifier = modifier
+            .padding(end = SettingIconTextGap)
             .size(SettingIconTileSize)
-            .clip(RoundedCornerShape(10.dp))
-            .background(tileColor),
+            .clip(SettingIconTileShape)
+            .background(color),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = SkipiTheme.colors.onAccent,
+            tint = readableOn(color),
             modifier = Modifier.size(SettingIconGlyphSize),
         )
     }
 }
 
+/** The tile of a color row: the color itself, on the same grid as the icon tiles so the text lines up. */
+@Composable
+fun SkipiSettingColorSwatch(color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .padding(end = SettingIconTextGap)
+            .size(SettingIconTileSize)
+            .clip(SettingIconTileShape)
+            .background(color)
+            .border(1.dp, MiuixTheme.colorScheme.dividerLine, SettingIconTileShape),
+    )
+}
+
 /** Row icons a host needs but cannot import itself: only the shared UI module carries the icon set. */
 object SkipiSettingRowIcons {
-    val Http: ImageVector get() = Icons.Filled.Http
+    val Http: ImageVector get() = Icons.Rounded.Http
 }
 
 /**
- * The `startAction` of a Miuix preference row: `SwitchPreference(..., startAction = settingIcon(Icons.Filled.Lock))`.
+ * The `startAction` of a Miuix preference row: `SwitchPreference(..., startAction = settingIcon(Icons.Rounded.Lock))`.
  * Rows without an icon simply leave `startAction` out.
  */
 fun settingIcon(icon: ImageVector): @Composable () -> Unit = { SkipiSettingIcon(icon) }

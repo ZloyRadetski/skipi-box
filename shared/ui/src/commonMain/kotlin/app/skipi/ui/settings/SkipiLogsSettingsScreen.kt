@@ -3,11 +3,13 @@
 
 package app.skipi.ui.settings
 
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.HistoryToggleOff
+import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.ReceiptLong
+import androidx.compose.material.icons.rounded.Receipt
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Article
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
@@ -162,6 +164,7 @@ fun SkipiLogsSettingsScreen(
                         if (capabilities.logLevel) {
                             SkipiDropdownPreference(
                                 title = labels.logLevelTitle,
+                                startAction = settingIcon(Icons.Rounded.Tune),
                                 items = labels.logLevels,
                                 selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
                                 onSelectedIndexChange = onLogLevelChange,
@@ -170,6 +173,7 @@ fun SkipiLogsSettingsScreen(
                         if (capabilities.retention) {
                             SkipiDropdownPreference(
                                 title = labels.retentionTitle,
+                                startAction = settingIcon(Icons.Rounded.HistoryToggleOff),
                                 summary = labels.retentionSummary,
                                 items = labels.retentionOptions,
                                 selectedIndex = retentionIndex,
@@ -181,7 +185,7 @@ fun SkipiLogsSettingsScreen(
                         if (capabilities.accessLog) {
                             SwitchPreference(
                                 title = labels.accessLogTitle,
-                                startAction = settingIcon(Icons.Filled.Receipt),
+                                startAction = settingIcon(Icons.Rounded.Receipt),
                                 checked = state.accessLogEnabled,
                                 onCheckedChange = onAccessLogChange,
                             )
@@ -191,11 +195,11 @@ fun SkipiLogsSettingsScreen(
                 if (capabilities.coreLogs || (capabilities.accessLogs && showAccessLogs) || capabilities.logcat) item(key = "log_viewers") {
                     SmallTitle(text = labels.viewersSectionTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, startAction = settingIcon(Icons.Filled.Terminal), onClick = onOpenCoreLogs)
+                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, startAction = settingIcon(Icons.Rounded.Terminal), onClick = onOpenCoreLogs)
                         if (capabilities.accessLogs && showAccessLogs) {
-                            ArrowPreference(title = labels.accessLogsTitle, startAction = settingIcon(Icons.Filled.ReceiptLong), onClick = onOpenAccessLogs)
+                            ArrowPreference(title = labels.accessLogsTitle, startAction = settingIcon(Icons.Rounded.ReceiptLong), onClick = onOpenAccessLogs)
                         }
-                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, startAction = settingIcon(Icons.Filled.Article), onClick = onOpenLogcat)
+                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, startAction = settingIcon(Icons.Rounded.Article), onClick = onOpenLogcat)
                     }
                 }
                 if (capabilities.bugReport) item(key = "logs_feedback") {
@@ -203,7 +207,7 @@ fun SkipiLogsSettingsScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(
                             title = labels.bugReportTitle,
-                            startAction = settingIcon(Icons.Filled.BugReport),
+                            startAction = settingIcon(Icons.Rounded.BugReport),
                             summary = labels.bugReportSummary,
                             onClick = onOpenBugReport,
                         )

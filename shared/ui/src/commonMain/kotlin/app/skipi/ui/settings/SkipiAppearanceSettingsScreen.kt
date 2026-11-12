@@ -14,8 +14,11 @@ import app.skipi.ui.resources.*
 import app.skipi.ui.text.themedFontWeight
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import top.yukonga.miuix.kmp.basic.BasicComponent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -224,66 +227,20 @@ internal fun FontSizeSliderPreference(
     var sliderValue by remember(selectedMode) { mutableFloatStateOf(selectedMode.toFloat()) }
     val selectedPercent = fontSizePercent(sliderValue.roundToInt())
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(Res.string.settings_font_size),
-                fontSize = 14.sp,
-                fontWeight = themedFontWeight(FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(
-                    text = "$selectedPercent%",
-                    fontSize = 14.sp,
-                    fontWeight = themedFontWeight(FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.primary,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        AppSlider(
-            value = sliderValue,
-            onValueChange = { value -> sliderValue = value },
-            onValueChangeFinished = {
-                onFontSizeModeChange(
-                    AppearanceSettingValues.normalizeFontSizeMode(sliderValue.roundToInt()),
-                )
-            },
-            valueRange = AppearanceSettingValues.FontSizeModeTiny.toFloat()..AppearanceSettingValues.FontSizeModeExtraLarge.toFloat(),
-            steps = (AppearanceSettingValues.FontSizeModeExtraLarge - AppearanceSettingValues.FontSizeModeTiny) / AppearanceSettingValues.FontSizeModeStepPercent - 1,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = "${fontSizePercent(AppearanceSettingValues.FontSizeModeTiny)}%",
-                fontSize = 11.sp,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            )
-            Text(
-                text = "${fontSizePercent(AppearanceSettingValues.FontSizeModeExtraLarge)}%",
-                fontSize = 11.sp,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            )
-        }
-    }
+    SkipiSliderPreference(
+        title = stringResource(Res.string.settings_font_size),
+        startAction = settingIcon(Icons.Rounded.FormatSize),
+        valueLabel = "$selectedPercent%",
+        value = sliderValue,
+        onValueChange = { value -> sliderValue = value },
+        onValueChangeFinished = {
+            onFontSizeModeChange(AppearanceSettingValues.normalizeFontSizeMode(sliderValue.roundToInt()))
+        },
+        valueRange = AppearanceSettingValues.FontSizeModeTiny.toFloat()..AppearanceSettingValues.FontSizeModeExtraLarge.toFloat(),
+        steps = (AppearanceSettingValues.FontSizeModeExtraLarge - AppearanceSettingValues.FontSizeModeTiny) / AppearanceSettingValues.FontSizeModeStepPercent - 1,
+        minLabel = "${fontSizePercent(AppearanceSettingValues.FontSizeModeTiny)}%",
+        maxLabel = "${fontSizePercent(AppearanceSettingValues.FontSizeModeExtraLarge)}%",
+    )
 }
 
 internal fun fontSizePercent(fontSizeMode: Int): Int = AppearanceSettingValues.normalizeFontSizeMode(fontSizeMode)
@@ -314,42 +271,19 @@ internal fun SettingsColorItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color)
-                .border(1.dp, MiuixTheme.colorScheme.dividerLine, RoundedCornerShape(8.dp)),
-        )
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
+    // The row is a plain Miuix row, so its text starts where the text of the rows with an icon starts.
+    BasicComponent(
+        modifier = modifier,
+        title = title,
+        summary = summary?.takeIf { it.isNotBlank() },
+        startAction = { SkipiSettingColorSwatch(color) },
+        endActions = {
             Text(
-                text = title,
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurface,
+                text = String.format("#%06X", 0xFFFFFF and color.toArgb()),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
-            if (!summary.isNullOrBlank()) {
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = summary,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
-        Spacer(Modifier.width(8.dp))
-        val hex = String.format("#%06X", 0xFFFFFF and color.toArgb())
-        Text(
-            text = hex,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
+        },
+        onClick = onClick,
+    )
 }
