@@ -179,6 +179,7 @@ private data class DesktopVisualEditorSession(
     val configId: Int,
     val section: DesktopVisualEditorSection = DesktopVisualEditorSection.Basics,
     val proxyGroupsReturnTarget: DesktopProxyGroupsReturnTarget = DesktopProxyGroupsReturnTarget.Routing,
+    val openGroupLine: Int? = null,
 )
 
 private class DesktopConfigEditorSaveRejected(message: String) : RuntimeException(message)
@@ -288,11 +289,9 @@ internal fun DesktopConfigsScreen(
     }
 
     fun openSourcedProxyGroups(key: String) {
-        val configId = key.takeIf { value -> value.startsWith("source:") }
-            ?.substringAfter(':')
-            ?.substringBefore(':')
-            ?.toIntOrNull()
-            ?: return
+        val parts = key.takeIf { value -> value.startsWith("source:") }?.split(':') ?: return
+        val configId = parts.getOrNull(1)?.toIntOrNull() ?: return
+        val groupLine = parts.getOrNull(2)?.toIntOrNull()
         if (configLibrary.configs.any { config -> config.id == configId }) {
             editorSaveError = null
             editorDraft = null
@@ -300,6 +299,7 @@ internal fun DesktopConfigsScreen(
                 configId = configId,
                 section = DesktopVisualEditorSection.ProxyGroups,
                 proxyGroupsReturnTarget = DesktopProxyGroupsReturnTarget.TrafficConfigCatalog,
+                openGroupLine = groupLine,
             )
         }
     }
@@ -640,6 +640,7 @@ internal fun DesktopConfigsScreen(
                     confirmDeletion = desktopSettings.confirmDeletion,
                     exportProxyServerFullJson = exportProxyServerFullJson,
                     copyTextToClipboard = copyTextToClipboard,
+                    openGroupLine = session.openGroupLine,
                     onBack = {
                         visualEditor = when (session.proxyGroupsReturnTarget) {
                             DesktopProxyGroupsReturnTarget.TrafficConfigCatalog -> null

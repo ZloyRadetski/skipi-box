@@ -112,6 +112,28 @@ internal fun openProfileProxyGroupEditor(
     val config = state.trafficConfigs.firstOrNull { it.id == strategy.sourceTrafficConfigId } ?: return false
     val group = config.rawConfig.analyzeShadowrocketConfig().proxyGroups
         .firstOrNull { it.name.equals(strategy.sourcePolicyGroupName, ignoreCase = true) } ?: return false
+    return openProfileProxyGroupEditor(navigator, state, config, group)
+}
+
+/** Opens the editor of the profile group at [lineNumber] of config [configId], for the configs list. */
+internal fun openProfileProxyGroupEditorAtLine(
+    navigator: app.navigation.Navigator,
+    state: AppState,
+    configId: Int,
+    lineNumber: Int,
+): Boolean {
+    val config = state.trafficConfigs.firstOrNull { it.id == configId } ?: return false
+    val group = config.rawConfig.analyzeShadowrocketConfig().proxyGroups
+        .firstOrNull { it.lineNumber == lineNumber } ?: return false
+    return openProfileProxyGroupEditor(navigator, state, config, group)
+}
+
+private fun openProfileProxyGroupEditor(
+    navigator: app.navigation.Navigator,
+    state: AppState,
+    config: features.config.TrafficConfigState,
+    group: features.config.ShadowrocketPolicyGroup,
+): Boolean {
     navigator.navigateForResult(
         route = Route.ProxyServerEditor(
             ps = group.toEditableStrategyGroup(config.id, state.trafficConfigProxyGroupServerChoices()),

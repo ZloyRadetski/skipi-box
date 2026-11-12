@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,7 @@ import features.config.ShadowrocketPolicyGroup
 import features.config.TrafficConfigProxyGroupServerInput
 import features.config.TrafficConfigState
 import features.config.newTrafficConfigProxyGroupStrategy
+import features.config.analyzeShadowrocketConfig
 import features.config.toEditableStrategyGroup
 import features.config.trafficConfigProxyGroupServerChoices
 import org.jetbrains.compose.resources.stringResource
@@ -49,6 +51,8 @@ internal fun DesktopTrafficConfigProxyGroupsEditor(
     copyTextToClipboard: (String) -> Unit,
     onBack: () -> Unit,
     statusContent: (@Composable () -> Unit)? = null,
+    /** Opens the editor of the group at this profile line straight away, and leaves the page when it closes. */
+    openGroupLine: Int? = null,
 ) {
     var editingResult by remember(profile.id) { mutableStateOf<ProxyServerEditResult?>(null) }
     var capturedProfile by remember(profile.id) { mutableStateOf<TrafficConfigState?>(null) }
@@ -99,7 +103,22 @@ internal fun DesktopTrafficConfigProxyGroupsEditor(
             excludedServerId = editingResult?.serverId,
         )
     }
+    LaunchedEffect(profile.id, openGroupLine) {
+        val group = openGroupLine?.let { line ->
+            profile.rawConfig.analyzeShadowrocketConfig().proxyGroups.firstOrNull { it.lineNumber == line }
+        }
+        if (group == null) {
+            if (openGroupLine != null) onBack()
+        } else {
+            capturedProfile = profile
+            editingResult = ProxyServerEditResult(
+                serverId = group.lineNumber,
+                server = group.toEditableStrategyGroup(trafficConfigId = profile.id, serverChoices = serverChoices),
+            )
+        }
+    }
     val currentEdit = editingResult
+    if (currentEdit == null && openGroupLine != null) return
     if (currentEdit == null) {
         SkipiTrafficConfigProxyGroupsEditorScreen(
             profile = profile,
@@ -149,6 +168,7 @@ internal fun DesktopTrafficConfigProxyGroupsEditor(
             onDismiss = {
                 editingResult = null
                 capturedProfile = null
+                if (openGroupLine != null) onBack()
             },
             onMessage = { editorMessage = it },
         )

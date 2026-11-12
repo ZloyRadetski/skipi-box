@@ -138,6 +138,7 @@ fun TrafficConfigPage(
     val configProxyGroups = remember(appState.trafficConfigs) {
         projectTrafficConfigSourcedProxyGroups(appState.trafficConfigs)
     }
+    HomeProfileProxyGroupEditResultHandler()
     var contextMenuConfig by remember { mutableStateOf<TrafficConfigState?>(null) }
     var pendingConfigDeletion by remember { mutableStateOf<TrafficConfigState?>(null) }
     var pendingUnlockAndUpdateConfig by remember {
@@ -511,7 +512,12 @@ fun TrafficConfigPage(
                 } else {
                     val parts = key.split(':')
                     val configId = parts.getOrNull(1)?.toIntOrNull()
-                    if (configId != null) navigator.push(Route.TrafficConfigSection(configId, TrafficConfigEditorSection.ProxyGroups))
+                    val line = parts.getOrNull(2)?.toIntOrNull()
+                    if (configId != null && line != null) {
+                        openProfileProxyGroupEditorAtLine(navigator, appState, configId, line)
+                    } else if (configId != null) {
+                        navigator.push(Route.TrafficConfigSection(configId, TrafficConfigEditorSection.ProxyGroups))
+                    }
                 }
             },
             onDeleteGlobalProxyGroup = { key ->
