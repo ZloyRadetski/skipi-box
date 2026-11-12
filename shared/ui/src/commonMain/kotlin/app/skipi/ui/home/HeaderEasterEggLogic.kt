@@ -14,10 +14,10 @@ import kotlin.random.Random
 /** Taps on the logo count as one streak while each comes within this time of the one before. */
 internal const val TapStreakWindowMillis = 1_200L
 
-private const val MinExplodeTaps = 5
-private const val MaxExplodeTaps = 10
+private const val MinExplodeTaps = 3
+private const val MaxExplodeTaps = 5
 
-/** How many taps a new streak takes before the logo blows up: anywhere from five to ten. */
+/** How many taps a new streak takes before the logo blows up: three to five, few enough that it gets found. */
 internal fun rollExplodeThreshold(random: Random): Int = random.nextInt(MinExplodeTaps, MaxExplodeTaps + 1)
 
 internal data class TapBurstState(

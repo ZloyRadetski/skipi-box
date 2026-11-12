@@ -55,8 +55,8 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 
 /**
- * The header logo's easter egg. Tapping it again and again makes it shake and buzz harder; after five to
- * ten quick taps it blows up, a clown jumps out over the whole Home and confetti, sparks and springs fly,
+ * The header logo's easter egg. Tapping it again and again makes it shake and buzz harder; after three to
+ * five quick taps it blows up, a clown jumps out over the whole Home and confetti, sparks and springs fly,
  * then the clown shrinks back into the logo, which pops back into place.
  */
 @Stable
@@ -140,9 +140,12 @@ fun rememberHeaderEasterEggState(): HeaderEasterEggState {
     // The buzz grows with the shaking: one pulse per tap, and a steady rattle once the logo is close to blowing.
     LaunchedEffect(state.tapCount) {
         if (state.tapCount > 0) {
-            haptic.performHapticFeedback(
-                if (state.intensity > 0.5f) HapticFeedbackType.LongPress else HapticFeedbackType.TextHandleMove,
-            )
+            // Always the strong click: the light tick is barely felt on a phone, and the streak is only a few taps.
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (state.intensity > 0.5f) {
+                delay(60L)
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
             delay(TapStreakWindowMillis + 50L)
             state.calmDownIfIdle()
         }
@@ -150,8 +153,8 @@ fun rememberHeaderEasterEggState(): HeaderEasterEggState {
     val rattling = state.intensity >= 0.45f && !state.exploding
     LaunchedEffect(rattling) {
         while (rattling) {
-            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            delay((230f - 170f * state.intensity).toLong().coerceAtLeast(55L))
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            delay((260f - 160f * state.intensity).toLong().coerceAtLeast(100L))
         }
     }
 
@@ -176,14 +179,14 @@ fun rememberHeaderEasterEggState(): HeaderEasterEggState {
 
 /** The blast, the clown landing and the logo's return are each felt as a short run of pulses. */
 private suspend fun playHapticBursts(haptic: HapticFeedback) {
-    repeat(3) {
+    repeat(6) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        delay(70L)
+        delay(65L)
     }
-    delay(450L)
-    repeat(2) {
+    delay(400L)
+    repeat(4) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        delay(80L)
+        delay(75L)
     }
 }
 

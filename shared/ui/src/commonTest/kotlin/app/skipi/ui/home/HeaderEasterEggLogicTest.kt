@@ -69,9 +69,9 @@ class TapBurstTest {
     }
 
     @Test
-    fun theThresholdIsRolledBetweenFiveAndTenTaps() {
+    fun theThresholdIsRolledBetweenThreeAndFiveTaps() {
         val rolled = (1..200).map { rollExplodeThreshold(Random(it)) }
-        assertTrue(rolled.all { it in 5..10 })
+        assertTrue(rolled.all { it in 3..5 })
         assertTrue(rolled.toSet().size > 1)
     }
 }
