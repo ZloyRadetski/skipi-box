@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -178,6 +179,7 @@ internal fun SkipiMenuPopup(
 
 /**
  * One tappable row of a [SkipiMenuPopup]: an optional leading icon, the label and an optional trailing mark.
+ * The row spans the menu's whole width, so a tap anywhere on it counts, and the trailing mark sits at the end.
  * A disabled row is dimmed and ignores taps.
  */
 @Composable
@@ -193,6 +195,7 @@ internal fun SkipiMenuRowItem(
     val contentColor = if (enabled) text else text.copy(alpha = 0.38f)
     Row(
         modifier = modifier
+            .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = RowMinHeight)
             .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -202,7 +205,7 @@ internal fun SkipiMenuRowItem(
             if (leadingIcon != null) {
                 Box(Modifier.padding(end = 12.dp)) { leadingIcon() }
             }
-            Box(Modifier.weight(1f, fill = false)) { label() }
+            Box(Modifier.weight(1f)) { label() }
             if (trailingIcon != null) {
                 Box(Modifier.padding(start = 12.dp)) { trailingIcon() }
             }
