@@ -28,13 +28,10 @@ fun AppState.localProxySocksCredentials() = LocalProxyCredentials(localProxyUser
 
 fun AppState.localProxyHttpCredentials() = LocalProxyCredentials(localHttpProxyUsername, localHttpProxyPassword)
 
-/** The VPN's own HTTP proxy (Android) needs the inbound even when the user did not switch it on. */
+/** The HTTP proxy is on: its switch, or the legacy VPN switch of an older version, which is no longer shown. */
 val AppState.httpProxyInboundEnabled: Boolean
     get() = enableLocalHttpProxy || enableVpnAppendHttpProxy
 
-/**
- * The HTTP inbound switch. The VPN's own HTTP proxy cannot run without the inbound, so switching the
- * inbound off also switches that proxy off, and a user who never saw an inbound switch is not left with one.
- */
+/** The one HTTP proxy switch; switching it off also clears the legacy VPN switch so nothing keeps the inbound on. */
 fun AppState.withLocalHttpProxyInbound(enabled: Boolean): AppState =
     if (enabled) copy(enableLocalHttpProxy = true) else copy(enableLocalHttpProxy = false, enableVpnAppendHttpProxy = false)

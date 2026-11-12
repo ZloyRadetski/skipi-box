@@ -677,7 +677,6 @@
     <string name="configs_fragment">تکه‌تکه‌سازی TLS</string>
     <string name="configs_local_dns">DNS محلی VPN</string>
     <string name="configs_fake_dns">DNS جعلی</string>
-    <string name="configs_append_http_proxy">پروکسی HTTP را اضافه کنید</string>
     <string name="configs_hevtun">HevTun</string>
     <string name="configs_general_title">عمومی</string>
     <string name="configs_dns_servers">سرورهای DNS</string>
@@ -820,7 +819,6 @@
     <string name="configs_fragment_summary">بسته های اولیه TCP را برای کمک به دور زدن DPI در زمانی که ارائه دهنده شما به آن نیاز دارد تقسیم کنید.</string>
     <string name="configs_local_dns_summary">به جای تکیه بر DNS شبکه، DNS را در داخل تونل VPN حل کنید.</string>
     <string name="configs_fake_dns_summary">از پاسخ‌های DNS مصنوعی برای ترافیکی که بعداً توسط هسته بازیابی می‌شود، استفاده کنید. به DNS VPN محلی نیاز دارد.</string>
-    <string name="configs_append_http_proxy_summary">یک پراکسی HTTP را در کنار تونل VPN برای برنامه‌ها و دستگاه‌های سازگار نمایش دهید.</string>
     <string name="configs_hevtun_summary">از hev-socks5-tunnel برای ایجاد رابط Android TUN استفاده کنید.</string>
     <string name="configs_network_transport_summary">نوع شبکه ای را انتخاب کنید که این پیکربندی به طور خودکار فعال شود.</string>
     <string name="configs_name_summary">یک نام محلی برای شناسایی این پیکربندی در SKIPI استفاده می شود.</string>

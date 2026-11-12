@@ -17,10 +17,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.buildJsonArray
 
 data class VpnAppendHttpProxyOptions(
-    /** The HTTP inbound exists: the user enabled it, or the VPN's own proxy needs it. */
+    /** The HTTP inbound exists; Android's VPN then also advertises it as the system HTTP proxy. */
     val enabled: Boolean,
-    /** The VPN advertises this inbound as the system HTTP proxy (Android's "append HTTP proxy"). */
-    val appliesToVpn: Boolean = false,
     val listenAddress: String = LocalProxyLoopbackAddress,
     val port: Int,
     val username: String = "",
@@ -52,7 +50,6 @@ fun AppState.toVpnAppendHttpProxyOptions(
         ?: fallbackAppendHttpProxyPort(localProxyOptions.port)
     return VpnAppendHttpProxyOptions(
         enabled = true,
-        appliesToVpn = enableVpnAppendHttpProxy,
         listenAddress = listenAddress,
         port = port,
         username = localProxyOptions.httpUsername,

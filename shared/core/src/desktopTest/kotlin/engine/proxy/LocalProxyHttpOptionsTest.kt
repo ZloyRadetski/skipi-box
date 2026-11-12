@@ -108,18 +108,19 @@ class LocalProxyHttpOptionsTest {
     }
 
     @Test
-    fun theInboundIsEnabledWithoutTheVpnProxyAndOnlyAppliedToTheVpnWhenAsked() {
+    fun theOneHttpSwitchEnablesTheInboundTheVpnAdvertises() {
         val local = AppState(localHttpProxyPort = "21001", enableLocalHttpProxy = true)
-        val localOptions = local.toLocalProxyOptions()
 
-        val inboundOnly = local.toVpnAppendHttpProxyOptions(localOptions)
-        assertTrue(inboundOnly.enabled)
-        assertFalse(inboundOnly.appliesToVpn)
-        assertEquals(21_001, inboundOnly.port)
+        val options = local.toVpnAppendHttpProxyOptions(local.toLocalProxyOptions())
+        assertTrue(options.enabled)
+        assertEquals(21_001, options.port)
+    }
 
-        val applied = local.copy(enableVpnAppendHttpProxy = true).toVpnAppendHttpProxyOptions(localOptions)
-        assertTrue(applied.enabled)
-        assertTrue(applied.appliesToVpn)
+    @Test
+    fun anOlderVersionsVpnSwitchStillEnablesTheInbound() {
+        val legacy = AppState(enableVpnAppendHttpProxy = true)
+
+        assertTrue(legacy.toVpnAppendHttpProxyOptions(legacy.toLocalProxyOptions()).enabled)
     }
 
     @Test
@@ -127,7 +128,6 @@ class LocalProxyHttpOptionsTest {
         val options = AppState().toVpnAppendHttpProxyOptions(AppState().toLocalProxyOptions())
 
         assertFalse(options.enabled)
-        assertFalse(options.appliesToVpn)
     }
 
     @Test

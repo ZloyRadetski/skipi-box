@@ -687,7 +687,6 @@
     <string name="configs_fragment">TLS 分片</string>
     <string name="configs_local_dns">本地 VPN DNS</string>
     <string name="configs_fake_dns">Fake DNS</string>
-    <string name="configs_append_http_proxy">附加 HTTP 代理</string>
     <string name="configs_hevtun">HevTun</string>
     <string name="configs_general_title">常规</string>
     <string name="configs_dns_servers">DNS服务器</string>
@@ -830,7 +829,6 @@
     <string name="configs_fragment_summary">当您的提供商需要时，拆分早期 TCP 数据包以帮助绕过 DPI。</string>
     <string name="configs_local_dns_summary">解析 VPN 隧道内部的 DNS，而不是仅依赖网络 DNS。</string>
     <string name="configs_fake_dns_summary">对稍后由核心恢复的流量使用合成 DNS 答案。需要本地 VPN DNS。</string>
-    <string name="configs_append_http_proxy_summary">在兼容的应用程序和设备的 VPN 隧道旁边公开 HTTP 代理。</string>
     <string name="configs_hevtun_summary">使用 hev-socks5-tunnel 创建 Android TUN 接口。</string>
     <string name="configs_network_transport_summary">选择自动激活此配置的网络类型。</string>
     <string name="configs_name_summary">用于在 SKIPI 中标识此配置的本地名称。</string>

@@ -29,12 +29,12 @@ class VpnHttpInboundTest {
         firstOrNull { it.getValue("protocol").jsonPrimitive.content == name }
 
     @Test
-    fun theHttpInboundRunsOnItsOwnWithoutTheVpnSystemProxy() {
+    fun theHttpInboundIsEnabledForTheVpnToo() {
         val state = AppState(localProxyPort = "20480", localHttpProxyPort = "20481", enableLocalHttpProxy = true)
 
         val http = assertNotNullInbound(inbounds(state).protocol("http"))
         assertEquals(20_481, http.getValue("port").jsonPrimitive.content.toInt())
-        assertFalse(state.toVpnAppendHttpProxyOptions(state.toLocalProxyOptions()).appliesToVpn)
+        assertTrue(state.toVpnAppendHttpProxyOptions(state.toLocalProxyOptions()).enabled)
     }
 
     @Test
@@ -47,7 +47,7 @@ class VpnHttpInboundTest {
         val state = AppState(enableVpnAppendHttpProxy = true)
 
         assertNotNullInbound(inbounds(state).protocol("http"))
-        assertTrue(state.toVpnAppendHttpProxyOptions(state.toLocalProxyOptions()).appliesToVpn)
+        assertTrue(state.toVpnAppendHttpProxyOptions(state.toLocalProxyOptions()).enabled)
     }
 
     @Test

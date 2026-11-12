@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Http
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -84,11 +82,6 @@ fun SkipiSettingColorSwatch(color: Color, modifier: Modifier = Modifier) {
             .background(color)
             .border(1.dp, MiuixTheme.colorScheme.dividerLine, SettingIconTileShape),
     )
-}
-
-/** Row icons a host needs but cannot import itself: only the shared UI module carries the icon set. */
-object SkipiSettingRowIcons {
-    val Http: ImageVector get() = Icons.Rounded.Http
 }
 
 /**

@@ -118,13 +118,14 @@ data class AppState(
     val localProxyPassword: String = generateRandomProxyCredential(),
     /** SOCKS auth mode while [enableLocalProxyAuth] is on; the switch itself is the "Off" mode. */
     val localProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
-    /** The HTTP inbound; Android also needs it for [enableVpnAppendHttpProxy], Desktop for the system proxy. */
+    /** The one HTTP proxy switch: the inbound, which Android's VPN also advertises as its system proxy, and Desktop's system proxy needs. */
     val enableLocalHttpProxy: Boolean = false,
     val localHttpProxyPort: String = VpnDefaults.LOCAL_HTTP_PROXY_PORT.toString(),
     val enableLocalHttpProxyAuth: Boolean = false,
     val localHttpProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
     val localHttpProxyUsername: String = generateRandomProxyCredential(),
     val localHttpProxyPassword: String = generateRandomProxyCredential(),
+    /** Legacy: an older version had a second switch for the VPN's HTTP proxy. It is still read, so that choice keeps the inbound on. */
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = true,
     val enableKillSwitch: Boolean = false,
