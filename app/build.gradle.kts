@@ -191,8 +191,21 @@ androidComponents {
     onVariants { variant ->
         variant.sources.assets?.addStaticSourceDirectory("build/generated/resourceFileAssets")
         variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
+        variant.sources.res?.addStaticSourceDirectory("build/generated/sharedStringsRes")
     }
 }
+
+// The app has no strings of its own: every text lives in shared/ui's composeResources, and the Android
+// resources that services, notifications, widgets and the manifest read are generated from those files.
+val syncSharedStrings = tasks.register<Sync>("syncSharedStrings") {
+    group = "localization"
+    description = "Copies the shared strings into Android resources so R.string is generated from the one source."
+    from(rootProject.layout.projectDirectory.dir("shared/ui/src/commonMain/composeResources")) {
+        include("values*/strings.xml")
+    }
+    into(layout.buildDirectory.dir("generated/sharedStringsRes"))
+}
+tasks.named("preBuild") { dependsOn(syncSharedStrings) }
 
 // Keep Robolectric on its supported runtime without changing Desktop test JVMs.
 val androidTestJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {

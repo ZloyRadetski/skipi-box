@@ -1435,4 +1435,22 @@
     <string name="settings_local_proxy_http_auth_system_note">系统代理无法发送登录信息，因此开启 HTTP 认证时浏览器会要求输入</string>
     <string name="settings_connection_log_show_on_home">主页日志</string>
     <string name="settings_connection_log_show_on_home_summary">在主页上显示连接、错误和应用消息</string>
+    <string name="deletion_confirmation_delete_group">删除分组</string>
+    <string name="group_edit">编辑分组</string>
+    <string name="group_delete">删除分组</string>
+    <string name="group_add">添加分组</string>
+    <string name="external_import_confirm_title">通过链接添加？</string>
+    <string name="external_import_confirm_message">其他应用或网页请求 SKIPI 从 %1$s 添加服务器或配置。仅在信任来源时继续。</string>
+    <string name="external_import_confirm_accept">添加</string>
+    <string name="external_import_inline_content">链接本身</string>
+    <string name="external_control_disabled">设置中已关闭外部控制</string>
+    <string name="tools_dns_running">正在解析探测请求并收集结果…</string>
+    <string name="tools_dns_no_leak">未检测到 DNS 泄漏。查询经由受控的解析路径。</string>
+    <string name="tools_dns_suspected_leak">检测到 DNS 泄漏！查询到达了多个无关的解析器。</string>
+    <string name="tools_dns_unknown">数据不足，无法判断</string>
+    <string name="tools_dns_resolvers_title">检测到的解析器</string>
+    <string name="tools_dns_exit_info">您的出口：%1$s (%2$s)</string>
+    <string name="tools_dns_server_system">系统</string>
+    <string name="tools_dns_server_public">公共</string>
+    <string name="tools_dns_resolver_entry">解析器 %1$d</string>
 </resources>

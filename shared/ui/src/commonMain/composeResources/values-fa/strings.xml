@@ -1428,4 +1428,22 @@
     <string name="settings_local_proxy_http_auth_system_note">پروکسی سیستم نمی‌تواند نام کاربری ارسال کند، بنابراین تا زمانی که احراز هویت HTTP روشن است مرورگرها آن را درخواست می‌کنند</string>
     <string name="settings_connection_log_show_on_home">گزارش در صفحه اصلی</string>
     <string name="settings_connection_log_show_on_home_summary">اتصال‌ها، خطاها و پیام‌های برنامه را در صفحه اصلی نشان می‌دهد</string>
+    <string name="deletion_confirmation_delete_group">حذف گروه</string>
+    <string name="group_edit">ویرایش گروه</string>
+    <string name="group_delete">حذف گروه</string>
+    <string name="group_add">افزودن گروه</string>
+    <string name="external_import_confirm_title">افزودن از طریق پیوند؟</string>
+    <string name="external_import_confirm_message">برنامه یا صفحه وب دیگری از SKIPI می‌خواهد سرور یا پیکربندی را از %1$s اضافه کند. فقط در صورت اعتماد به منبع ادامه دهید.</string>
+    <string name="external_import_confirm_accept">افزودن</string>
+    <string name="external_import_inline_content">خود پیوند</string>
+    <string name="external_control_disabled">کنترل خارجی در تنظیمات خاموش است</string>
+    <string name="tools_dns_running">در حال حل درخواست‌های آزمایشی و جمع‌آوری نتایج…</string>
+    <string name="tools_dns_no_leak">نشتی DNS شناسایی نشد. درخواست‌ها از مسیر مبدل کنترل‌شده عبور می‌کنند.</string>
+    <string name="tools_dns_suspected_leak">نشتی DNS شناسایی شد! درخواست‌ها به چند مبدل بی‌ربط می‌رسند.</string>
+    <string name="tools_dns_unknown">داده کافی برای قضاوت وجود ندارد</string>
+    <string name="tools_dns_resolvers_title">مبدل‌های شناسایی‌شده</string>
+    <string name="tools_dns_exit_info">خروجی شما: %1$s (%2$s)</string>
+    <string name="tools_dns_server_system">سیستمی</string>
+    <string name="tools_dns_server_public">عمومی</string>
+    <string name="tools_dns_resolver_entry">مبدل %1$d</string>
 </resources>
