@@ -341,6 +341,7 @@ jobs:
           TAG_NAME: ${{ steps.version.outputs.tag_name }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.collect.outputs.version_code }}
+          IS_PRERELEASE: ${{ steps.version.outputs.is_prerelease }}
         run: |
           set -euo pipefail
 
@@ -361,9 +362,16 @@ jobs:
             git push origin "refs/tags/$TAG_NAME"
           fi
 
+          # A pre-release is compared with the closest earlier tag of any kind (the previous pre-release or release),
+          # so each pre-release lists only what is new in it; a full release is compared with the previous full release.
+          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
+            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
+          else
+            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          fi
           mapfile -t release_tags < <(
             git for-each-ref --format='%(refname:short)' refs/tags |
-              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true
+              grep -E "$tag_pattern" || true
           )
 
           previous_candidates="$(mktemp)"
@@ -387,39 +395,85 @@ jobs:
             range="${previous_tag}..${current_sha}"
           fi
 
-          tmp_changes="$(mktemp)"
-          git log --reverse --no-merges --pretty=format:"- %s ([%h](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/%H))" "$range" > "$tmp_changes"
-          if [ ! -s "$tmp_changes" ]; then
-            git log --reverse --pretty=format:"- %s ([%h](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/%H))" "$range" > "$tmp_changes"
+          repo_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          log_file="$(mktemp)"
+          git log --reverse --no-merges --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
+          if [ ! -s "$log_file" ]; then
+            git log --reverse --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
+          fi
+
+          # One section per commit type; each item keeps the commit subject and links to the commit.
+          sections_dir="$(mktemp -d)"
+          while IFS=$'\t' read -r short full subject; do
+            [ -n "$short" ] || continue
+            # Notes about the notes themselves are not release content.
+            if [[ "$subject" =~ ^docs\(trail\) ]]; then continue; fi
+            type="other"
+            text="$subject"
+            if [[ "$subject" =~ ^([a-z]+)(\([^\)]*\))?!?:\ (.*)$ ]]; then
+              type="${BASH_REMATCH[1]}"
+              text="${BASH_REMATCH[3]}"
+            fi
+            case "$type" in
+              feat) group="1-features" ;;
+              fix) group="2-fixes" ;;
+              perf) group="3-performance" ;;
+              *) group="4-internal" ;;
+            esac
+            text="$(printf '%s' "$text" | sed -E 's/^(.)/\U\1/')"
+            printf -- '- %s ([`%s`](%s/commit/%s))\n' "$text" "$short" "$repo_url" "$full" >> "$sections_dir/$group"
+          done < "$log_file"
+
+          emit_section() {
+            local file="$sections_dir/$1" title="$2" fold="${3:-}"
+            [ -s "$file" ] || return 0
+            if [ "$fold" = "fold" ]; then
+              echo "<details>"
+              echo "<summary><b>$title</b> ($(wc -l < "$file" | tr -d ' '))</summary>"
+              echo
+              cat "$file"
+              echo
+              echo "</details>"
+            else
+              echo "### $title"
+              echo
+              cat "$file"
+            fi
+            echo
+          }
+
+          logo_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/design/skipi_logo_long.svg"
+          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
+            channel_badge="https://img.shields.io/badge/channel-pre--release-orange?style=flat-square"
+          else
+            channel_badge="https://img.shields.io/badge/channel-stable-3DDC84?style=flat-square"
           fi
 
           {
-            echo "## SKIPI $TAG_NAME"
+            echo "<p align=\"center\">"
+            echo "  <img src=\"$logo_url\" alt=\"SKIPI\" width=\"420\" />"
+            echo "</p>"
             echo
-            echo "- Version name: $VERSION_NAME"
-            echo "- Version code: $VERSION_CODE"
+            echo "<p align=\"center\">"
+            echo "  <img src=\"https://img.shields.io/badge/version-${VERSION_NAME//-/--}-4285F4?style=flat-square\" alt=\"Version\" />"
+            echo "  <img src=\"https://img.shields.io/badge/build-${VERSION_CODE}-555555?style=flat-square\" alt=\"Build\" />"
+            echo "  <img src=\"$channel_badge\" alt=\"Channel\" />"
+            echo "</p>"
             echo
-
             if [ -n "$previous_tag" ]; then
-              echo "### Changes since $previous_tag"
+              echo "> **Since [$previous_tag](${repo_url}/releases/tag/${previous_tag})** · [full diff \`$previous_tag...$TAG_NAME\`](${repo_url}/compare/${previous_tag}...${TAG_NAME})"
               echo
-              echo "[Compare $previous_tag...$TAG_NAME](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${previous_tag}...${TAG_NAME})"
-            else
-              echo "### Changes"
-            fi
-            echo
-
-            if [ -s "$tmp_changes" ]; then
-              cat "$tmp_changes"
-              echo
-            else
-              echo "- No commit changes found."
             fi
 
-            echo
-            echo "### APK artifacts"
-            echo
-            find github-release-artifacts -maxdepth 1 -type f -name "*.apk" -printf "- %f\n" | sort
+            if [ -n "$(cat "$sections_dir"/* 2>/dev/null)" ]; then
+              emit_section 1-features "✨ New"
+              emit_section 2-fixes "🐞 Fixed"
+              emit_section 3-performance "⚡ Faster and lighter"
+              emit_section 4-internal "🔧 Under the hood" fold
+            else
+              echo "No commit changes found."
+              echo
+            fi
           } > release-notes.md
 
           echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
