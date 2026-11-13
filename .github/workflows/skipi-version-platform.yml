@@ -460,6 +460,11 @@ jobs:
             echo "  <img src=\"$channel_badge\" alt=\"Channel\" />"
             echo "</p>"
             echo
+            # The app reads the build number from this exact line (AppReleaseVersions.extractVersionCodeFromBody);
+            # without it the update check cannot tell that this release is newer.
+            echo "- Version name: $VERSION_NAME"
+            echo "- Version code: $VERSION_CODE"
+            echo
             if [ -n "$previous_tag" ]; then
               echo "> **Since [$previous_tag](${repo_url}/releases/tag/${previous_tag})** · [full diff \`$previous_tag...$TAG_NAME\`](${repo_url}/compare/${previous_tag}...${TAG_NAME})"
               echo
