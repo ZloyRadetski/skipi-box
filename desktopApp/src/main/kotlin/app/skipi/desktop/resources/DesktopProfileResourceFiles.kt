@@ -15,6 +15,8 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
+private val InterruptedDownloadName = Regex(""".+\.\d+\.tmp""")
+
 internal class DesktopProfileResourceFiles(
     private val xrayRootDir: File = DesktopSettingsLibraries.defaultPath().parent
         ?.resolve("xray")
@@ -39,6 +41,27 @@ internal class DesktopProfileResourceFiles(
     }
 
     fun createDownloader(): DesktopResourceFileDownloader = DesktopResourceFileDownloader(::writeAtomically)
+
+    /**
+     * When the profile's geo files were last written, as the older of the two, or 0 when one of them is missing.
+     * The automatic update anchors its interval here, so a start does not fetch files that are fresh.
+     */
+    fun lastGeoFetchAtMillis(profile: TrafficConfigState): Long {
+        val snapshot = snapshot(profile)
+        return minOf(snapshot.file(ResourceFileKind.GeoIp).lastModified(), snapshot.file(ResourceFileKind.GeoSite).lastModified())
+    }
+
+    /**
+     * Deletes the temporary files of downloads that never finished (a killed process, an exit mid-download): they
+     * are written next to their target as `<name>.<number>.tmp` and were left behind, 67 MB at a time. Returns how
+     * many were deleted. Call it before any download of this run starts.
+     */
+    fun deleteInterruptedDownloads(): Int {
+        val folders = listOf(xrayRootDir) + (xrayRootDir.resolve("profiles").listFiles { file -> file.isDirectory }.orEmpty())
+        return folders.sumOf { folder ->
+            folder.listFiles { file -> file.isFile && InterruptedDownloadName.matches(file.name) }.orEmpty().count { it.delete() }
+        }
+    }
 
     fun restoreBundled(scope: ResourceFileScope, kind: ResourceFileKind) {
         snapshot(scope).restoreBundled(

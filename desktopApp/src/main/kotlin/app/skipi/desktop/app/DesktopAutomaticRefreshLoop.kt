@@ -97,7 +97,7 @@ internal fun SubscriptionRecord.toRefreshTarget() = SubscriptionRefreshTarget(
     lastUpdatedAtMillis = lastUpdatedAtMillis ?: 0L,
 )
 
-internal fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficConfigRefreshTarget(
+internal fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget(resourceLastUpdatedAtMillis: Long = 0L) = TrafficConfigRefreshTarget(
     id = id,
     sourceUrl = sourceUrl,
     autoUpdate = autoUpdate,
@@ -105,6 +105,7 @@ internal fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficC
     updateInterval = updateInterval,
     resourceAutoUpdate = resourceSettings.autoUpdate,
     resourceUpdateInterval = resourceSettings.updateInterval,
+    resourceLastUpdatedAtMillis = resourceLastUpdatedAtMillis,
 )
 
 /** Profiles as traffic-config states, using Desktop's resource user-agent fallback. */

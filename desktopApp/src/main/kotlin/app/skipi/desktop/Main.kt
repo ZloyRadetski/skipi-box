@@ -192,7 +192,7 @@ fun main(args: Array<String>) {
             launch.links.ifEmpty { listOf("skipi://open") },
         )
     }
-    if (claim.isSuccess && claim.getOrNull() == null) return
+    if (claim.isSuccess && claim.getOrNull() == null) exitWithoutClassArchive()
     claim.exceptionOrNull()?.let { error ->
         DesktopLogger.error("Instance", "Single-instance channel unavailable; links from other starts are ignored", error)
     }
@@ -204,7 +204,7 @@ fun main(args: Array<String>) {
     // Read once: the three start-up steps below share the same file read and the same elevation query.
     val startupSettings = DesktopSettingsLibraries.loadDefault().getOrNull()
     val elevated = if (isWindowsHost()) isWindowsElevated() else false
-    if (relaunchElevatedForSavedTunMode(args.toList(), launch, startupSettings, elevated)) return
+    if (relaunchElevatedForSavedTunMode(args.toList(), launch, startupSettings, elevated)) exitWithoutClassArchive()
     moveAutostartToElevatedTask(startupSettings, elevated)
     runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks, initialSettings = startupSettings)
 }
@@ -509,8 +509,10 @@ private fun runDesktopApplication(
                 LaunchedEffect(desktopSettings.appUpdateChannel) {
                     appUpdater.reset()
                 }
-                LaunchedEffect(desktopSettings.autoCheckAppUpdates, desktopSettings.appUpdateChannel) {
-                    if (desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
+                // The network work of a start waits until the window has been up for a while.
+                val startupSettled by rememberDesktopStartupSettled()
+                LaunchedEffect(desktopSettings.autoCheckAppUpdates, desktopSettings.appUpdateChannel, startupSettled) {
+                    if (startupSettled && desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
                 }
                 fun runAppUpdateAction() {
                     val update = appUpdateState.availableUpdate ?: return
@@ -834,7 +836,7 @@ private fun runDesktopApplication(
                 }
                 DesktopAutomaticRefresh(
                     updater = desktopSubscriptionAutoUpdater,
-                    enabled = !tunnel.closeRequested,
+                    enabled = startupSettled && !tunnel.closeRequested,
                     failureSource = "Subscriptions",
                     failureMessage = "Automatic subscription update failed",
                     runDue = desktopSubscriptionAutoUpdater::runDue,
@@ -935,6 +937,10 @@ private fun runDesktopApplication(
                 val desktopTrafficConfigAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
 
                 LaunchedEffect(desktopResourceFileServices) {
+                    withContext(Dispatchers.IO) {
+                        runCatching { desktopProfileResourceFiles.deleteInterruptedDownloads() }
+                            .onSuccess { deleted -> if (deleted > 0) DesktopLogger.info("ResourceFiles", "Deleted $deleted leftover(s) of interrupted downloads") }
+                    }
                     val startupLibrary = latestConfigLibrary
                     val activeOrFirst = startupLibrary.configs.firstOrNull { profile ->
                         profile.id == startupLibrary.selectedConfigId
@@ -957,7 +963,11 @@ private fun runDesktopApplication(
                     val library = latestConfigLibrary
                     val profiles = library.toTrafficConfigStates()
                     resourceAutoUpdater.observeTargets(
-                        profiles.map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget),
+                        profiles.map { profile ->
+                            profile.toDesktopTrafficConfigRefreshTarget(
+                                resourceLastUpdatedAtMillis = desktopProfileResourceFiles.lastGeoFetchAtMillis(profile),
+                            )
+                        },
                     )
                     val activeOrFirst = profiles.firstOrNull { profile ->
                         profile.id == library.selectedConfigId
@@ -974,6 +984,7 @@ private fun runDesktopApplication(
 
                 DesktopAutomaticRefresh(
                     updater = resourceAutoUpdater,
+                    enabled = startupSettled && !tunnel.closeRequested,
                     failureSource = "ResourceFiles",
                     failureMessage = "Automatic resource update failed",
                     runDue = resourceAutoUpdater::runDue,
@@ -988,6 +999,7 @@ private fun runDesktopApplication(
 
                 DesktopAutomaticRefresh(
                     updater = desktopTrafficConfigAutoUpdater,
+                    enabled = startupSettled && !tunnel.closeRequested,
                     failureSource = "TrafficConfig",
                     failureMessage = "Automatic profile refresh failed",
                     runDue = desktopTrafficConfigAutoUpdater::runDue,
@@ -1031,7 +1043,13 @@ private fun runDesktopApplication(
                 }
 
                 LaunchedEffect(tunnel.closeRequested) {
-                    if (tunnel.closeRequested) tunnel.shutDown(::exitApplication)
+                    if (tunnel.closeRequested) {
+                        tunnel.shutDown {
+                            // Should a coroutine of the start still block in I/O, the process ends anyway.
+                            startDesktopExitWatchdog()
+                            exitApplication()
+                        }
+                    }
                 }
 
                 fun startDesktopHomeLatencyTest(

@@ -17,6 +17,42 @@ import kotlin.test.assertTrue
 class DesktopProfileResourceFilesTest {
 
     @Test
+    fun theLastGeoFetchIsTheOlderOfTheTwoGeoFilesAndUnknownWhenOneIsMissing() = withXrayRoot { root ->
+        val files = DesktopProfileResourceFiles(xrayRootDir = root)
+        val profile = profile(id = 5)
+        val snapshot = files.snapshot(profile)
+        val geoIp = snapshot.file(ResourceFileKind.GeoIp).apply {
+            parentFile.mkdirs()
+            writeText("ip")
+        }
+        val geoSite = snapshot.file(ResourceFileKind.GeoSite).apply { writeText("site") }
+        assertTrue(geoIp.setLastModified(1_700_000_000_000L))
+        assertTrue(geoSite.setLastModified(1_700_000_500_000L))
+
+        assertEquals(1_700_000_000_000L, files.lastGeoFetchAtMillis(profile))
+
+        assertTrue(geoSite.delete())
+        assertEquals(0L, files.lastGeoFetchAtMillis(profile))
+    }
+
+    @Test
+    fun leftoversOfInterruptedDownloadsAreDeletedAndTheRealFilesStay() = withXrayRoot { root ->
+        val files = DesktopProfileResourceFiles(xrayRootDir = root)
+        val profileDir = root.resolve("profiles/2").apply { mkdirs() }
+        val kept = profileDir.resolve("geosite.dat").apply { writeText("site") }
+        val leftovers = listOf(
+            profileDir.resolve("geosite.dat.11022169251493256198.tmp"),
+            profileDir.resolve("geoip.dat.3744.tmp"),
+            root.resolve("profiles/3").apply { mkdirs() }.resolve("custom.dat.7.tmp"),
+        ).onEach { it.writeText("partial") }
+
+        assertEquals(3, files.deleteInterruptedDownloads())
+
+        assertTrue(kept.exists())
+        assertTrue(leftovers.none { it.exists() })
+    }
+
+    @Test
     fun snapshotUsesTheSuppliedProfileIdAndKeepsItsFilesSeparateFromAnotherProfile() = withXrayRoot { root ->
         val files = DesktopProfileResourceFiles(xrayRootDir = root)
         val requested = profile(id = 7, source = ResourceFileSourceRoscomvpnGithub)

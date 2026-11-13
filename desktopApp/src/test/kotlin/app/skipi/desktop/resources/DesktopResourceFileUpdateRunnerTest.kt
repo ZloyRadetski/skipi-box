@@ -42,7 +42,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 class DesktopResourceFileUpdateRunnerTest {
 
@@ -498,6 +503,66 @@ class DesktopResourceFileUpdateRunnerTest {
                         assertEquals(null, reportedFailure.get())
                         assertFalse(File(root, "profiles/48/.resource-source").exists())
                     }
+                }
+            }
+        }
+
+    @Test
+    fun cancellingTheCallerDropsTheConnectionsInsteadOfWaitingForTheDownloadToEnd() =
+        withFreshCancellation {
+            withXrayRoot { root ->
+                withHttpServer { server ->
+                    val requestSeen = CountDownLatch(1)
+                    val connectionDropped = CountDownLatch(1)
+                    val stall = CountDownLatch(1)
+                    // A download that never ends on its own: the body trickles until the client goes away.
+                    server.createContext("/") { exchange ->
+                        requestSeen.countDown()
+                        try {
+                            exchange.sendResponseHeaders(200, 50L * 1024 * 1024)
+                            val chunk = ByteArray(1024)
+                            while (!stall.await(50, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                                exchange.responseBody.write(chunk)
+                                exchange.responseBody.flush()
+                            }
+                        } catch (_: IOException) {
+                            connectionDropped.countDown()
+                        }
+                    }
+                    val runner = DesktopResourceFileUpdateRunner(
+                        resourceFiles = DesktopProfileResourceFiles(root),
+                        resolveProxy = { null },
+                        prepareFeedback = {
+                            DesktopResourceFileUpdateFeedback(
+                                onProgress = { _, _, _ -> },
+                                onComplete = {},
+                                onFailure = {},
+                                mapCancellationError = { it },
+                            )
+                        },
+                    )
+                    val request = ResourceFileUpdateRequest.All(
+                        scope = ResourceFileScope(trafficConfigId = 44, resourceFileSource = 999),
+                        source = updateSource(baseUrl = "http://127.0.0.1:${server.address.port}"),
+                        options = ResourceFileUpdateOptions(useRunningProxy = false),
+                        customResourceFiles = emptyList(),
+                    )
+
+                    // The caller lives in its own scope: a runBlocking parent would wait for a stuck child forever,
+                    // which is the very failure this test is about.
+                    val callerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+                    val waitedMillis = runBlocking {
+                        val caller = callerScope.launch { runCatching { runner.execute(request) } }
+                        assertTrue(requestSeen.await(10, SECONDS), "the download started")
+                        val started = System.nanoTime()
+                        caller.cancel()
+                        withTimeout(5_000L) { caller.join() }
+                        (System.nanoTime() - started) / 1_000_000L
+                    }
+
+                    assertTrue(connectionDropped.await(5, SECONDS), "the stalled connection was dropped")
+                    stall.countDown()
+                    assertTrue(waitedMillis < 5_000L, "the caller came back in $waitedMillis ms")
                 }
             }
         }

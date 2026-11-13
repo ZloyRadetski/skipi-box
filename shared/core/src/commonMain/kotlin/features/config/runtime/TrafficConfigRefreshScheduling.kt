@@ -20,6 +20,8 @@ data class TrafficConfigRefreshTarget(
     val updateInterval: String,
     val resourceAutoUpdate: Boolean,
     val resourceUpdateInterval: String,
+    /** When the profile's resource files were last fetched, or 0 when that is not known. */
+    val resourceLastUpdatedAtMillis: Long = 0L,
 )
 
 enum class TrafficConfigExistingWorkPolicy {

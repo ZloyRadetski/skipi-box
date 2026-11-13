@@ -21,7 +21,9 @@ import features.resources.runtime.executeResourceFileUpdateBatch
 import features.resources.runtime.ResourceFileBatchProgress
 import features.resources.runtime.parallelResourceFileTaskRunner
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runInterruptible
 import java.io.File
 
 /** Platform feedback captured for one resource-file download batch. */
@@ -38,13 +40,29 @@ internal class DesktopResourceFileUpdateRunner(
     private val resolveProxy: (ResourceFileUpdateOptions) -> DesktopSubscriptionSocksProxy?,
     private val prepareFeedback: (ResourceFileUpdateOptions) -> DesktopResourceFileUpdateFeedback,
 ) {
+    /**
+     * Cancelling the caller ends the batch at once: the wait for the download threads is interrupted and their
+     * connections are dropped. Left to itself a cancelled coroutine would sit in the blocking read until the file
+     * had arrived, which held the application scope, and so the whole process, open at exit.
+     */
     suspend fun execute(
         request: ResourceFileUpdateRequest,
         onTargetFinished: (ResourceFileUpdateTarget) -> Unit = {},
-    ): ResourceFilesStatus =
-        withContext(Dispatchers.IO) {
-            runCatching { executeOnIo(request, onTargetFinished) }
+    ): ResourceFilesStatus = try {
+        runInterruptible(Dispatchers.IO) {
+            // Failures travel as a value: an exception crossing the dispatcher would be copied, and the reporters
+            // compare the mapped cancellation error by identity.
+            try {
+                Result.success(executeOnIo(request, onTargetFinished))
+            } catch (interrupted: InterruptedException) {
+                throw interrupted
+            } catch (error: Throwable) {
+                Result.failure(error)
+            }
         }.getOrThrow()
+    } finally {
+        if (!currentCoroutineContext().isActive) ResourceFileDownloadCancellation.cancel()
+    }
 
     private fun executeOnIo(
         request: ResourceFileUpdateRequest,

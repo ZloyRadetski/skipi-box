@@ -198,6 +198,24 @@ class ResourceGeoAutoRefreshSchedulingTest {
         assertEquals(retryAnchor + 15 * MinuteMillis, retrying.nextRunAtMillis)
     }
 
+    @Test
+    fun a_new_schedule_whose_files_were_fetched_recently_waits_out_the_interval_from_that_fetch() {
+        val dayMillis = 24L * 60L * 60L * 1_000L
+        val fetchedAt = 10_000L
+        val result = GeoResourcePeriodicScheduleState().reconcile(
+            targets = listOf(
+                target(id = 4, resourceUpdateInterval = "24", resourceLastUpdatedAtMillis = fetchedAt),
+                target(id = 5, resourceUpdateInterval = "24"),
+            ),
+            nowMillis = fetchedAt + 1_000L,
+        )
+
+        // A known fetch: the next run is one interval after it, so a start does not fetch the files again.
+        assertEquals(fetchedAt + dayMillis, result.state.schedulesByProfileId.getValue(4).nextRunAtMillis)
+        // Nothing known about the files: due now, as before.
+        assertEquals(fetchedAt + 1_000L, result.state.schedulesByProfileId.getValue(5).nextRunAtMillis)
+    }
+
     private fun target(
         id: Int,
         resourceAutoUpdate: Boolean = true,
@@ -205,6 +223,7 @@ class ResourceGeoAutoRefreshSchedulingTest {
         sourceUrl: String = "https://example.test/subscription",
         autoUpdate: Boolean = true,
         updateLocked: Boolean = false,
+        resourceLastUpdatedAtMillis: Long = 0L,
     ) = TrafficConfigRefreshTarget(
         id = id,
         sourceUrl = sourceUrl,
@@ -213,6 +232,7 @@ class ResourceGeoAutoRefreshSchedulingTest {
         updateInterval = "6",
         resourceAutoUpdate = resourceAutoUpdate,
         resourceUpdateInterval = resourceUpdateInterval,
+        resourceLastUpdatedAtMillis = resourceLastUpdatedAtMillis,
     )
 
     private companion object {

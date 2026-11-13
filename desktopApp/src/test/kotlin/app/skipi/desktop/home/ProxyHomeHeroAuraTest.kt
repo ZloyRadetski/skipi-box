@@ -15,6 +15,7 @@ import app.skipi.app.home.ProxyHomePageUiState
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxyServerSummary
+import app.skipi.ui.anim.DecorativeFrameMillis
 import app.skipi.ui.home.ProxyHomeScreenContent
 import app.skipi.ui.theme.ProvideSkipiTheme
 import app.skipi.ui.theme.SkipiVisualProfile
@@ -83,6 +84,12 @@ class ProxyHomeHeroAuraTest {
                 nanos += 50_000_000L
                 scene.render(nanos).close()
             }
+            // The decorative clock sleeps DecorativeFrameMillis of real time between the frames it reads, so the
+            // frame that hands it this time must come after that sleep; the layers it drives are drawn by the frame
+            // after that one.
+            Thread.sleep(DecorativeFrameMillis + 20L)
+            nanos += 1
+            scene.render(nanos).close()
             nanos += 1
             return scene.render(nanos).use { image -> Bitmap.makeFromImage(image) }
         }
