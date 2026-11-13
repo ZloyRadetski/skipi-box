@@ -50,6 +50,7 @@ jobs:
       version_name: ${{ steps.version.outputs.version_name }}
       tag_name: ${{ steps.version.outputs.tag_name }}
       create_github_release: ${{ steps.version.outputs.create_github_release }}
+      version_code: ${{ steps.collect.outputs.version_code }}
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -935,3 +936,112 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$TAG_NAME" SKIPI-macos-arm64.dmg --clobber
+
+  update-manifest:
+    name: Publish the update manifest
+    # The update check of every installed app reads this file, so it is written last: a release is announced
+    # only after its APKs and every desktop package are on it.
+    needs: [release, desktop-windows, desktop-linux, desktop-macos]
+    if: needs.release.outputs.create_github_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: ${{ needs.release.outputs.tag_name }}
+      VERSION_NAME: ${{ needs.release.outputs.version_name }}
+      VERSION_CODE: ${{ needs.release.outputs.version_code }}
+    steps:
+      - name: Build the manifest from the files the release really has
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json assets,body,name,url,publishedAt,isPrerelease > release.json
+          python3 - <<'PY'
+          import json, os, re, sys
+
+          release = json.load(open("release.json", encoding="utf-8"))
+          assets = {a["name"]: a for a in release["assets"]}
+
+          required = [
+              "SKIPI-windows-x64.msi", "SKIPI-windows-x64-portable.zip",
+              "SKIPI-linux-x64.AppImage", "SKIPI-linux-x64.deb", "SKIPI-linux-x64.rpm",
+              "SKIPI-linux-x64-portable.tar.gz", "SKIPI-macos-arm64.dmg",
+          ]
+          missing = [name for name in required if name not in assets]
+          if not [n for n in assets if n.endswith(".apk")]:
+              missing.append("an .apk")
+          if missing:
+              sys.exit("::error::The release lacks " + ", ".join(missing) + "; the update manifest is not published.")
+
+          entries = []
+          for name in sorted(assets):
+              a = assets[name]
+              digest = a.get("digest") or ""
+              if not digest.startswith("sha256:"):
+                  sys.exit(f"::error::GitHub published no SHA-256 for {name}.")
+              if not a.get("size"):
+                  sys.exit(f"::error::{name} is empty.")
+              entries.append({
+                  "name": name,
+                  "url": a["url"],
+                  "size": a["size"],
+                  "sha256": digest[len("sha256:"):],
+              })
+
+          # A short plain-text list for the app's changelog dialog: the commit lines without their links.
+          lines = []
+          for line in release["body"].splitlines():
+              if line.startswith("- Version "):
+                  continue
+              m = re.match(r"^- (.*?)( \(\[`[0-9a-f]+`\]\([^)]*\)\))?$", line)
+              if m:
+                  lines.append("- " + m.group(1))
+          manifest = {
+              "schema": 1,
+              "versionName": os.environ["VERSION_NAME"],
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "tag": os.environ["TAG_NAME"],
+              "title": release["name"],
+              "releaseUrl": release["url"],
+              "publishedAt": release["publishedAt"],
+              "changelog": "\n".join(lines[:60]),
+              "assets": entries,
+          }
+          json.dump(manifest, open("manifest.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+          print(json.dumps(manifest, ensure_ascii=False, indent=2))
+          open("is_prerelease", "w").write("true" if release["isPrerelease"] else "false")
+          PY
+
+      - name: Publish the manifest of each channel the release belongs to
+        shell: bash
+        run: |
+          set -euo pipefail
+          # One fixed pre-release holds the manifests; it is never "latest", so the update check of older
+          # versions (which reads /releases/latest) never meets it, and it has no APK for the release list.
+          if ! gh release view update-manifests --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create update-manifests --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --prerelease --latest=false --title "Update manifests" \
+              --notes "Files the SKIPI update check reads. They are replaced after every release; do not delete this release."
+          fi
+
+          publish() {
+            channel="$1"
+            existing="$(curl -fsSL "https://github.com/$GITHUB_REPOSITORY/releases/download/update-manifests/$channel.json" 2>/dev/null || true)"
+            existing_code="$(printf '%s' "$existing" | python3 -c 'import json,sys
+          try: print(json.load(sys.stdin).get("versionCode", 0))
+          except Exception: print(0)')"
+            # Re-running an older release must not move a channel backwards.
+            if [ "$existing_code" -gt "$VERSION_CODE" ]; then
+              echo "::notice::$channel already offers build $existing_code, newer than $VERSION_CODE; left as it is."
+              return 0
+            fi
+            cp manifest.json "$channel.json"
+            gh release upload update-manifests "$channel.json" --repo "$GITHUB_REPOSITORY" --clobber
+            echo "Published $channel.json for $TAG_NAME (build $VERSION_CODE)."
+          }
+
+          publish nightly
+          if [ "$(cat is_prerelease)" = "false" ]; then
+            publish stable
+          fi

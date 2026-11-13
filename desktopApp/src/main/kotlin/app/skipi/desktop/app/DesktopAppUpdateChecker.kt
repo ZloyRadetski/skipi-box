@@ -9,6 +9,7 @@ import features.updater.AppUpdateInfo
 import features.updater.CurrentAppVersion
 import features.updater.DesktopUpdatePackage
 import features.updater.GitHubReleaseParser
+import features.updater.UpdateManifestParser
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -30,12 +31,30 @@ internal sealed interface DesktopAppUpdateCheck {
  */
 internal class DesktopAppUpdateChecker(
     private val current: CurrentAppVersion = CurrentAppVersion(ProjectInfo.VERSION_NAME, ProjectInfo.VERSION_CODE),
+    private val fetchManifestBody: suspend (AppUpdateChannel) -> String? = ::fetchManifestFromGitHub,
     private val fetchReleaseBody: suspend (AppUpdateChannel) -> String = ::fetchReleasesFromGitHub,
 ) {
     suspend fun check(
         channel: AppUpdateChannel = AppUpdateChannel.Stable,
         desktopPackage: DesktopUpdatePackage? = null,
-    ): DesktopAppUpdateCheck = try {
+    ): DesktopAppUpdateCheck = checkManifest(channel, desktopPackage) ?: checkReleaseList(channel, desktopPackage)
+
+    /**
+     * The manifest the release workflow publishes at a fixed address: no GitHub API, no rate limit, and it names a
+     * release only after all its installers are uploaded. Null when it cannot be had or read, so the release list answers.
+     */
+    private suspend fun checkManifest(channel: AppUpdateChannel, desktopPackage: DesktopUpdatePackage?): DesktopAppUpdateCheck? = try {
+        val manifest = fetchManifestBody(channel)?.let(UpdateManifestParser::parse)
+        manifest?.let { UpdateManifestParser.desktopOffer(it, current, desktopPackage) }
+            ?.let(DesktopAppUpdateCheck::Available)
+            ?: manifest?.let { DesktopAppUpdateCheck.UpToDate }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Throwable) {
+        null
+    }
+
+    private suspend fun checkReleaseList(channel: AppUpdateChannel, desktopPackage: DesktopUpdatePackage?): DesktopAppUpdateCheck = try {
         val body = fetchReleaseBody(channel)
         if (!GitHubReleaseParser.isReleaseBody(body, channel)) {
             DesktopAppUpdateCheck.Failed
@@ -62,4 +81,15 @@ private suspend fun fetchReleasesFromGitHub(channel: AppUpdateChannel): String =
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     check(response.statusCode() == 200) { "HTTP ${response.statusCode()}" }
     response.body()
+}
+
+private suspend fun fetchManifestFromGitHub(channel: AppUpdateChannel): String? = withContext(Dispatchers.IO) {
+    val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build()
+    val request = HttpRequest.newBuilder(URI(channel.manifestUrl))
+        .timeout(Duration.ofSeconds(20))
+        .header("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
+        .GET()
+        .build()
+    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+    response.body().takeIf { response.statusCode() == 200 }
 }
