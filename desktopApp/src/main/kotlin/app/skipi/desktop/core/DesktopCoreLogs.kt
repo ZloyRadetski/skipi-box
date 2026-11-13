@@ -63,16 +63,18 @@ internal class DesktopCoreLogs(
 
     /** The access log can be big and is read only once it is wanted, not at every start. */
     @Synchronized
-    private fun restoreAccessOnce() {
-        if (accessRestored) return
+    private fun restoreAccessOnce(): Boolean {
+        if (accessRestored) return false
         accessRestored = true
         access.initialize(accessFile, retentionDays)
+        return true
     }
 
     @Synchronized
     fun startTailers(settings: DesktopAppSettings) {
         stopTailers()
-        if (settings.enableAccessLog) restoreAccessOnce()
+        // Lines restored just now are already in the viewer: the tailer must not read them a second time.
+        val accessJustRestored = settings.enableAccessLog && restoreAccessOnce()
         tailers = buildList {
             add(
                 CoreLogFileTailer(
@@ -87,7 +89,7 @@ internal class DesktopCoreLogs(
                     CoreLogFileTailer(
                         logFiles = listOf(accessFile),
                         repository = access,
-                        startAtEnd = false,
+                        startAtEnd = accessJustRestored,
                         onFailure = { message, error -> DesktopLogger.warn("CoreLogFileTailer", message, error) },
                     ),
                 )

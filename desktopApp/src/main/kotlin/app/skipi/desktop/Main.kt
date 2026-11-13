@@ -176,6 +176,8 @@ import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
 fun main(args: Array<String>) {
+    // The JVM writes the class-data archive here when the app exits; it needs the folder to exist.
+    ensureClassArchiveFolder(System.getenv("LOCALAPPDATA"), System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true))
     val launch = parseDesktopLaunchArgs(args.toList())
     // An elevated relaunch starts while the instance that asked for it is still shutting down; claiming
     // the single-instance channel before it left would hand this start's request to that dying instance.

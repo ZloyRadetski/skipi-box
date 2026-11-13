@@ -3,23 +3,15 @@
 
 package app.skipi.ui.anim
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 
 /**
- * Infinite pulse animation that only drives frames while [enabled] is true.
- *
- * Unlike [androidx.compose.animation.core.rememberInfiniteTransition], which
- * ticks the frame clock for as long as it stays composed, this helper stops
- * the underlying animator and rests at [restingValue] when disabled, so idle
- * screens do not cause continuous recomposition and redraws.
+ * Infinite pulse that only drives frames while [enabled] is true, and then at [DecorativeFrameMillis] steps
+ * instead of once per display frame, so a connected window does not redraw 60 to 144 times a second. It rests
+ * at [restingValue] when disabled. The value is meant to be read while drawing, not in composition.
  */
 @Composable
 fun rememberInfinitePulse(
@@ -29,21 +21,14 @@ fun rememberInfinitePulse(
     durationMillis: Int,
     restingValue: Float = initialValue,
 ): State<Float> {
-    val animatable = remember { Animatable(restingValue) }
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            animatable.animateTo(
-                targetValue,
-                infiniteRepeatable(
-                    animation = tween(durationMillis = durationMillis, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            )
-        } else {
-            animatable.stop()
-            animatable.snapTo(restingValue)
+    val clock = rememberDecorativeClock(enabled)
+    return remember(enabled, initialValue, targetValue, durationMillis, restingValue) {
+        derivedStateOf {
+            if (enabled) {
+                initialValue + (targetValue - initialValue) * pulseFraction(clock.value, durationMillis)
+            } else {
+                restingValue
+            }
         }
     }
-    return animatable.asState()
 }
-

@@ -3,6 +3,10 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.anim.rememberDecorativeClock
+import app.skipi.ui.anim.rememberInfinitePulse
+import app.skipi.ui.anim.restartProgress
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.EaseOutQuad
@@ -105,25 +109,10 @@ fun SkipiProxyHeroPowerButtonWaves(
     size: Dp = 86.dp,
     modifier: Modifier = Modifier,
 ) {
-    val transition = rememberInfiniteTransition(label = "skipiProxyHeroPowerWaves")
-    val firstProgress = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "skipiProxyHeroPowerWaveOne",
-    )
-    val secondProgress = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, delayMillis = 1200, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "skipiProxyHeroPowerWaveTwo",
-    )
+    // Stepped at DecorativeFrameMillis, not per display frame; read while drawing.
+    val clock = rememberDecorativeClock(enabled = true)
+    val firstProgress = remember { derivedStateOf { restartProgress(clock.value, 2400, 0, EaseOutQuad) } }
+    val secondProgress = remember { derivedStateOf { restartProgress(clock.value, 2400, 1200, EaseOutQuad) } }
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         listOf(firstProgress, secondProgress).forEach { progressState ->
@@ -193,24 +182,7 @@ fun rememberSkipiProxyHeroPulse(
     targetValue: Float,
     durationMillis: Int,
     restingValue: Float = initialValue,
-): State<Float> {
-    val animatable = remember { Animatable(restingValue) }
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            animatable.animateTo(
-                targetValue = targetValue,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = durationMillis, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            )
-        } else {
-            animatable.stop()
-            animatable.snapTo(restingValue)
-        }
-    }
-    return animatable.asState()
-}
+): State<Float> = rememberInfinitePulse(enabled, initialValue, targetValue, durationMillis, restingValue)
 
 /** Shared animated hourglass used when a latency measurement is in progress. */
 @Composable

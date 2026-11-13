@@ -174,10 +174,12 @@ compose.desktop {
         // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
         // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
         if (isLinuxHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
-        // The first start on the machine writes the application's class-data-sharing archive next to the jars when it
-        // exits, and every later start reads it (see the note at createRuntimeImage). A folder that cannot be
-        // written (a non-elevated start under Program Files) just goes without it.
-        if (isWindowsHost) jvmArgs += listOf("-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=\$APPDIR/skipi.jsa")
+        // The first normal exit on the machine writes the application's class-data-sharing archive, and every later
+        // start reads it (see the note at createRuntimeImage). It goes to the user's own folder: next to the jars, under
+        // Program Files, a normal user cannot write, so the archive was never made and a start took 12 s instead of
+        // 1.4 s. The launcher expands $LOCALAPPDATA; the app creates the folder (ensureClassArchiveFolder), the JVM
+        // does not. A stale archive (new jars after an update) is replaced by the next exit.
+        if (isWindowsHost) jvmArgs += listOf("-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=\$LOCALAPPDATA/SKIPI/skipi.jsa")
         // The UI and its services use ~40 MB of Java heap. G1 spends ~65 MB of native memory on its own bookkeeping
         // however small the heap is (the serial collector: 0.2 MB, ~100 MB less resident in all), so use the serial
         // one and cap the heap. It keeps what a burst made it commit until a full collection, so the app runs one
