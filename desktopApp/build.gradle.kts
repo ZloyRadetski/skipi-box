@@ -308,6 +308,8 @@ tasks.matching { it.name == "createRuntimeImage" }.configureEach {
         val launcherName = if (isWindowsHost) "java.exe" else "java"
         val borrowed = directory.resolve("bin/$launcherName")
         File(System.getProperty("java.home"), "bin/$launcherName").copyTo(borrowed, overwrite = true)
+        // A copy does not keep the launcher's execute bit on Linux and macOS.
+        check(borrowed.setExecutable(true)) { "Cannot make $borrowed executable" }
         try {
             val process = ProcessBuilder(borrowed.absolutePath, "-Xshare:dump")
                 .redirectErrorStream(true)
