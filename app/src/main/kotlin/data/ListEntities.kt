@@ -215,7 +215,7 @@ internal fun List<ProxyServerState>.hasSamePersistedContent(other: List<ProxySer
     return size == other.size && zip(other).all { (previous, next) ->
         previous.id == next.id &&
             previous.groupId == next.groupId &&
-            previous.server.encodePersistedProxyServer() == next.server.encodePersistedProxyServer()
+            previous.server == next.server
     }
 }
 

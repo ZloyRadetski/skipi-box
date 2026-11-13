@@ -165,7 +165,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        val settings = AppSettingsPreferences(newBase).load()
+        val settings = AppSettingsPreferences(newBase).loadLocaleAndColorMode()
         super.attachBaseContext(
             newBase.localizedAppContext(settings.languageMode, settings.colorMode),
         )
@@ -266,9 +266,12 @@ class MainActivity : ComponentActivity() {
 
     private fun checkAutoConnectOnAppOpen() {
         val application = application as SkipiApplication
-        val state = application.stateStore.state.value
-        if (!state.autoConnectOnAppOpen || state.proxyRunning) return
+        val settings = application.stateStore.state.value
+        if (!settings.autoConnectOnAppOpen || settings.proxyRunning) return
         application.appScope.launch(Dispatchers.IO) {
+            // Only the settings are available right away; the server list loads in the background.
+            application.stateStore.awaitReady()
+            val state = application.stateStore.currentState
             val running = runCatchingCancellable { deepLinkProxyEngine.status(state.runMode, state).running }
                 .getOrElse { state.proxyRunning }
             if (running) return@launch
@@ -360,6 +363,7 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun handleSkipiDeepLink(link: SkipiDeepLink) {
         val application = application as SkipiApplication
+        application.stateStore.awaitReady()
         // Any web page can fire a skipi:// link, so imports need an explicit
         // approval and tunnel control honours the external-control setting.
         when (link.gate()) {

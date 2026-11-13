@@ -21,6 +21,7 @@ internal class ResourceAutoUpdateWorker(
         val configId = inputData.getInt(TrafficConfigIdKey, -1)
         if (configId == -1) return Result.success()
         val application = applicationContext as? SkipiApplication ?: return Result.failure()
+        application.stateStore.awaitReady()
         val state = application.stateStore.state.value
         val config = state.trafficConfigs.firstOrNull { it.id == configId }
             ?: return Result.success()

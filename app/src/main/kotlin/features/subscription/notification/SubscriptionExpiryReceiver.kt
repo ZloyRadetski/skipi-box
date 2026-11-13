@@ -20,6 +20,7 @@ class SubscriptionExpiryReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 val stateStore = AndroidAppStateStore.get(appContext)
+                stateStore.awaitReady()
                 val state = stateStore.state.value
                 SubscriptionExpiryNotifier.checkAndNotify(appContext, state)
                 SubscriptionExpiryScheduler.schedule(appContext, state)

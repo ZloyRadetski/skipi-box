@@ -8,6 +8,8 @@ import android.net.Uri
 import app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import system.MaxServerImportFileBytes
+import system.readUserFileText
 
 internal class ProxyServerImportFileUseCase(
     private val context: Context,
@@ -18,7 +20,7 @@ internal class ProxyServerImportFileUseCase(
         return withContext(Dispatchers.IO) {
             val input = context.contentResolver.openInputStream(uri)
                 ?: error(context.getString(R.string.error_proxy_server_import_file_open_failed))
-            input.use { stream -> stream.readBytes().decodeToString() }
+            input.use { stream -> stream.readUserFileText(MaxServerImportFileBytes) }
         }
     }
 }

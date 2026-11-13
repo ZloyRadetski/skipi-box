@@ -4,9 +4,24 @@
 package features.logs
 
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /** Android destination of [AppLog]: logcat plus the in-app log viewer. */
 internal object AndroidAppLogSink : AppLogSink {
+    private const val MaxPendingDebugLines = 5_000
+
+    /** The in-app log file is written on one background coroutine, never on the logging thread. */
+    private val inAppWriter by lazy {
+        BackgroundLogWriter(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            maxPendingDebug = MaxPendingDebugLines,
+            clock = ::currentLogTime,
+            write = { level, message, time -> AndroidLogcatRepository.append(level, message, time) },
+        )
+    }
+
     override fun log(level: AppLogLevel, tag: String, message: String, error: Throwable?, recordInApp: Boolean) {
         when (level) {
             AppLogLevel.Debug -> if (error == null) Log.d(tag, message) else Log.d(tag, message, error)
@@ -15,7 +30,7 @@ internal object AndroidAppLogSink : AppLogSink {
             AppLogLevel.Error -> if (error == null) Log.e(tag, message) else Log.e(tag, message, error)
         }
         if (recordInApp) {
-            AndroidLogcatRepository.append(viewerLevel(level), logcatMessage(tag, message, error))
+            inAppWriter.post(viewerLevel(level), logcatMessage(tag, message, error))
         }
     }
 

@@ -5,6 +5,7 @@ package data
 
 import app.skipi.app.store.AppStateStore
 import android.content.Context
+import android.os.Looper
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import app.AppState
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,18 +40,32 @@ class AndroidAppStateStore private constructor(
     private val saveMutex = Mutex()
     private val saveRevision = AtomicLong(0)
     private val hasPersistedState = AtomicBoolean(false)
-    private val loadedState = loadInitialState()
-    private val persistenceTracker = AppStatePersistenceTracker(loadedState.state)
-    private val mutableState = MutableStateFlow(loadedState.state)
+    private val loadGate = InitialLoadGate()
+
+    // Only the SharedPreferences settings are read here; the servers, groups and rules live in
+    // Room and are merged in by [loadRoomState] a moment later.
+    private val initialSettings = settingsPreferences.load()
+    private val persistenceTracker = AppStatePersistenceTracker(initialSettings)
+    private val mutableState = MutableStateFlow(initialSettings)
 
     init {
-        hasPersistedState.set(loadedState.loadedFromDatabase)
+        scope.launch { loadRoomState() }
     }
 
     val context: Context get() = appContext
     override val state: StateFlow<AppState> = mutableState.asStateFlow()
+
+    /** True once the Room-backed lists are part of [state]. */
+    val ready: StateFlow<Boolean> get() = loadGate.isReady
+
+    /** Suspends until the saved servers, groups and rules are in [state]. */
+    suspend fun awaitReady() = loadGate.awaitReady()
+
+    /** Blocks the calling thread until [ready]; never call it from the main thread. */
+    fun awaitReadyBlocking(): Boolean = loadGate.awaitReadyBlocking()
+
     val proxyServerRepository: AndroidProxyServerRepository by lazy {
-        AndroidProxyServerRepository(this, scope)
+        AndroidProxyServerRepository(this, scope, awaitReady = ::awaitReady)
     }
     /** Process-owned runtime contract, available before an Activity exists. */
     internal val runtimeStateRepository: AndroidRuntimeStateRepository by lazy {
@@ -81,6 +95,10 @@ class AndroidAppStateStore private constructor(
         persist: Boolean,
         transform: (AppState) -> AppState,
     ) {
+        if (persist && !loadGate.isReady.value && !isMainThread()) {
+            // A persisted change made before the lists are loaded would act on empty lists.
+            loadGate.awaitReadyBlocking()
+        }
         val pendingSave = synchronized(updateLock) {
             val previousState = mutableState.value
             val nextState = transform(previousState)
@@ -113,6 +131,7 @@ class AndroidAppStateStore private constructor(
      * a clean installation. The caller must stop a running VPN beforehand.
      */
     suspend fun resetToStockState() {
+        loadGate.awaitReady()
         val stockState = AppState()
         synchronized(updateLock) {
             // Invalidates queued asynchronous writes from the pre-reset state.
@@ -133,31 +152,40 @@ class AndroidAppStateStore private constructor(
         }
     }
 
-    private fun loadInitialState(): LoadedAppState {
-        return runBlocking(Dispatchers.IO) {
+    /** Loads the Room lists on the IO scope and publishes them with one state update. */
+    private suspend fun loadRoomState() {
+        try {
             val persistedState = runCatchingCancellable {
                 dao.loadState()
             }.onFailure { error ->
                 AppLog.error(LogTag, "Failed to load app state", error)
                 resetDatabase()
             }.getOrNull()
-            val settingsState = settingsPreferences.load()
             if (persistedState?.hasRoomContent() == true) {
-                LoadedAppState(
-                    state = persistedState.toAppState(settingsState),
-                    loadedFromDatabase = true,
-                )
-            } else {
-                LoadedAppState(
-                    state = settingsState,
-                    loadedFromDatabase = false,
-                )
+                val pendingSave = synchronized(updateLock) {
+                    val current = mutableState.value
+                    // The tracker's "previous" state is what is on disk: Room content plus the
+                    // settings read at start. Changes made since are saved after this point.
+                    persistenceTracker.markPersisted(persistedState.toAppState(initialSettings))
+                    hasPersistedState.set(true)
+                    val hadUpdates = saveRevision.get() > 0
+                    mutableState.value = persistedState.toAppState(current)
+                        .copy(proxyRunning = current.proxyRunning)
+                    // Saves queued before the lists existed describe empty lists; replace them.
+                    val revision = saveRevision.incrementAndGet()
+                    if (hadUpdates) PendingStateSave(mutableState.value, revision) else null
+                }
+                pendingSave?.let { persist(it.nextState, it.revision) }
             }
+        } finally {
+            loadGate.markReady()
         }
     }
 
     private fun persist(nextState: AppState, revision: Long) {
         scope.launch {
+            // Saving before the Room lists are loaded would replace the database with empty lists.
+            loadGate.awaitReady()
             saveMutex.withLock {
                 if (revision != saveRevision.get()) {
                     return@withLock
@@ -167,7 +195,11 @@ class AndroidAppStateStore private constructor(
                     hasPersistedRoomState = hasPersistedState.get(),
                 )
                 runCatchingCancellable {
-                    settingsPreferences.save(plan.nextState)
+                    settingsPreferences.save(
+                        state = plan.nextState,
+                        // Unchanged large JSON blobs are not written again; a full replace writes everything.
+                        previous = plan.previousState.takeUnless { plan.replaceAll },
+                    )
                     dao.saveState(
                         previousState = plan.previousState,
                         nextState = plan.nextState,
@@ -194,6 +226,8 @@ class AndroidAppStateStore private constructor(
             }
         }
     }
+
+    private fun isMainThread(): Boolean = Looper.myLooper() == Looper.getMainLooper()
 
     private fun buildDatabase(): SkipiAppDatabase {
         return Room.databaseBuilder(
@@ -245,9 +279,4 @@ class AndroidAppStateStore private constructor(
 private data class PendingStateSave(
     val nextState: AppState,
     val revision: Long,
-)
-
-private data class LoadedAppState(
-    val state: AppState,
-    val loadedFromDatabase: Boolean,
 )

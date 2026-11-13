@@ -5,9 +5,9 @@ package engine.proxy.latency
 
 import android.content.Context
 import androidx.core.content.edit
-import features.logs.AppLog
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Persistent cache of measured proxy latencies keyed by plain-server id.
@@ -22,99 +22,48 @@ import kotlinx.serialization.json.Json
  * dead server cannot be resurrected from stale data.
  */
 internal object ProxyPingResultCache {
-
-    @Serializable
-    private data class CachedLatency(
-        val latencyMillis: Long,
-        val recordedAtMillis: Long,
-    )
-
     private const val PreferencesName = "skipi_ping_cache"
     private const val KeyEntries = "entries"
+    private const val PersistDebounceMillis = 2_000L
 
-    /** Entries older than this are ignored as startup candidates. */
-    private const val FreshWindowMillis = 24L * 60L * 60L * 1000L
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** Upper bound on tracked servers so the payload stays small. */
-    private const val MaxEntries = 2048
-
-    private val json = Json { ignoreUnknownKeys = true }
-    private val memoLock = Any()
-    private var memo: MutableMap<Int, CachedLatency>? = null
+    @Volatile
+    private var core: PingCacheCore? = null
 
     /** Fresh cached latencies restricted to [serverIds], best candidates first for callers to sort. */
-    fun freshest(context: Context, serverIds: Collection<Int>): Map<Int, Long> {
-        if (serverIds.isEmpty()) return emptyMap()
-        val nowMillis = System.currentTimeMillis()
-        synchronized(memoLock) {
-            return mutableMemo(context)
-                .filterKeys { serverId -> serverId in serverIds }
-                .filterValues { entry -> entry.isFresh(nowMillis) }
-                .mapValues { (_, entry) -> entry.latencyMillis }
-        }
-    }
+    fun freshest(context: Context, serverIds: Collection<Int>): Map<Int, Long> =
+        core(context).freshest(serverIds)
 
+    /** Updates the in-memory cache at once; the preferences write is debounced, see [flush]. */
     fun record(context: Context, serverId: Int, latencyMillis: Long) {
-        if (latencyMillis < 0) return
-        synchronized(memoLock) {
-            val entries = mutableMemo(context)
-            entries[serverId] = CachedLatency(
-                latencyMillis = latencyMillis,
-                recordedAtMillis = System.currentTimeMillis(),
-            )
-            pruneLocked(entries)
-            persistLocked(context, entries)
-        }
+        core(context).record(serverId, latencyMillis)
     }
 
     fun invalidate(context: Context, serverId: Int) {
-        synchronized(memoLock) {
-            val entries = mutableMemo(context)
-            if (entries.remove(serverId) != null) {
-                persistLocked(context, entries)
-            }
+        core(context).invalidate(serverId)
+    }
+
+    /** Writes pending changes now; call when a latency run ends. */
+    fun flush(context: Context) {
+        core(context).flush()
+    }
+
+    private fun core(context: Context): PingCacheCore {
+        core?.let { return it }
+        return synchronized(this) {
+            core ?: createCore(context.applicationContext).also { core = it }
         }
     }
 
-    private fun mutableMemo(context: Context): MutableMap<Int, CachedLatency> {
-        memo?.let { return it }
-        val appContext = context.applicationContext
-        val persisted = appContext.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
-            .getString(KeyEntries, null)
-            ?.let { payload ->
-                runCatching { json.decodeFromString<Map<Int, CachedLatency>>(payload) }
-                    .onFailure { error -> AppLog.warn(LogTag, "Failed to decode persisted ping cache", error) }
-                    .getOrNull()
-            }
-            .orEmpty()
-        return mutableMapOf<Int, CachedLatency>().also { loaded ->
-            loaded.putAll(persisted)
-            memo = loaded
-        }
+    private fun createCore(appContext: Context): PingCacheCore {
+        val preferences = appContext.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
+        return PingCacheCore(
+            scope = scope,
+            debounceMillis = PersistDebounceMillis,
+            nowMillis = System::currentTimeMillis,
+            load = { preferences.getString(KeyEntries, null) },
+            save = { payload -> preferences.edit { putString(KeyEntries, payload) } },
+        )
     }
-
-    private fun persistLocked(context: Context, entries: Map<Int, CachedLatency>) {
-        val appContext = context.applicationContext
-        runCatching {
-            appContext.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
-                .edit { putString(KeyEntries, json.encodeToString(entries)) }
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to persist ping cache", error)
-        }
-    }
-
-    private fun pruneLocked(entries: MutableMap<Int, CachedLatency>) {
-        if (entries.size <= MaxEntries) return
-        entries.entries
-            .sortedByDescending { it.value.recordedAtMillis }
-            .drop(MaxEntries)
-            .mapNotNull { entry -> entry.key.takeIf { key -> entries.containsKey(key) } }
-            .forEach { serverId -> entries.remove(serverId) }
-    }
-
-    private fun CachedLatency.isFresh(nowMillis: Long): Boolean {
-        return latencyMillis >= 0 && nowMillis - recordedAtMillis <= FreshWindowMillis
-    }
-
-    private const val LogTag = "ProxyPingResultCache"
 }

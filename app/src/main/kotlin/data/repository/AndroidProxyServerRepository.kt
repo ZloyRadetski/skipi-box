@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.stateIn
 class AndroidProxyServerRepository(
     private val stateStore: AppStateStore,
     scope: CoroutineScope,
+    private val awaitReady: suspend () -> Unit = {},
 ) : ProxyServerRepository {
     override val servers: StateFlow<List<ProxyServerRecord>> = stateStore.state
         .map { state -> state.proxyServers.map(ProxyServerState::toRecord) }
@@ -53,6 +54,8 @@ class AndroidProxyServerRepository(
     }
 
     override suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
+        // Transforming the list before it is loaded would act on an empty catalog.
+        awaitReady()
         stateStore.update { state ->
             state.withProxyServerCatalog(transform(state.toProxyServerCatalog()))
         }

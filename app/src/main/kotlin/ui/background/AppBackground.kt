@@ -218,11 +218,16 @@ fun AppBackground(
     }
     val context = LocalContext.current
     val photoSeed = backgroundPhotoUpdateSeed
-    val photo: ImageBitmap? = if (settings.style == BackgroundStylePhoto) {
-        remember(photoSeed) { loadCustomBackgroundBitmap(context) }
-    } else {
-        null
+    val isPhotoStyle = settings.style == BackgroundStylePhoto
+    // Decoded off the main thread; the previous bitmap stays on screen until the new one is ready.
+    val photoState = produceState<ImageBitmap?>(initialValue = null, photoSeed, isPhotoStyle) {
+        value = if (isPhotoStyle) {
+            withContext(Dispatchers.IO) { loadCustomBackgroundBitmap(context) }
+        } else {
+            null
+        }
     }
+    val photo: ImageBitmap? = if (isPhotoStyle) photoState.value else null
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
 
     SkipiAppBackground(

@@ -10,6 +10,8 @@ import app.ProjectInfo
 import app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import system.MaxBackupFileBytes
+import system.readUserFileText
 import features.backup.decodeAppBackup as decodeSharedAppBackup
 import features.backup.encodeAppBackup as encodeSharedAppBackup
 import java.text.SimpleDateFormat
@@ -47,7 +49,7 @@ internal class AppBackupUseCase(
         val content = withContext(Dispatchers.IO) {
             val input = appContext.contentResolver.openInputStream(uri)
                 ?: error(appContext.getString(R.string.error_backup_file_open_failed))
-            input.use { stream -> stream.readBytes().decodeToString() }
+            input.use { stream -> stream.readUserFileText(MaxBackupFileBytes) }
         }
         return decodeAppBackup(content).toRestorePreview()
     }

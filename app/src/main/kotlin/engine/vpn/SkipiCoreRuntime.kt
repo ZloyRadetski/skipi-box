@@ -99,6 +99,14 @@ internal object SkipiCoreRuntime {
         }
     }
 
+    /** Replaces the service-bound protector with a no-op so the native singleton no longer references the service. */
+    fun clearSocketProtector() {
+        runCatching {
+            installSocketProtector("setAmneziaWgSocketProtector", createSocketProtector { true })
+        }
+        amneziaWgSocketProtectorConfigured = false
+    }
+
     private fun createSocketProtector(protector: (Int) -> Boolean): Any {
         val protectorClass = Class.forName("app.skipi.core.skipicore.SocketProtector")
         return java.lang.reflect.Proxy.newProxyInstance(

@@ -215,6 +215,7 @@ class SkipiVpnService : VpnService() {
             operationMutex.withLock {
                 if (running) return@withLock
                 runCatchingCancellable {
+                    stateStore.awaitReady()
                     val resolvedState = stateStore.currentState
                         .resolveActiveNetworkConfig(applicationContext)
                         .withActiveTrafficConfigApplied()
@@ -288,12 +289,14 @@ class SkipiVpnService : VpnService() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        SkipiCoreRuntime.forceFreeMemory()
+        if (shouldForceFreeMemory(level, vpnRunning = running)) {
+            SkipiCoreRuntime.forceFreeMemory()
+        }
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        SkipiCoreRuntime.forceFreeMemory()
+        if (running) SkipiCoreRuntime.forceFreeMemory()
     }
 
     private fun stopSelfOnMain(startId: Int? = null) {
@@ -508,6 +511,8 @@ class SkipiVpnService : VpnService() {
         }.onFailure { error ->
             AppLog.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
         }
+        // The native side keeps the protector in a process-wide singleton; drop the reference to this service.
+        SkipiCoreRuntime.clearSocketProtector()
         runCatching {
             coreLogTailers.stopCoreLogTailers()
         }.onFailure { error ->

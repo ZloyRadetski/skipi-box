@@ -23,6 +23,7 @@ internal class TrafficConfigAutoUpdateWorker(
         val configId = inputData.getInt(TrafficConfigIdKey, -1)
         if (configId == -1) return Result.success()
         val application = applicationContext as? SkipiApplication ?: return Result.failure()
+        application.stateStore.awaitReady()
         val config = application.stateStore.state.value.trafficConfigs.firstOrNull { it.id == configId }
         return when (
             executeTrafficConfigAutoUpdate(

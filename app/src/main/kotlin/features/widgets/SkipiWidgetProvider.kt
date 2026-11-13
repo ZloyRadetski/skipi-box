@@ -144,6 +144,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
     private suspend fun toggleProxy(appContext: Context) {
         SkipiWidgetRenderer.renderAll(appContext, processing = true)
         val stateStore = AndroidAppStateStore.get(appContext)
+        stateStore.awaitReady()
         val proxyEngine = widgetProxyEngine(appContext)
         val proxyServiceUseCase = ProxyServiceUseCase(proxyEngine)
 
@@ -202,6 +203,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         direction: WidgetCycleDirection,
     ) {
         val stateStore = AndroidAppStateStore.get(appContext)
+        stateStore.awaitReady()
         val proxyEngine = widgetProxyEngine(appContext)
         val running = syncProxyRunningState(appContext, stateStore, proxyEngine)
         val stateBefore = stateStore.state.value

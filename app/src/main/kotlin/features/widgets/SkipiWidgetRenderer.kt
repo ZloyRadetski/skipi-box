@@ -33,7 +33,9 @@ internal object SkipiWidgetRenderer {
         processing: Boolean = false,
     ) {
         val appContext = context.applicationContext
-        val state = AndroidAppStateStore.get(appContext).state.value
+        val stateStore = AndroidAppStateStore.get(appContext)
+        stateStore.awaitReady()
+        val state = stateStore.state.value
         val running =
             if (processing) {
                 state.proxyRunning

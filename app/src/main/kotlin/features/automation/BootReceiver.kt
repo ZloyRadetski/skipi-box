@@ -49,6 +49,9 @@ class BootReceiver : BroadcastReceiver() {
         }
 
         application.appScope.launch(Dispatchers.IO) {
+            stateStore.awaitReady()
+            // Re-read: the lists were not loaded when the receiver looked at the settings above.
+            val state = stateStore.currentState
             val resolvedState = state.resolveActiveNetworkConfig(application)
             if (resolvedState.activeTrafficConfigId != state.activeTrafficConfigId) {
                 stateStore.update { it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId) }

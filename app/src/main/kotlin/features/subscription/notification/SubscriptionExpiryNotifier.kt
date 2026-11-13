@@ -39,6 +39,14 @@ internal object SubscriptionExpiryNotifier {
         }
     }
 
+    private fun pruneStaleHistory(prefs: android.content.SharedPreferences, appState: AppState) {
+        // An empty list may only mean the groups are not loaded yet; never prune on that.
+        if (appState.subscriptionGroups.isEmpty()) return
+        val stale = staleExpiryHistoryKeys(prefs.all.keys, appState.subscriptionGroups)
+        if (stale.isEmpty()) return
+        prefs.edit { stale.forEach { key -> remove(key) } }
+    }
+
     fun checkAndNotify(context: Context, appState: AppState) {
         if (!appState.enableSubscriptionExpiryNotifications) return
         createNotificationChannel(context)
@@ -48,6 +56,7 @@ internal object SubscriptionExpiryNotifier {
 
         val nowSeconds = System.currentTimeMillis() / 1000L
         val prefs = context.getSharedPreferences(PrefsName, Context.MODE_PRIVATE)
+        pruneStaleHistory(prefs, appState)
 
         for (group in appState.subscriptionGroups) {
             if (!group.enabled || !group.notifyOnExpiry || group.trafficExpireAtSeconds <= 0L) {
@@ -125,4 +134,16 @@ internal object SubscriptionExpiryNotifier {
             }
         }
     }
+}
+
+/**
+ * Keys `sent_<groupId>_<expire>` whose group is gone or whose expiry moved on (renewed
+ * subscription), so the notified-state preferences do not grow forever.
+ */
+internal fun staleExpiryHistoryKeys(
+    storedKeys: Collection<String>,
+    groups: List<SubscriptionGroupState>,
+): List<String> {
+    val active = groups.mapTo(HashSet()) { group -> "sent_${group.id}_${group.trafficExpireAtSeconds}" }
+    return storedKeys.filter { key -> key.startsWith("sent_") && key !in active }
 }

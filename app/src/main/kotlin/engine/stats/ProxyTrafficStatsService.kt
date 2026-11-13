@@ -343,6 +343,7 @@ class ProxyTrafficStatsService : Service() {
                     LogTag,
                     "Notification resume: previous stop waited ${stoppedAt - startedAt}ms",
                 )
+                stateStore.awaitReady()
                 val state = stateStore.state.value
                 val selectedServer = state.proxyServers.firstOrNull { server ->
                     server.id == state.selectedProxyServerId

@@ -20,6 +20,7 @@ internal class SubscriptionWorker(
         val groupId = inputData.getInt(SubscriptionGroupIdKey, MissingGroupId)
         if (groupId == MissingGroupId) return Result.success()
         val application = applicationContext as? SkipiApplication ?: return Result.failure()
+        application.stateStore.awaitReady()
         val runner = SubscriptionWorkerRunner(
             stateProvider = { application.stateStore.state.value },
             update = { requestedGroupId -> application.updateSubscription(requestedGroupId) },

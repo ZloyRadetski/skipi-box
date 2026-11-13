@@ -80,11 +80,20 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
     }
 
     private fun initializeRuntime() {
+        // Runs on a background thread: wait for the saved servers and groups before any
+        // reconciler looks at them, otherwise an empty list would cancel scheduled work.
+        stateStore.awaitReadyBlocking()
         AppSettingsPreferences(applicationContext).getOrCreateSubscriptionHwid()
         val retentionDays = stateStore.state.value.logRetentionDays
         AndroidLogcatRepository.initialize(applicationContext, retentionDays)
         AndroidCoreLogRepository.initialize(applicationContext, retentionDays)
         AndroidAccessLogRepository.initialize(applicationContext, retentionDays)
+        appScope.launch {
+            features.logs.runLogRetention(
+                repositories = listOf(AndroidLogcatRepository, AndroidCoreLogRepository, AndroidAccessLogRepository),
+                retentionDays = { stateStore.state.value.logRetentionDays },
+            )
+        }
         features.updater.AppUpdateNotifier.createChannel(applicationContext)
         appUpdateDownloadCoordinator.restorePendingDownload()
         networkAutomationMonitor.start()

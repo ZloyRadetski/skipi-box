@@ -145,6 +145,8 @@ class ProxyQuickSettingsTileService : TileService() {
     }
 
     private suspend fun toggleProxy(): Boolean {
+        // The tile may be the first component of a fresh process; servers load in the background.
+        stateStore.awaitReady()
         val running = syncProxyRunningState()
         val rawState = stateStore.state.value.copy(proxyRunning = running)
         var state = if (!running) rawState.resolveActiveNetworkConfig(applicationContext) else rawState

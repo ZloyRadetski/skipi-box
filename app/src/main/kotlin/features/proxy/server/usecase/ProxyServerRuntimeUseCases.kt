@@ -199,6 +199,8 @@ internal fun runProxyServerLatencyTest(
         } finally {
             withContext(NonCancellable) {
                 resultBatcher.flush()
+                // Debounced ping-cache writes must not be lost when a run ends.
+                runCatching { proxyLatencyTester.flushPingCache() }
                 // Latency results and the in-progress marker are host UI runtime data.
                 // Keep them in this process without creating another persisted proxy-catalog writer.
                 stateStore.update(persist = false) { state ->

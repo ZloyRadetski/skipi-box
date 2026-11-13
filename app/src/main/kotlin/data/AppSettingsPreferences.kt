@@ -5,6 +5,7 @@ package data
 
 import android.annotation.SuppressLint
 import android.content.Context
+import features.logs.AppLog
 import android.content.SharedPreferences
 import android.os.Build
 import android.provider.Settings
@@ -63,16 +64,27 @@ internal class AppSettingsPreferences(
      */
     fun getOrCreateSubscriptionHwid(): String {
         synchronized(SubscriptionHwidLock) {
-            val installationUuid = preferences.getString(KeySubscriptionInstallationUuid, null)
-                ?.let(::decryptSubscriptionInstallationUuid)
-                ?: UUID.randomUUID().toString().also { generated ->
+            val installationUuid = resolveInstallationUuid(
+                stored = preferences.getString(KeySubscriptionInstallationUuid, null),
+                decrypt = ::decryptSubscriptionInstallationUuid,
+                persistNew = { generated ->
                     val encrypted = encryptSubscriptionInstallationUuid(generated)
                     check(preferences.edit().putString(KeySubscriptionInstallationUuid, encrypted).commit()) {
                         "Failed to persist subscription installation UUID"
                     }
-                }
+                },
+            )
             return appContext.subscriptionHwid(installationUuid)
         }
+    }
+
+    /** Reads only the two keys `attachBaseContext` needs, without decoding the rest of the settings. */
+    fun loadLocaleAndColorMode(): LocaleAndColorMode {
+        val defaults = AppState()
+        return LocaleAndColorMode(
+            languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode).let(::normalizeLanguageMode),
+            colorMode = preferences.getInt(KeyColorMode, defaults.colorMode).let(::normalizeStoredColorMode),
+        )
     }
 
     fun load(): AppState {
@@ -100,14 +112,7 @@ internal class AppSettingsPreferences(
         )
         return defaults.copy(
             appIcon = preferences.getInt(KeyAppIcon, defaults.appIcon).let(::normalizeAppIcon),
-            colorMode = preferences.getInt(KeyColorMode, defaults.colorMode).let { storedMode ->
-                when (storedMode) {
-                    ColorModeThemeSystem,
-                    ColorModeThemeLight,
-                    ColorModeThemeDark -> storedMode
-                    else -> normalizeColorMode(storedMode)
-                }
-            },
+            colorMode = preferences.getInt(KeyColorMode, defaults.colorMode).let(::normalizeStoredColorMode),
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode).let(::normalizeLanguageMode),
             fontFamilyMode = preferences.getInt(KeyFontFamilyMode, defaults.fontFamilyMode).let(::normalizeFontFamilyMode),
             fontSizeMode = preferences.getInt(KeyFontSizeMode, defaults.fontSizeMode).let(::normalizeFontSizeMode),
@@ -461,8 +466,12 @@ internal class AppSettingsPreferences(
         )
     }
 
-    fun save(state: AppState) {
-        preferences.edit { putAppState(state) }
+    /**
+     * Writes [state]. With a [previous] state that is already persisted, the large JSON
+     * blobs that did not change are not encoded or written again.
+     */
+    fun save(state: AppState, previous: AppState? = null) {
+        preferences.edit { putAppState(state, previous) }
     }
 
     /** Clears every persisted application preference, including the local HWID seed. */
@@ -472,7 +481,10 @@ internal class AppSettingsPreferences(
         }
     }
 
-    private fun SharedPreferences.Editor.putAppState(state: AppState): SharedPreferences.Editor {
+    private fun SharedPreferences.Editor.putAppState(
+        state: AppState,
+        previous: AppState? = null,
+    ): SharedPreferences.Editor {
         return putInt(KeyAppIcon, state.appIcon)
             .putInt(KeyColorMode, state.colorMode)
             .putInt(KeyLanguageMode, state.languageMode)
@@ -539,7 +551,9 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableSeamlessNetworkSwitching, state.enableSeamlessNetworkSwitching)
             .putBoolean(KeyEnableNetworkAutomation, state.enableNetworkAutomation)
             .putBoolean(KeyEnableOnDemandVpn, state.enableOnDemandVpn)
-            .putNetworkAutomationRuleList(KeyNetworkAutomationRules, state.networkAutomationRules)
+            .putIfChanged(previous?.networkAutomationRules, state.networkAutomationRules) {
+                putNetworkAutomationRuleList(KeyNetworkAutomationRules, state.networkAutomationRules)
+            }
             .putString(KeyTunTcpKeepAliveInterval, state.tunTcpKeepAliveInterval)
             .putString(KeyTunTcpUserTimeout, state.tunTcpUserTimeout)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
@@ -552,7 +566,9 @@ internal class AppSettingsPreferences(
             .putStringList(KeySubscriptionUserAgents, state.subscriptionUserAgents)
             .putBoolean(KeyEnableSubscriptionDeviceHeaders, state.enableSubscriptionDeviceHeaders)
             .putInt(KeySubscriptionFetchTimeoutSeconds, state.subscriptionFetchTimeoutSeconds)
-            .putTrafficConfigList(KeyTrafficConfigs, state.trafficConfigs)
+            .putIfChanged(previous?.trafficConfigs, state.trafficConfigs) {
+                putTrafficConfigList(KeyTrafficConfigs, state.trafficConfigs)
+            }
             .putInt(KeyNextTrafficConfigId, state.nextTrafficConfigId)
             .putInt(KeyActiveTrafficConfigId, state.activeTrafficConfigId)
             .putInt(KeyRouteDomainStrategy, state.routeDomainStrategy)
@@ -567,7 +583,9 @@ internal class AppSettingsPreferences(
             .putString(KeyCustomResourceFileGeoIpOnlyCnPrivateUrl, state.customResourceFileGeoIpOnlyCnPrivateUrl)
             .putString(KeyCustomResourceFileDirectCidrIpv4Url, state.customResourceFileDirectCidrIpv4Url)
             .putString(KeyCustomResourceFileDirectCidrIpv6Url, state.customResourceFileDirectCidrIpv6Url)
-            .putCustomResourceFileList(KeyCustomResourceFiles, state.customResourceFiles)
+            .putIfChanged(previous?.customResourceFiles, state.customResourceFiles) {
+                putCustomResourceFileList(KeyCustomResourceFiles, state.customResourceFiles)
+            }
             .putInt(KeyNextCustomResourceFileId, state.nextCustomResourceFileId)
             .putString(KeyResourceFileUserAgent, state.resourceFileUserAgent)
             .putBoolean(KeyEnableSniffing, state.enableSniffing)
@@ -595,7 +613,9 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putInt(KeyClassicButtonSize, state.classicButtonSize)
-            .putString(KeyCustomThemes, state.customThemes)
+            .putIfChanged(previous?.customThemes, state.customThemes) {
+                putString(KeyCustomThemes, state.customThemes)
+            }
             .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
@@ -636,6 +656,15 @@ internal class AppSettingsPreferences(
             .putString(KeyAppUpdateApkFilePath, state.appUpdateApkFilePath)
             .putString(KeyAppUpdateDownloadError, state.appUpdateDownloadError)
             .putBoolean(KeyAppUpdateDownloadIsAutomatic, state.appUpdateDownloadIsAutomatic)
+    }
+
+    private inline fun <T> SharedPreferences.Editor.putIfChanged(
+        previous: T?,
+        next: T,
+        write: SharedPreferences.Editor.() -> Unit,
+    ): SharedPreferences.Editor {
+        if (previous == null || previous != next) write()
+        return this
     }
 
     private fun SharedPreferences.getAppUpdateInfo(default: AppUpdateInfo?): AppUpdateInfo? {
@@ -798,6 +827,36 @@ internal class AppSettingsPreferences(
     ): SharedPreferences.Editor {
         return putString(key, NetworkAutomationRuleListJson.encode(values))
     }
+}
+
+internal data class LocaleAndColorMode(val languageMode: Int, val colorMode: Int)
+
+private fun normalizeStoredColorMode(storedMode: Int): Int = when (storedMode) {
+    ColorModeThemeSystem,
+    ColorModeThemeLight,
+    ColorModeThemeDark -> storedMode
+    else -> normalizeColorMode(storedMode)
+}
+
+/**
+ * Returns the stored installation UUID, or creates and persists a new one when there is none.
+ * A stored value that cannot be decrypted (for example after the keystore key was lost) is
+ * replaced by a new UUID; that is logged once, because the subscription HWID changes with it.
+ */
+internal fun resolveInstallationUuid(
+    stored: String?,
+    decrypt: (String) -> String?,
+    persistNew: (String) -> Unit,
+    generate: () -> String = { UUID.randomUUID().toString() },
+): String {
+    if (stored != null) {
+        decrypt(stored)?.let { return it }
+        AppLog.warn(
+            "AppSettingsPreferences",
+            "Stored subscription installation UUID could not be decrypted; generating a new one",
+        )
+    }
+    return generate().also(persistNew)
 }
 
 private fun encryptSubscriptionInstallationUuid(value: String): String {

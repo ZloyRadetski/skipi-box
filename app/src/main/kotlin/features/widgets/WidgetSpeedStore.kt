@@ -17,6 +17,34 @@ internal data class WidgetSpeedSample(
 )
 
 /**
+ * Limits how often the speed sample is written to preferences. The widget renderer treats a
+ * sample as fresh for 15 s, so a write every few seconds is enough; live updates go to the
+ * widgets directly.
+ */
+internal class WidgetSpeedWriteGate(
+    private val minIntervalMillis: Long = DefaultIntervalMillis,
+) {
+    private var lastWriteAt: Long? = null
+
+    @Synchronized
+    fun shouldWrite(nowElapsedRealtime: Long): Boolean {
+        val last = lastWriteAt
+        if (last != null && nowElapsedRealtime - last < minIntervalMillis) return false
+        lastWriteAt = nowElapsedRealtime
+        return true
+    }
+
+    @Synchronized
+    fun reset() {
+        lastWriteAt = null
+    }
+
+    companion object {
+        const val DefaultIntervalMillis = 5_000L
+    }
+}
+
+/**
  * Tiny SharedPreferences-backed bridge between the traffic poller living in the
  * application process and short-lived widget renders that happen after process death.
  */

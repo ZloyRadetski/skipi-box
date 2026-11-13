@@ -5,19 +5,49 @@ package system
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Process
-import features.logs.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal class AndroidPackageRepository(
-    context: Context,
-) {
-    private val appContext = context.applicationContext
+/** One installed application; [label] is loaded only when something actually needs it. */
+internal class InstalledApplicationRecord(
+    val packageName: String,
+    val uid: Int,
+    val isSystem: Boolean,
+    val label: () -> String,
+)
 
-    suspend fun listPackages(type: String): List<String> {
-        return getCurrentUserPackagesInfo(type)
-            .map { entry -> entry.packageName }
+internal fun interface InstalledApplicationSource {
+    fun installed(): List<InstalledApplicationRecord>
+}
+
+private class PackageManagerApplicationSource(
+    private val packageManager: PackageManager,
+) : InstalledApplicationSource {
+    override fun installed(): List<InstalledApplicationRecord> =
+        packageManager.getInstalledApplicationsCompat().map { applicationInfo ->
+            InstalledApplicationRecord(
+                packageName = applicationInfo.packageName,
+                uid = applicationInfo.uid,
+                isSystem = applicationInfo.isSystemApp(),
+                label = { applicationInfo.loadLabel(packageManager).toString() },
+            )
+        }
+}
+
+internal class AndroidPackageRepository(
+    private val source: InstalledApplicationSource,
+) {
+    constructor(context: Context) : this(
+        PackageManagerApplicationSource(context.applicationContext.packageManager),
+    )
+
+    /** Only names are needed here, so no label is loaded. */
+    suspend fun listPackages(type: String): List<String> = withContext(Dispatchers.IO) {
+        source.installed()
+            .filter { record -> record.matches(type) }
+            .map { record -> record.packageName }
             .distinct()
             .sorted()
     }
@@ -27,55 +57,35 @@ internal class AndroidPackageRepository(
         if (packageSet.isEmpty()) {
             return@withContext emptyList()
         }
-
-        val packageManager = appContext.packageManager
-        val packageEntries = getCurrentUserPackagesInfo(ANDROID_PACKAGE_SCOPE_ALL)
-            .filter { entry -> entry.packageName in packageSet }
-        val applicationInfoCache = HashMap<String, ApplicationInfo?>()
-
-        packageEntries.map { entry ->
-            val applicationInfo = applicationInfoCache.getOrPut(entry.packageName) {
-                runCatching { packageManager.getApplicationInfoCompat(entry.packageName) }
-                    .onFailure { error ->
-                        AppLog.warn(LogTag, "Failed to load application info for ${entry.packageName}", error)
-                    }
-                    .getOrNull()
-            }
-            InstalledPackageInfo(
-                packageName = entry.packageName,
-                appLabel = applicationInfo?.loadLabel(packageManager)?.toString() ?: entry.packageName,
-                isSystem = applicationInfo?.isSystemApp() == true,
-                uid = entry.uid,
-            )
-        }.sortedByAppIdentity()
-    }
-
-    suspend fun getCurrentUserPackagesInfo(type: String): List<InstalledPackageInfo> = withContext(Dispatchers.IO) {
-        val packageManager = appContext.packageManager
-        packageManager.getInstalledApplicationsCompat()
-            .mapNotNull { applicationInfo ->
-                val matchesPackageScope = when (type) {
-                    ANDROID_PACKAGE_SCOPE_SYSTEM -> applicationInfo.isSystemApp()
-                    ANDROID_PACKAGE_SCOPE_USER -> !applicationInfo.isSystemApp()
-                    else -> true
-                }
-                if (!matchesPackageScope) {
-                    return@mapNotNull null
-                }
-                InstalledPackageInfo(
-                    packageName = applicationInfo.packageName,
-                    appLabel = applicationInfo.loadLabel(packageManager).toString(),
-                    isSystem = applicationInfo.isSystemApp(),
-                    uid = applicationInfo.uid,
-                )
-            }
-            .distinctBy { info -> "${info.uid}:${info.packageName}" }
+        source.installed()
+            .distinctBy { record -> record.identity() }
+            .filter { record -> record.packageName in packageSet }
+            .map { record -> record.toInfo() }
             .sortedByAppIdentity()
     }
 
-    private companion object {
-        private const val LogTag = "AndroidPackageRepository"
+    suspend fun getCurrentUserPackagesInfo(type: String): List<InstalledPackageInfo> = withContext(Dispatchers.IO) {
+        source.installed()
+            .filter { record -> record.matches(type) }
+            .distinctBy { record -> record.identity() }
+            .map { record -> record.toInfo() }
+            .sortedByAppIdentity()
     }
+
+    private fun InstalledApplicationRecord.matches(type: String): Boolean = when (type) {
+        ANDROID_PACKAGE_SCOPE_SYSTEM -> isSystem
+        ANDROID_PACKAGE_SCOPE_USER -> !isSystem
+        else -> true
+    }
+
+    private fun InstalledApplicationRecord.identity(): String = "$uid:$packageName"
+
+    private fun InstalledApplicationRecord.toInfo() = InstalledPackageInfo(
+        packageName = packageName,
+        appLabel = label(),
+        isSystem = isSystem,
+        uid = uid,
+    )
 }
 
 internal fun Context.currentAndroidUser(): AndroidUser {

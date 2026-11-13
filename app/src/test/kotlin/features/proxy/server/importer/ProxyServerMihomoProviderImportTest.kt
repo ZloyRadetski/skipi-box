@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import utils.encodeBase64
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -173,19 +174,18 @@ class ProxyServerMihomoProviderImportTest {
     }
 
     @Test
-    fun cancellationExceptionFromProviderFetcherFallsBackToInlineNodes() = runTest {
-        val result = importProxyServersFromText(
-            text = httpProviderDocument(
-                providerUrl = ProviderA,
-                inlineName = "Inline after cancellation",
-                inlineServer = "inline-cancel.example.test",
-            ),
-            source = ProxyServerImportSource.Clipboard,
-            providerUrlFetcher = { throw CancellationException("provider fetch cancelled") },
-        )
-
-        assertEquals(2, result.urlCount)
-        assertEquals(listOf("Inline after cancellation"), result.servers.map { it.getInfo().remarks })
+    fun cancellationExceptionFromProviderFetcherCancelsTheImport() = runTest {
+        assertFailsWith<CancellationException> {
+            importProxyServersFromText(
+                text = httpProviderDocument(
+                    providerUrl = ProviderA,
+                    inlineName = "Inline after cancellation",
+                    inlineServer = "inline-cancel.example.test",
+                ),
+                source = ProxyServerImportSource.Clipboard,
+                providerUrlFetcher = { throw CancellationException("provider fetch cancelled") },
+            )
+        }
     }
 
     @Test

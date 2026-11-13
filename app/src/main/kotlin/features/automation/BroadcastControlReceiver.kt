@@ -69,6 +69,7 @@ private class BroadcastControlHandler(
     private val proxyServiceUseCase by lazy { ProxyServiceUseCase(proxyEngine) }
 
     suspend fun handle(command: ProxyControlCommand) {
+        stateStore.awaitReady()
         val configuredState = stateStore.state.value
         if (!configuredState.enableBroadcastControl) {
             AppLog.warn(LogTag, "Ignored ${command.actionName} because broadcast control is disabled")

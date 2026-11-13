@@ -39,6 +39,7 @@ internal class ProxyWidgetRuntime(
     private val scope: CoroutineScope,
 ) {
     private val stateStore by lazy { AndroidAppStateStore.get(context) }
+    private val speedWriteGate = WidgetSpeedWriteGate()
     private val powerManager by lazy { context.getSystemService(PowerManager::class.java) }
     private var pollingJob: Job? = null
 
@@ -93,7 +94,10 @@ internal class ProxyWidgetRuntime(
                     if (!key.running || !hasWidgets()) {
                         pollingJob?.cancel()
                         pollingJob = null
-                        if (!key.running) WidgetSpeedStore.clear(context)
+                        if (!key.running) {
+                            WidgetSpeedStore.clear(context)
+                            speedWriteGate.reset()
+                        }
                     }
                     runCatchingCancellable { SkipiWidgetRenderer.renderAll(context) }.onFailure { error ->
                         AppLog.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
@@ -143,7 +147,9 @@ internal class ProxyWidgetRuntime(
                                     updatedAtElapsedRealtime = now,
                                 )
                                 if (uplinkDelta + downlinkDelta > 0L && hasWidgets()) {
-                                    WidgetSpeedStore.write(context, sample)
+                                    if (speedWriteGate.shouldWrite(now)) {
+                                        WidgetSpeedStore.write(context, sample)
+                                    }
                                     if (isScreenInteractive) {
                                         runCatching { SkipiWidgetRenderer.updateTraffic(context, sample) }
                                             .onFailure { error ->

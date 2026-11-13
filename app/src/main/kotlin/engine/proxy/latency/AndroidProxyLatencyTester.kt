@@ -71,7 +71,10 @@ import java.nio.channels.SelectionKey
 import java.nio.channels.Selector
 import java.nio.channels.SocketChannel
 import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
@@ -82,9 +85,24 @@ private val dnsDispatcher = Dispatchers.IO.limitedParallelism(32)
 // testing large server lists. The semaphore on the caller side keeps
 // concurrency at a reasonable level; this pool just prevents unbounded
 // thread creation if semaphore is not provided.
-private val httpPingExecutor = Executors.newFixedThreadPool(32) { runnable ->
+private const val HttpPingThreads = 32
+private val httpPingExecutor = ThreadPoolExecutor(
+    HttpPingThreads,
+    HttpPingThreads,
+    30L,
+    TimeUnit.SECONDS,
+    LinkedBlockingQueue(),
+) { runnable ->
     Thread(runnable, "cgo-http-ping").apply { isDaemon = true }
+}.apply {
+    // Idle probe threads die instead of living for the whole process.
+    allowCoreThreadTimeOut(true)
 }
+
+// One slot per pool thread, held until the native call really returns. A probe whose
+// timeout fired while the native call is still stuck keeps its slot, so later probes
+// wait (inside their own timeout) instead of piling up behind it in the executor queue.
+private val nativeProbeSlots = Semaphore(HttpPingThreads)
 
 internal class AndroidProxyLatencyTester(
     context: Context,
@@ -102,6 +120,11 @@ internal class AndroidProxyLatencyTester(
         return resourceFilePaths.dataDir
     }
     private val tempAmneziaWgMutex = Mutex()
+
+    /** Writes the debounced ping cache now; call when a latency run ends. */
+    fun flushPingCache() {
+        ProxyPingResultCache.flush(appContext)
+    }
 
     suspend fun test(
         appState: AppState,
@@ -569,27 +592,46 @@ internal class AndroidProxyLatencyTester(
         timeoutMs: Long,
     ): Long {
         val result = withTimeoutOrNull(timeoutMs) {
-            suspendCancellableCoroutine { continuation ->
-                val future = httpPingExecutor.submit {
-                    val millis = runCatching {
-                        val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(request)
-                        Skipicore.measureOutboundDelay(configJson, pingUrl)
-                    }.onSuccess { delay ->
-                        AppLog.debug(LogTag, "Real connection latency test serverId=$serverId result=${delay}ms")
-                    }.onFailure { error ->
-                        AppLog.warn(
-                            LogTag,
-                            "Real connection latency test failed serverId=$serverId: ${error.logSummary()}",
-                        )
-                    }.getOrDefault(FailedDelayMillis)
+            nativeProbeSlots.acquire()
+            val slotReleased = AtomicBoolean(false)
+            val releaseSlot = {
+                if (slotReleased.compareAndSet(false, true)) nativeProbeSlots.release()
+            }
+            try {
+                suspendCancellableCoroutine { continuation ->
+                    val started = AtomicBoolean(false)
+                    val future = httpPingExecutor.submit {
+                        started.set(true)
+                        try {
+                            val millis = runCatching {
+                                val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(request)
+                                Skipicore.measureOutboundDelay(configJson, pingUrl)
+                            }.onSuccess { delay ->
+                                AppLog.debug(LogTag, "Real connection latency test serverId=$serverId result=${delay}ms")
+                            }.onFailure { error ->
+                                AppLog.warn(
+                                    LogTag,
+                                    "Real connection latency test failed serverId=$serverId: ${error.logSummary()}",
+                                )
+                            }.getOrDefault(FailedDelayMillis)
 
-                    if (continuation.isActive) {
-                        continuation.resume(if (millis < 0) FailedDelayMillis else millis)
+                            if (continuation.isActive) {
+                                continuation.resume(if (millis < 0) FailedDelayMillis else millis)
+                            }
+                        } finally {
+                            releaseSlot()
+                        }
+                    }
+                    continuation.invokeOnCancellation {
+                        future.cancel(true)
+                        // A task that never started cannot release its own slot.
+                        if (!started.get()) releaseSlot()
                     }
                 }
-                continuation.invokeOnCancellation {
-                    future.cancel(true)
-                }
+            } catch (error: Throwable) {
+                // Submit failed before any task could take over the slot.
+                if (error is java.util.concurrent.RejectedExecutionException) releaseSlot()
+                throw error
             }
         } ?: FailedDelayMillis
 
