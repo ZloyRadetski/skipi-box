@@ -36,11 +36,15 @@ class SpeedTestController(
     private val mutableState = MutableStateFlow(SpeedTestState())
     val state: StateFlow<SpeedTestState> = mutableState.asStateFlow()
     private var job: Job? = null
+    private var currentRun = 0
 
     fun start() {
         stop()
+        val run = currentRun
         mutableState.value = SpeedTestState(phase = SpeedTestPhase.Ping)
-        val speedTest = runnerFactory { fresh -> mutableState.value = fresh }
+        // Only the current run may publish: a cancelled run winding down after a restart reports its
+        // cleanup state late and must not overwrite the new run.
+        val speedTest = runnerFactory { fresh -> if (run == currentRun) mutableState.value = fresh }
         job = scope.launch { speedTest.run() }
     }
 
@@ -48,6 +52,7 @@ class SpeedTestController(
     fun stop() {
         job?.cancel()
         job = null
+        currentRun++
         if (mutableState.value.phase.isRunning()) mutableState.value = SpeedTestState()
     }
 }

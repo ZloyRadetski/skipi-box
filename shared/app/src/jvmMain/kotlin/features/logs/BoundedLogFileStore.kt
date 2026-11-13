@@ -9,19 +9,30 @@ class BoundedLogFileStore(
     private val file: () -> File?,
     private val logTag: String,
     private val maxLines: Int = CoreLogMaxEntries,
+    /**
+     * True when this store is the only writer of the file and keeps it to the last [maxLines] lines.
+     * False for a file another process owns (Xray's log, followed by a tailer): [prune] then looks
+     * at every line and rewrites the file only when the predicate drops one, because a rewrite
+     * shrinks the file under the tailer and must not happen for the sake of a line window.
+     */
+    private val ownsFile: Boolean = true,
     private val trimExtraLines: Int = LogFileTrimExtraLines,
     private val onFailure: (message: String, error: Throwable) -> Unit,
 ) {
     private val lock = Any()
     private var lineCount = 0
 
-    fun appendLine(line: String) {
+    fun appendLine(line: String) = appendLines(listOf(line))
+
+    /** Appends [lines] with one file open, trimming once afterwards if the bound was exceeded. */
+    fun appendLines(lines: List<String>) {
+        if (lines.isEmpty()) return
         val logFile = file() ?: return
         synchronized(lock) {
             runCatching {
                 logFile.parentFile?.mkdirs()
-                logFile.appendText("$line\n")
-                lineCount += 1
+                logFile.appendText(lines.joinToString(separator = "\n", postfix = "\n"))
+                lineCount += lines.size
                 if (lineCount > maxLines + trimExtraLines) {
                     trimLocked(logFile)
                 }
@@ -48,7 +59,7 @@ class BoundedLogFileStore(
         val logFile = file() ?: return
         synchronized(lock) {
             runCatching {
-                val lines = readLastLinesLocked(logFile)
+                val lines = if (ownsFile) readLastLinesLocked(logFile) else readAllLinesLocked(logFile)
                 val filtered = lines.filter(predicate)
                 if (filtered.size != lines.size) {
                     logFile.writeText(
@@ -77,6 +88,11 @@ class BoundedLogFileStore(
             lines.joinToString(separator = "\n", postfix = if (lines.isEmpty()) "" else "\n"),
         )
         lineCount = lines.size
+    }
+
+    private fun readAllLinesLocked(logFile: File): List<String> {
+        if (!logFile.exists() || !logFile.isFile) return emptyList()
+        return logFile.readLines(Charsets.UTF_8)
     }
 
     private fun readLastLinesLocked(logFile: File): List<String> {

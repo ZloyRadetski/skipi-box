@@ -30,10 +30,10 @@ sealed interface DiagnosticsRoute {
  * defaults leave sockets and connections untouched.
  */
 interface DiagnosticsNetworkBinding {
-    /** Opens [url] over the bound network, or null to use the default network. */
+    /** Opens [url] over the bound network, or null to use the default network; throwing means binding failed. */
     fun openConnection(url: URL): HttpURLConnection? = null
 
-    /** Binds a UDP probe socket to the network; failures are ignored by callers. */
+    /** Binds a UDP probe socket to the network; throwing fails the probe instead of using the default route. */
     fun bind(socket: DatagramSocket) = Unit
 
     companion object {

@@ -13,7 +13,10 @@ import features.tools.speedtest.SpeedTestPhase
 import features.tools.speedtest.SpeedTestResult
 import features.tools.speedtest.SpeedTestState
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -203,4 +206,41 @@ class DiagnosticsControllersTest {
 
         assertEquals(IpInfoState.Idle, controller.state.value)
     }
+
+    @Test
+    fun aCancelledSpeedTestWindingDownDoesNotOverwriteTheNewRun() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var run = 0
+        val controller = SpeedTestController(
+            scope = TestScope(StandardTestDispatcher(testScheduler)),
+            runnerFactory = { onState ->
+                val current = ++run
+                SpeedTestJob {
+                    if (current == 1) {
+                        try {
+                            gate.await()
+                        } finally {
+                            // Mirrors SpeedTestRunner's cancellation cleanup, which runs after the new run began.
+                            withContext(NonCancellable) {
+                                yield()
+                                onState(SpeedTestState())
+                            }
+                        }
+                    } else {
+                        onState(SpeedTestState(phase = SpeedTestPhase.Download, progress = 0.5f, currentMbps = 3.0))
+                        gate.await()
+                    }
+                    null
+                }
+            },
+        )
+
+        controller.start()
+        testScheduler.runCurrent()
+        controller.start()
+        testScheduler.runCurrent()
+
+        assertEquals(SpeedTestPhase.Download, controller.state.value.phase)
+    }
 }
+

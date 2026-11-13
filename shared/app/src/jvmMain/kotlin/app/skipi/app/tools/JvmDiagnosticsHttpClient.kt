@@ -69,9 +69,9 @@ class JvmDiagnosticsHttpClient(
         val target = URI(url).toURL()
         return when (route) {
             is DiagnosticsRoute.Socks -> target.openConnection(route.javaProxy()) as HttpURLConnection
-            DiagnosticsRoute.Direct ->
-                runCatching { binding.openConnection(target) }.getOrNull()
-                    ?: target.openConnection() as HttpURLConnection
+            // A binding that returns null opts out of binding; one that throws failed to bind, and that
+            // surfaces as a failed request instead of silently measuring the default route.
+            DiagnosticsRoute.Direct -> binding.openConnection(target) ?: target.openConnection() as HttpURLConnection
         }
     }
 

@@ -46,35 +46,12 @@ class CoreLogFileTailer(
     private suspend fun tail(logFile: CoreLogFile) {
         val file = File(logFile.path)
         file.parentFile?.mkdirs()
-        var position = if (startAtEnd) {
-            runCatching { file.length() }.getOrDefault(0L)
-        } else {
-            0L
-        }
+        val poller = CoreLogFilePoller(file, startAtEnd)
         var failureLogged = false
 
         while (scope.isActive) {
-            if (!file.exists()) {
-                delay(CoreLogTailerPollingPolicy.intervalMillis())
-                continue
-            }
-
             runCatching {
-                val lines = ArrayList<String>()
-                RandomAccessFile(file, "r").use { reader ->
-                    if (position > reader.length()) {
-                        position = 0L
-                    }
-                    reader.seek(position)
-
-                    var line = reader.readUtf8Line()
-                    while (line != null) {
-                        lines += line
-                        line = reader.readUtf8Line()
-                    }
-                    position = reader.filePointer
-                }
-                repository.appendParsedCoreLogLines(lines, logFile.defaultLevel)
+                repository.appendParsedCoreLogLines(poller.poll(), logFile.defaultLevel)
             }.onSuccess {
                 failureLogged = false
             }.onFailure { error ->
@@ -87,11 +64,102 @@ class CoreLogFileTailer(
             delay(CoreLogTailerPollingPolicy.intervalMillis())
         }
     }
+}
 
-    private fun RandomAccessFile.readUtf8Line(): String? {
-        return readLine()?.let { line ->
-            String(line.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
+/**
+ * Reads the complete lines appended to [file] since the previous [poll].
+ *
+ * - A last line without its trailing `
+` is not returned; the read position stays in front of it
+ *   until the newline arrives, so a line that Xray is still writing is never published in halves.
+ * - The poller remembers the last line it returned. When the file got shorter or no longer holds
+ *   that line at the remembered position, it was rewritten: if the rewrite kept the remembered
+ *   line (retention pruning drops only old lines), reading resumes right after it and nothing
+ *   already published is returned again; if it is gone, the file was truncated or rotated and
+ *   reading restarts at the beginning.
+ */
+internal class CoreLogFilePoller(private val file: File, startAtEnd: Boolean) {
+    private var position: Long = if (startAtEnd) runCatching { file.length() }.getOrDefault(0L) else 0L
+    private var anchor: ByteArray? = null
+
+    fun poll(): List<String> {
+        if (!file.exists()) return emptyList()
+        RandomAccessFile(file, "r").use { reader ->
+            if (reader.length() < position || !anchorIntact(reader)) {
+                position = positionAfterRewrite(reader)
+            }
+            val available = reader.length() - position
+            if (available <= 0L) return emptyList()
+
+            val chunk = ByteArray(minOf(available, MaxBytesPerPoll.toLong()).toInt())
+            reader.seek(position)
+            reader.readFully(chunk)
+            var end = chunk.lastIndexOf(NewLine)
+            if (end < 0) {
+                if (chunk.size < MaxBytesPerPoll) return emptyList()
+                end = chunk.size // an oversized line: emit it rather than stall forever
+            }
+            val consumed = if (end < chunk.size && chunk[end] == NewLine) end + 1 else end
+
+            val lines = ArrayList<String>()
+            var lineStart = 0
+            var lastRawLine: ByteArray? = null
+            fun emit(to: Int) {
+                val line = chunk.decodeLine(lineStart, to)
+                lines += line
+                if (line.isNotBlank()) lastRawLine = chunk.copyOfRange(lineStart, minOf(to + 1, consumed))
+                lineStart = to + 1
+            }
+            for (index in 0 until consumed) {
+                if (chunk[index] == NewLine) emit(index)
+            }
+            if (lineStart < consumed) emit(consumed)
+            position += consumed
+            lastRawLine?.let { anchor = it }
+            return lines
         }
+    }
+
+    private fun ByteArray.decodeLine(from: Int, to: Int): String {
+        val last = if (to > from && this[to - 1] == CarriageReturn) to - 1 else to
+        return String(this, from, last - from, Charsets.UTF_8)
+    }
+
+    /** True while the bytes in front of [position] are still the line published last. */
+    private fun anchorIntact(reader: RandomAccessFile): Boolean {
+        val line = anchor ?: return true
+        val start = position - line.size
+        if (start < 0 || position > reader.length()) return false
+        val bytes = ByteArray(line.size)
+        reader.seek(start)
+        reader.readFully(bytes)
+        return bytes.contentEquals(line)
+    }
+
+    /** Position after the last line of the rewritten file that equals the anchor, else 0. */
+    private fun positionAfterRewrite(reader: RandomAccessFile): Long {
+        val line = anchor ?: return 0L
+        val bytes = ByteArray(reader.length().toInt())
+        reader.seek(0)
+        reader.readFully(bytes)
+        var end = bytes.size - line.size
+        while (end >= 0) {
+            val startsLine = end == 0 || bytes[end - 1] == NewLine
+            if (startsLine && bytes.regionEquals(end, line)) return (end + line.size).toLong()
+            end -= 1
+        }
+        return 0L
+    }
+
+    private fun ByteArray.regionEquals(from: Int, other: ByteArray): Boolean {
+        for (offset in other.indices) if (this[from + offset] != other[offset]) return false
+        return true
+    }
+
+    private companion object {
+        const val MaxBytesPerPoll = 8 * 1024 * 1024
+        val NewLine: Byte = 10
+        val CarriageReturn: Byte = 13
     }
 }
 

@@ -22,6 +22,8 @@ open class XrayFileLogRepository(
     private val fileStore = BoundedLogFileStore(
         file = { logFile?.let { File(it.path) } },
         logTag = logTag,
+        // Xray owns this file and a tailer follows it: prune must not rewrite it for a line window.
+        ownsFile = false,
         onFailure = onFailure,
     )
 
@@ -42,11 +44,18 @@ open class XrayFileLogRepository(
 
     override suspend fun refresh() {
         val file = logFile ?: return
+        // Lines the tailer publishes while the file is read are not in that read; replacing then
+        // would drop them. The in-memory list is already current in that case, so keep it.
+        val changesBefore = changeCount()
         val restoredLines = withContext(Dispatchers.IO) {
             readRestoredLines(file)
         }
-        replaceRestoredLines(restoredLines)
+        afterRefreshRead()
+        replaceRestoredLines(restoredLines, onlyIfUnchangedSince = changesBefore)
     }
+
+    /** Test seam: runs between reading the file and replacing the entries. */
+    internal var afterRefreshRead: () -> Unit = {}
 
     private fun restorePreviousLogs(retentionDays: Int = 0) {
         val file = logFile ?: return
@@ -66,25 +75,33 @@ open class XrayFileLogRepository(
 
     private fun readRestoredLines(file: CoreLogFile): List<RestoredCoreLogLine> {
         var order = 0L
+        // Lines without a timestamp continue the line before them and sort with its time, so they
+        // keep file order instead of floating to the front under an empty key.
+        var inheritedTime = ""
         return fileStore
             .readLastLines()
             .mapNotNull { line ->
                 parseCoreLogLine(line, file.defaultLevel)?.let { parsedLine ->
+                    parsedLine.time?.let { inheritedTime = it }
                     RestoredCoreLogLine(
                         order = order++,
+                        sortTime = inheritedTime,
                         parsedLine = parsedLine,
                     )
                 }
             }
             .sortedWith(
-                compareBy<RestoredCoreLogLine> { it.parsedLine.time.orEmpty() }
+                compareBy<RestoredCoreLogLine> { it.sortTime }
                     .thenBy { it.order },
             )
             .takeLast(MaxEntries)
     }
 
-    private fun replaceRestoredLines(restoredLines: List<RestoredCoreLogLine>) {
-        replaceEntries(
+    private fun replaceRestoredLines(
+        restoredLines: List<RestoredCoreLogLine>,
+        onlyIfUnchangedSince: Long? = null,
+    ) {
+        val restored =
             restoredLines.mapIndexed { index, restoredLine ->
                 val parsedLine = restoredLine.parsedLine
                 CoreLogEntry(
@@ -94,12 +111,14 @@ open class XrayFileLogRepository(
                     message = parsedLine.message,
                 )
             }
-        )
+        if (onlyIfUnchangedSince == null) replaceEntries(restored)
+        else replaceEntriesIfUnchanged(onlyIfUnchangedSince, restored)
     }
 }
 
 private data class RestoredCoreLogLine(
     val order: Long,
+    val sortTime: String,
     val parsedLine: ParsedCoreLogLine,
 )
 

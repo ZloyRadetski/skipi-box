@@ -41,9 +41,9 @@ open class PersistedAppLogRepository(
         }
     }
 
-    override fun append(level: String, message: String, time: String) {
-        super.append(level, message, time)
-        appendPersistedLine(time = time, level = level, message = message)
+    // Every committed append, single or batch, is written with one file open per batch.
+    override fun onAppended(lines: List<ParsedCoreLogLine>) {
+        fileStore.appendLines(lines.map { line -> encodeLogLine(checkNotNull(line.time), line.level, line.message) })
     }
 
     override fun clear() {
@@ -71,13 +71,7 @@ open class PersistedAppLogRepository(
         }
         val pendingEntries = entries.value
         replaceEntries(readPersistedEntries() + pendingEntries)
-        pendingEntries.forEach { entry ->
-            appendPersistedLine(time = entry.time, level = entry.level, message = entry.message)
-        }
-    }
-
-    private fun appendPersistedLine(time: String, level: String, message: String) {
-        fileStore.appendLine(encodeLogLine(time, level, message))
+        fileStore.appendLines(pendingEntries.map { entry -> encodeLogLine(entry.time, entry.level, entry.message) })
     }
 
     private fun readPersistedEntries(): List<CoreLogEntry> {

@@ -45,7 +45,8 @@ class JvmDnsTxtResolver(
     private fun queryDirect(server: String, domain: String): List<String>? = runCatching {
         DatagramSocket().use { socket ->
             socket.soTimeout = timeoutMillis
-            runCatching { binding.bind(socket) }
+            // A failed bind aborts the query (null result) rather than falling back to the default route.
+            binding.bind(socket)
             val transactionId = Random.nextInt(0, 0xFFFF)
             val query = RawDnsWire.buildQuery(transactionId, domain)
             socket.send(DatagramPacket(query, query.size, InetAddress.getByName(server), RawDnsWire.DnsPort))
