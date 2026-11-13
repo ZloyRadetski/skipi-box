@@ -78,7 +78,13 @@ internal object AppUpdateNotifier {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .build()
-        return ForegroundInfo(DownloadNotificationId, notification)
+        // The type is required from Android 14 on: a foreground service started with none is refused, which crashed
+        // the app at launch when WorkManager resumed a waiting download. The manifest declares dataSync for this service.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(DownloadNotificationId, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(DownloadNotificationId, notification)
+        }
     }
 
     fun cancelDownloadProgress(context: Context) {
