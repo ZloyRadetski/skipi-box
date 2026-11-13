@@ -686,6 +686,7 @@ private fun DesktopAppearanceSettings(
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
     LaunchedEffect(settings) { draft = settings }
+    val photoScope = rememberCoroutineScope()
     SkipiAppearanceSettingsScreen(
         state = draft.toAppearanceSettingsState(),
         padding = contentPadding,
@@ -701,10 +702,13 @@ private fun DesktopAppearanceSettings(
         onBack = onBack,
         onChooseBackgroundPhoto = {
             DesktopBackgroundPhoto.choose()?.let { source ->
-                if (DesktopBackgroundPhoto.save(source)) {
-                    val next = draft.copy(backgroundStyle = AppearanceSettingValues.BackgroundStylePhoto)
-                    draft = next
-                    onPersist(next, desktopText(Res.string.desktop_settings_appearance_saved))
+                // Decoding and re-encoding a photo takes a while: not on the UI thread.
+                photoScope.launch {
+                    if (withContext(Dispatchers.IO) { DesktopBackgroundPhoto.save(source) }) {
+                        val next = draft.copy(backgroundStyle = AppearanceSettingValues.BackgroundStylePhoto)
+                        draft = next
+                        onPersist(next, desktopText(Res.string.desktop_settings_appearance_saved))
+                    }
                 }
             }
         },
@@ -742,15 +746,17 @@ private fun DesktopLocalProxySettings(
     var httpPortText by remember(settings.localHttpProxyPort) { mutableStateOf(settings.localHttpProxyPort.toString()) }
     val lanAddress = remember { localNetworkIpAddresses().firstOrNull() }
 
+    val socksPortConflict = stringResource(Res.string.desktop_settings_socks_port_conflict)
+    val httpPortConflict = stringResource(Res.string.desktop_settings_http_port_conflict)
     val portError = when {
         settings.enableDynamicLocalProxyPort -> null
         !isValidLocalProxyPort(portText) -> portInvalid
-        portText.toInt() == settings.localHttpProxyPort -> desktopText(Res.string.desktop_settings_socks_port_conflict)
+        portText.toInt() == settings.localHttpProxyPort -> socksPortConflict
         else -> null
     }
     val httpPortError = when {
         !isValidLocalProxyPort(httpPortText) -> portInvalid
-        httpPortText.toInt() == settings.localProxyPort -> desktopText(Res.string.desktop_settings_http_port_conflict)
+        httpPortText.toInt() == settings.localProxyPort -> httpPortConflict
         else -> null
     }
     val displayIp = lanAddress ?: settings.localProxyListenAddress
@@ -1014,7 +1020,12 @@ private fun DesktopDiagnosticsContent(
     val dataDirectory = remember { settingsPath.parent }
     val runtime = runtimeCheck.getOrNull()
     var showRecentLogs by remember { mutableStateOf(false) }
-    var recentLogs by remember { mutableStateOf(DesktopLogger.recentEntries(30)) }
+    var recentLogs by remember { mutableStateOf<List<String>>(emptyList()) }
+    var recentLogsVersion by remember { mutableStateOf(0) }
+    // Read off the UI thread, and only while the list is shown.
+    LaunchedEffect(showRecentLogs, recentLogsVersion) {
+        if (showRecentLogs) recentLogs = withContext(Dispatchers.IO) { DesktopLogger.recentEntries(40) }
+    }
     val logFile = remember { DesktopLogger.logFile() }
     val logDir = remember { DesktopLogger.logDirectory() }
     val logSize = remember(logFile) { runCatching { Files.size(logFile) }.getOrNull() }
@@ -1054,7 +1065,6 @@ private fun DesktopDiagnosticsContent(
             title = if (showRecentLogs) stringResource(Res.string.desktop_settings_hide_log) else stringResource(Res.string.desktop_settings_show_recent_log),
             summary = logSize?.let { stringResource(Res.string.desktop_settings_log_file_size, it) } ?: stringResource(Res.string.desktop_settings_log_not_created),
             onClick = {
-                recentLogs = DesktopLogger.recentEntries(40)
                 showRecentLogs = !showRecentLogs
             },
         )
@@ -1070,7 +1080,7 @@ private fun DesktopDiagnosticsContent(
                 title = stringResource(Res.string.common_refresh),
                 icon = Icons.Rounded.Refresh,
                 summary = "",
-                onClick = { recentLogs = DesktopLogger.recentEntries(40) },
+                onClick = { recentLogsVersion += 1 },
             )
         }
     }

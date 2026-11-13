@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -26,7 +27,11 @@ object DesktopDeviceIdentity {
      * Reads a persistent hardware/machine identity on Linux or Windows,
      * falling back to local host and user details.
      */
-    fun getHardwareIdentifier(): String {
+    fun getHardwareIdentifier(): String = cachedHardwareIdentifier
+
+    private val cachedHardwareIdentifier: String by lazy { readHardwareIdentifier() }
+
+    private fun readHardwareIdentifier(): String {
         val osName = System.getProperty("os.name").orEmpty().lowercase()
         if (osName.contains("linux")) {
             val systemdMachineId = Path.of("/etc/machine-id")
@@ -44,24 +49,18 @@ object DesktopDeviceIdentity {
                     ?.let { return it }
             }
         } else if (osName.contains("mac")) {
-            runCatching {
-                val process = ProcessBuilder("/usr/sbin/ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
-                    .redirectErrorStream(true)
-                    .start()
-                val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                process.waitFor()
-                parseMacPlatformUuid(output)
-            }.getOrNull()?.let { return it }
+            runProcessWithTimeout(listOf("/usr/sbin/ioreg", "-rd1", "-c", "IOPlatformExpertDevice"), 5.seconds)
+                .getOrNull()
+                ?.let(::parseMacPlatformUuid)
+                ?.let { return it }
         } else if (osName.contains("windows")) {
-            runCatching {
-                val process = ProcessBuilder("reg", "query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid")
-                    .redirectErrorStream(true)
-                    .start()
-                val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                process.waitFor()
-                val match = Regex("""MachineGuid\s+REG_SZ\s+([a-zA-Z0-9-]+)""").find(output)
-                match?.groupValues?.getOrNull(1)?.trim()
-            }.getOrNull()?.takeIf(String::isNotEmpty)?.let { return it }
+            runProcessWithTimeout(
+                listOf("reg", "query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"),
+                5.seconds,
+            ).getOrNull()
+                ?.let { output -> Regex("""MachineGuid\s+REG_SZ\s+([a-zA-Z0-9-]+)""").find(output)?.groupValues?.getOrNull(1)?.trim() }
+                ?.takeIf(String::isNotEmpty)
+                ?.let { return it }
         }
 
         val username = System.getProperty("user.name").orEmpty()

@@ -199,19 +199,22 @@ fun main(args: Array<String>) {
     launch.links.forEach { link -> incomingLinks.trySend(link) }
     instance?.listen { link -> incomingLinks.trySend(link) }
     instance?.let { channel -> Runtime.getRuntime().addShutdownHook(Thread { channel.close() }) }
-    if (relaunchElevatedForSavedTunMode(args.toList(), launch)) return
-    moveAutostartToElevatedTask()
-    runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks)
+    // Read once: the three start-up steps below share the same file read and the same elevation query.
+    val startupSettings = DesktopSettingsLibraries.loadDefault().getOrNull()
+    val elevated = if (isWindowsHost()) isWindowsElevated() else false
+    if (relaunchElevatedForSavedTunMode(args.toList(), launch, startupSettings, elevated)) return
+    moveAutostartToElevatedTask(startupSettings, elevated)
+    runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks, initialSettings = startupSettings)
 }
 
 /**
  * An elevated copy with TUN mode on and start at login wanted replaces the login entry with a logon
  * task that has the highest rights, so the next login starts elevated without a UAC prompt.
  */
-private fun moveAutostartToElevatedTask() {
-    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return
-    val settings = DesktopSettingsLibraries.loadDefault().getOrNull() ?: return
-    if (!shouldRegisterElevatedAutostart(settings.launchOnLogin, settings.enableTunMode, isWindowsElevated())) return
+private fun moveAutostartToElevatedTask(settings: DesktopAppSettings?, elevated: Boolean) {
+    if (!isWindowsHost()) return
+    if (settings == null) return
+    if (!shouldRegisterElevatedAutostart(settings.launchOnLogin, settings.enableTunMode, elevated)) return
     val launcher = resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null)).getOrNull() ?: return
     Thread {
         desktopAutostartFor().apply(enabled = true, launcher = launcher)
@@ -224,10 +227,17 @@ private fun moveAutostartToElevatedTask() {
  * none. Hands over to an elevated copy (one UAC prompt) and reports true when it is on its way. A
  * declined prompt leaves the setting alone: the app runs on, and Connect says why TUN cannot start.
  */
-private fun relaunchElevatedForSavedTunMode(args: List<String>, launch: DesktopLaunchRequest): Boolean {
-    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return false
-    val tunModeEnabled = DesktopSettingsLibraries.loadDefault().getOrNull()?.enableTunMode == true
-    if (!tunModeEnabled || !shouldRelaunchElevatedAtStart(tunModeEnabled, !isWindowsElevated(), launch.waitForPid != null)) return false
+private fun isWindowsHost(): Boolean = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
+
+private fun relaunchElevatedForSavedTunMode(
+    args: List<String>,
+    launch: DesktopLaunchRequest,
+    settings: DesktopAppSettings?,
+    elevated: Boolean,
+): Boolean {
+    if (!isWindowsHost()) return false
+    val tunModeEnabled = settings?.enableTunMode == true
+    if (!tunModeEnabled || !shouldRelaunchElevatedAtStart(tunModeEnabled, !elevated, launch.waitForPid != null)) return false
     val launcher = ProcessHandle.current().info().command().orElse(null) ?: return false
     // The elevated copy waits for this process to exit before it claims the single-instance channel.
     val arguments = args.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
@@ -237,7 +247,11 @@ private fun relaunchElevatedForSavedTunMode(args: List<String>, launch: DesktopL
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String>) = application {
+private fun runDesktopApplication(
+    hidden: Boolean,
+    incomingLinks: Channel<String>,
+    initialSettings: DesktopAppSettings? = null,
+) = application {
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
     LaunchedEffect(Unit) { runDesktopHeapTrim() }
     val coreController = remember { DesktopCoreController() }
@@ -253,7 +267,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     var desktopSettings by remember {
         mutableStateOf(
-            DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() }
+            (initialSettings ?: DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
                 .also { loaded -> applyDesktopStartupLanguage(loaded) },
         )
     }
@@ -405,7 +419,14 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
                 val desktopCoreLogs = remember { DesktopCoreLogs() }
                 LaunchedEffect(desktopCoreLogs) {
-                    withContext(Dispatchers.IO) { desktopCoreLogs.restore(desktopSettings.logRetentionDays) }
+                    withContext(Dispatchers.IO) { desktopCoreLogs.restore(desktopSettings.logRetentionDays, desktopSettings.enableAccessLog) }
+                }
+                // Retention also applies while the app keeps running, not only at start and on a settings save.
+                LaunchedEffect(desktopCoreLogs) {
+                    features.logs.runLogRetention(
+                        repositories = listOf(desktopCoreLogs.core, desktopCoreLogs.access),
+                        retentionDays = { desktopSettings.logRetentionDays },
+                    )
                 }
                 val desktopDiagnostics = remember {
                     DesktopDiagnostics(
@@ -647,6 +668,17 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 suspend fun <T> runInSubscriptionScope(block: suspend () -> T): T =
                     subscriptionScope.async { block() }.await()
 
+                val automationServers = remember(serverLibrary) { desktopNetworkAutomationServers(serverLibrary) }
+                LaunchedEffect(desktopSettings) {
+                    desktopSharedApplication.settings.refresh()
+                    desktopSharedApplication.routing.refresh()
+                }
+                LaunchedEffect(subscriptionLibrary) {
+                    desktopSharedApplication.subscriptions.refresh(subscriptionLibrary)
+                }
+                LaunchedEffect(configLibrary) {
+                    desktopSharedApplication.trafficConfigs.refresh(configLibrary)
+                }
                 LaunchedEffect(
                     desktopSettings,
                     serverLibrary,
@@ -661,11 +693,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     tunnel.coreMessage,
                     subscriptionUi.message,
                 ) {
-                    desktopSharedApplication.settings.refresh()
-                    desktopSharedApplication.subscriptions.refresh(subscriptionLibrary)
-                    desktopSharedApplication.trafficConfigs.refresh(configLibrary)
                     desktopSharedApplication.runtime.refresh()
-                    desktopSharedApplication.routing.refresh()
                 }
 
                 LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
@@ -808,7 +836,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     failureSource = "Subscriptions",
                     failureMessage = "Automatic subscription update failed",
                     runDue = desktopSubscriptionAutoUpdater::runDue,
-                    nextWakeupAtMillis = desktopSubscriptionAutoUpdater::nextWakeupAtMillis,
+                    nextWakeupAtMillis = desktopSubscriptionAutoUpdater::nextCheckAtMillis,
                     wakeups = desktopSubscriptionAutoUpdateWakeups,
                 )
                 val desktopResourceFileServices = remember(subscriptionScope, desktopProfileResourceFiles) {
@@ -947,7 +975,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     failureSource = "ResourceFiles",
                     failureMessage = "Automatic resource update failed",
                     runDue = resourceAutoUpdater::runDue,
-                    nextWakeupAtMillis = resourceAutoUpdater::nextWakeupAtMillis,
+                    nextWakeupAtMillis = resourceAutoUpdater::nextCheckAtMillis,
                     wakeups = resourceAutoUpdateWakeups,
                 )
 
@@ -961,7 +989,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     failureSource = "TrafficConfig",
                     failureMessage = "Automatic profile refresh failed",
                     runDue = desktopTrafficConfigAutoUpdater::runDue,
-                    nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextWakeupAtMillis,
+                    nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextCheckAtMillis,
                     wakeups = desktopTrafficConfigAutoUpdateWakeups,
                 )
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
@@ -1971,7 +1999,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             settings = desktopSettings,
                             diagnostics = desktopDiagnostics,
                             coreLogs = desktopCoreLogs,
-                            automationServers = desktopNetworkAutomationServers(serverLibrary),
+                            automationServers = automationServers,
                             backupHost = desktopBackupHost,
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettingsNeedReconnect(desktopSettings, updated)

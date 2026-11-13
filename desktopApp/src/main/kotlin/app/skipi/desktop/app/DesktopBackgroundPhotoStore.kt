@@ -24,8 +24,7 @@ internal class DesktopBackgroundPhotoStore(private val directory: Path) {
     fun exists(): Boolean = file().exists() && Files.size(file()) > 0
 
     fun save(source: Path): Boolean = runCatching {
-        val decoded = ImageIO.read(source.toFile()) ?: return false
-        val image = decoded.scaledToLimit()
+        val image = readScaledToLimit(source) ?: return false
         Files.createDirectories(directory)
         val temp = directory.resolve(TempFileName)
         writeJpeg(image, temp)
@@ -36,19 +35,36 @@ internal class DesktopBackgroundPhotoStore(private val directory: Path) {
 
     fun clear(): Boolean = runCatching { file().deleteIfExists(); true }.getOrDefault(false)
 
+    /**
+     * Decodes with source subsampling, so a 48-megapixel photo is never held at full size, then draws the
+     * result once into the final RGB image (no full-size intermediate copy).
+     */
+    private fun readScaledToLimit(source: Path): BufferedImage? {
+        ImageIO.createImageInputStream(source.toFile()).use { input ->
+            if (input == null) return null
+            val reader = ImageIO.getImageReaders(input).takeIf { it.hasNext() }?.next() ?: return null
+            try {
+                reader.setInput(input, true, true)
+                val sourceLongest = maxOf(reader.getWidth(0), reader.getHeight(0))
+                val step = (sourceLongest / MaxPhotoDimension).coerceAtLeast(1)
+                val params = reader.defaultReadParam.apply { if (step > 1) setSourceSubsampling(step, step, 0, 0) }
+                val decoded = reader.read(0, params)
+                return decoded.scaledToLimit()
+            } finally {
+                reader.dispose()
+            }
+        }
+    }
+
     private fun BufferedImage.scaledToLimit(): BufferedImage {
         val longest = maxOf(width, height)
-        val rgb = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB).also { target ->
-            target.createGraphics().apply { drawImage(this@scaledToLimit, 0, 0, null); dispose() }
-        }
-        if (longest <= MaxPhotoDimension) return rgb
-        val scale = MaxPhotoDimension.toDouble() / longest
-        val scaledWidth = (width * scale).toInt().coerceAtLeast(1)
-        val scaledHeight = (height * scale).toInt().coerceAtLeast(1)
-        return BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_RGB).also { target ->
+        val scale = if (longest <= MaxPhotoDimension) 1.0 else MaxPhotoDimension.toDouble() / longest
+        val targetWidth = (width * scale).toInt().coerceAtLeast(1)
+        val targetHeight = (height * scale).toInt().coerceAtLeast(1)
+        return BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB).also { target ->
             target.createGraphics().apply {
                 setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-                drawImage(rgb, 0, 0, scaledWidth, scaledHeight, null)
+                drawImage(this@scaledToLimit, 0, 0, targetWidth, targetHeight, null)
                 dispose()
             }
         }

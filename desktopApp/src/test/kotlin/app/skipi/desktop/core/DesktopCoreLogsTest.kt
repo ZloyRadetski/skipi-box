@@ -205,6 +205,23 @@ class DesktopCoreLogsTest {
     }
 
     @Test
+    fun theAccessLogIsNotReadAtStartWhileItIsOffAndIsRestoredWhenItIsTurnedOn() {
+        val logs = DesktopCoreLogs(paths, onCoreLines = {})
+        Files.createDirectories(Path.of(paths.accessLogPath).parent)
+        Files.writeString(Path.of(paths.accessLogPath), "2026/09/11 20:40:05 [Info] from 1.1.1.1:5 accepted tcp:a.b:443\n")
+
+        logs.restore(retentionDays = 0, restoreAccess = false)
+        assertTrue(logs.access.entries.value.isEmpty())
+
+        try {
+            logs.startTailers(DesktopAppSettings(enableAccessLog = true))
+            assertEquals(1, logs.access.entries.value.size)
+        } finally {
+            logs.stopTailers()
+        }
+    }
+
+    @Test
     fun clearEmptiesViewersAndFiles() {
         val logs = DesktopCoreLogs(paths)
         Files.createDirectories(Path.of(paths.errorLogPath).parent)

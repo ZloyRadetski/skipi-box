@@ -77,4 +77,16 @@ class DesktopWorkingSetTrimTest {
         assertEquals(3, trims, "none once focus is back")
         job.cancel()
     }
+
+    @Test
+    fun theNativeHandlesAreBuiltOnceHoweverOftenTheSetIsTrimmed() {
+        var built = 0
+        var calls = 0
+        val action = OnceBuiltAction { built++; { calls++ } }
+
+        repeat(5) { action.run() }
+
+        assertEquals(1, built)
+        assertEquals(5, calls)
+    }
 }

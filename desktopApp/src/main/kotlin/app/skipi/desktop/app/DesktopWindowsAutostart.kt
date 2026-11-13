@@ -85,13 +85,9 @@ private fun registerTaskCommand(launcher: String): List<String> = listOf(
 )
 
 /** Runs `reg.exe`, `schtasks` or PowerShell without a console window and returns its output, or its error text on a non-zero exit. */
-private fun runRegistryCommand(command: List<String>): Result<String> = runCatching {
-    val process = ProcessBuilder(command).redirectErrorStream(true).start()
+private fun runRegistryCommand(command: List<String>): Result<String> {
     // reg.exe answers in the console's code page, not UTF-8.
     val charset = runCatching { java.nio.charset.Charset.forName(System.getProperty("native.encoding")) }
         .getOrDefault(Charsets.UTF_8)
-    val output = process.inputStream.bufferedReader(charset).use { it.readText().trim() }
-    check(process.waitFor(15, TimeUnit.SECONDS)) { "${command.first()} did not finish in time" }
-    check(process.exitValue() == 0) { output.ifBlank { "${command.take(2).joinToString(" ")} failed" } }
-    output
+    return runProcessWithTimeout(command, kotlin.time.Duration.parse("15s"), charset)
 }

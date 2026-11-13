@@ -15,7 +15,9 @@ import platform.LocalProxyXrayConfigOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -82,7 +84,11 @@ internal class DesktopHttpLatencyTester(
     private val measure: (configJson: String, url: String, amneziaWg: DesktopAmneziaWgBridge?) -> Result<Long>,
     private val amneziaWgDnsServers: () -> List<String> = { listOf(VpnDefaults.IPV4_DNS) },
 ) {
-    private val probes = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // A native probe cannot be interrupted: a hung one keeps its thread. At most MaxConcurrentProbes of them
+    // can do that, on threads of their own, so they never starve the shared IO pool.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val probes = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(MaxConcurrentProbes))
+    private val permits = Semaphore(MaxConcurrentProbes)
 
     suspend fun test(server: ProxyServer<*>, url: String, timeoutMillis: Int): DesktopServerLatencyResult {
         val probe = try {
@@ -91,7 +97,14 @@ internal class DesktopHttpLatencyTester(
             DesktopLogger.warn("Ping", "HTTP ping skipped: ${error.message.orEmpty().ifBlank { "server cannot be probed" }}")
             return DesktopServerLatencyResult.Error(error.message.orEmpty().ifBlank { "Server cannot be probed" }, error)
         }
-        val measurement = probes.async { measure(probe.configJson, url, probe.amneziaWg) }
+        // The wait for a free slot is not part of the timeout; a slot is freed when the probe itself ends.
+        permits.acquire()
+        val measurement = try {
+            probes.async { try { measure(probe.configJson, url, probe.amneziaWg) } finally { permits.release() } }
+        } catch (error: Throwable) {
+            permits.release()
+            throw error
+        }
         val outcome = withTimeoutOrNull(timeoutMillis.toLong()) { measurement.await() }
             ?: run {
                 DesktopLogger.warn("Ping", "HTTP ping timed out after $timeoutMillis ms: $url")
@@ -109,3 +122,5 @@ internal class DesktopHttpLatencyTester(
         )
     }
 }
+
+internal const val MaxConcurrentProbes = 16

@@ -335,6 +335,36 @@ class DesktopSubscriptionAutoUpdaterTest {
         assertEquals(freshDeadline, updater.nextWakeupAtMillis())
     }
 
+    @Test
+    fun the_loop_check_is_not_sooner_than_a_minute_while_offline_or_while_the_item_runs() = runTest {
+        var connected = false
+        val release = CompletableDeferred<Unit>()
+        val updater = updater(
+            readTargets = { listOf(target(id = 21)) },
+            isNetworkConnected = { connected },
+            nowMillis = { 1_000L },
+            updateAutomatically = {
+                release.await()
+                SubscriptionWorkerOutcome.SUCCESS
+            },
+        )
+        updater.observeTargets(listOf(target(id = 21)))
+
+        // Offline and overdue: the plain deadline stays, the loop check backs off.
+        assertEquals(1_000L, updater.nextWakeupAtMillis())
+        assertEquals(1_000L + OfflineRecheckMillis, updater.nextCheckAtMillis())
+
+        connected = true
+        assertEquals(1_000L, updater.nextCheckAtMillis())
+        val pass = launch { updater.runDue() }
+        runCurrent()
+
+        assertEquals(1_000L + OfflineRecheckMillis, updater.nextCheckAtMillis())
+
+        release.complete(Unit)
+        pass.join()
+    }
+
     private fun updater(
         readTargets: () -> List<SubscriptionRefreshTarget>,
         isNetworkConnected: () -> Boolean,

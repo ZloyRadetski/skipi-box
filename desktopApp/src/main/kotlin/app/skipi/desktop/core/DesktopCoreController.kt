@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import kotlin.concurrent.withLock
 import java.nio.file.Path
 import platform.TunnelTraffic
 import platform.aggregateCoreInboundTraffic
@@ -45,7 +46,8 @@ internal class DesktopCoreController(
     @Volatile private var amneziaWgActive = false
 
     // The AmneziaWG runner is one per process: the tunnel and a latency probe take turns under this lock.
-    private val amneziaWgLock = Any()
+    // Probes only try it, so a probe in flight never makes Stop or Start wait on a hung native call.
+    private val amneziaWgLock = java.util.concurrent.locks.ReentrantLock()
 
     fun state(): DesktopCoreState = synchronized(stateLock) {
         val handle = activeHandle ?: return@synchronized inactiveState()
@@ -94,7 +96,7 @@ internal class DesktopCoreController(
         core.initializeAssets(assetsDirectory?.toString() ?: runtime.directory.toString())
         // The runner has to listen before Xray starts, and must not outlive a failed start.
         if (amneziaWg != null) {
-            synchronized(amneziaWgLock) {
+            amneziaWgLock.withLock {
                 core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
                 amneziaWgActive = true
             }
@@ -134,11 +136,12 @@ internal class DesktopCoreController(
     @Synchronized
     fun stop(): Result<DesktopCoreState> = runCatching {
         val handle = activeHandle ?: return@runCatching inactiveState()
-        val core = checkNotNull(native) { "SKIPI Core native library is unavailable" }
+        // The session is over for the caller whatever the native side does next.
         synchronized(stateLock) {
             activeHandle = null
             activeCoreVersion = null
         }
+        val core = checkNotNull(native) { "SKIPI Core native library is unavailable" }
 
         var failure: Throwable? = null
         runCatching { core.stop(handle) }.onFailure { failure = it }
@@ -215,7 +218,8 @@ internal class DesktopCoreController(
         require(configJson.isNotBlank()) { "SKIPI Core probe configuration must not be blank" }
         val core = synchronized(this) { loadNative(runtimeProvider().getOrThrow()) }
         if (amneziaWg == null) return@runCatching core.measureOutboundDelay(configJson, targetUrl)
-        synchronized(amneziaWgLock) {
+        check(amneziaWgLock.tryLock()) { "The AmneziaWG runner is busy with another measurement or a tunnel start" }
+        try {
             check(!amneziaWgActive) { "AmneziaWG is in use by the running tunnel" }
             core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
             try {
@@ -223,6 +227,8 @@ internal class DesktopCoreController(
             } finally {
                 runCatching { core.stopAmneziaWg() }
             }
+        } finally {
+            amneziaWgLock.unlock()
         }
     }
 
@@ -302,10 +308,14 @@ internal class DesktopCoreController(
     }
 
     /** Stops the AmneziaWG runner if this controller started it; returns the failure, if any. */
-    private fun releaseAmneziaWg(core: DesktopCoreNative): Throwable? = synchronized(amneziaWgLock) {
-        if (!amneziaWgActive) return@synchronized null
-        amneziaWgActive = false
-        runCatching { core.stopAmneziaWg() }.exceptionOrNull()
+    private fun releaseAmneziaWg(core: DesktopCoreNative): Throwable? {
+        // Only a tunnel sets the flag, and a probe never holds the lock while it is set, so this cannot wait on one.
+        if (!amneziaWgActive) return null
+        return amneziaWgLock.withLock {
+            if (!amneziaWgActive) return@withLock null
+            amneziaWgActive = false
+            runCatching { core.stopAmneziaWg() }.exceptionOrNull()
+        }
     }
 
     private fun inactiveState(): DesktopCoreState = DesktopCoreState(

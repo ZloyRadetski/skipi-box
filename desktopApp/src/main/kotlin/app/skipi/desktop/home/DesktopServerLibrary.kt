@@ -33,7 +33,28 @@ data class DesktopStoredProxyServer(
     /** Null is Manual, -2 is Auto, and positive IDs identify subscription groups. */
     val subscriptionId: Int? = null,
 ) {
-    fun decode(): Result<ProxyServer<*>> = runCatching(serverJson::decodePersistedProxyServer)
+    fun decode(): Result<ProxyServer<*>> = DesktopStoredProxyServerCache.decode(serverJson)
+}
+
+/** Bounded access-ordered cache: decoded payloads are immutable, so equal JSON shares one object. */
+internal class DesktopDecodeCache<V : Any>(private val capacity: Int, private val decoder: (String) -> V) {
+    private val entries = object : LinkedHashMap<String, Result<V>>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Result<V>>?): Boolean = size > capacity
+    }
+
+    fun get(json: String): V = getResult(json).getOrThrow()
+
+    fun getResult(json: String): Result<V> {
+        synchronized(entries) { entries[json] }?.let { return it }
+        val decoded = runCatching { decoder(json) }
+        synchronized(entries) { entries[json] = decoded }
+        return decoded
+    }
+}
+
+internal object DesktopStoredProxyServerCache {
+    private val cache = DesktopDecodeCache<ProxyServer<*>>(4096) { it.decodePersistedProxyServer() }
+    fun decode(json: String): Result<ProxyServer<*>> = cache.getResult(json)
 }
 
 /** Returns the next allocatable positive ID, or [Int.MAX_VALUE] when allocation is exhausted. */

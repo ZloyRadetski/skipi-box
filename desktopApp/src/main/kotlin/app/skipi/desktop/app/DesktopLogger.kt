@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter
 
 object DesktopLogger {
     private val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+    private const val TailBytes = 64 * 1024
     private const val MaxLogSizeBytes = 2L * 1024L * 1024L // 2 MB
 
     fun logDirectory(): Path {
@@ -53,9 +54,23 @@ object DesktopLogger {
     fun recentEntries(limit: Int = 80): List<String> = runCatching {
         val file = logFile()
         if (!Files.exists(file)) return emptyList()
-        val all = Files.readAllLines(file, StandardCharsets.UTF_8)
-        all.takeLast(limit)
+        tailLines(file, limit)
     }.getOrDefault(emptyList())
+
+    /** The last [limit] lines, read from the last [TailBytes] of the file only (a log can be megabytes). */
+    internal fun tailLines(file: Path, limit: Int): List<String> {
+        java.io.RandomAccessFile(file.toFile(), "r").use { input ->
+            val length = input.length()
+            val start = (length - TailBytes).coerceAtLeast(0)
+            val bytes = ByteArray((length - start).toInt())
+            input.seek(start)
+            input.readFully(bytes)
+            var text = String(bytes, StandardCharsets.UTF_8)
+            // A cut in the middle of a line (or of a character) leaves a partial first line: drop it.
+            if (start > 0) text = text.substringAfter(Char(10), "")
+            return text.lines().dropLastWhile(String::isEmpty).takeLast(limit)
+        }
+    }
 
     private fun log(level: String, tag: String, message: String, throwable: Throwable?) {
         val timestamp = LocalDateTime.now().format(timeFormatter)

@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import utils.encodeBase64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class DesktopMihomoLiveProviderTest {
@@ -71,9 +72,8 @@ class DesktopMihomoLiveProviderTest {
     }
 
     @Test
-    fun fetchFailureAndCancellationBothFallBackToInlineProviderPayloads() {
+    fun fetchFailureFallsBackToInlineProviderPayload() {
         val failedUrl = "https://provider.example.com/fails.yaml"
-        val cancelledUrl = "https://provider.example.com/cancelled.yaml"
         val requestedUrls = mutableListOf<String>()
 
         val result: DesktopMihomoPayloadImportResult = runBlocking {
@@ -88,32 +88,41 @@ class DesktopMihomoLiveProviderTest {
                             type: socks
                             server: failure-inline.example.com
                             port: 1080
-                      cancelled:
-                        type: http
-                        url: $cancelledUrl
-                        payload:
-                          - name: Cancellation fallback
-                            type: socks
-                            server: cancellation-inline.example.com
-                            port: 1080
                 """.trimIndent(),
                 providerUrlFetcher = ProxyServerProviderUrlFetcher { url ->
                     requestedUrls += url
-                    when (url) {
-                        failedUrl -> error("provider unavailable")
-                        cancelledUrl -> throw CancellationException("provider fetch cancelled")
-                        else -> error("Unexpected provider URL")
-                    }
+                    error("provider unavailable")
                 },
             )
         }
 
-        assertEquals(listOf(failedUrl, cancelledUrl), requestedUrls)
-        assertEquals(
-            listOf("Failure fallback", "Cancellation fallback"),
-            result.servers.map { it.getInfo().remarks },
-        )
+        assertEquals(listOf(failedUrl), requestedUrls)
+        assertEquals(listOf("Failure fallback"), result.servers.map { it.getInfo().remarks })
         assertTrue(result.pendingProviders.isEmpty())
+    }
+
+    @Test
+    fun cancellationOfAProviderFetchCancelsTheImport() {
+        val cancelledUrl = "https://provider.example.com/cancelled.yaml"
+
+        assertFailsWith<CancellationException> {
+            runBlocking {
+                DesktopMihomoPayloadImporter.importWithProviderFetcher(
+                    text = """
+                        proxy-providers:
+                          cancelled:
+                            type: http
+                            url: $cancelledUrl
+                            payload:
+                              - name: Cancellation fallback
+                                type: socks
+                                server: cancellation-inline.example.com
+                                port: 1080
+                    """.trimIndent(),
+                    providerUrlFetcher = ProxyServerProviderUrlFetcher { throw CancellationException("provider fetch cancelled") },
+                )
+            }
+        }
     }
 
     @Test

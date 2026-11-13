@@ -38,4 +38,7 @@ internal class DesktopSubscriptionAutoUpdater(
 
     /** The earliest deadline among currently eligible subscriptions, if any. */
     fun nextWakeupAtMillis(): Long? = scheduler.nextWakeupAtMillis()
+
+    /** When the refresh loop should look again: no sooner than a minute while an item runs or the network is gone. */
+    fun nextCheckAtMillis(): Long? = scheduler.nextCheckAtMillis()
 }

@@ -52,14 +52,27 @@ internal class DesktopCoreLogs(
     private val accessFile get() = CoreLogFile(path = paths.accessLogPath, defaultLevel = "info")
 
     /** Restores the previous session's lines and drops the ones past the retention period. */
-    fun restore(retentionDays: Int) {
+    fun restore(retentionDays: Int, restoreAccess: Boolean = true) {
+        this.retentionDays = retentionDays
         core.initialize(errorFile, retentionDays)
+        if (restoreAccess) restoreAccessOnce()
+    }
+
+    @Volatile private var retentionDays: Int = 0
+    private var accessRestored = false
+
+    /** The access log can be big and is read only once it is wanted, not at every start. */
+    @Synchronized
+    private fun restoreAccessOnce() {
+        if (accessRestored) return
+        accessRestored = true
         access.initialize(accessFile, retentionDays)
     }
 
     @Synchronized
     fun startTailers(settings: DesktopAppSettings) {
         stopTailers()
+        if (settings.enableAccessLog) restoreAccessOnce()
         tailers = buildList {
             add(
                 CoreLogFileTailer(

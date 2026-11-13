@@ -29,14 +29,8 @@ internal object DesktopSystemAccent {
         }
     }.getOrNull()
 
-    private fun run(vararg command: String): String? {
-        val process = ProcessBuilder(*command).redirectErrorStream(true).start()
-        if (!process.waitFor(2, TimeUnit.SECONDS)) {
-            process.destroyForcibly()
-            return null
-        }
-        return process.inputStream.bufferedReader().readText()
-    }
+    private fun run(vararg command: String): String? =
+        runProcessWithTimeout(command.toList(), kotlin.time.Duration.parse("2s")).getOrNull()
 }
 
 /** The system accent while [enabled]; read off the UI thread, so it is null until the first read returns. */

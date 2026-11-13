@@ -4,6 +4,9 @@
 package app.skipi.desktop
 
 import java.nio.file.Path
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -103,7 +106,49 @@ class DesktopCoreOutboundProbeTest {
         assertEquals(true, controller.state().isRunning)
     }
 
+    @Test
+    fun stopDoesNotWaitForARunningAmneziaWgProbe() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val native = ProbeNative(onMeasure = { entered.countDown(); release.await(20, TimeUnit.SECONDS) })
+        val controller = controller(native)
+        controller.start("{}").getOrThrow()
+        val probe = thread { controller.measureOutboundDelay("{}", "u", bridge) }
+        try {
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            val stopped = CountDownLatch(1)
+            thread { controller.stop(); stopped.countDown() }
+
+            assertTrue(stopped.await(3, TimeUnit.SECONDS), "Stop waited for the probe that holds the runner")
+        } finally {
+            release.countDown()
+            probe.join(5_000)
+        }
+    }
+
+    @Test
+    fun aSecondAmneziaWgProbeIsRefusedWhileOneHoldsTheRunnerInsteadOfWaiting() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val native = ProbeNative(onMeasure = { entered.countDown(); release.await(20, TimeUnit.SECONDS) })
+        val controller = controller(native)
+        val first = thread { controller.measureOutboundDelay("{}", "u", bridge) }
+        try {
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            val startedAt = System.nanoTime()
+
+            val second = controller.measureOutboundDelay("{}", "u", bridge)
+
+            assertTrue(second.isFailure)
+            assertTrue((System.nanoTime() - startedAt) < 3_000_000_000L)
+        } finally {
+            release.countDown()
+            first.join(5_000)
+        }
+    }
+
     private class ProbeNative(
+        private val onMeasure: () -> Unit = {},
         private val delay: Long = 1L,
         private val failMeasure: Boolean = false,
         private val tcpDelay: Long = 1L,
@@ -124,7 +169,8 @@ class DesktopCoreOutboundProbeTest {
         override fun readMemoryStats(): String = "{}"
         override fun forceFreeMemory() = Unit
         override fun measureOutboundDelay(configJson: String, targetUrl: String): Long {
-            events += "measure:$configJson@$targetUrl"
+            synchronized(events) { events += "measure:$configJson@$targetUrl" }
+            onMeasure()
             if (failMeasure) error("the probe failed")
             return delay
         }

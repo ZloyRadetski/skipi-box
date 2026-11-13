@@ -97,12 +97,8 @@ internal fun parseNmcliActiveSsid(output: String): String? =
     output.lines().firstOrNull { it.startsWith("yes:") }
         ?.removePrefix("yes:")?.replace("\\:", ":")?.trim()?.takeIf(String::isNotEmpty)
 
-private fun runCommand(vararg command: String): String? = runCatching {
-    val process = ProcessBuilder(*command).redirectErrorStream(true).start()
-    val text = process.inputStream.bufferedReader().readText()
-    if (!process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)) process.destroyForcibly()
-    text
-}.getOrNull()
+private fun runCommand(vararg command: String): String? =
+    runProcessWithTimeout(command.toList(), kotlin.time.Duration.parse("5s")).getOrNull()
 
 /** Current Wi-Fi name via the OS tools (Windows `netsh`, Linux `nmcli`, macOS `networksetup`); null when unavailable. */
 internal fun readDesktopWifiSsid(): String? {

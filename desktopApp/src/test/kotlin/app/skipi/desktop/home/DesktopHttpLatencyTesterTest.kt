@@ -6,7 +6,11 @@ package app.skipi.desktop
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.VLESS
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -156,5 +160,29 @@ class DesktopHttpLatencyTesterTest {
 
         assertEquals(DesktopServerLatencyResult.Success(33L), result)
         assertNotNull(bridgeSeen)
+    }
+
+    @Test
+    fun hungNativeProbesNeverHoldMoreThanTheLimitOfThreads() = runBlocking<Unit> {
+        val running = AtomicInteger()
+        val peak = AtomicInteger()
+        val release = CountDownLatch(1)
+        val tester = DesktopHttpLatencyTester(
+            measure = { _, _, _ ->
+                peak.accumulateAndGet(running.incrementAndGet(), ::maxOf)
+                release.await()
+                running.decrementAndGet()
+                Result.success(1L)
+            },
+        )
+
+        val results = (1..40).map { async(kotlinx.coroutines.Dispatchers.Default) { tester.test(vless, "https://probe.example/204", timeoutMillis = 60_000) } }
+        val deadline = System.nanoTime() + 5_000_000_000L
+        while (running.get() < MaxConcurrentProbes && System.nanoTime() < deadline) Thread.sleep(10)
+        Thread.sleep(300)
+        assertEquals(MaxConcurrentProbes, peak.get())
+        release.countDown()
+        assertTrue(results.awaitAll().all { it == DesktopServerLatencyResult.Success(1L) })
+        assertEquals(MaxConcurrentProbes, peak.get())
     }
 }

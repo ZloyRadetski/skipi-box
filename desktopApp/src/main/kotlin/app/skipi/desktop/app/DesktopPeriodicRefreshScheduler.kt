@@ -84,6 +84,22 @@ internal class DesktopPeriodicRefreshScheduler<Target, Spec : PeriodicWorkSpec>(
         entriesById.values.minOfOrNull { entry -> entry.workState.nextRunAtMillis }
     }
 
+    /**
+     * When the loop should look again: [nextWakeupAtMillis], but an item that is running (it cannot start twice) or
+     * any item while offline (nothing can start) is not looked at sooner than [OfflineRecheckMillis] from now.
+     * An overdue item otherwise makes the loop wake every second for as long as it runs or the network is gone.
+     */
+    fun nextCheckAtMillis(): Long? {
+        val connected = isNetworkConnected()
+        val floor = nowMillis() + OfflineRecheckMillis
+        return synchronized(lock) {
+            entriesById.values.minOfOrNull { entry ->
+                val next = entry.workState.nextRunAtMillis
+                if (!connected || entry.job != null) maxOf(next, floor) else next
+            }
+        }
+    }
+
     private fun reconcileTargetsLocked(targets: List<Target>, nowMillis: Long): List<Job> {
         val desiredSpecs = targets.mapNotNull(specOf).associateBy(idOf)
         val removedJobs = (entriesById.keys - desiredSpecs.keys).mapNotNull { id -> entriesById.remove(id)?.job }
@@ -150,3 +166,5 @@ internal class DesktopPeriodicRefreshScheduler<Target, Spec : PeriodicWorkSpec>(
         var job: Job? = null,
     )
 }
+
+internal const val OfflineRecheckMillis = 60_000L

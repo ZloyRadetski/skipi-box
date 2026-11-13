@@ -145,12 +145,10 @@ internal fun pickMacTunInterfaceName(existing: Collection<String>, first: Int = 
 internal fun parseMacInterfaceList(output: String): List<String> = output.trim().split(Regex("\\s+")).filter(String::isNotEmpty)
 
 /** The names of all network interfaces, from `ifconfig -l`. */
-internal fun macInterfaceNames(): List<String> = runCatching {
-    val process = ProcessBuilder("/sbin/ifconfig", "-l").redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().use { it.readText() }
-    process.waitFor(5, TimeUnit.SECONDS)
-    parseMacInterfaceList(output)
-}.getOrDefault(emptyList())
+internal fun macInterfaceNames(): List<String> =
+    runProcessWithTimeout(listOf("/sbin/ifconfig", "-l"), kotlin.time.Duration.parse("5s"))
+        .map(::parseMacInterfaceList)
+        .getOrDefault(emptyList())
 
 @Serializable
 private data class MacTunPlan(
@@ -167,12 +165,8 @@ internal class MacTunPlanHolder {
 }
 
 /** Runs one system command line; a non-zero exit is a failure carrying the command's output. */
-internal fun runMacPrivilegedLauncher(command: List<String>): Result<Unit> = runCatching {
-    val process = ProcessBuilder(command).redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
-    check(process.waitFor(120, TimeUnit.SECONDS)) { "The administrator prompt did not finish in time" }
-    check(process.exitValue() == 0) { output.ifBlank { "${command.first()} failed" } }
-}
+internal fun runMacPrivilegedLauncher(command: List<String>): Result<Unit> =
+    runProcessWithTimeout(command, kotlin.time.Duration.parse("120s")).map { }
 
 /**
  * hev-socks5-tunnel on macOS, run by a root supervisor (see the file comment). [launcher] shows the

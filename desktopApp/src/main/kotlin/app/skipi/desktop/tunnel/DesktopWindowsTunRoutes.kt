@@ -110,12 +110,15 @@ internal class DesktopWindowsTunRoutes(
 }
 
 /** Runs one system command without a console window; a non-zero exit is a failure with its output. */
-internal fun runWindowsCommand(command: List<String>): Result<Unit> = runCatching {
-    val process = ProcessBuilder(command).redirectErrorStream(true).start()
-    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
-    check(process.waitFor(30, TimeUnit.SECONDS)) { "${command.first()} did not finish in time" }
-    check(process.exitValue() == 0) { "${command.take(4).joinToString(" ")} failed: $output" }
-}
+internal fun runWindowsCommand(command: List<String>): Result<Unit> =
+    runProcessWithTimeout(command, kotlin.time.Duration.parse("30s"))
+        .map { }
+        .recoverCatching { error ->
+            if (error is DesktopProcessFailure) {
+                throw IllegalStateException("${command.take(4).joinToString(" ")} failed: ${error.output}", error)
+            }
+            throw error
+        }
 
 /** Whether an adapter with this name is known to Windows. */
 internal fun windowsAdapterExists(name: String): Boolean =

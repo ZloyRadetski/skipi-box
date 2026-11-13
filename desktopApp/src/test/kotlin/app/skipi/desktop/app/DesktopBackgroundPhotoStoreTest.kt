@@ -53,6 +53,19 @@ class DesktopBackgroundPhotoStoreTest {
     }
 
     @Test
+    fun aVeryLargeImageKeepsItsProportionsAtExactlyTheLimit() = withDirectory { directory ->
+        val source = directory.resolve("big.png")
+        writePng(source, 8000, 2000)
+        val store = DesktopBackgroundPhotoStore(directory.resolve("store"))
+
+        assertTrue(store.save(source))
+
+        val stored = ImageIO.read(store.file().toFile())
+        assertEquals(2560, stored.width)
+        assertEquals(640, stored.height)
+    }
+
+    @Test
     fun unreadableSourceKeepsThePreviousPhoto() = withDirectory { directory ->
         val good = directory.resolve("good.png").also { writePng(it, 40, 40) }
         val broken = directory.resolve("broken.png").also { it.writeText("not an image") }

@@ -33,4 +33,7 @@ internal class DesktopTrafficConfigAutoUpdater(
 
     /** The earliest profile deadline, if any profile remains eligible. */
     fun nextWakeupAtMillis(): Long? = scheduler.nextWakeupAtMillis()
+
+    /** When the refresh loop should look again: no sooner than a minute while an item runs or the network is gone. */
+    fun nextCheckAtMillis(): Long? = scheduler.nextCheckAtMillis()
 }

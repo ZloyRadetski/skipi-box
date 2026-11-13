@@ -154,6 +154,26 @@ internal class DesktopResourceAutoUpdater(
         ).flatten().minOrNull()
     }
 
+    /**
+     * When the loop should look again: [nextWakeupAtMillis], but work that is running, or any work while offline,
+     * is not looked at sooner than [OfflineRecheckMillis] from now (an overdue item would wake the loop every second).
+     */
+    fun nextCheckAtMillis(): Long? {
+        val connected = isNetworkConnected()
+        val floor = nowMillis() + OfflineRecheckMillis
+        return synchronized(lock) {
+            sequenceOf(
+                periodicState.schedulesByProfileId.values.asSequence().map { schedule ->
+                    val running = schedule.profileId in periodicProfilesInFlight || schedule.profileId in periodicJobs
+                    if (!connected || running) maxOf(schedule.nextRunAtMillis, floor) else schedule.nextRunAtMillis
+                },
+                oneTimeRequests.values.asSequence().map { request ->
+                    if (!connected || request.profileId in oneTimeJobs) maxOf(request.nextRunAtMillis, floor) else request.nextRunAtMillis
+                },
+            ).flatten().minOrNull()
+        }
+    }
+
     /** Must be called while holding [lock]. */
     private fun reconcilePeriodicTargetsLocked(
         targets: List<TrafficConfigRefreshTarget>,

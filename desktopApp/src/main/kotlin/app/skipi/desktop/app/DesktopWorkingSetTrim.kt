@@ -68,20 +68,31 @@ internal suspend fun runDesktopWorkingSetTrim(
     }
 }
 
+/** Builds an action once, on first use, and runs that same action every time after. */
+internal class OnceBuiltAction(build: () -> () -> Unit) {
+    private val action: () -> Unit by lazy(build)
+    fun run() = action()
+}
+
+/** The foreign-function handles of K32EmptyWorkingSet, linked once and kept: a trim is then one native call. */
+private val windowsWorkingSetTrim = OnceBuiltAction {
+    val linker = Linker.nativeLinker()
+    val kernel32 = SymbolLookup.libraryLookup("kernel32", java.lang.foreign.Arena.global())
+    val currentProcess = linker.downcallHandle(
+        kernel32.findOrThrow("GetCurrentProcess"),
+        FunctionDescriptor.of(ValueLayout.ADDRESS),
+    )
+    val emptyWorkingSet = linker.downcallHandle(
+        kernel32.findOrThrow("K32EmptyWorkingSet"),
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+    )
+    val trim: () -> Unit = { emptyWorkingSet.invokeWithArguments(currentProcess.invokeWithArguments()) }
+    trim
+}
+
 /** Windows only: K32EmptyWorkingSet on this process. Other systems return their memory on their own. */
 internal fun trimProcessWorkingSet() {
     if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return
-    runCatching {
-        val linker = Linker.nativeLinker()
-        val kernel32 = SymbolLookup.libraryLookup("kernel32", java.lang.foreign.Arena.global())
-        val currentProcess = linker.downcallHandle(
-            kernel32.findOrThrow("GetCurrentProcess"),
-            FunctionDescriptor.of(ValueLayout.ADDRESS),
-        )
-        val emptyWorkingSet = linker.downcallHandle(
-            kernel32.findOrThrow("K32EmptyWorkingSet"),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
-        )
-        emptyWorkingSet.invokeWithArguments(currentProcess.invokeWithArguments())
-    }.onFailure { error -> DesktopLogger.info("WorkingSet", "The working set could not be trimmed: ${error.message}") }
+    runCatching { windowsWorkingSetTrim.run() }
+        .onFailure { error -> DesktopLogger.info("WorkingSet", "The working set could not be trimmed: ${error.message}") }
 }
