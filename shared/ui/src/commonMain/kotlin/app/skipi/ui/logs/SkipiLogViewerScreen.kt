@@ -167,9 +167,10 @@ fun SkipiLogViewerScreen(
                                 item(key = "log_empty") { LogEmptyCard() }
                             } else {
                                 items(items = displayed, key = { it.id }) { entry ->
+                                    val exportText = remember(entry, showMetadata) { entry.exportText(showMetadata) }
                                     LogEntryCard(
-                                        text = entry.exportText(showMetadata),
-                                        onClick = { onCopy(entry.exportText(showMetadata), copiedMessage) },
+                                        text = exportText,
+                                        onClick = { onCopy(exportText, copiedMessage) },
                                     )
                                 }
                             }

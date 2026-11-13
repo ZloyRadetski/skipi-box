@@ -101,8 +101,9 @@ fun SkipiCodeEditor(
 ) {
     val colors = rememberJsonEditorColors()
     var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    var lastEmitted by remember { mutableStateOf<String?>(null) }
     // An external replacement (for example "Format JSON") moves the cursor to the end.
-    if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
+    if (field.text != value) field = reconcileExternalValue(field, value, lastEmitted)
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(TextFieldDefaults.CornerRadius)
     val borderWidth by animateDpAsState(if (focused) 2.dp else 0.dp)
@@ -152,6 +153,7 @@ fun SkipiCodeEditor(
                 value = field,
                 onValueChange = { updated ->
                     field = updated
+                    lastEmitted = updated.text
                     if (updated.text != value) onValueChange(updated.text)
                 },
                 readOnly = readOnly,
@@ -174,3 +176,33 @@ fun SkipiCodeEditor(
         }
     }
 }
+
+/** One-entry cache so identical text is not re-highlighted (for example on recomposition without an edit). */
+internal class HighlightCache(private val compute: (String) -> AnnotatedString) {
+    private var lastText: String? = null
+    private var lastResult: AnnotatedString? = null
+
+    fun get(text: String): AnnotatedString {
+        val cached = lastResult
+        if (cached != null && lastText == text) return cached
+        return compute(text).also {
+            lastText = text
+            lastResult = it
+        }
+    }
+}
+
+/**
+ * Applies a new [value] from the caller. A value we emitted ourselves earlier (a stale echo) keeps the
+ * cursor and selection, clamped to the new length; anything else is a full external replacement
+ * (for example "Format JSON") and moves the cursor to the end.
+ */
+internal fun reconcileExternalValue(field: TextFieldValue, value: String, lastEmitted: String?): TextFieldValue =
+    if (lastEmitted != null && lastEmitted == value) {
+        TextFieldValue(
+            value,
+            TextRange(field.selection.start.coerceIn(0, value.length), field.selection.end.coerceIn(0, value.length)),
+        )
+    } else {
+        TextFieldValue(value, TextRange(value.length))
+    }

@@ -89,46 +89,51 @@ data class JsonToken(
 /** Splits one line into colored runs; each token spans from its start to the next token's start. */
 fun tokenizeJsonLine(line: CharSequence): List<JsonToken> {
     val text = line.toString()
+    return tokenizeJsonRange(text, 0, text.length)
+}
+
+/** Tokenizes `text[from, to)` without copying it; token starts are relative to `from`. */
+internal fun tokenizeJsonRange(text: String, from: Int, to: Int): List<JsonToken> {
     val tokens = mutableListOf<JsonToken>()
-    var index = 0
-    while (index < text.length) {
+    var index = from
+    while (index < to) {
         val start = index
         when (text[index]) {
             '"' -> {
-                index = text.stringTokenEnd(index)
+                index = text.stringTokenEnd(index, to)
                 tokens += JsonToken(
-                    start = start,
-                    kind = if (text.isObjectKey(index)) JsonTokenKind.Key else JsonTokenKind.String,
+                    start = start - from,
+                    kind = if (text.isObjectKey(index, to)) JsonTokenKind.Key else JsonTokenKind.String,
                 )
             }
 
             '-', in '0'..'9' -> {
-                index = text.numberTokenEnd(index)
-                tokens += JsonToken(start, JsonTokenKind.Number)
+                index = text.numberTokenEnd(index, to)
+                tokens += JsonToken(start - from, JsonTokenKind.Number)
             }
 
             't', 'f', 'n' -> {
-                val end = text.literalTokenEnd(index)
+                val end = text.literalTokenEnd(index, from, to)
                 if (end > index) {
                     index = end
-                    tokens += JsonToken(start, JsonTokenKind.Literal)
+                    tokens += JsonToken(start - from, JsonTokenKind.Literal)
                 } else {
                     index += 1
-                    tokens += JsonToken(start, JsonTokenKind.Normal)
+                    tokens += JsonToken(start - from, JsonTokenKind.Normal)
                 }
             }
 
             '{', '}', '[', ']', ':', ',' -> {
                 index += 1
-                tokens += JsonToken(start, JsonTokenKind.Punctuation)
+                tokens += JsonToken(start - from, JsonTokenKind.Punctuation)
             }
 
             else -> {
                 index += 1
-                while (index < text.length && !text.isJsonTokenStart(index)) {
+                while (index < to && !text.isJsonTokenStart(index)) {
                     index += 1
                 }
-                tokens += JsonToken(start, JsonTokenKind.Normal)
+                tokens += JsonToken(start - from, JsonTokenKind.Normal)
             }
         }
     }
@@ -142,10 +147,10 @@ fun highlightJson(text: String, colors: JsonSyntaxColors, normal: Color): Annota
     while (lineStart <= text.length) {
         val newline = text.indexOf('\n', lineStart)
         val lineEnd = if (newline < 0) text.length else newline
-        val line = text.substring(lineStart, lineEnd)
-        val tokens = tokenizeJsonLine(line)
+        val lineLength = lineEnd - lineStart
+        val tokens = tokenizeJsonRange(text, lineStart, lineEnd)
         tokens.forEachIndexed { index, token ->
-            val tokenEnd = tokens.getOrNull(index + 1)?.start ?: line.length
+            val tokenEnd = tokens.getOrNull(index + 1)?.start ?: lineLength
             if (tokenEnd > token.start) {
                 addStyle(
                     SpanStyle(color = token.kind.color(colors, normal)),
@@ -177,10 +182,10 @@ private fun String.isJsonTokenStart(index: Int): Boolean {
         char in JsonPunctuation
 }
 
-private fun String.stringTokenEnd(start: Int): Int {
+private fun String.stringTokenEnd(start: Int, end: Int): Int {
     var index = start + 1
     var escaped = false
-    while (index < length) {
+    while (index < end) {
         val char = this[index]
         if (escaped) {
             escaped = false
@@ -191,32 +196,33 @@ private fun String.stringTokenEnd(start: Int): Int {
         }
         index += 1
     }
-    return length
+    return end
 }
 
-private fun String.isObjectKey(stringEnd: Int): Boolean {
+private fun String.isObjectKey(stringEnd: Int, end: Int): Boolean {
     var index = stringEnd
-    while (index < length && this[index].isWhitespace()) {
+    while (index < end && this[index].isWhitespace()) {
         index += 1
     }
-    return index < length && this[index] == ':'
+    return index < end && this[index] == ':'
 }
 
-private fun String.numberTokenEnd(start: Int): Int {
+private fun String.numberTokenEnd(start: Int, end: Int): Int {
     var index = start
-    while (index < length && this[index] in JsonNumberTokenChars) {
+    while (index < end && this[index] in JsonNumberTokenChars) {
         index += 1
     }
     return index
 }
 
-private fun String.literalTokenEnd(start: Int): Int {
+private fun String.literalTokenEnd(start: Int, from: Int, lineEnd: Int): Int {
     val literal = JsonLiterals.firstOrNull { literal ->
         startsWith(literal, startIndex = start)
     } ?: return start
     val end = start + literal.length
-    val boundaryBefore = start == 0 || !this[start - 1].isLetter()
-    val boundaryAfter = end == length || !this[end].isLetter()
+    if (end > lineEnd) return start
+    val boundaryBefore = start == from || !this[start - 1].isLetter()
+    val boundaryAfter = end == lineEnd || !this[end].isLetter()
     return if (boundaryBefore && boundaryAfter) end else start
 }
 

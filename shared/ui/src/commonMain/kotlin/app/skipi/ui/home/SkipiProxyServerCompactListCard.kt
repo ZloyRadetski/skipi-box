@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -157,12 +158,14 @@ fun SkipiProxyServerCompactListCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = state.protocolColor, fontWeight = titleFontWeight)) {
-                                    append(state.protocol)
+                            text = remember(state.protocol, state.protocolColor, titleFontWeight, state.transport, state.summary) {
+                                buildAnnotatedString {
+                                    withStyle(SpanStyle(color = state.protocolColor, fontWeight = titleFontWeight)) {
+                                        append(state.protocol)
+                                    }
+                                    state.transport?.takeIf(String::isNotBlank)?.let { append("  ·  $it") }
+                                    if (state.summary.isNotBlank()) append("  ·  ${state.summary}")
                                 }
-                                state.transport?.takeIf(String::isNotBlank)?.let { append("  ·  $it") }
-                                if (state.summary.isNotBlank()) append("  ·  ${state.summary}")
                             },
                             modifier = Modifier.weight(1f),
                             style = SkipiTheme.typography.bodySmall,

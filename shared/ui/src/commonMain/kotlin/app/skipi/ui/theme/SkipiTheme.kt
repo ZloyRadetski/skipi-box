@@ -134,7 +134,7 @@ private fun ProvideSkipiThemeWithAppearance(
     val scaledDensity = remember(currentDensity.density, typography.fontSizeScale) {
         Density(density = currentDensity.density, fontScale = typography.fontSizeScale)
     }
-    val resolvedMiuixColors = miuixColors ?: remember(colors) { colors.toSkipiMiuixColors() }
+    val resolvedMiuixColors = remember(colors, miuixColors) { miuixColors ?: colors.toSkipiMiuixColors() }
 
     CompositionLocalProvider(LocalDensity provides scaledDensity) {
         ProvideSkipiTheme(

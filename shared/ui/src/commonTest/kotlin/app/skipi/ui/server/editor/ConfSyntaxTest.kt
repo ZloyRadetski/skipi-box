@@ -63,4 +63,41 @@ class ConfSyntaxTest {
         assertEquals(Color.Yellow, colorAt(text.indexOf("DIRECT")))
         assertEquals(comment, colorAt(text.indexOf("note")))
     }
+
+    @Test
+    fun goldenTokensForRepresentativeLines() {
+        assertEquals(
+            listOf(ConfToken(0, ConfTokenKind.Key), ConfToken(9, ConfTokenKind.Punctuation), ConfToken(11, ConfTokenKind.Key)),
+            tokenizeConfLine("loglevel = notify"),
+        )
+        assertEquals(
+            listOf(
+                ConfToken(0, ConfTokenKind.Key), ConfToken(1, ConfTokenKind.Punctuation), ConfToken(2, ConfTokenKind.Normal),
+                ConfToken(3, ConfTokenKind.Punctuation), ConfToken(4, ConfTokenKind.Key),
+            ),
+            tokenizeConfLine("a,b=c"),
+        )
+        assertEquals(
+            listOf(
+                ConfToken(0, ConfTokenKind.Key), ConfToken(2, ConfTokenKind.Punctuation), ConfToken(4, ConfTokenKind.Number),
+                ConfToken(5, ConfTokenKind.Punctuation), ConfToken(7, ConfTokenKind.Normal),
+            ),
+            tokenizeConfLine("x = 1, y"),
+        )
+        assertEquals(
+            listOf(ConfToken(0, ConfTokenKind.Key), ConfToken(1, ConfTokenKind.Punctuation), ConfToken(2, ConfTokenKind.String), ConfToken(7, ConfTokenKind.Comment)),
+            tokenizeConfLine("k=\"v w\"# c"),
+        )
+    }
+
+    @Test
+    fun hugeSingleLineWithManyCommasTokenizesQuickly() {
+        val line = buildString { repeat(20_000) { append("ab,cd,e".take(5)); append(',') } }
+            .let { it + "x".repeat(200_000 - it.length) }
+        val started = kotlin.time.TimeSource.Monotonic.markNow()
+        val tokens = tokenizeConfLine(line)
+        val elapsed = started.elapsedNow()
+        assertTrue(tokens.size > 20_000)
+        assertTrue(elapsed.inWholeMilliseconds < 2_000, "took $elapsed")
+    }
 }

@@ -509,7 +509,7 @@ val easterEgg = rememberHeaderEasterEggState()
                 } else {
                     // The left column starts as wide as the button needs; dragging the divider widens it.
                     // Read only while measuring, so a drag relayouts the row and never recomposes the screen.
-                    val leftColumnExtraState = remember { mutableStateOf(leftColumnExtra) }
+                    val leftColumnExtraState = remember(leftColumnExtra) { mutableStateOf(leftColumnExtra) }
                     val latestOnLeftColumnExtraChange by rememberUpdatedState(onLeftColumnExtraChange)
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     val leftColumnBase = maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false))

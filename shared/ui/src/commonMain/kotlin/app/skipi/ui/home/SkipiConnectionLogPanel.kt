@@ -122,7 +122,7 @@ fun SkipiConnectionLogPanel(
                                 placementSpec = tween(180),
                                 fadeOutSpec = null,
                             )
-                            val time = formatTime(row.timeMillis)
+                            val time = remember(row.timeMillis, formatTime) { formatTime(row.timeMillis) }
                             when (row) {
                                 is ConnectionLogRow -> ConnectionLogLine(row, time, onClick, rowModifier)
                                 is ConnectionLogMessageRow -> ConnectionLogMessageLine(row, time, onClick, rowModifier)

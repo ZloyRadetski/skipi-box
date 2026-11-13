@@ -100,14 +100,17 @@ fun LazyListScope.strategyGroupProxyServer(
                 StrategyGroupConstants.TYPE_ROUND_ROBIN,
             )
         }
-        val strategyLabels = listOf(
-            stringResource(Res.string.proxy_editor_strategy_group_select),
-            stringResource(Res.string.proxy_editor_strategy_group_least_ping),
-            stringResource(Res.string.proxy_editor_strategy_group_fallback),
-            stringResource(Res.string.proxy_editor_strategy_group_least_load),
-            stringResource(Res.string.proxy_editor_strategy_group_random),
-            stringResource(Res.string.proxy_editor_strategy_group_round_robin),
-        )
+        val strategySelect = stringResource(Res.string.proxy_editor_strategy_group_select)
+        val strategyLeastPing = stringResource(Res.string.proxy_editor_strategy_group_least_ping)
+        val strategyFallback = stringResource(Res.string.proxy_editor_strategy_group_fallback)
+        val strategyLeastLoad = stringResource(Res.string.proxy_editor_strategy_group_least_load)
+        val strategyRandom = stringResource(Res.string.proxy_editor_strategy_group_random)
+        val strategyRoundRobin = stringResource(Res.string.proxy_editor_strategy_group_round_robin)
+        val strategyLabels = remember(
+            strategySelect, strategyLeastPing, strategyFallback, strategyLeastLoad, strategyRandom, strategyRoundRobin,
+        ) {
+            listOf(strategySelect, strategyLeastPing, strategyFallback, strategyLeastLoad, strategyRandom, strategyRoundRobin)
+        }
         var currentStrategy by remember(strategyGroupEdit.strategy) {
             mutableStateOf(strategyGroupEdit.strategy)
         }
@@ -129,11 +132,12 @@ fun LazyListScope.strategyGroupProxyServer(
             StrategyGroupDisplayMode.ACTIVE_CONFIG,
             StrategyGroupDisplayMode.NEVER,
         )
-        val displayModeLabels = listOf(
-            stringResource(Res.string.proxy_group_display_mode_always),
-            stringResource(Res.string.proxy_group_display_mode_active_config),
-            stringResource(Res.string.proxy_group_display_mode_never),
-        )
+        val displayAlways = stringResource(Res.string.proxy_group_display_mode_always)
+        val displayActiveConfig = stringResource(Res.string.proxy_group_display_mode_active_config)
+        val displayNever = stringResource(Res.string.proxy_group_display_mode_never)
+        val displayModeLabels = remember(displayAlways, displayActiveConfig, displayNever) {
+            listOf(displayAlways, displayActiveConfig, displayNever)
+        }
         val displayModeIndex = remember(strategyGroupEdit.displayMode) {
             mutableIntStateOf(displayModeValues.indexOf(strategyGroupEdit.displayMode).coerceAtLeast(0))
         }
@@ -150,16 +154,7 @@ fun LazyListScope.strategyGroupProxyServer(
         }
 
         val probeIntervalValues = remember { listOf("3s", "5s", "10s", "15s", "30s", "1m", "2m", "5m") }
-        val probeIntervalLabels = listOf(
-            "3s",
-            "5s",
-            "10s",
-            "15s",
-            "30s",
-            "1m",
-            "2m",
-            "5m",
-        )
+        val probeIntervalLabels = probeIntervalValues
         val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
             mutableIntStateOf(
                 probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
