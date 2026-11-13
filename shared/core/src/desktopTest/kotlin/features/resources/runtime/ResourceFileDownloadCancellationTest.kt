@@ -35,6 +35,22 @@ class ResourceFileDownloadCancellationTest {
     }
 
     @Test
+    fun aSecondBeginWhileAnotherBatchRunsKeepsItsConnectionsCancellable() = withCleanState {
+        val running = FakeConnection()
+        ResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.track(running)
+
+        ResourceFileDownloadCancellation.begin()
+        val second = FakeConnection()
+        ResourceFileDownloadCancellation.track(second)
+        ResourceFileDownloadCancellation.cancel()
+
+        assertEquals(1, running.disconnectCount.get())
+        assertEquals(1, second.disconnectCount.get())
+        assertTrue(ResourceFileDownloadCancellation.isCancelled())
+    }
+
+    @Test
     fun cancelDisconnectsEveryTrackedConnectionBecauseFilesDownloadSideBySide() = withCleanState {
         val first = FakeConnection()
         val latest = FakeConnection()

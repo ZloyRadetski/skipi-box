@@ -6,6 +6,9 @@ package features.resources
 import features.config.TrafficConfigCustomResourceFile
 import features.resources.runtime.openDecompressedStream
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
@@ -182,10 +185,15 @@ class ResourceSnapshotFiles(
         if (!source.isFile) return
 
         dataDir.mkdirs()
-        if (target.exists()) {
-            target.delete()
+        // Replace in one atomic step: deleting the target first loses it when the move and the copy below both
+        // fail (and Files.move with REPLACE_EXISTING alone deletes the target before it moves on some systems).
+        val moved = try {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE)
+            true
+        } catch (_: IOException) {
+            false
         }
-        if (!source.renameTo(target)) {
+        if (!moved) {
             source.inputStream().use { input ->
                 atomicWrite(target) { output -> input.copyTo(output) }
             }

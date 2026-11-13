@@ -12,11 +12,38 @@ import features.proxy.server.model.normalizedServerHost
 import java.net.InetAddress
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
-private val dnsResolutionExecutor = Executors.newFixedThreadPool(8) { runnable ->
+// InetAddress.getAllByName ignores interruption, so a hung lookup keeps its thread until the system resolver
+// gives up. Threads are therefore created on demand (never queued behind a hung one) and capped by
+// dnsLookupSlots; a lookup that finds every slot taken is skipped instead of waiting.
+private val dnsResolutionExecutor = Executors.newCachedThreadPool { runnable ->
     Thread(runnable, "skipi-dns-resolve").apply { isDaemon = true }
 }
+private val dnsLookupSlots = Semaphore(MaxConcurrentDnsLookups)
+
+private fun launchLookup(host: String, resolve: (String) -> List<String>): CompletableFuture<List<String>>? {
+    if (!dnsLookupSlots.tryAcquire()) {
+        AppLog.warn(LogTag, "Skipped DNS lookup, too many lookups are still hung: $host")
+        return null
+    }
+    return try {
+        CompletableFuture.supplyAsync({
+            try {
+                resolve(host)
+            } finally {
+                dnsLookupSlots.release()
+            }
+        }, dnsResolutionExecutor)
+    } catch (error: RejectedExecutionException) {
+        dnsLookupSlots.release()
+        null
+    }
+}
+
+internal const val MaxConcurrentDnsLookups = 32
 
 private const val DnsLookupTimeoutMillis = 600L
 
@@ -50,19 +77,18 @@ fun AppState.xrayDnsHosts(
         .distinct()
     if (candidateHosts.isEmpty()) return dnsHosts
 
-    val futures = candidateHosts.map { host ->
-        CompletableFuture.supplyAsync({
-            val addresses = resolveAddresses(host)
-            if (addresses.isEmpty()) null else "$host:${addresses.joinToString(",")}"
-        }, dnsResolutionExecutor)
+    val futures = candidateHosts.mapNotNull { host ->
+        launchLookup(host, resolveAddresses)?.let { future -> host to future }
     }
 
-    val resolvedEntries = futures.mapNotNull { future ->
+    val resolvedEntries = futures.mapNotNull { (host, future) ->
         runCatching {
             future.get(DnsLookupTimeoutMillis, TimeUnit.MILLISECONDS)
         }.onFailure {
             future.cancel(true)
-        }.getOrNull()
+        }.getOrNull()?.takeIf { addresses -> addresses.isNotEmpty() }?.let { addresses ->
+            "$host:${addresses.joinToString(",")}"
+        }
     }
 
     return (dnsHosts + resolvedEntries).distinct()
@@ -119,7 +145,7 @@ fun AmneziaWg.withNativeRunnerEndpointResolved(
 
 private fun String.resolveHostAddressesWithinTimeout(): List<String> {
     val host = this
-    val future = CompletableFuture.supplyAsync({ host.resolveHostAddresses(logFailure = false) }, dnsResolutionExecutor)
+    val future = launchLookup(host) { name -> name.resolveHostAddresses(logFailure = false) } ?: return emptyList()
     return runCatching {
         future.get(DnsLookupTimeoutMillis, TimeUnit.MILLISECONDS)
     }.onFailure {

@@ -48,6 +48,24 @@ class GeoDatParserFileTest {
     }
 
     @Test
+    fun anEmptyResultIsCachedUntilTheFileChanges() = withTempDirectory { root ->
+        val file = File(root, "broken.dat").apply { writeBytes(byteArrayOf(0x7f, 0x7f, 0x7f, 0x7f)) }
+        var parses = 0
+        val countingParse: (java.io.InputStream) -> List<String> = { input ->
+            parses++
+            GeoDatParser.parseTagsFromStream(input)
+        }
+
+        assertEquals(emptyList(), GeoDatParser.parseTags(file, countingParse))
+        assertEquals(emptyList(), GeoDatParser.parseTags(file, countingParse))
+        assertEquals(1, parses)
+
+        file.writeBytes(encodeGeoDat("fixed"))
+        assertEquals(listOf("fixed"), GeoDatParser.parseTags(file, countingParse))
+        assertEquals(2, parses)
+    }
+
+    @Test
     fun truncatingACachedFileToEmptyDoesNotReturnStaleTags() = withTempDirectory { root ->
         val file = File(root, "geosite.dat")
         writeGeoDat(file, "telegram")

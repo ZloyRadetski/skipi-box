@@ -3,6 +3,8 @@
 
 package features.routing.usecase
 
+import features.logs.AppLog
+
 /** Streaming, platform-independent reader for category tags in GeoSite and GeoIP protobuf files. */
 object GeoDatTagParser {
     val DefaultGeoSiteTags = listOf(
@@ -38,8 +40,9 @@ object GeoDatTagParser {
                     reader.skipField(wireType)
                 }
             }
-        } catch (_: Throwable) {
+        } catch (error: Exception) {
             // Keep tags parsed before a malformed/truncated protobuf field.
+            AppLog.warn("GeoDatTagParser", "Geo data file is malformed or unreadable; kept ${tags.size} tags read so far", error)
         }
         return tags
     }

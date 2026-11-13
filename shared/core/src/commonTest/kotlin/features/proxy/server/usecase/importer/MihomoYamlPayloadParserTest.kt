@@ -15,6 +15,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.startCoroutine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -149,7 +150,7 @@ class MihomoYamlPayloadParserTest {
     }
 
     @Test
-    fun failedAndCancelledProviderFetchesFallBackAndExposeSafeDiagnostics() {
+    fun failedProviderFetchesFallBackAndExposeSafeDiagnostics() {
         val providerA = "https://provider.example.test/a.yaml"
         val providerB = "https://provider.example.test/b.yaml"
         val diagnostics = mutableListOf<MihomoYamlImportDiagnostic>()
@@ -161,9 +162,9 @@ class MihomoYamlPayloadParserTest {
                             url = providerA,
                             inlineNodes = listOf(socksNode("Failed fallback", "failed.example.test")),
                         ),
-                        "cancelled" to provider(
+                        "second" to provider(
                             url = providerB,
-                            inlineNodes = listOf(socksNode("Cancelled fallback", "cancelled.example.test")),
+                            inlineNodes = listOf(socksNode("Second fallback", "second.example.test")),
                         ),
                     ),
                 ),
@@ -177,7 +178,7 @@ class MihomoYamlPayloadParserTest {
             providerUrlFetcher = { url ->
                 when (url) {
                     providerA -> throw failure
-                    providerB -> throw CancellationException("cancelled")
+                    providerB -> throw IllegalStateException("second unavailable")
                     else -> error("Unexpected provider URL")
                 }
             },
@@ -186,13 +187,40 @@ class MihomoYamlPayloadParserTest {
         val result = runSynchronously { parser("root", context) }
 
         assertEquals(4, result.urlCount)
-        assertEquals(listOf("Failed fallback", "Cancelled fallback"), result.servers.map { it.getInfo().remarks })
+        assertEquals(listOf("Failed fallback", "Second fallback"), result.servers.map { it.getInfo().remarks })
         val providerDiagnostics = diagnostics.filterIsInstance<MihomoYamlImportDiagnostic.ProviderSkipped>()
         assertEquals(2, providerDiagnostics.size)
         assertTrue(providerDiagnostics.all { it.reason == MihomoProviderSkipReason.FetchFailed })
         assertTrue(providerDiagnostics.all { it.providerHost == "safe.provider.example.test" })
         assertSame(failure, providerDiagnostics.first().error)
-        assertIs<CancellationException>(providerDiagnostics.last().error)
+        assertIs<IllegalStateException>(providerDiagnostics.last().error)
+    }
+
+    @Test
+    fun aCancelledProviderFetchCancelsTheImportInsteadOfFallingBack() {
+        val providerUrl = "https://provider.example.test/a.yaml"
+        val diagnostics = mutableListOf<MihomoYamlImportDiagnostic>()
+        val parser = parser(
+            trees = mapOf(
+                "root" to document(
+                    providers = linkedMapOf(
+                        "cancelled" to provider(
+                            url = providerUrl,
+                            inlineNodes = listOf(socksNode("Fallback", "fallback.example.test")),
+                        ),
+                    ),
+                ),
+            ),
+            diagnostics = diagnostics,
+        )
+        val context = ProxyServerImportContext(
+            source = ProxyServerImportSource.SubscriptionUrl,
+            providerUrlFetcher = { throw CancellationException("cancelled") },
+        )
+
+        assertFailsWith<CancellationException> { runSynchronously { parser("root", context) } }
+
+        assertTrue(diagnostics.filterIsInstance<MihomoYamlImportDiagnostic.ProviderSkipped>().isEmpty())
     }
 
     @Test

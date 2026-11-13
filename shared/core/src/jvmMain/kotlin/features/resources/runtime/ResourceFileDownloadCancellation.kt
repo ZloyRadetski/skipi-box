@@ -13,14 +13,20 @@ object ResourceFileDownloadCancellation {
     private val cancelled = AtomicBoolean(false)
     private val connections = ConcurrentHashMap.newKeySet<HttpURLConnection>()
 
+    /**
+     * Starts a batch. Connections of a batch that is still running are kept so that [cancel] reaches them;
+     * a finished download removes its own connection through [untrack].
+     */
     fun begin() {
         cancelled.set(false)
-        connections.clear()
     }
 
     fun cancel() {
         cancelled.set(true)
-        connections.forEach { it.disconnect() }
+        // Take the connections out first: they are disconnected once, and a later begin() has nothing stale.
+        val tracked = connections.toList()
+        connections.removeAll(tracked.toSet())
+        tracked.forEach { it.disconnect() }
     }
 
     fun track(connection: HttpURLConnection) {

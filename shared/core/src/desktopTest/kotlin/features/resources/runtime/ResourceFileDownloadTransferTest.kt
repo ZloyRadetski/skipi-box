@@ -141,7 +141,7 @@ class ResourceFileDownloadTransferTest {
     }
 
     @Test
-    fun httpAndRedirectErrorsAreNotRetried() {
+    fun httpErrorsAreNotRetriedButARedirectWithoutLocationFailsAsAnIoErrorAfterRetries() {
         val httpTarget = AtomicMemoryTarget("http-error.dat", "previous")
         val httpConnection = FakeConnection(responseCodeValue = 500)
         val httpRequestedUris = mutableListOf<URI>()
@@ -171,16 +171,16 @@ class ResourceFileDownloadTransferTest {
             FakeOpener { redirectConnection }
         }
         val redirectDelays = mutableListOf<Long>()
-        val redirectError = assertFailsWith<IllegalStateException> {
+        val redirectError = assertFailsWith<IOException> {
             transfer(redirectAttempts, redirectTarget, delays = redirectDelays).download(
                 url = "https://resources.example.test/redirect-without-location",
                 onProgress = { _, _ -> },
             )
         }
         assertEquals("Redirect location missing", redirectError.message)
-        assertEquals(1, redirectAttempts.beginCount)
-        assertTrue(redirectDelays.isEmpty())
-        assertEquals(1, redirectConnection.disconnectCount)
+        assertEquals(3, redirectAttempts.beginCount)
+        assertEquals(listOf(1_000L, 2_000L), redirectDelays)
+        assertEquals(3, redirectConnection.disconnectCount)
         assertEquals("previous", redirectTarget.publishedBytes.decodeToString())
     }
 

@@ -9,6 +9,7 @@ import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerPayloadParser
+import kotlin.coroutines.cancellation.CancellationException
 
 /** A host-neutral diagnostic emitted while importing one Mihomo YAML document. */
 sealed interface MihomoYamlImportDiagnostic {
@@ -155,6 +156,8 @@ private suspend fun MihomoProxyProvider.importHttpProvider(
             context,
             providerUrl,
         )
+    } catch (cancelled: CancellationException) {
+        throw cancelled
     } catch (error: Throwable) {
         diagnosticSink(
             providerSkipped(

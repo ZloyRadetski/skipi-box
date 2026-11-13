@@ -78,7 +78,7 @@ class ResourceFileDownloadTransfer(
                 val responseCode = connection.responseCode
                 throwIfCancelled()
                 if (responseCode in 300..399) {
-                    val location = connection.location ?: error("Redirect location missing")
+                    val location = connection.location ?: throw IOException("Redirect location missing")
                     currentUrl = URI(currentUrl).resolve(location).toString()
                     return@repeat
                 }

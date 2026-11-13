@@ -51,7 +51,27 @@ class SubscriptionHttpSupportTest {
     fun credentialsInAUrlBecomeABasicAuthorizationHeader() {
         val seen = authorizationSeenBy { _ -> setEmbeddedBasicAuth("https://user:p%40ss@example.com/sub") }
 
-        assertEquals("Basic dXNlcjpwJTQwc3M=", seen)
+        assertEquals("Basic dXNlcjpwQHNz", seen)
+    }
+
+    @Test
+    fun percentEncodedCredentialsAreDecodedButAPlusStaysAPlus() {
+        assertEquals(
+            "Basic " + java.util.Base64.getEncoder().encodeToString("u s:p@a+b:c".toByteArray()),
+            URI("https://u%20s:p%40a+b%3Ac@example.com/").toBasicAuthHeaderOrNull(),
+        )
+    }
+
+    @Test
+    fun onlyTheHostIsReplacedWhenAUnicodeHostAppearsElsewhereInTheUrl() {
+        assertEquals(
+            "http://xn--e1afmkfd.xn--p1ai/пример.рф?next=http://пример.рф/",
+            "http://пример.рф/пример.рф?next=http://пример.рф/".toIdnUrl(),
+        )
+        assertEquals(
+            "http://пример.рф:pw@xn--e1afmkfd.xn--p1ai/x",
+            "http://пример.рф:pw@пример.рф/x".toIdnUrl(),
+        )
     }
 
     @Test

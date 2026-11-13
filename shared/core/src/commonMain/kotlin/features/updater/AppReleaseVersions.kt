@@ -23,14 +23,7 @@ object AppReleaseVersions {
         remoteVersionName: String,
         remoteVersionCode: Int?,
     ): Boolean {
-        if (remoteVersionCode != null && remoteVersionCode > currentVersionCode) {
-            return true
-        }
-
-        val byName = compareNames(remoteVersionName, currentVersionName)
-        if (byName != 0) return byName > 0
-
-        return (remoteVersionCode ?: 0) > currentVersionCode
+        return compareVersions(remoteVersionName, remoteVersionCode, currentVersionName, currentVersionCode) > 0
     }
 
     /**

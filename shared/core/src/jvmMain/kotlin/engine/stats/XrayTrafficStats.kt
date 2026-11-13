@@ -17,6 +17,6 @@ fun Long.toTrafficSizeString(): String {
 
 fun Long.toTrafficSpeedString(): String = toTrafficSizeString() + "/s"
 
-private const val TrafficUnitThreshold = 1000L
+private const val TrafficUnitThreshold = 1024L
 private const val TrafficUnitDivisor = 1024.0
 private val TrafficUnits = listOf("B", "KB", "MB", "GB", "TB", "PB")

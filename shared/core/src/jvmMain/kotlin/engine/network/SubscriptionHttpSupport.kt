@@ -22,7 +22,14 @@ import utils.encodeBase64
 fun String.toIdnUrl(): String {
     val host = URL(this).host
     val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
-    return if (host == asciiHost) this else replace(host, asciiHost)
+    if (host == asciiHost) return this
+    // Replace the host of the authority only: the same text may also sit in the userinfo, path or query.
+    val authorityStart = indexOf("://").let { if (it < 0) 0 else it + 3 }
+    val authorityEnd = (authorityStart until length).firstOrNull { this[it] == '/' || this[it] == '?' || this[it] == '#' } ?: length
+    val hostStart = lastIndexOf('@', authorityEnd - 1).let { if (it >= authorityStart) it + 1 else authorityStart }
+    val hostIndex = indexOf(host, hostStart)
+    if (hostIndex < 0 || hostIndex >= authorityEnd) return this
+    return substring(0, hostIndex) + asciiHost + substring(hostIndex + host.length)
 }
 
 /** The Basic Authorization header for the credentials written into this URL, or null when it has none. */
@@ -31,7 +38,37 @@ fun URI.toBasicAuthHeaderOrNull(): String? {
     val parts = info.split(":", limit = 2)
     val user = parts.getOrElse(0) { "" }
     val password = parts.getOrElse(1) { "" }
-    return "Basic " + "$user:$password".encodeBase64()
+    return "Basic " + "${user.percentDecoded()}:${password.percentDecoded()}".encodeBase64()
+}
+
+/** Decodes %XX escapes as UTF-8; unlike URLDecoder a '+' stays a '+'. A malformed escape is kept as written. */
+private fun String.percentDecoded(): String {
+    if ('%' !in this) return this
+    val out = StringBuilder()
+    val pending = ByteArrayOutputStream()
+    fun flush() {
+        if (pending.size() > 0) {
+            out.append(pending.toString(Charsets.UTF_8.name()))
+            pending.reset()
+        }
+    }
+    var i = 0
+    while (i < length) {
+        val value = if (this[i] == '%' && i + 3 <= length) {
+            val digits = substring(i + 1, i + 3)
+            if (digits.all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }) digits.toInt(16) else null
+        } else null
+        if (value != null) {
+            pending.write(value)
+            i += 3
+        } else {
+            flush()
+            out.append(this[i])
+            i++
+        }
+    }
+    flush()
+    return out.toString()
 }
 
 /** Sends the credentials written into [rawUrl] (`https://user:pass@host/`) as a Basic Authorization header. */

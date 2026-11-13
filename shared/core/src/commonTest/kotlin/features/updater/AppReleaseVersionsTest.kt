@@ -162,4 +162,14 @@ class AppReleaseVersionsTest {
         assertTrue(AppReleaseVersions.compareVersions("0.5.0-rc.6", 2, "0.5.0-rc.6", null) > 0)
         assertEquals(0, AppReleaseVersions.compareVersions("v0.5.0", 3, "0.5.0", 3))
     }
+
+    @Test
+    fun isVersionNewerAndCompareVersionsAgreeWhenTheCodesDifferButTheNamesDisagree() {
+        // Remote has the higher name but the lower code: the code decides, so it is not newer.
+        assertFalse(AppReleaseVersions.isVersionNewer("0.5.0", 10, "0.6.0", 9))
+        assertTrue(AppReleaseVersions.compareVersions("0.6.0", 9, "0.5.0", 10) < 0)
+        // Remote has the lower name but the higher code: newer.
+        assertTrue(AppReleaseVersions.isVersionNewer("0.6.0", 9, "0.5.0", 10))
+        assertTrue(AppReleaseVersions.compareVersions("0.5.0", 10, "0.6.0", 9) > 0)
+    }
 }

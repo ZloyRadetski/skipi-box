@@ -215,6 +215,31 @@ class ResourceSnapshotFilesTest {
     }
 
     @Test
+    fun customRenameThatCannotMoveNorCopyKeepsTheOldDestination() = withXrayRoot { root ->
+        val failing = ResourceSnapshotFiles(
+            xrayRootDir = root,
+            scope = ResourceFileScope(trafficConfigId = 3, resourceFileSource = ResourceFileSourceLoyalsoldierGithub),
+            atomicWrite = { _, _ -> throw IllegalStateException("injected atomic write failure") },
+        )
+        val previous = TrafficConfigCustomResourceFile(1, "before.dat", "")
+        val renamed = TrafficConfigCustomResourceFile(2, "after.dat", "")
+        val source = failing.file(previous).apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(30, 31, 32))
+        }
+        val destination = failing.file(renamed).apply { writeBytes(byteArrayOf(1)) }
+
+        // On Windows an open source cannot be moved, which forces the copy path; elsewhere the move succeeds.
+        source.inputStream().use {
+            runCatching { failing.renameCustom(previous, renamed) }
+        }
+
+        assertTrue(destination.isFile, "the old destination must not be lost")
+        val bytes = destination.readBytes().toList()
+        assertTrue(bytes == listOf<Byte>(1) || bytes == listOf<Byte>(30, 31, 32), "unexpected contents $bytes")
+    }
+
+    @Test
     fun customRenameIgnoresReservedNamesAndSamePath() = withXrayRoot { root ->
         val snapshot = snapshot(root, trafficConfigId = 8)
         val builtInSource = snapshot.file(ResourceFileKind.GeoIp).apply {
