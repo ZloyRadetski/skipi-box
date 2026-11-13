@@ -876,8 +876,10 @@
     <string name="settings_color_ping_slow">高 Ping（&gt; 200 毫秒）</string>
     <string name="settings_color_ping_slow_summary">高服务器延迟的颜色</string>
     <string name="settings_custom_colors_categories_title">类别图标</string>
-    <string name="settings_color_category_icons">图标颜色</string>
-    <string name="settings_color_category_icons_summary">所有类别图标的背景颜色</string>
+    <string name="settings_color_category_icons">图标背景</string>
+    <string name="settings_color_category_icons_summary">图标底块的颜色</string>
+    <string name="settings_color_category_icon_glyphs">图标颜色</string>
+    <string name="settings_color_category_icon_glyphs_summary">图标本身的颜色；未选择时按对比度使用黑色或白色</string>
     <string name="settings_custom_colors_protocols_title">协议和订阅颜色</string>
     <string name="settings_color_protocol_vless">VLESS协议</string>
     <string name="settings_color_protocol_vmess">VMess协议</string>

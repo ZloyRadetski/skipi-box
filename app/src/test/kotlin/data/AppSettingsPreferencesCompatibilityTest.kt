@@ -78,6 +78,7 @@ class AppSettingsPreferencesCompatibilityTest {
             nextProxyServerId = 74,
             proxyServerListSort = 1,
             customCategoryIconColor = 0x55667788L,
+            customCategoryIconGlyphColor = 0x66778899L,
             subscriptionUserAgents = listOf("First", "Second"),
             trafficConfigs = listOf(
                 TrafficConfigState(
@@ -99,6 +100,7 @@ class AppSettingsPreferencesCompatibilityTest {
         assertEquals(73, preferences.getInt("selected_proxy_server_id", -1))
         assertEquals(74, preferences.getInt("next_proxy_server_id", -1))
         assertEquals(0x55667788L, preferences.getLong("custom_category_icon_color", -1L))
+        assertEquals(0x66778899L, preferences.getLong("custom_category_icon_glyph_color", -1L))
         assertTrue(preferences.getString("traffic_configs", "").orEmpty().contains("\"updateInterval\":\"12\""))
 
         val restored = store.load()
@@ -106,6 +108,7 @@ class AppSettingsPreferencesCompatibilityTest {
         assertEquals(74, restored.nextProxyServerId)
         assertEquals(1, restored.proxyServerListSort)
         assertEquals(0x55667788L, restored.customCategoryIconColor)
+        assertEquals(0x66778899L, restored.customCategoryIconGlyphColor)
         assertEquals(
             listOf(DefaultSubscriptionUserAgent, "First", "Second"),
             restored.subscriptionUserAgents,

@@ -2011,7 +2011,7 @@ private fun runDesktopApplication(
                             resourceFileStatusMessage = resourceFileStatusMessage,
                         ) }
 
-                        SkipiMainDestination.Settings -> key(settingsOpenCount) { ProvideSettingsIconColor(desktopSettings.customCategoryIconColor ?: DesktopDefaultSettingsIconColor) { DesktopSettingsScreen(
+                        SkipiMainDestination.Settings -> key(settingsOpenCount) { ProvideSettingsIconColor(desktopSettings.customCategoryIconColor ?: DesktopDefaultSettingsIconColor, desktopSettings.customCategoryIconGlyphColor) { DesktopSettingsScreen(
                             initialDestination = settingsStart,
                             appUpdateState = appUpdateState,
                             onCheckForAppUpdate = ::checkForAppUpdate,

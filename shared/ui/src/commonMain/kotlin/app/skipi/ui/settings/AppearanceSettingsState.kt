@@ -18,6 +18,7 @@ data class AppearanceSettingsState(
     /** Saved colour themes, one theme code per line. */
     val customThemes: String = "",
     val customCategoryIconColor: Long? = null,
+    val customCategoryIconGlyphColor: Long? = null,
     val customMaterialYouSeed: Long? = null,
     val customPingFastColor: Long? = null,
     val customPingMediumColor: Long? = null,
@@ -70,6 +71,7 @@ enum class AppearanceColorTarget {
     PING_MEDIUM,
     PING_SLOW,
     CATEGORY_ICONS,
+    CATEGORY_ICON_GLYPHS,
     PROTOCOL_VLESS,
     PROTOCOL_VMESS,
     PROTOCOL_HYSTERIA2,

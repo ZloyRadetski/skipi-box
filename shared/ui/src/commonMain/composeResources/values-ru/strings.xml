@@ -944,8 +944,10 @@
     <string name="settings_color_ping_slow">Высокий пинг (&gt; 200 мс)</string>
     <string name="settings_color_ping_slow_summary">Цвет индикации повышенной задержки сервера</string>
     <string name="settings_custom_colors_categories_title">Иконки категорий</string>
-    <string name="settings_color_category_icons">Цвет иконок</string>
-    <string name="settings_color_category_icons_summary">Фоновый цвет иконок всех разделов</string>
+    <string name="settings_color_category_icons">Фон иконок</string>
+    <string name="settings_color_category_icons_summary">Цвет плитки под иконками всех разделов</string>
+    <string name="settings_color_category_icon_glyphs">Цвет иконок</string>
+    <string name="settings_color_category_icon_glyphs_summary">Цвет самих иконок; пока не выбран, чёрный или белый по контрасту</string>
     <string name="settings_custom_colors_protocols_title">Цвета протоколов и подписок</string>
     <string name="settings_color_protocol_vless">Протокол VLESS</string>
     <string name="settings_color_protocol_vmess">Протокол VMess</string>

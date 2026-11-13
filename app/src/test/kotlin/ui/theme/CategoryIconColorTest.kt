@@ -47,4 +47,15 @@ class CategoryIconColorTest {
         val restored = backup.toRestorePreview().restoredState
         assertEquals(legacyColor, restored.customCategoryIconColor)
     }
+
+    @Test
+    fun testBackupRestorePreservesTheIconGlyphColorAndAnOldBackupLeavesItAutomatic() {
+        val state = AppState(customCategoryIconGlyphColor = 0xFF654321L)
+        val backup = state.toAppBackupFile(createdAtMillis = 1000L, appVersionName = "1.0.0", appVersionCode = 1)
+
+        assertEquals(0xFF654321L, backup.toRestorePreview().restoredState.customCategoryIconGlyphColor)
+
+        val old = AppBackupFile(format = AppBackupFormat, version = CurrentAppBackupVersion, data = AppBackupData(settings = AppBackupSettings()))
+        assertEquals(null, old.toRestorePreview().restoredState.customCategoryIconGlyphColor)
+    }
 }

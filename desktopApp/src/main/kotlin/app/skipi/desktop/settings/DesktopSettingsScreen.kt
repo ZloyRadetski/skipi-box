@@ -553,6 +553,7 @@ private fun DesktopSettingsOverview(
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
             categoryIconColor = settings.customCategoryIconColor?.let(::Color) ?: Color(DesktopDefaultSettingsIconColor),
+            categoryIconGlyphColor = settings.customCategoryIconGlyphColor?.let(::Color),
             visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
         ),
         padding = contentPadding,

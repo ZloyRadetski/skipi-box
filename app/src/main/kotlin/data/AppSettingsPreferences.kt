@@ -139,6 +139,7 @@ internal class AppSettingsPreferences(
             } else {
                 defaults.customCategoryIconColor
             },
+            customCategoryIconGlyphColor = if (preferences.contains(KeyCustomCategoryIconGlyphColor)) preferences.getLong(KeyCustomCategoryIconGlyphColor, 0L) else defaults.customCategoryIconGlyphColor,
             customProtocolVlessColor = if (preferences.contains(KeyCustomProtocolVlessColor)) preferences.getLong(KeyCustomProtocolVlessColor, 0L) else defaults.customProtocolVlessColor,
             customProtocolVmessColor = if (preferences.contains(KeyCustomProtocolVmessColor)) preferences.getLong(KeyCustomProtocolVmessColor, 0L) else defaults.customProtocolVmessColor,
             customProtocolHysteria2Color = if (preferences.contains(KeyCustomProtocolHysteria2Color)) preferences.getLong(KeyCustomProtocolHysteria2Color, 0L) else defaults.customProtocolHysteria2Color,
@@ -508,6 +509,7 @@ internal class AppSettingsPreferences(
                 state.customPingMediumColor?.let { putLong(KeyCustomPingMediumColor, it) } ?: remove(KeyCustomPingMediumColor)
                 state.customPingSlowColor?.let { putLong(KeyCustomPingSlowColor, it) } ?: remove(KeyCustomPingSlowColor)
                 state.customCategoryIconColor?.let { putLong(KeyCustomCategoryIconColor, it) } ?: remove(KeyCustomCategoryIconColor)
+                state.customCategoryIconGlyphColor?.let { putLong(KeyCustomCategoryIconGlyphColor, it) } ?: remove(KeyCustomCategoryIconGlyphColor)
                 state.customProtocolVlessColor?.let { putLong(KeyCustomProtocolVlessColor, it) } ?: remove(KeyCustomProtocolVlessColor)
                 state.customProtocolVmessColor?.let { putLong(KeyCustomProtocolVmessColor, it) } ?: remove(KeyCustomProtocolVmessColor)
                 state.customProtocolHysteria2Color?.let { putLong(KeyCustomProtocolHysteria2Color, it) } ?: remove(KeyCustomProtocolHysteria2Color)
@@ -961,6 +963,7 @@ private const val KeyCustomPingFastColor = "custom_ping_fast_color"
 private const val KeyCustomPingMediumColor = "custom_ping_medium_color"
 private const val KeyCustomPingSlowColor = "custom_ping_slow_color"
 private const val KeyCustomCategoryIconColor = "custom_category_icon_color"
+private const val KeyCustomCategoryIconGlyphColor = "custom_category_icon_glyph_color"
 private const val KeyCustomCategoryAppearanceColor = "custom_category_appearance_color"
 private const val KeyCustomProtocolVlessColor = "custom_protocol_vless_color"
 private const val KeyCustomProtocolVmessColor = "custom_protocol_vmess_color"

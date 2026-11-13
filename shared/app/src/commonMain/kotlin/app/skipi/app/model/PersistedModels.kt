@@ -36,6 +36,7 @@ data class AppearanceSettings(
     val customPingMediumColor: Long? = null,
     val customPingSlowColor: Long? = null,
     val customCategoryIconColor: Long? = null,
+    val customCategoryIconGlyphColor: Long? = null,
     val customProtocolVlessColor: Long? = null,
     val customProtocolVmessColor: Long? = null,
     val customProtocolHysteria2Color: Long? = null,

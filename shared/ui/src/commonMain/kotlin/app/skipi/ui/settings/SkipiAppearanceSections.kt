@@ -365,6 +365,15 @@ internal fun AppearanceCustomColorsSection(
                         color = appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
                         onClick = { onPickColor(AppearanceColorTarget.CATEGORY_ICONS) },
                     )
+                    SettingsColorItem(
+                        title = stringResource(Res.string.settings_color_category_icon_glyphs),
+                        summary = stringResource(Res.string.settings_color_category_icon_glyphs_summary),
+                        color = settingIconGlyphColor(
+                            appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                            appState.customCategoryIconGlyphColor?.let { Color(it) },
+                        ),
+                        onClick = { onPickColor(AppearanceColorTarget.CATEGORY_ICON_GLYPHS) },
+                    )
                 }
 
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_protocols_title))
@@ -443,6 +452,7 @@ internal fun AppearanceCustomColorsSection(
                                     customPingMediumColor = null,
                                     customPingSlowColor = null,
                                     customCategoryIconColor = null,
+                                    customCategoryIconGlyphColor = null,
                                     customProtocolVlessColor = null,
                                     customProtocolVmessColor = null,
                                     customProtocolHysteria2Color = null,
@@ -669,6 +679,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PING_MEDIUM -> stringResource(Res.string.settings_color_ping_medium)
             AppearanceColorTarget.PING_SLOW -> stringResource(Res.string.settings_color_ping_slow)
             AppearanceColorTarget.CATEGORY_ICONS -> stringResource(Res.string.settings_color_category_icons)
+            AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> stringResource(Res.string.settings_color_category_icon_glyphs)
             AppearanceColorTarget.PROTOCOL_VLESS -> stringResource(Res.string.settings_color_protocol_vless)
             AppearanceColorTarget.PROTOCOL_VMESS -> stringResource(Res.string.settings_color_protocol_vmess)
             AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> stringResource(Res.string.settings_color_protocol_hysteria2)
@@ -694,6 +705,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark)
             AppearanceColorTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark)
             AppearanceColorTarget.CATEGORY_ICONS -> appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
+            AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> settingIconGlyphColor(appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary, appState.customCategoryIconGlyphColor?.let { Color(it) })
             AppearanceColorTarget.PROTOCOL_VLESS -> appearanceProtocolColor("vless", appState, isDark)
             AppearanceColorTarget.PROTOCOL_VMESS -> appearanceProtocolColor("vmess", appState, isDark)
             AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> appearanceProtocolColor("hysteria2", appState, isDark)
@@ -727,6 +739,7 @@ internal fun AppearanceColorPickerDialog(
                         AppearanceColorTarget.PING_MEDIUM -> state.copy(customPingMediumColor = colorLong)
                         AppearanceColorTarget.PING_SLOW -> state.copy(customPingSlowColor = colorLong)
                         AppearanceColorTarget.CATEGORY_ICONS -> state.copy(customCategoryIconColor = colorLong)
+                        AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> state.copy(customCategoryIconGlyphColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_VLESS -> state.copy(customProtocolVlessColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_VMESS -> state.copy(customProtocolVmessColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> state.copy(customProtocolHysteria2Color = colorLong)

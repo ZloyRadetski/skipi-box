@@ -955,8 +955,10 @@
     <string name="settings_color_ping_slow">High Ping (&gt; 200 ms)</string>
     <string name="settings_color_ping_slow_summary">Color for high server latency</string>
     <string name="settings_custom_colors_categories_title">Category Icons</string>
-    <string name="settings_color_category_icons">Icon Color</string>
-    <string name="settings_color_category_icons_summary">Background color for all category icons</string>
+    <string name="settings_color_category_icons">Icon background</string>
+    <string name="settings_color_category_icons_summary">Background color of the icon tiles</string>
+    <string name="settings_color_category_icon_glyphs">Icon color</string>
+    <string name="settings_color_category_icon_glyphs_summary">Color of the icons themselves; black or white by contrast until you pick one</string>
     <string name="settings_custom_colors_protocols_title">Protocol &amp; Subscription Colors</string>
     <string name="settings_color_protocol_vless">VLESS Protocol</string>
     <string name="settings_color_protocol_vmess">VMess Protocol</string>

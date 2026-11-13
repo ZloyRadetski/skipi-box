@@ -27,11 +27,21 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 val LocalSettingsIconColor = compositionLocalOf<Color?> { null }
 
-/** Provides the user's icon color (an ARGB long as it is stored) to every settings row below. */
+/** The color of the icon itself, picked in the appearance settings; null means black or white, whichever reads on the tile. */
+val LocalSettingsIconGlyphColor = compositionLocalOf<Color?> { null }
+
+/** Provides the user's icon background and icon colors (ARGB longs as they are stored) to every settings row below. */
 @Composable
-fun ProvideSettingsIconColor(argb: Long?, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalSettingsIconColor provides argb?.let(::Color), content = content)
+fun ProvideSettingsIconColor(argb: Long?, glyphArgb: Long? = null, content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalSettingsIconColor provides argb?.let(::Color),
+        LocalSettingsIconGlyphColor provides glyphArgb?.let(::Color),
+        content = content,
+    )
 }
+
+/** The color of an icon drawn on a tile of [background]: the one the user picked, else black or white by contrast. */
+internal fun settingIconGlyphColor(background: Color, picked: Color?): Color = picked ?: readableOn(background)
 
 /** Edge of the small tile in front of a settings row, and the shape every such tile shares. */
 private val SettingIconTileSize = 38.dp
@@ -65,7 +75,7 @@ fun SkipiSettingIcon(icon: ImageVector, modifier: Modifier = Modifier) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = readableOn(color),
+            tint = settingIconGlyphColor(color, LocalSettingsIconGlyphColor.current),
             modifier = Modifier.size(SettingIconGlyphSize),
         )
     }

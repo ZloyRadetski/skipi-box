@@ -46,6 +46,7 @@ fun SettingsPage(
             localProxyPort = appState.localProxyPort,
             coreLogLevel = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
             categoryIconColor = categoryIconColor,
+            categoryIconGlyphColor = appState.customCategoryIconGlyphColor?.let(::Color),
         ),
         padding = padding,
         isWideScreen = LocalIsWideScreen.current,

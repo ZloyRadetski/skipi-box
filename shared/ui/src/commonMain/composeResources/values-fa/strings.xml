@@ -866,8 +866,10 @@
     <string name="settings_color_ping_slow">پینگ بالا (&gt; 200 میلی‌ثانیه)</string>
     <string name="settings_color_ping_slow_summary">رنگ برای تأخیر بالای سرور</string>
     <string name="settings_custom_colors_categories_title">آیکون‌های دسته</string>
-    <string name="settings_color_category_icons">رنگ آیکون‌ها</string>
-    <string name="settings_color_category_icons_summary">رنگ پس‌زمینه برای تمام آیکون‌های دسته‌بندی</string>
+    <string name="settings_color_category_icons">پس‌زمینه آیکون‌ها</string>
+    <string name="settings_color_category_icons_summary">رنگ کاشی زیر آیکون‌های همه بخش‌ها</string>
+    <string name="settings_color_category_icon_glyphs">رنگ آیکون‌ها</string>
+    <string name="settings_color_category_icon_glyphs_summary">رنگ خود آیکون‌ها؛ تا زمانی که انتخاب نکنید، سیاه یا سفید بر اساس تضاد</string>
     <string name="settings_custom_colors_protocols_title">رنگ های پروتکل و اشتراک</string>
     <string name="settings_color_protocol_vless">پروتکل VLESS</string>
     <string name="settings_color_protocol_vmess">پروتکل VMess</string>

@@ -95,6 +95,8 @@ data class SkipiSettingsHomeState(
     val localProxyPort: String,
     val coreLogLevel: String?,
     val categoryIconColor: Color,
+    /** The icon's own color; null reads black or white on the tile. */
+    val categoryIconGlyphColor: Color? = null,
     val visibleDestinations: Set<SkipiSettingsDestination> =
         SkipiSettingsDestination.entries
             .filter { it != SkipiSettingsDestination.NetworkAutomation }
@@ -112,6 +114,7 @@ fun SkipiSettingsHomeScreen(
     val listState = rememberLazyListState()
     OnNavigationReselect { listState.animateScrollToItem(0) }
     val categoryIconColor = state.categoryIconColor
+    val categoryIconGlyphColor = settingIconGlyphColor(categoryIconColor, state.categoryIconGlyphColor)
     val visible = state.visibleDestinations
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -148,6 +151,7 @@ fun SkipiSettingsHomeScreen(
                     SettingsItem(
                         icon = Icons.Filled.Palette,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_appearance),
                         summary = stringResource(Res.string.settings_category_appearance_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.Appearance) },
@@ -160,6 +164,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.Vpn in visible) SettingsItem(
                         icon = Icons.Filled.Security,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_vpn),
                         summary = stringResource(Res.string.settings_category_vpn_summary),
                         value = "MTU: ${state.tunMtu}",
@@ -169,6 +174,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.LocalProxy in visible) SettingsItem(
                         icon = Icons.Filled.Dns,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_local_proxy),
                         summary = stringResource(Res.string.settings_category_local_proxy_summary),
                         value = ":${state.localProxyPort}",
@@ -178,6 +184,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.NetworkAutomation in visible) SettingsItem(
                         icon = Icons.Filled.Security,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_network_automation_title),
                         summary = stringResource(Res.string.settings_network_automation_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.NetworkAutomation) },
@@ -190,6 +197,7 @@ fun SkipiSettingsHomeScreen(
                     SettingsItem(
                         icon = Icons.Filled.Sync,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_subscriptions),
                         summary = stringResource(Res.string.settings_category_subscriptions_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.Subscriptions) },
@@ -202,6 +210,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.General in visible) SettingsItem(
                         icon = Icons.Filled.Settings,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_general),
                         summary = stringResource(Res.string.settings_category_general_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.General) },
@@ -210,6 +219,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.BackupReset in visible) SettingsItem(
                         icon = Icons.Filled.Backup,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_backup_reset),
                         summary = stringResource(Res.string.settings_category_backup_reset_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.BackupReset) },
@@ -222,6 +232,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.SpeedTest in visible) SettingsItem(
                         icon = Icons.Filled.Bolt,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_speed_test),
                         summary = stringResource(Res.string.settings_category_speed_test_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.SpeedTest) },
@@ -230,6 +241,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.DnsLeakTest in visible) SettingsItem(
                         icon = Icons.Filled.Security,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_dns_leak),
                         summary = stringResource(Res.string.settings_category_dns_leak_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.DnsLeakTest) },
@@ -238,6 +250,7 @@ fun SkipiSettingsHomeScreen(
                     if (SkipiSettingsDestination.IpInfo in visible) SettingsItem(
                         icon = Icons.Filled.Public,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_ip_info),
                         summary = stringResource(Res.string.settings_category_ip_info_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.IpInfo) },
@@ -250,6 +263,7 @@ fun SkipiSettingsHomeScreen(
                     SettingsItem(
                         icon = Icons.Filled.Description,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_logs),
                         summary = stringResource(Res.string.settings_category_logs_summary),
                         value = state.coreLogLevel,
@@ -263,6 +277,7 @@ fun SkipiSettingsHomeScreen(
                     SettingsItem(
                         icon = Icons.Filled.Info,
                         iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_about_project),
                         summary = state.versionLabel,
                         onClick = { onNavigate(SkipiSettingsDestination.About) },
@@ -282,6 +297,7 @@ private fun SettingsSectionTitle(text: String) {
 private fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconBackgroundColor: Color,
+    iconColor: Color,
     title: String,
     summary: String,
     onClick: () -> Unit,
@@ -291,6 +307,7 @@ private fun SettingsItem(
     SkipiSettingsCategoryEntry(
         icon = icon,
         iconBackgroundColor = iconBackgroundColor,
+        iconColor = iconColor,
         title = title,
         summary = summary,
         value = value,
