@@ -59,6 +59,8 @@ internal fun buildDesktopSelectedServerConfig(
     routingDataDirectory: Path? = null,
     /** Applies the strict full tunnel at start without rewriting stored routing; Custom configs cannot take it. */
     strictFullTunnel: Boolean = false,
+    /** See [buildDesktopSelectedServerConfigWithBridge]. */
+    answerTunDns: Boolean = false,
 ): Result<String>? = buildDesktopSelectedServerConfigWithBridge(
     serverLibrary = serverLibrary,
     configLibrary = configLibrary,
@@ -69,6 +71,7 @@ internal fun buildDesktopSelectedServerConfig(
     latencyByServerId = latencyByServerId,
     routingDataDirectory = routingDataDirectory,
     strictFullTunnel = strictFullTunnel,
+    answerTunDns = answerTunDns,
 )?.map { generated -> generated.json }
 
 /** Like [buildDesktopSelectedServerConfig], keeping the AmneziaWG runner the configuration depends on. */
@@ -84,6 +87,12 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     strictFullTunnel: Boolean = false,
     /** The global TUN DNS; an active profile's own value replaces it, as on Android. */
     tunVpnDns: String = VpnDefaults.IPV4_DNS,
+    /**
+     * TUN mode: DNS queries reaching the SOCKS inbound on port 53 are answered by Core's DNS, as
+     * Android answers its TUN's. The system's resolver sits behind the tunnel, so this keeps names
+     * resolved through the VPN and Core's own lookups off the tunnel they would need.
+     */
+    answerTunDns: Boolean = false,
 ): Result<DesktopGeneratedXrayConfig>? {
     val selectedStored = serverLibrary.selectedServerId
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
@@ -100,6 +109,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                     dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns),
                     sniffing = profileRuntime?.sniffingOptions(),
                     strictFullTunnel = strictFullTunnel,
+                    answerTunDns = answerTunDns,
                     skipiRouting = customServerSkipiRouting(
                         profile = configLibrary.activeProfile,
                         profileDomainStrategy = profileRuntime?.settings?.routeDomainStrategy,
@@ -120,6 +130,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                 configs = configLibrary.configs,
                 amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
                 strictFullTunnel = strictFullTunnel,
+                answerTunDns = answerTunDns,
             )
         }
     }
@@ -136,9 +147,20 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
             routingDataDirectory = routingDataDirectory,
             amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
             tunVpnDns = effectiveTunDns,
+            answerTunDns = answerTunDns,
         )?.getOrThrow()
             ?: error(desktopText(Res.string.desktop_select_server_before_connect))
     }
+}
+
+/**
+ * Whether the Core config of the selected server answers the TUN's DNS when asked to: every config
+ * SKIPI generates does, a raw JSON only when SKIPI overrides its inbound and DNS. Without it the
+ * TUN takes no DNS and the system keeps resolving as before.
+ */
+internal fun DesktopServerLibrary.coreAnswersTunDns(): Boolean {
+    val selected = selectedServerId?.let { id -> servers.firstOrNull { it.id == id } }?.decode()?.getOrNull()
+    return (selected as? Custom)?.overrideInboundAndDns ?: true
 }
 
 /** Raw resolvers of the AmneziaWG runner's own netstack, as Android passes the TUN DNS. */
@@ -172,6 +194,8 @@ internal fun buildDesktopCustomXrayConfig(
     skipiRouting: CustomSkipiRouting? = null,
     /** The strict full tunnel: no rule of the JSON may leave directly (see [withStrictFullTunnelRouting]). */
     strictFullTunnel: Boolean = false,
+    /** TUN mode; applies only with "override inbound and DNS", see [DesktopServerLibrary.coreAnswersTunDns]. */
+    answerTunDns: Boolean = false,
 ): String {
     val customJson = parseCustomXrayConfigJsonObject(server.configJson)
     val inbounds = if (!listeners) emptyList() else buildList {
@@ -198,8 +222,8 @@ internal fun buildDesktopCustomXrayConfig(
                 config = customJson,
                 inbounds = inbounds,
                 dnsPlan = dnsPlan,
-                enableLocalDns = false,
-                dnsHijackInboundTags = emptyList(),
+                enableLocalDns = answerTunDns,
+                dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
                 directOutbound = buildFreedomOutbound(
                     tag = XrayTags.DIRECT,
                     domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),

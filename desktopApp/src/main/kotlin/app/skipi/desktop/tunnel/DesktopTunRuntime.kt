@@ -97,6 +97,8 @@ private data class DevicePlan(
     val mtu: Int,
     val addresses: List<String>,
     val routes: List<String>,
+    /** Left out when empty, so a plan without DNS reads as before. */
+    val dns: List<String> = emptyList(),
 )
 
 private val DevicePlanJson = Json
@@ -107,6 +109,7 @@ private fun TunInterfacePlan.toDevicePlanJson(): String = DevicePlanJson.encodeT
         mtu = mtu,
         addresses = addresses.map { "${it.address}/${it.prefixLength}" },
         routes = routes.map { "${it.address}/${it.prefixLength}" },
+        dns = dnsServers,
     ),
 )
 

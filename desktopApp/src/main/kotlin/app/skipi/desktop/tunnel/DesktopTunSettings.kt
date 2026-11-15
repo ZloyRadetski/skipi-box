@@ -11,13 +11,18 @@ import engine.vpn.toTunInterfacePlan
 import app.skipi.ui.settings.VpnSettingsCapabilities
 import app.skipi.app.model.RoutingConfigRecord
 import engine.vpn.strictFullTunnelRouting
+import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 
 /** The shared Android TUN plan for the TUN values stored in Desktop settings. */
-internal fun DesktopAppSettings.tunInterfacePlan(enableIpv6: Boolean = false): TunInterfacePlan = AppState(
+internal fun DesktopAppSettings.tunInterfacePlan(
+    enableIpv6: Boolean = false,
+    tunVpnDns: String = this.tunVpnDns,
+): TunInterfacePlan = AppState(
     tunMtu = tunMtu,
     tunIpv4Cidr = tunIpv4Cidr,
     tunIpv6Cidr = tunIpv6Cidr,
+    tunVpnDns = tunVpnDns,
     enableIpv6 = enableIpv6,
 ).toTunInterfacePlan()
 
@@ -25,19 +30,31 @@ internal fun DesktopAppSettings.tunInterfacePlan(enableIpv6: Boolean = false): T
  * The interface plan of a start: the MTU and addresses are the TUN settings'; whether the tunnel
  * carries IPv6 is the active profile's `ipv6`, the same value its generated Xray config is built
  * with, so the interface and the proxy core agree. Without a profile IPv6 stays off.
+ *
+ * The system resolves through the tunnel only when [coreAnswersDns]: the TUN DNS is the profile's,
+ * as in the Xray config that answers it. Otherwise the plan has no DNS and the system keeps its own.
  */
 internal fun desktopTunInterfacePlan(
     settings: DesktopAppSettings,
     configLibrary: DesktopConfigLibrary,
+    coreAnswersDns: Boolean = true,
     macInterfaces: (() -> List<String>)? = macInterfaceListerOrNull(),
 ): TunInterfacePlan {
-    val plan = settings.tunInterfacePlan(enableIpv6 = configLibrary.activeProfileRuntime()?.plan?.enableIpv6 ?: false)
+    val profileRuntime = configLibrary.activeProfileRuntime()
+    val plan = settings.tunInterfacePlan(
+        enableIpv6 = profileRuntime?.plan?.enableIpv6 ?: false,
+        tunVpnDns = profileRuntime.tunVpnDnsOr(settings.tunVpnDns),
+    ).let { plan -> if (coreAnswersDns) plan else plan.copy(dnsServers = emptyList()) }
     // macOS names its tunnel interfaces utunN and hev opens one of them, so the name is a free number.
     return if (macInterfaces == null) plan else plan.copy(name = pickMacTunInterfaceName(macInterfaces()))
 }
 
 private fun macInterfaceListerOrNull(): (() -> List<String>)? =
     if (System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)) ::macInterfaceNames else null
+
+/** The inbound whose port-53 traffic Core's DNS answers in TUN mode: hev's SOCKS one, as on Android with hev. */
+internal fun desktopTunDnsHijackInboundTags(answerTunDns: Boolean): List<String> =
+    if (answerTunDns) listOf(LocalProxyXrayConfigFactory.SocksInboundTag) else emptyList()
 
 /**
  * hev forwards the tunnel's traffic to the SOCKS inbound of the Core session that is running, with

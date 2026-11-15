@@ -156,6 +156,8 @@ private data class MacTunPlan(
     val mtu: Int,
     val addresses: List<String>,
     val routes: List<String>,
+    /** The supervisor does not configure DNS yet; the field is read so a plan carrying it decodes. */
+    val dns: List<String> = emptyList(),
 )
 
 /** Carries the interface plan from the device (which receives it) to the tunnel (which needs it). */

@@ -56,6 +56,7 @@ internal fun createDesktopTunnelController(
                     latencyByServerId = latencySnapshot,
                     routingDataDirectory = globalAssetsDirectory,
                     strictFullTunnel = settingsSnapshot.enableStrictFullTunnel,
+                    answerTunDns = settingsSnapshot.enableTunMode,
                 )?.getOrThrow()
                     ?: error(desktopText(Res.string.desktop_select_server_before_connect))
             }
@@ -151,7 +152,8 @@ internal fun createDesktopTunnelController(
                     val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
                         ?: error("SKIPI Core is not running")
                     val request = desktopTunStartRequest(
-                        plan = desktopTunInterfacePlan(readSettings(), readConfigs()),
+                        // The system resolves through the tunnel only if the running config answers it.
+                        plan = desktopTunInterfacePlan(readSettings(), readConfigs(), readServers().coreAnswersTunDns()),
                         options = options,
                         logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
                     )

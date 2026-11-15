@@ -25,6 +25,13 @@ class TunInterfacePlanTest {
             listOf(NetworkCidrAddress("0.0.0.0", 1), NetworkCidrAddress("128.0.0.0", 1)),
             plan.routes,
         )
+        assertEquals(listOf("8.8.8.8"), plan.dnsServers)
+    }
+
+    @Test
+    fun theTunDnsIsAndroidsVpnDnsServer() {
+        assertEquals(listOf("1.1.1.1"), AppState(tunVpnDns = " 1.1.1.1 ").toTunInterfacePlan().dnsServers)
+        assertEquals(listOf("8.8.8.8"), AppState(tunVpnDns = "dns.google").toTunInterfacePlan().dnsServers)
     }
 
     @Test

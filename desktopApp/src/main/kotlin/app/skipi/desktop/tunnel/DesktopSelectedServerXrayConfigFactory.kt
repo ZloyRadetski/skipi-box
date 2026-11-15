@@ -32,6 +32,7 @@ import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 import java.nio.file.Path
 import engine.xray.XrayConfigJson
+import engine.xray.dnsDialerProxyTag
 
 /** Builds a local listener config from the selected row and Android's shared proxy planner. */
 object DesktopSelectedServerXrayConfigFactory {
@@ -64,6 +65,8 @@ object DesktopSelectedServerXrayConfigFactory {
         routingDataDirectory: Path? = null,
         amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
         tunVpnDns: String = VpnDefaults.IPV4_DNS,
+        /** TUN mode: Core's DNS answers port 53 on the SOCKS inbound, see [buildDesktopSelectedServerConfigWithBridge]. */
+        answerTunDns: Boolean = false,
     ): Result<DesktopGeneratedXrayConfig>? {
         val selectedId = serverLibrary.selectedServerId ?: return null
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
@@ -74,6 +77,7 @@ object DesktopSelectedServerXrayConfigFactory {
                 return@mapCatching DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(
                         selectedServer,
                         options,
+                        answerTunDns = answerTunDns,
                         skipiRouting = customServerSkipiRouting(profile = null, profileDomainStrategy = null, routing = routing),
                     ),
                 )
@@ -115,7 +119,7 @@ object DesktopSelectedServerXrayConfigFactory {
                     defaultRouteOutboundTag = routing.defaultOutboundTag,
                     shadowrocketPolicyGroups = emptyList(),
                     trafficConfigContentById = trafficConfigContentById,
-                    enableLocalDns = false,
+                    enableLocalDns = answerTunDns,
                     enableFragment = false,
                     subscriptionPingUrl = subscriptionPingUrl,
                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
@@ -143,10 +147,10 @@ object DesktopSelectedServerXrayConfigFactory {
                     defaultRouteOutboundTag = routing.defaultOutboundTag,
                     routeTargets = routeTargets,
                     balancers = buildXrayBalancers(plan.balancers),
-                    enableLocalDns = false,
+                    enableLocalDns = answerTunDns,
                     routeProxyDns = dnsPlan.routingOptions.routeProxyDns,
                     routeDirectDns = dnsPlan.routingOptions.routeDirectDns,
-                    dnsHijackInboundTags = emptyList(),
+                    dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
                 ),
                 ruleValidator = ruleValidator,
             )
@@ -157,9 +161,10 @@ object DesktopSelectedServerXrayConfigFactory {
                 options = options,
                 renderingOptions = XrayOutboundRenderingOptions(
                     primaryOutboundTag = plan.routeTargets[XrayTags.PROXY]?.tag ?: XrayTags.PROXY,
-                    enableLocalDns = false,
+                    enableLocalDns = answerTunDns,
                     dnsPlan = dnsPlan,
-                    dnsProxyOutboundTag = null,
+                    // Like Android: queries Core's DNS does not answer itself go out through the proxy.
+                    dnsProxyOutboundTag = if (answerTunDns) plan.dnsDialerProxyTag() else null,
                     // No profile, so no IPv6: the same strategy Android's defaults select.
                     transport = options.tcpSockopt?.let { sockopt ->
                         XrayOutboundTransportOptions(

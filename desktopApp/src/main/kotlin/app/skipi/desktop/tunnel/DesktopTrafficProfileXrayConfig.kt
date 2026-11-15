@@ -8,6 +8,8 @@ import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.ProfileProxyTag
 import engine.xray.XrayTags
 import engine.xray.buildXrayDnsConfig
+import engine.xray.buildXrayDnsHijackRule
+import engine.xray.buildXrayDnsOutbound
 import engine.xray.startupProxyServerHostDnsDomains
 import features.proxy.server.model.serverHost
 import engine.xray.XraySniffingOptions
@@ -71,6 +73,8 @@ object DesktopTrafficProfileXrayConfigFactory {
         configs: List<DesktopStoredConfig> = emptyList(),
         amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
         strictFullTunnel: Boolean = false,
+        /** TUN mode: Core's DNS answers port 53 on the SOCKS inbound, see [buildDesktopSelectedServerConfigWithBridge]. */
+        answerTunDns: Boolean = false,
     ): DesktopGeneratedXrayConfig {
         require(options.socksPort in 1..65_535) { "Local SOCKS port must be in 1..65535" }
         if (options.enableHttpProxy) {
@@ -201,6 +205,10 @@ object DesktopTrafficProfileXrayConfigFactory {
                         ),
                     )
                     add(buildSimpleOutbound(BlockTag, XrayProtocols.BLACKHOLE))
+                    if (answerTunDns) {
+                        // Queries Core's DNS does not answer itself go out through the profile's proxy.
+                        add(buildXrayDnsOutbound(fallback = dnsPlan.nonIpQueryFallback, proxyOutboundTag = ProfileProxyTag))
+                    }
                     fragmentOptions?.let { add(buildXrayFragmentOutbound(it)) }
                 },
             )
@@ -209,6 +217,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                 buildJsonObject {
                     put("domainStrategy", routeDomainStrategy)
                     putJsonArray("rules") {
+                        buildXrayDnsHijackRule(desktopTunDnsHijackInboundTags(answerTunDns))?.let(::add)
                         dnsUpstreamRules.forEach(::add)
                         routingRules.forEach(::add)
                     }

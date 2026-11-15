@@ -15,13 +15,15 @@ const val TunInterfaceName = "skipi0"
  * the operating system's network manager.
  *
  * The full tunnel is two half-routes per family rather than a default route, so the system default
- * route stays in place underneath and disappears with the interface.
+ * route stays in place underneath and disappears with the interface. [dnsServers] are the resolvers
+ * the system uses while the interface is up, Android's TUN DNS: their queries enter the tunnel.
  */
 data class TunInterfacePlan(
     val name: String,
     val mtu: Int,
     val addresses: List<NetworkCidrAddress>,
     val routes: List<NetworkCidrAddress>,
+    val dnsServers: List<String> = emptyList(),
 )
 
 fun AppState.toTunInterfacePlan(): TunInterfacePlan {
@@ -41,5 +43,6 @@ fun AppState.toTunInterfacePlan(): TunInterfacePlan {
                 add(NetworkCidrAddress("8000::", 1))
             }
         },
+        dnsServers = options.dnsServers,
     )
 }
