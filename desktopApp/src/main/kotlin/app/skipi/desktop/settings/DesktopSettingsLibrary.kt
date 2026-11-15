@@ -166,6 +166,11 @@ data class DesktopAppSettings(
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
+    /**
+     * Android's "Local VPN DNS": in TUN mode the system resolves through the tunnel and Core answers.
+     * Off, the system keeps its own resolvers, outside the VPN. An active profile can turn it off too.
+     */
+    val enableVpnLocalDns: Boolean = true,
     val tunTcpKeepAliveInterval: String = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
     val tunTcpUserTimeout: String = VpnDefaults.TCP_USER_TIMEOUT,
     val enableStrictFullTunnel: Boolean = false,

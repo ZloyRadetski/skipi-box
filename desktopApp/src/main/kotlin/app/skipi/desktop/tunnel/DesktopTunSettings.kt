@@ -52,6 +52,14 @@ internal fun desktopTunInterfacePlan(
 private fun macInterfaceListerOrNull(): (() -> List<String>)? =
     if (System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)) ::macInterfaceNames else null
 
+/**
+ * Whether a start resolves through the tunnel: TUN mode with "Local VPN DNS" on in the application
+ * and not turned off by the active profile. Either switch off keeps the system's own resolvers.
+ */
+internal fun desktopAnswersTunDns(settings: DesktopAppSettings, configLibrary: DesktopConfigLibrary): Boolean =
+    settings.enableTunMode && settings.enableVpnLocalDns &&
+        configLibrary.activeProfileRuntime()?.settings?.enableVpnLocalDns != false
+
 /** The inbound whose port-53 traffic Core's DNS answers in TUN mode: hev's SOCKS one, as on Android with hev. */
 internal fun desktopTunDnsHijackInboundTags(answerTunDns: Boolean): List<String> =
     if (answerTunDns) listOf(LocalProxyXrayConfigFactory.SocksInboundTag) else emptyList()
@@ -105,6 +113,7 @@ internal fun DesktopAppSettings.withVpnSettingsReset(): DesktopAppSettings {
         tunIpv4Cidr = defaults.tunIpv4Cidr,
         tunIpv6Cidr = defaults.tunIpv6Cidr,
         tunVpnDns = defaults.tunVpnDns,
+        enableVpnLocalDns = defaults.enableVpnLocalDns,
         tunTcpKeepAliveInterval = defaults.tunTcpKeepAliveInterval,
         tunTcpUserTimeout = defaults.tunTcpUserTimeout,
         enableStrictFullTunnel = defaults.enableStrictFullTunnel,

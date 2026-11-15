@@ -171,6 +171,48 @@ class DesktopTunDnsTest {
     }
 
     @Test
+    fun localVpnDnsDecidesWhetherATunStartResolvesThroughTheTunnel() {
+        val tun = DesktopAppSettings(enableTunMode = true)
+        fun profile(localDns: Boolean?) = DesktopConfigLibrary(
+            selectedConfigId = 1,
+            configs = listOf(
+                DesktopStoredConfig(
+                    id = 1,
+                    name = "P",
+                    content = "[SKIPI]\n" + (localDns?.let { "vpn-local-dns = $it\n" } ?: "") + "[Rule]\nFINAL,PROXY\n",
+                ),
+            ),
+        )
+
+        assertTrue(desktopAnswersTunDns(tun, DesktopConfigLibrary()))
+        assertTrue(desktopAnswersTunDns(tun, profile(localDns = null)))
+        assertTrue(desktopAnswersTunDns(tun, profile(localDns = true)))
+        // Either switch turns it off: the application's or the active profile's.
+        assertFalse(desktopAnswersTunDns(tun.copy(enableVpnLocalDns = false), DesktopConfigLibrary()))
+        assertFalse(desktopAnswersTunDns(tun.copy(enableVpnLocalDns = false), profile(localDns = true)))
+        assertFalse(desktopAnswersTunDns(tun, profile(localDns = false)))
+        // Outside TUN mode nothing reaches Core through a tunnel.
+        assertFalse(desktopAnswersTunDns(DesktopAppSettings(), DesktopConfigLibrary()))
+    }
+
+    @Test
+    fun withLocalVpnDnsOffTheTunStartLeavesTheSystemResolverAlone() {
+        val settings = DesktopAppSettings(enableTunMode = true, enableVpnLocalDns = false)
+        val answers = desktopAnswersTunDns(settings, DesktopConfigLibrary())
+
+        assertLeavesDnsAlone(generated(socks, answerTunDns = answers))
+        assertEquals(
+            emptyList(),
+            desktopTunInterfacePlan(settings, DesktopConfigLibrary(), coreAnswersDns = answers, macInterfaces = null).dnsServers,
+        )
+    }
+
+    @Test
+    fun resettingVpnSettingsTurnsLocalVpnDnsBackOn() {
+        assertTrue(DesktopAppSettings(enableVpnLocalDns = false).withVpnSettingsReset().enableVpnLocalDns)
+    }
+
+    @Test
     fun theDevicePlanCarriesTheDnsAndLeavesItOutWhenThereIsNone() {
         fun openedPlan(coreAnswersDns: Boolean): String {
             var opened = ""

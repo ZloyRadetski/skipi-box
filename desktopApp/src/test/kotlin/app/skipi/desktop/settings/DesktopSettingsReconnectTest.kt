@@ -33,6 +33,7 @@ class DesktopSettingsReconnectTest {
             "tunIpv4Cidr" to base.copy(tunIpv4Cidr = "10.20.30.1/24"),
             "tunIpv6Cidr" to base.copy(tunIpv6Cidr = "fd00::1/64"),
             "tunVpnDns" to base.copy(tunVpnDns = "1.1.1.1"),
+            "enableVpnLocalDns" to base.copy(enableVpnLocalDns = !base.enableVpnLocalDns),
             "tunTcpKeepAliveInterval" to base.copy(tunTcpKeepAliveInterval = "30"),
             "tunTcpUserTimeout" to base.copy(tunTcpUserTimeout = "20000"),
             "enableSniffing" to base.copy(enableSniffing = !base.enableSniffing),

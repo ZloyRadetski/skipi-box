@@ -99,7 +99,7 @@ private fun DesktopAppSettings.coreRuntimeInputs(): List<Any?> = listOf(
     enableDynamicLocalProxyPort, enableLocalProxyAuth, localProxyUsername, localProxyPassword, localProxyAuthMode,
     enableLocalHttpProxy, enableLocalHttpProxyAuth, localHttpProxyAuthMode, localHttpProxyUsername, localHttpProxyPassword,
     coreLogLevel, enableAccessLog, subscriptionPingUrl,
-    enableTunMode, enableStrictFullTunnel, tunMtu, tunIpv4Cidr, tunIpv6Cidr, tunVpnDns,
+    enableTunMode, enableStrictFullTunnel, tunMtu, tunIpv4Cidr, tunIpv6Cidr, tunVpnDns, enableVpnLocalDns,
     tunTcpKeepAliveInterval, tunTcpUserTimeout,
     enableSniffing, enableSniffingRouteOnly,
     enableMux, muxConcurrency, muxXudpConcurrency, muxXudpProxyUdp443,

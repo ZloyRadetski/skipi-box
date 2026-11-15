@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.SettingsEthernet
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.configs_local_dns
+import app.skipi.ui.resources.configs_local_dns_summary
 import app.skipi.ui.resources.desktop_settings_vpn_saved
 import app.skipi.ui.resources.desktop_vpn_autostart_failed
 import app.skipi.ui.resources.desktop_vpn_elevation_required
@@ -151,6 +154,17 @@ internal fun DesktopVpnSettings(
                         TunSwitchChange.Save -> onPersist(settings.copy(enableTunMode = enabled), saved)
                     }
                 },
+            )
+            // Only TUN mode routes the system's DNS, so the switch follows the TUN one.
+            val localDnsTitle = stringResource(Res.string.configs_local_dns)
+            SkipiHostSwitchSection(
+                sectionTitle = localDnsTitle,
+                title = localDnsTitle,
+                icon = Icons.Rounded.Dns,
+                summary = stringResource(Res.string.configs_local_dns_summary),
+                checked = settings.enableVpnLocalDns,
+                enabled = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
+                onCheckedChange = { enabled -> onPersist(settings.copy(enableVpnLocalDns = enabled), saved) },
             )
         },
     )

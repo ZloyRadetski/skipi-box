@@ -59,7 +59,7 @@ internal fun prepareDesktopTunnelStartPlan(
             routingDataDirectory = globalAssetsDirectory,
             strictFullTunnel = settings.enableStrictFullTunnel,
             tunVpnDns = settings.tunVpnDns,
-            answerTunDns = settings.enableTunMode,
+            answerTunDns = desktopAnswersTunDns(settings, capturedConfigLibrary),
         )?.getOrThrow()
             ?: error(desktopText(Res.string.desktop_select_server_before_connect))
         return DesktopTunnelStartPlan(
