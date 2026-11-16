@@ -74,6 +74,8 @@ internal fun skipiMenuPosition(
     popup: IntSize,
     rtl: Boolean,
     shadowPad: Int,
+    /** Open under the anchor's start whatever its width: for a title chip, which has no trailing action button. */
+    alignToAnchorStart: Boolean = false,
 ): IntOffset {
     val surfaceWidth = popup.width - 2 * shadowPad
     val surfaceHeight = popup.height - 2 * shadowPad
@@ -81,7 +83,11 @@ internal fun skipiMenuPosition(
     val rightAligned = anchor.right - surfaceWidth
     // A card wider than the menu opens it at the card's trailing end, where its action buttons are. A button
     // opens it on the side of the window it sits in, so the menu grows toward the middle of the window.
-    val preferRight = if (anchor.width > surfaceWidth) !rtl else anchor.center.x * 2 > window.width
+    val preferRight = when {
+        alignToAnchorStart -> rtl
+        anchor.width > surfaceWidth -> !rtl
+        else -> anchor.center.x * 2 > window.width
+    }
     val preferred = if (preferRight) rightAligned else leftAligned
     val alternative = if (preferRight) leftAligned else rightAligned
     val x = when {
@@ -112,6 +118,7 @@ internal fun SkipiMenuPopup(
     surface: Color = SkipiTheme.colors.surface,
     text: Color = SkipiTheme.colors.onSurface,
     outline: Color = SkipiTheme.colors.outline,
+    alignToAnchorStart: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val visibility = remember { MutableTransitionState(false) }
@@ -121,14 +128,14 @@ internal fun SkipiMenuPopup(
     val density = LocalDensity.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val shadowPad = with(density) { ShadowMargin.roundToPx() }
-    val position = remember(rtl, shadowPad) {
+    val position = remember(rtl, shadowPad, alignToAnchorStart) {
         object : PopupPositionProvider {
             override fun calculatePosition(
                 anchorBounds: IntRect,
                 windowSize: IntSize,
                 layoutDirection: LayoutDirection,
                 popupContentSize: IntSize,
-            ): IntOffset = skipiMenuPosition(anchorBounds, windowSize, popupContentSize, rtl, shadowPad)
+            ): IntOffset = skipiMenuPosition(anchorBounds, windowSize, popupContentSize, rtl, shadowPad, alignToAnchorStart)
         }
     }
     val shape = SkipiTheme.shapes.large

@@ -70,6 +70,7 @@ fun SkipiMenu(
     outline: Color = SkipiTheme.colors.outline,
     header: (@Composable () -> Unit)? = null,
     footer: (@Composable () -> Unit)? = null,
+    alignToAnchorStart: Boolean = false,
 ) {
     // The path to the open submenu, as the keys of the rows that were opened. Keys, not rows: the rows are
     // rebuilt on every recomposition, and the open level must show their latest state.
@@ -87,6 +88,7 @@ fun SkipiMenu(
         surface = surface,
         text = text,
         outline = outline,
+        alignToAnchorStart = alignToAnchorStart,
     ) {
         AnimatedContent(
             targetState = openedKeys,

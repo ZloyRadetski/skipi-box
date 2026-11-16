@@ -113,6 +113,9 @@ fun SkipiProxyGroupPicker(
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(modifier = modifier.fillMaxWidth()) {
+        // The menus are composed in a box that is only as wide as the chip: a popup opens next to the layout
+        // it is composed in, and next to the full-width row it opened at the far edge of the window.
+        Box {
         // A section title for the list below, not a card: the picker is secondary to the connection and the servers.
         Row(
             modifier = Modifier
@@ -199,6 +202,7 @@ fun SkipiProxyGroupPicker(
             mutedText = colors.mutedText,
             outline = colors.border,
             accent = colors.accent,
+            alignToAnchorStart = true,
             header = if (groups.size > SearchThreshold) {
                 {
                     GroupSearchField(
@@ -236,7 +240,9 @@ fun SkipiProxyGroupPicker(
                 mutedText = colors.mutedText,
                 outline = colors.border,
                 accent = colors.accent,
+                alignToAnchorStart = true,
             )
+        }
         }
     }
 }

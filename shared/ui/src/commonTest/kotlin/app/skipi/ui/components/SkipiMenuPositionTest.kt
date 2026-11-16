@@ -96,4 +96,36 @@ class SkipiMenuPositionTest {
             skipiMenuPosition(anchor, window, popup, rtl = true, shadowPad = pad),
         )
     }
+
+    // The group picker is a title chip, not a card with action buttons: its menu opens under the chip's start
+    // however wide the chip is, instead of jumping to the chip's far end.
+    @Test
+    fun aMenuAlignedToTheAnchorsStartOpensUnderItEvenWhenTheAnchorIsWider() {
+        val anchor = IntRect(100, 300, 600, 380)
+
+        assertEquals(
+            IntOffset(100 - pad, 380 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = false, shadowPad = pad, alignToAnchorStart = true),
+        )
+    }
+
+    @Test
+    fun aMenuAlignedToTheAnchorsStartOpensAtItsRightEdgeWhenRightToLeft() {
+        val anchor = IntRect(100, 300, 600, 380)
+
+        assertEquals(
+            IntOffset(600 - 200 - pad, 380 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = true, shadowPad = pad, alignToAnchorStart = true),
+        )
+    }
+
+    @Test
+    fun aMenuAlignedToTheAnchorsStartStillStaysInsideTheWindow() {
+        val anchor = IntRect(900, 50, 980, 90)
+
+        assertEquals(
+            IntOffset(980 - 200 - pad, 90 - pad),
+            skipiMenuPosition(anchor, window, popup, rtl = false, shadowPad = pad, alignToAnchorStart = true),
+        )
+    }
 }
