@@ -131,6 +131,8 @@
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
     <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>
     <string name="settings_enable_subscription_swipe_summary">Allow switching subscriptions by swiping left and right</string>
+    <string name="settings_seasonal_events">Seasonal decorations</string>
+    <string name="settings_seasonal_events_summary">Decorate the app during holidays: a garland and snow for the New Year</string>
     <string name="settings_font_family">Interface font</string>
     <string name="settings_font_family_default">Default (System)</string>
     <string name="settings_font_family_inter">Inter</string>

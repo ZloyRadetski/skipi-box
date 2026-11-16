@@ -137,6 +137,7 @@ data class DesktopAppSettings(
     val backgroundPhotoDimPercent: Int? = null,
     val bottomBarSize: Int? = null,
     val classicButtonSize: Int? = null,
+    val enableSeasonalEvents: Boolean = true,
     val customThemes: String = "",
     val connectionDisplayMode: Int? = null,
     /** Persisted routing fields exposed through the shared repository; UI/runtime wiring remains separate. */

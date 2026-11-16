@@ -57,6 +57,7 @@ private object BackupDefaults {
     const val autoInstallAppUpdatesAtNight = true
     const val bottomBarSize = 2
     const val classicButtonSize = 1
+    const val enableSeasonalEvents = true
     const val fakeDnsIpPool = "198.18.0.0/15"
     const val fakeDnsPoolSize = 65535
     const val hevTcpReadWriteTimeoutMillis = 300_000
@@ -252,6 +253,7 @@ data class AppBackupSettings(
     val autoInstallAppUpdatesAtNight: Boolean = BackupDefaults.autoInstallAppUpdatesAtNight,
     val bottomBarSize: Int = BackupDefaults.bottomBarSize,
     val classicButtonSize: Int = BackupDefaults.classicButtonSize,
+    val enableSeasonalEvents: Boolean = BackupDefaults.enableSeasonalEvents,
     val fakeDnsIpPool: String = BackupDefaults.fakeDnsIpPool,
     val fakeDnsPoolSize: Int = BackupDefaults.fakeDnsPoolSize,
     val hevTcpReadWriteTimeoutMillis: Int = BackupDefaults.hevTcpReadWriteTimeoutMillis,

@@ -406,6 +406,7 @@ internal class AppSettingsPreferences(
             classicButtonSize = normalizeClassicButtonSize(
                 preferences.getInt(KeyClassicButtonSize, defaults.classicButtonSize),
             ),
+            enableSeasonalEvents = preferences.getBoolean(KeyEnableSeasonalEvents, defaults.enableSeasonalEvents),
             customThemes = preferences.getString(KeyCustomThemes, null) ?: defaults.customThemes,
             enableHaptics = preferences.getBoolean(
                 KeyEnableHaptics,
@@ -615,6 +616,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putInt(KeyClassicButtonSize, state.classicButtonSize)
+            .putBoolean(KeyEnableSeasonalEvents, state.enableSeasonalEvents)
             .putIfChanged(previous?.customThemes, state.customThemes) {
                 putString(KeyCustomThemes, state.customThemes)
             }
@@ -1061,6 +1063,7 @@ private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicButtonSize = "classic_button_size"
+private const val KeyEnableSeasonalEvents = "enable_seasonal_events"
 private const val KeyCustomThemes = "custom_themes"
 private const val KeyEnableHaptics = "enable_haptics"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"

@@ -82,6 +82,8 @@ data class AppearanceSettingsCapabilities(
     val subscriptionSwipe: Boolean = true,
     /** Only a desktop host can place the navigation in a sidebar. */
     val navigationStyle: Boolean = false,
+    /** Seasonal decorations (the New Year garland and snow) are drawn by the shared background. */
+    val seasonalEvents: Boolean = true,
 )
 
 @Composable

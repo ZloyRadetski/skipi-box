@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import app.seasonal.SeasonalEvent
 import app.skipi.ui.anim.rememberInfinitePulse
 import kotlinx.coroutines.delay
 import kotlin.time.TimeSource
@@ -74,6 +75,7 @@ fun SkipiAppBackground(
     photo: ImageBitmap?,
     reduceMotion: Boolean,
     modifier: Modifier = Modifier,
+    seasonalEvent: SeasonalEvent? = null,
     content: @Composable () -> Unit,
 ) {
     // The page is composed once, after the style switch: a `content()` inside each branch would leave and
@@ -99,6 +101,7 @@ fun SkipiAppBackground(
             else -> Unit
         }
         content()
+        if (seasonalEvent == SeasonalEvent.NewYear) NewYearOverlay(reduceMotion)
     }
 }
 

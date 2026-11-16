@@ -138,6 +138,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         autoInstallAppUpdatesAtNight = autoInstallAppUpdatesAtNight,
         bottomBarSize = bottomBarSize,
         classicButtonSize = classicButtonSize,
+        enableSeasonalEvents = enableSeasonalEvents,
         fakeDnsIpPool = fakeDnsIpPool,
         fakeDnsPoolSize = fakeDnsPoolSize,
         hevTcpReadWriteTimeoutMillis = hevTcpReadWriteTimeoutMillis,
@@ -375,6 +376,7 @@ private fun AppBackupData.toAppState(): AppState {
             ?: defaults.bottomBarSize,
         classicButtonSize = settings.classicButtonSize.takeIf { it in ClassicButtonSizeSmall..ClassicButtonSizeGiant }
             ?: defaults.classicButtonSize,
+            enableSeasonalEvents = settings.enableSeasonalEvents,
         fakeDnsIpPool = settings.fakeDnsIpPool.ifBlank { defaults.fakeDnsIpPool },
         fakeDnsPoolSize = settings.fakeDnsPoolSize.takeIf { it > 0 } ?: defaults.fakeDnsPoolSize,
         hevTcpReadWriteTimeoutMillis = settings.hevTcpReadWriteTimeoutMillis.takeIf { it > 0 }

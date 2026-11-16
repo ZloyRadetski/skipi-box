@@ -53,6 +53,7 @@ data class AppChromeState(
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
     val classicButtonSize: Int = app.modes.ClassicButtonSizeMedium,
+    val enableSeasonalEvents: Boolean = true,
     val enableHaptics: Boolean = true,
     val enableDeletionConfirmation: Boolean = true,
 )
@@ -153,6 +154,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
         classicButtonSize = classicButtonSize,
+        enableSeasonalEvents = enableSeasonalEvents,
         enableHaptics = enableHaptics,
         enableDeletionConfirmation = enableDeletionConfirmation,
     )

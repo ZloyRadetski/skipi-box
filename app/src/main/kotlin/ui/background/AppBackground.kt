@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import app.LocalAppStateStore
 import app.collectAppState
 import app.modes.BackgroundStyleAurora
+import app.seasonal.activeSeasonalEvent
 import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
@@ -200,6 +201,7 @@ private data class BackgroundSettings(
     val style: Int,
     val dimPercent: Int,
     val connected: Boolean,
+    val seasonalEvents: Boolean,
 )
 
 @Composable
@@ -213,7 +215,7 @@ fun AppBackground(
     val settings by remember {
         derivedStateOf {
             val state = appState.value
-            BackgroundSettings(state.backgroundStyle, state.backgroundPhotoDimPercent, state.proxyRunning)
+            BackgroundSettings(state.backgroundStyle, state.backgroundPhotoDimPercent, state.proxyRunning, state.enableSeasonalEvents)
         }
     }
     val context = LocalContext.current
@@ -230,6 +232,13 @@ fun AppBackground(
     val photo: ImageBitmap? = if (isPhotoStyle) photoState.value else null
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
 
+    val seasonalEvent = remember(settings.seasonalEvents) {
+        // java.time needs API 26; the app supports 24.
+        val today = java.util.Calendar.getInstance()
+        // TEMP-PREVIEW: forced to December so the New Year decoration shows out of season; remove before commit.
+        activeSeasonalEvent(12, today.get(java.util.Calendar.DAY_OF_MONTH), settings.seasonalEvents)
+    }
+
     SkipiAppBackground(
         style = settings.style,
         isDark = AppTheme.colors.isDark,
@@ -239,6 +248,7 @@ fun AppBackground(
         photo = photo,
         reduceMotion = powerManager?.isPowerSaveMode == true,
         modifier = modifier,
+        seasonalEvent = seasonalEvent,
         content = content,
     )
 }

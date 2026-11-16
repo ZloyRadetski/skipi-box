@@ -3,6 +3,7 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.SmartButton
@@ -245,6 +246,17 @@ internal fun AppearanceBackgroundSection(
                     )
                 }
             }
+        }
+        if (capabilities.seasonalEvents) {
+            SwitchPreference(
+                title = stringResource(Res.string.settings_seasonal_events),
+                startAction = settingIcon(Icons.Rounded.AcUnit),
+                summary = stringResource(Res.string.settings_seasonal_events_summary),
+                checked = appState.enableSeasonalEvents,
+                onCheckedChange = { enabled ->
+                    updateAppState { it.copy(enableSeasonalEvents = enabled) }
+                },
+            )
         }
     }
 }

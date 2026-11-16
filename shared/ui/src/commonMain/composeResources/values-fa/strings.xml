@@ -1166,6 +1166,8 @@
     <string name="settings_enable_subscription_swipe_summary">اجازه جابجایی بین اشتراک‌ها با کشیدن به چپ و راست</string>
     <string name="settings_font_family">فونت رابط کاربری</string>
     <string name="settings_font_family_default">پیش‌فرض (سیستم)</string>
+    <string name="settings_seasonal_events">تزئینات فصلی</string>
+    <string name="settings_seasonal_events_summary">تزیین برنامه در تعطیلات: چراغ‌های رنگی و برف برای سال نو</string>
     <string name="settings_font_family_inter">Inter</string>
     <string name="settings_font_family_golos_text">Golos Text</string>
     <string name="settings_font_family_manrope">Manrope</string>

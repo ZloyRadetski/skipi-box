@@ -102,6 +102,8 @@ data class AppState(
     val bottomBarSize: Int = BottomBarSizeLarge,
     /** Size of the connection button in the classic Home view; medium by default. */
     val classicButtonSize: Int = ClassicButtonSizeMedium,
+    /** Decorate the app during a seasonal event, such as the New Year. */
+    val enableSeasonalEvents: Boolean = true,
     /** The user's saved colour themes, one theme code per line (see features.config.CustomThemeLibrary). */
     val customThemes: String = "",
     val enableHaptics: Boolean = true,

@@ -1175,6 +1175,8 @@
     <string name="settings_enable_subscription_swipe_summary">允许通过向左或向右滑动来切换订阅</string>
     <string name="settings_font_family">界面字体</string>
     <string name="settings_font_family_default">默认（系统）</string>
+    <string name="settings_seasonal_events">季节性装饰</string>
+    <string name="settings_seasonal_events_summary">在节日期间装饰应用：新年彩灯和雪花</string>
     <string name="settings_font_family_inter">Inter</string>
     <string name="settings_font_family_golos_text">Golos Text</string>
     <string name="settings_font_family_manrope">Manrope</string>

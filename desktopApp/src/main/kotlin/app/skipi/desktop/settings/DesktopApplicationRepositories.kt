@@ -465,6 +465,7 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
         classicButtonSize = classicButtonSize,
+        seasonalEvents = enableSeasonalEvents,
         customThemes = customThemes,
     )
 
@@ -526,6 +527,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     backgroundStyle = backgroundStyle ?: AppearanceSettingValues.BackgroundStyleClassic,
     bottomBarSize = bottomBarSize ?: 1,
     classicButtonSize = classicButtonSize ?: AppearanceSettingValues.ClassicButtonSizeMedium,
+    enableSeasonalEvents = enableSeasonalEvents,
     customThemes = customThemes,
     classicShowFloatingPowerButton = classicShowFloatingPowerButton,
     colorMode = when (themeMode) {
@@ -678,6 +680,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         backgroundPhotoDimPercent = state.backgroundPhotoDimPercent,
         bottomBarSize = state.bottomBarSize,
         classicButtonSize = state.classicButtonSize,
+        enableSeasonalEvents = state.enableSeasonalEvents,
         customThemes = state.customThemes,
         seedIndex = state.seedIndex,
         customMaterialYouSeed = state.customMaterialYouSeed,
@@ -737,6 +740,7 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
         backgroundPhotoDimPercent = appearance.backgroundPhotoDimPercent,
         bottomBarSize = appearance.bottomBarSize,
         classicButtonSize = appearance.classicButtonSize,
+        enableSeasonalEvents = appearance.seasonalEvents,
         customThemes = appearance.customThemes,
     )
 }

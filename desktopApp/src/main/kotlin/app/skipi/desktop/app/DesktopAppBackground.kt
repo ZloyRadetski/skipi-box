@@ -5,6 +5,8 @@ package app.skipi.desktop
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import app.seasonal.activeSeasonalEvent
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import app.skipi.ui.background.SkipiAppBackground
@@ -35,6 +37,11 @@ internal fun DesktopAppBackground(
     } else {
         null
     }
+    val seasonalEvent = remember(settings.enableSeasonalEvents) {
+        val today = java.time.LocalDate.now()
+        // TEMP-PREVIEW: forced to December so the New Year decoration shows out of season; remove before commit.
+        activeSeasonalEvent(12, today.dayOfMonth, settings.enableSeasonalEvents)
+    }
     SkipiAppBackground(
         style = style,
         isDark = SkipiTheme.colors.isDark,
@@ -43,6 +50,7 @@ internal fun DesktopAppBackground(
         dimPercent = settings.backgroundPhotoDimPercent ?: 45,
         photo = photo,
         reduceMotion = false,
+        seasonalEvent = seasonalEvent,
         content = content,
     )
 }

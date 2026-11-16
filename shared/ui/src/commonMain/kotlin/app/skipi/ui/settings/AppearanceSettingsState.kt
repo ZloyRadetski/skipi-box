@@ -11,6 +11,7 @@ data class AppearanceSettingsState(
     val bottomBarSize: Int = 1,
     val classicButtonSize: Int = 1,
     val classicShowFloatingPowerButton: Boolean = true,
+    val enableSeasonalEvents: Boolean = true,
     val colorMode: Int = 0,
     val connectionDisplayMode: Int = 1,
     val customAccentColor: Long? = null,
