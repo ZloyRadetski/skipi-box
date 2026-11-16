@@ -186,6 +186,25 @@ val windowsPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
     "${parts[0]}.${parts[1]}.$windowsBuildNumber"
 }
 
+// The MSI closes a running SKIPI (and its hev tunnel process) by itself instead of failing on files in use. jpackage
+// cannot add custom actions, so the finished package is edited (see the script for what is added and why).
+if (isWindowsHost) {
+    tasks.matching { task -> task.name == "packageMsi" }.configureEach {
+        doLast {
+            val msi = layout.buildDirectory.dir("compose/binaries/main/msi").get().asFile
+                .listFiles { file -> file.extension == "msi" && windowsPackageVersion in file.name }
+                ?.singleOrNull() ?: error("packageMsi produced no MSI for $windowsPackageVersion")
+            val script = file("packaging/windows/patch-msi-close-app.ps1")
+            val process = ProcessBuilder(
+                "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+                "-File", script.absolutePath, "-Msi", msi.absolutePath,
+            ).redirectErrorStream(true).start()
+            val output = process.inputStream.bufferedReader().readText()
+            check(process.waitFor() == 0) { "Patching ${msi.name} failed: $output" }
+        }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "app.skipi.desktop.MainKt"
