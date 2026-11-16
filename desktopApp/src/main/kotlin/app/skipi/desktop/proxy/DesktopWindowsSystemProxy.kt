@@ -270,6 +270,8 @@ class DesktopWindowsSystemProxyLeaseManager(
     commandRunner: DesktopWindowsCommandRunner = ProcessDesktopWindowsCommandRunner,
     private val registry: DesktopWindowsRegistry = RegExeDesktopWindowsRegistry(commandRunner),
     private val refresher: DesktopWindowsInternetSettingsRefresher = PowerShellWinInetSettingsRefresher(commandRunner),
+    /** Whether something accepts connections on this loopback port; a proxy that nothing serves is dead. */
+    private val loopbackPortOpen: (Int) -> Boolean = ::probeLoopbackPort,
 ) : DesktopSystemProxyManager {
     override fun acquire(endpoints: DesktopSystemProxyEndpoints): Result<DesktopSystemProxyLeaseResult> =
         acquire(DesktopWindowsHttpProxyEndpoint(host = endpoints.host, port = endpoints.httpPort))
@@ -285,15 +287,16 @@ class DesktopWindowsSystemProxyLeaseManager(
             if (existing != null) {
                 val ownership = ownershipOf(existing).getOrThrow()
                 if (ownership == DesktopWindowsSystemProxyOwnership.Active) {
-                    check(existing.endpoint == endpoint) {
-                        "A SKIPI system proxy lease is already active for ${existing.endpoint.host}:${existing.endpoint.port}"
+                    if (existing.endpoint == endpoint) {
+                        return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
+                            action = DesktopWindowsSystemProxyLeaseAction.AlreadyAcquired,
+                            message = desktopText(Res.string.desktop_system_proxy_already_owned, "Windows"),
+                        )
                     }
-                    return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
-                        action = DesktopWindowsSystemProxyLeaseAction.AlreadyAcquired,
-                        message = desktopText(Res.string.desktop_system_proxy_already_owned, "Windows"),
-                    )
-                }
-                if (ownership == DesktopWindowsSystemProxyOwnership.Restorable) {
+                    // Our own lease on another port (a dynamic port moves at every start): hand back the
+                    // user's original settings and take the new endpoint over them, so the snapshot stays theirs.
+                    restoreOwnedLease(existing).getOrThrow()
+                } else if (ownership == DesktopWindowsSystemProxyOwnership.Restorable) {
                     restoreOwnedLease(existing).getOrThrow()
                 } else {
                     discardUnownedLease(existing).getOrThrow()
@@ -409,11 +412,35 @@ class DesktopWindowsSystemProxyLeaseManager(
     }.map { }
 
     private fun readSnapshot(): Result<DesktopWindowsSystemProxySnapshot> = runCatching {
+        val enable = registry.read(InternetSettingsKey, ProxyEnableValue).getOrThrow()
+        val server = registry.read(InternetSettingsKey, ProxyServerValue).getOrThrow()
         DesktopWindowsSystemProxySnapshot(
-            proxyEnable = registry.read(InternetSettingsKey, ProxyEnableValue).getOrThrow(),
-            proxyServer = registry.read(InternetSettingsKey, ProxyServerValue).getOrThrow(),
+            // A dead loopback proxy is what an earlier session of ours left behind, not the user's own setting.
+            // Restoring it "enabled" would point every browser at a port nobody serves.
+            proxyEnable = if (enable.matchesDword(1) && server.isDeadLoopbackProxy()) DesktopWindowsRegistryValue.dword(0) else enable,
+            proxyServer = server,
             proxyOverride = registry.read(InternetSettingsKey, ProxyOverrideValue).getOrThrow(),
         )
+    }
+
+    /**
+     * Switches off an enabled system proxy that points at a loopback port nobody serves: what a session that
+     * ended without handing the proxy back leaves, and nothing but errors for every program that follows the
+     * system. The proxy of a live session (a lease) and any proxy that answers, or is not on loopback, stay.
+     */
+    override fun repairStale(): Result<Boolean> = withExclusiveLeaseLock {
+        if (registry.read(MarkerRegistryKey, MarkerRegistryValue).getOrThrow() != null) return@withExclusiveLeaseLock false
+        val enable = registry.read(InternetSettingsKey, ProxyEnableValue).getOrThrow()
+        val server = registry.read(InternetSettingsKey, ProxyServerValue).getOrThrow()
+        if (!enable.matchesDword(1) || !server.isDeadLoopbackProxy()) return@withExclusiveLeaseLock false
+        registry.write(InternetSettingsKey, ProxyEnableValue, DesktopWindowsRegistryValue.dword(0)).getOrThrow()
+        refresher.refresh().getOrThrow()
+        true
+    }
+
+    private fun DesktopWindowsRegistryValue?.isDeadLoopbackProxy(): Boolean {
+        val endpoints = proxyEndpointsOrNull() ?: return false
+        return endpoints.all { (host, port) -> host in LoopbackHosts && !loopbackPortOpen(port) }
     }
 
     private fun ownershipOf(lease: DesktopWindowsSystemProxyLease): Result<DesktopWindowsSystemProxyOwnership> = runCatching {
@@ -425,7 +452,7 @@ class DesktopWindowsSystemProxyLeaseManager(
         val currentOverride = registry.read(InternetSettingsKey, ProxyOverrideValue).getOrThrow()
         if (
             currentEnable.matchesDword(1) &&
-            currentServer.matchesString(lease.endpoint.proxyServerValue()) &&
+            currentServer.matchesEndpoint(lease.endpoint) &&
             currentOverride.matchesString(lease.appliedProxyOverride)
         ) {
             DesktopWindowsSystemProxyOwnership.Active
@@ -434,7 +461,8 @@ class DesktopWindowsSystemProxyLeaseManager(
             // Restoring is safe only if all values are either the target or the captured original values.
             val knownValues = listOf(
                 currentEnable.isEither(DesktopWindowsRegistryValue.dword(1), lease.snapshot.proxyEnable),
-                currentServer.isEither(DesktopWindowsRegistryValue.string(lease.endpoint.proxyServerValue()), lease.snapshot.proxyServer),
+                currentServer.matchesEndpoint(lease.endpoint) ||
+                    currentServer.isEither(DesktopWindowsRegistryValue.string(lease.endpoint.proxyServerValue()), lease.snapshot.proxyServer),
                 currentOverride.isEither(DesktopWindowsRegistryValue.string(lease.appliedProxyOverride), lease.snapshot.proxyOverride),
             )
             if (knownValues.all { it }) DesktopWindowsSystemProxyOwnership.Restorable
@@ -507,7 +535,39 @@ class DesktopWindowsSystemProxyLeaseManager(
         const val ProxyOverrideValue = "ProxyOverride"
         const val MarkerRegistryKey = "HKCU\\Software\\SKIPI\\Desktop"
         const val MarkerRegistryValue = "SystemProxyLease"
+        val LoopbackHosts = setOf("127.0.0.1", "localhost", "[::1]")
     }
+}
+
+/** The (host, port) pairs of a ProxyServer value ("H:P", "http=H:P;https=H:P", "http://H:P"); null if unreadable. */
+private fun DesktopWindowsRegistryValue?.proxyEndpointsOrNull(): List<Pair<String, Int>>? {
+    val text = stringDataOrNull()?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    return text.split(';').map(String::trim).filter(String::isNotEmpty).map { part ->
+        val address = part.substringAfter('=', part).removePrefix("http://").removePrefix("https://").trimEnd('/')
+        val host = address.substringBeforeLast(':', "").lowercase()
+        val port = address.substringAfterLast(':', "").toIntOrNull() ?: return null
+        if (host.isEmpty()) return null
+        host to port
+    }.takeIf(List<*>::isNotEmpty)
+}
+
+/**
+ * Whether the value points at [endpoint] and nowhere else, however Windows wrote it: WinINet turns
+ * "http=H:P;https=H:P" into "H:P" when it refreshes, and the lease must still recognise that as its own.
+ */
+private fun DesktopWindowsRegistryValue?.matchesEndpoint(endpoint: DesktopWindowsHttpProxyEndpoint): Boolean {
+    val endpoints = proxyEndpointsOrNull() ?: return false
+    return endpoints.all { (host, port) -> host == endpoint.host && port == endpoint.port }
+}
+
+private fun probeLoopbackPort(port: Int): Boolean = try {
+    java.net.Socket().use { socket ->
+        socket.connect(java.net.InetSocketAddress("127.0.0.1", port), 250)
+        true
+    }
+} catch (_: java.io.IOException) {
+    false
 }
 
 private fun DesktopWindowsRegistryValue?.stringDataOrNull(): String? =

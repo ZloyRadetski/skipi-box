@@ -4,6 +4,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.gradle.api.tasks.testing.Test
 import java.io.File
+import java.util.Properties
 
 val skipiCoreSourceDirectory = rootProject.file("../skipi-core")
 val isWindowsHost = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
@@ -163,8 +164,26 @@ val macPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
 // Windows Installer compares only major.minor.build, and every build of one x.y.z (0.5.0-rc.8, 0.5.0-rc.9, 0.5.0)
 // carries the same name, so a new MSI looked like the version already installed and never upgraded it. The commit
 // count is the build number: it only grows, and fits the 65535 the format allows.
+//
+// Building again without a new commit (a local MSI of uncommitted changes) gave the installed version's number, and
+// Windows Installer refuses a package with the same version and product code ("another version of this product is
+// already installed"). A local MSI build therefore never reuses a build number: the last one is kept in
+// local.properties (not in git) and the next is at least one above it. CI builds start from a clean checkout and
+// use the commit count as before.
+val windowsBuildNumber: Int = run {
+    val commitCount = getGitVersionCode().coerceIn(0, 65535)
+    val buildsMsi = gradle.startParameter.taskNames.any { name -> name.substringAfterLast(':').equals("packageMsi", ignoreCase = true) }
+    if (System.getenv("CI") != null || !buildsMsi) return@run commitCount
+    val file = rootProject.file("local.properties")
+    val localProps = Properties().apply { if (file.isFile) file.inputStream().use(::load) }
+    val last = localProps.getProperty("skipi.lastMsiBuildNumber")?.toIntOrNull() ?: 0
+    val next = maxOf(commitCount, last + 1).coerceAtMost(65535)
+    localProps.setProperty("skipi.lastMsiBuildNumber", next.toString())
+    file.outputStream().use { localProps.store(it, null) }
+    next
+}
 val windowsPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
-    "${parts[0]}.${parts[1]}.${getGitVersionCode().coerceIn(0, 65535)}"
+    "${parts[0]}.${parts[1]}.$windowsBuildNumber"
 }
 
 compose.desktop {

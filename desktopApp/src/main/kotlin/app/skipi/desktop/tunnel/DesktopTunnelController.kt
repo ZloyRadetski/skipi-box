@@ -57,9 +57,20 @@ class DesktopTunnelController(
     /** Always called before stopping SKIPI Core, including after a settings change. */
     private val releaseSystemProxy: () -> Result<Unit> = { Result.success(Unit) },
     private val systemProxySupported: () -> Boolean = { false },
+    /**
+     * Runs before anything starts, in both modes: a system proxy SKIPI left from an earlier session
+     * points at a port that no longer listens (a dynamic port moves at every start) and would divert or
+     * break the new session's traffic. Best effort: a failure is only logged.
+     */
+    private val reconcileSystemProxy: () -> Result<Unit> = { Result.success(Unit) },
     private val startPlanForProfile: ((String) -> Result<DesktopTunnelStartPlan>)? = null,
     /** Read once per connect: a TUN session replaces the system proxy and is stopped as it started. */
     private val tunMode: () -> Boolean = { false },
+    /**
+     * Runs after Core started and before the tunnel does, in TUN mode: the tunnel is sent to Core's local SOCKS
+     * endpoint, and a wrong port or login leaves it up and silent. A failure stops Core and fails the start.
+     */
+    private val verifyTunEndpoint: () -> Result<Unit> = { Result.success(Unit) },
     /** Runs before Core starts in TUN mode, so Core never makes a connection that could loop into the tunnel. */
     private val prepareTun: () -> Result<Unit> = { Result.success(Unit) },
     /** Undoes [prepareTun] when Core or the tunnel could not be started. */
@@ -86,6 +97,9 @@ class DesktopTunnelController(
         }
         var operationStage = TunnelOperationStage.PrepareConfiguration
         val useTun = tunMode()
+        reconcileSystemProxy().exceptionOrNull()?.let { error ->
+            DesktopLogger.warn("Tunnel", "The system proxy could not be reconciled before the start", error)
+        }
         var tunPrepared = false
         val result = runCatching {
             if (useTun) {
@@ -136,6 +150,7 @@ class DesktopTunnelController(
             try {
                 if (useTun) {
                     operationStage = TunnelOperationStage.Start
+                    verifyTunEndpoint().getOrThrow()
                     startTun().getOrThrow()
                     tunActive = true
                 } else {

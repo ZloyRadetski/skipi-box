@@ -137,16 +137,169 @@ class DesktopWindowsSystemProxyTest {
         fixture.close()
     }
 
+    // A dynamic local port changes at every start. A lease left on the old port (the app was killed, or the
+    // proxy was never released) used to fail the next acquire with "already active for ...", so nothing
+    // could connect again until the lease was cleared by hand.
+    @Test
+    fun acquiringAnotherPortRepointsTheActiveLeaseAndKeepsTheOriginalSnapshot() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(0))
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("corp-proxy:8080"))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+
+        val moved = fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 12_345))
+
+        assertTrue(moved.isSuccess, "acquire failed: ${moved.exceptionOrNull()}")
+        assertEquals(DesktopWindowsRegistryValue.dword(1), fixture.registry[ProxyEnable])
+        assertEquals(
+            DesktopWindowsRegistryValue.string("http=127.0.0.1:12345;https=127.0.0.1:12345"),
+            fixture.registry[ProxyServer],
+        )
+
+        val released = fixture.manager.release().getOrThrow()
+
+        assertEquals(DesktopWindowsSystemProxyLeaseAction.Released, released.action)
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable])
+        assertEquals(DesktopWindowsRegistryValue.string("corp-proxy:8080"), fixture.registry[ProxyServer])
+        assertEquals(null, fixture.registry.marker())
+        fixture.close()
+    }
+
+    @Test
+    fun aRestartedAppRepointsALeaseLeftOnAnOldPort() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(0))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+
+        val moved = fixture.newManager().acquire(DesktopWindowsHttpProxyEndpoint(port = 12_345))
+
+        assertTrue(moved.isSuccess, "acquire failed: ${moved.exceptionOrNull()}")
+        assertEquals(
+            DesktopWindowsRegistryValue.string("http=127.0.0.1:12345;https=127.0.0.1:12345"),
+            fixture.registry[ProxyServer],
+        )
+        assertEquals(DesktopWindowsSystemProxyLeaseAction.Released, fixture.newManager().release().getOrThrow().action)
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable])
+        fixture.close()
+    }
+
+    // WinINet rewrites the ProxyServer value it is refreshed with ("http=H:P;https=H:P" comes back as "H:P"), so
+    // the value stopped matching the lease, the release took the proxy for somebody else's and left it enabled on
+    // a port nobody listened on any more: the browser said "the proxy server refuses connections".
+    @Test
+    fun aProxyServerValueWindowsRewroteToTheSameEndpointIsStillOurs() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(0))
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("corp-proxy:8080"))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:11809"))
+
+        val released = fixture.manager.release().getOrThrow()
+
+        assertEquals(DesktopWindowsSystemProxyLeaseAction.Released, released.action)
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable])
+        assertEquals(DesktopWindowsRegistryValue.string("corp-proxy:8080"), fixture.registry[ProxyServer])
+        assertEquals(null, fixture.registry.marker())
+        fixture.close()
+    }
+
+    @Test
+    fun aRewrittenValueOfTheSameEndpointIsStillOursAfterARestart() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(0))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:11809"))
+
+        val recovered = fixture.newManager().recover().getOrThrow()
+
+        assertEquals(DesktopWindowsSystemProxyLeaseAction.Recovered, recovered.action)
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable])
+        fixture.close()
+    }
+
+    // The "original" settings the lease restores must not be a dead proxy of ours that an earlier session left.
+    @Test
+    fun aDeadLoopbackProxyIsNotRestoredAsTheOriginalSetting() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:13360"))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+
+        fixture.manager.release().getOrThrow()
+
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable], "the dead proxy stays off")
+        fixture.close()
+    }
+
+    @Test
+    fun aLiveLoopbackProxyOfAnotherToolIsRestoredAsTheOriginalSetting() {
+        val fixture = ProxyFixture()
+        fixture.openPorts += 13_360
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:13360"))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+
+        fixture.manager.release().getOrThrow()
+
+        assertEquals(DesktopWindowsRegistryValue.dword(1), fixture.registry[ProxyEnable])
+        assertEquals(DesktopWindowsRegistryValue.string("127.0.0.1:13360"), fixture.registry[ProxyServer])
+        fixture.close()
+    }
+
+    @Test
+    fun repairSwitchesOffAnEnabledProxyThatPointsAtADeadLoopbackPort() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("http=127.0.0.1:13360;https=127.0.0.1:13360"))
+
+        val repaired = fixture.manager.repairStale().getOrThrow()
+
+        assertTrue(repaired)
+        assertEquals(DesktopWindowsRegistryValue.dword(0), fixture.registry[ProxyEnable])
+        assertEquals(
+            DesktopWindowsRegistryValue.string("http=127.0.0.1:13360;https=127.0.0.1:13360"),
+            fixture.registry[ProxyServer],
+            "only the switch changes",
+        )
+        fixture.close()
+    }
+
+    @Test
+    fun repairLeavesLiveRemoteAndOurOwnProxiesAlone() {
+        val fixture = ProxyFixture()
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))
+
+        fixture.openPorts += 13_360
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:13360"))
+        assertFalse(fixture.manager.repairStale().getOrThrow(), "a live loopback proxy")
+
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("corp-proxy:8080"))
+        assertFalse(fixture.manager.repairStale().getOrThrow(), "a remote proxy")
+
+        fixture.registry.put(ProxyServer, DesktopWindowsRegistryValue.string("127.0.0.1:14000"))
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(0))
+        assertFalse(fixture.manager.repairStale().getOrThrow(), "a disabled proxy")
+
+        fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+        assertFalse(fixture.manager.repairStale().getOrThrow(), "the lease of this very session")
+        assertEquals(DesktopWindowsRegistryValue.dword(1), fixture.registry[ProxyEnable])
+        fixture.close()
+    }
+
     private class ProxyFixture {
         val directory: Path = Files.createTempDirectory("skipi-system-proxy-test")
         val leasePath: Path = directory.resolve("system-proxy-lease.json")
         val registry = FakeRegistry()
         val commandRunner = FakeWindowsCommandRunner(registry)
+        /** The loopback ports something listens on; every other loopback port is dead. */
+        val openPorts = mutableSetOf<Int>()
         val manager = newManager()
 
         fun newManager(): DesktopWindowsSystemProxyLeaseManager = DesktopWindowsSystemProxyLeaseManager(
             leasePath = leasePath,
             commandRunner = commandRunner,
+            loopbackPortOpen = { port -> port in openPorts },
         )
 
         fun close() {

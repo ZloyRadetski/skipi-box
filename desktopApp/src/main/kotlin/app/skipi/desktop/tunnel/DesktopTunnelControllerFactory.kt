@@ -143,11 +143,42 @@ internal fun createDesktopTunnelController(
             }
         },
         systemProxySupported = systemProxyManager::isSupportedHost,
+        reconcileSystemProxy = {
+            if (!systemProxyManager.isSupportedHost()) {
+                Result.success(Unit)
+            } else {
+                // Hand back a proxy of an earlier session, then switch off one left pointing at a dead port.
+                systemProxyManager.release().map { }.onSuccess {
+                    systemProxyManager.repairStale().onSuccess { repaired ->
+                        if (repaired) DesktopLogger.info("Tunnel", "Switched off a system proxy that pointed at a dead local port")
+                    }
+                }
+            }
+        },
         // No silent fallback: with TUN mode on, a machine that cannot run it fails the connect and says why.
         tunMode = {
             val inputs = DesktopConnectInputs(readSettings(), readServers(), readConfigs(), readLatency().toMap())
             pinned = inputs
             inputs.settings.enableTunMode
+        },
+        verifyTunEndpoint = {
+            runCatching {
+                val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
+                    ?: error("SKIPI Core is not running")
+                // The address and login hev will use: the running Core's own, not the saved settings'.
+                val target = desktopTunStartRequest(
+                    plan = desktopTunInterfacePlan(settings(), configs()),
+                    options = options,
+                    logPath = "",
+                )
+                localProxyReadiness.awaitSocksEndpoint(
+                    host = target.socksAddress,
+                    port = target.socksPort,
+                    username = target.socksUsername,
+                    password = target.socksPassword,
+                    coreState = coreController::state,
+                ).getOrThrow()
+            }
         },
         prepareTun = {
             timedTunStage("prepare") {

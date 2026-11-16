@@ -42,7 +42,9 @@ internal class DesktopWindowsTunDevice(
 
     override fun close(): Result<Unit> {
         routes.detach()
-        interfaceName?.let { name -> runCatching { removeStaleAdapters(name) } }
+        // Removing the dead adapter takes a PowerShell start and a pnputil call (seconds). Nothing waits for it:
+        // its routes are already gone, and the next start queues its own clean-up behind this one and awaits it.
+        interfaceName?.let { name -> cleanupExecutor.execute { runCatching { removeStaleAdapters(name) } } }
         interfaceName = null
         return runCatching { core.closeTun() }
     }

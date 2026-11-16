@@ -60,6 +60,7 @@ class DesktopWindowsTunRoutesTest {
         val ran = mutableListOf<List<String>>()
         var checks = 0
         val attach = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command -> ran += command; Result.success(Unit) },
             adapterExists = { name -> assertEquals("skipi0", name); ++checks >= 3 },
             sleep = {},
@@ -76,6 +77,7 @@ class DesktopWindowsTunRoutesTest {
     fun attachFailsWhenTheAdapterNeverAppears() {
         val ran = mutableListOf<List<String>>()
         val attach = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command -> ran += command; Result.success(Unit) },
             adapterExists = { false },
             sleep = {},
@@ -93,6 +95,7 @@ class DesktopWindowsTunRoutesTest {
     fun aFailedRouteCommandRemovesTheRoutesAlreadyAddedAndReportsTheFailure() {
         val ran = mutableListOf<List<String>>()
         val attach = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command ->
                 ran += command
                 if ("prefix=128.0.0.0/1" in command && "add" in command) {
@@ -118,6 +121,7 @@ class DesktopWindowsTunRoutesTest {
         val ran = mutableListOf<List<String>>()
         var failDeletes = false
         val routes = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command ->
                 ran += command
                 if (failDeletes && "delete" in command) Result.failure(IllegalStateException("not found")) else Result.success(Unit)
@@ -156,6 +160,7 @@ class DesktopWindowsTunRoutesTest {
     fun theBlockRuleIsInstalledAfterTheRoutesAndRemovedOnDetach() {
         val ran = mutableListOf<List<String>>()
         val routes = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command -> ran += command; Result.success(Unit) },
             adapterExists = { true },
             sleep = {},
@@ -173,6 +178,7 @@ class DesktopWindowsTunRoutesTest {
     @Test
     fun aFailedBlockRuleDoesNotFailTheTunnel() {
         val routes = DesktopWindowsTunRoutes(
+            parallel = false,
             run = { command ->
                 if ("New-NetFirewallRule" in command.last()) Result.failure(IllegalStateException("no firewall service")) else Result.success(Unit)
             },
@@ -182,5 +188,169 @@ class DesktopWindowsTunRoutesTest {
         )
 
         assertTrue(routes.attach(ipv4Plan).isSuccess)
+    }
+
+    // Windows keeps the DNS servers of the physical adapter and sends queries out of the adapter that
+    // owns the server, so a tunnel adapter without DNS never resolves through the tunnel (Core's DNS
+    // that answers port 53 inside it is never asked). The adapter gets the plan's DNS and the lowest
+    // interface metric, which is what the DNS client ranks by.
+    private val dnsPlan = ipv4Plan.copy(dnsServers = listOf("1.1.1.1", "8.8.8.8"))
+
+    @Test
+    fun theTunnelAdapterIsGivenThePlansDnsAndTheLowestInterfaceMetric() {
+        val script = checkNotNull(windowsTunDnsCommand(dnsPlan)).last()
+
+        assertTrue("Set-DnsClientServerAddress -InterfaceAlias 'skipi0' -ServerAddresses ('1.1.1.1','8.8.8.8')" in script, script)
+        assertTrue("Set-NetIPInterface -InterfaceAlias 'skipi0'" in script && "-InterfaceMetric 1" in script, script)
+        assertTrue("Clear-DnsClientCache" in script, script)
+    }
+
+    @Test
+    fun aPlanWithoutDnsLeavesTheAdapterDnsAlone() {
+        assertEquals(null, windowsTunDnsCommand(ipv4Plan))
+    }
+
+    @Test
+    fun onlyIpAddressesReachTheDnsScript() {
+        val plan = ipv4Plan.copy(dnsServers = listOf("1.1.1.1", "x'; calc; '", "2606:4700:4700::1111"))
+
+        val script = checkNotNull(windowsTunDnsCommand(plan)).last()
+
+        assertTrue("('1.1.1.1','2606:4700:4700::1111')" in script, script)
+        assertTrue("calc" !in script, script)
+    }
+
+    @Test
+    fun dnsIsSetAfterTheRoutesAndBeforeTheBlockRule() {
+        val ran = mutableListOf<List<String>>()
+        val routes = DesktopWindowsTunRoutes(
+            parallel = false,
+            run = { command -> ran += command; Result.success(Unit) },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        routes.attach(dnsPlan).getOrThrow()
+
+        assertEquals(
+            windowsTunAddRouteCommands(dnsPlan) +
+                listOf(checkNotNull(windowsTunDnsCommand(dnsPlan)), windowsTunMulticastBlockCommand(dnsPlan)),
+            ran,
+        )
+    }
+
+    @Test
+    fun aFailedDnsCommandDoesNotFailTheTunnelAndDetachFlushesTheCache() {
+        val ran = mutableListOf<List<String>>()
+        val routes = DesktopWindowsTunRoutes(
+            parallel = false,
+            run = { command ->
+                ran += command
+                if ("Set-DnsClientServerAddress" in command.last()) Result.failure(IllegalStateException("no dns")) else Result.success(Unit)
+            },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        assertTrue(routes.attach(dnsPlan).isSuccess)
+        ran.clear()
+        routes.detach()
+
+        assertEquals(windowsTunDeleteRouteCommands(dnsPlan) + listOf(windowsTunMulticastUnblockCommand(), windowsTunDnsFlushCommand()), ran)
+    }
+
+    // Connecting and disconnecting the TUN took seconds: every command was its own process, run one after the
+    // other (four netsh calls and two PowerShell starts on the way up, the same on the way down).
+    @Test
+    fun parallelAttachRunsEveryCommandAndStillRollsBackAFailedRoute() {
+        val ran = java.util.Collections.synchronizedList(mutableListOf<List<String>>())
+        val routes = DesktopWindowsTunRoutes(
+            run = { command ->
+                ran += command
+                if ("prefix=128.0.0.0/1" in command && "add" in command) {
+                    Result.failure(IllegalStateException("netsh failed: access denied"))
+                } else {
+                    Result.success(Unit)
+                }
+            },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        val result = routes.attach(dnsPlan)
+
+        assertTrue(result.isFailure)
+        assertTrue(ran.containsAll(windowsTunAddRouteCommands(dnsPlan)), "every route was tried, ran=$ran")
+        assertTrue(ran.containsAll(windowsTunDeleteRouteCommands(dnsPlan)), "the routes that went in were removed, ran=$ran")
+    }
+
+    @Test
+    fun parallelAttachInstallsRoutesDnsAndTheBlockRule() {
+        val ran = java.util.Collections.synchronizedList(mutableListOf<List<String>>())
+        val routes = DesktopWindowsTunRoutes(
+            background = { task -> task() },
+            run = { command -> ran += command; Result.success(Unit) },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        routes.attach(dnsPlan).getOrThrow()
+
+        val expected = windowsTunAddRouteCommands(dnsPlan) +
+            listOf(checkNotNull(windowsTunDnsCommand(dnsPlan)), windowsTunMulticastBlockCommand(dnsPlan))
+        assertEquals(expected.toSet(), ran.toSet())
+        assertEquals(expected.size, ran.size)
+    }
+
+    // Only the routes decide when the system's traffic is back on the real adapter; the firewall rule and the
+    // DNS cache are cleaned up behind the disconnect, not in front of it.
+    @Test
+    fun detachWaitsOnlyForTheRoutesAndLeavesTheRestToTheBackground() {
+        val ran = mutableListOf<List<String>>()
+        val background = mutableListOf<() -> Unit>()
+        val routes = DesktopWindowsTunRoutes(
+            parallel = false,
+            background = { task -> background += task },
+            run = { command -> ran += command; Result.success(Unit) },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+        routes.attach(dnsPlan).getOrThrow()
+        background.clear()
+        ran.clear()
+
+        routes.detach()
+
+        assertEquals(windowsTunDeleteRouteCommands(dnsPlan), ran)
+        background.forEach { it() }
+        assertEquals(
+            windowsTunDeleteRouteCommands(dnsPlan) + listOf(windowsTunMulticastUnblockCommand(), windowsTunDnsFlushCommand()),
+            ran,
+        )
+    }
+
+    @Test
+    fun attachDoesNotWaitForTheDnsAndTheBlockRule() {
+        val ran = mutableListOf<List<String>>()
+        val background = mutableListOf<() -> Unit>()
+        val routes = DesktopWindowsTunRoutes(
+            parallel = false,
+            background = { task -> background += task },
+            run = { command -> ran += command; Result.success(Unit) },
+            adapterExists = { true },
+            sleep = {},
+            attempts = 1,
+        )
+
+        routes.attach(dnsPlan).getOrThrow()
+
+        assertEquals(windowsTunAddRouteCommands(dnsPlan), ran, "only the routes are waited for")
+        background.forEach { it() }
+        assertEquals(2, ran.size - windowsTunAddRouteCommands(dnsPlan).size)
     }
 }

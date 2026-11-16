@@ -23,6 +23,17 @@ class DesktopLocalHttpProxyTest {
         assertEquals(LocalProxyAuthMode.Off, settings.socksAuthMode(), "Desktop never authenticated SOCKS by default")
     }
 
+    // A fresh install, and a settings file that does not mention them, start with the HTTP inbound and the system
+    // proxy on (on a system that has one); only an explicit switch turns them off.
+    @Test
+    fun theHttpInboundAndTheSystemProxyAreOnByDefault() {
+        val settings = DesktopAppSettings()
+
+        assertEquals(isDesktopSystemProxySupported(), settings.useSystemProxy)
+        assertEquals(isDesktopSystemProxySupported(), settings.enableLocalHttpProxy)
+        assertTrue(settings.httpInboundEnabled() == isDesktopSystemProxySupported())
+    }
+
     @Test
     fun switchingTheHttpInboundOffAlsoSwitchesTheSystemProxyOff() {
         val on = DesktopAppSettings().withSystemProxy(enabled = true, supported = true)

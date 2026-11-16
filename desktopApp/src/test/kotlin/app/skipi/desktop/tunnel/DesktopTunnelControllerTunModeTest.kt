@@ -24,6 +24,10 @@ class DesktopTunnelControllerTunModeTest {
     private var prepareTunResult: Result<Unit> = Result.success(Unit)
     private var releaseProxyResult: Result<Unit> = Result.success(Unit)
     private var coreStartResult: Result<DesktopCoreState> = Result.success(DesktopCoreState(isRunning = true))
+    private var reconcileProxyResult: Result<Unit> = Result.success(Unit)
+    private var recordReconcile = false
+    private var verifyTunResult: Result<Unit> = Result.success(Unit)
+    private var recordVerify = false
 
     private fun controller() = DesktopTunnelController(
         configForProfile = { Result.success("{}") },
@@ -42,6 +46,14 @@ class DesktopTunnelControllerTunModeTest {
         acquireSystemProxy = { events += "proxy-acquire"; Result.success(Unit) },
         releaseSystemProxy = { events += "proxy-release"; releaseProxyResult },
         systemProxySupported = { true },
+        reconcileSystemProxy = {
+            if (recordReconcile) events += "proxy-reconcile"
+            reconcileProxyResult
+        },
+        verifyTunEndpoint = {
+            if (recordVerify) events += "tun-verify"
+            verifyTunResult
+        },
         tunMode = { tunMode },
         prepareTun = {
             events += "tun-prepare"
@@ -230,5 +242,84 @@ class DesktopTunnelControllerTunModeTest {
         controller.connect(TunnelConnectRequest("p"))
 
         assertEquals(listOf("core-start", "proxy-await", "proxy-acquire"), events)
+    }
+
+    // A system proxy left from an earlier session points at a port that no longer listens (a dynamic port
+    // changes at every start), and it would divert or break the traffic of the new session.
+    @Test
+    fun theSystemProxyIsReconciledBeforeAnythingStartsInTunMode() = runBlocking {
+        recordReconcile = true
+        val controller = controller()
+
+        assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
+
+        assertEquals(listOf("proxy-reconcile", "tun-prepare", "core-start", "tun-start"), events)
+    }
+
+    @Test
+    fun theSystemProxyIsReconciledBeforeCoreStartsInProxyMode() = runBlocking {
+        recordReconcile = true
+        tunMode = false
+        val controller = controller()
+
+        assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
+
+        assertEquals(listOf("proxy-reconcile", "core-start", "proxy-await", "proxy-acquire"), events)
+    }
+
+    @Test
+    fun aFailedReconcileNeverBlocksTheConnect() = runBlocking {
+        recordReconcile = true
+        reconcileProxyResult = Result.failure(IllegalStateException("registry locked"))
+        val controller = controller()
+
+        assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
+        assertEquals(TunnelPhase.Connected, controller.snapshot().phase)
+    }
+
+    @Test
+    fun aRejectedConnectDoesNotTouchTheSystemProxy() = runBlocking {
+        recordReconcile = true
+        val controller = controller()
+        controller.connect(TunnelConnectRequest("p"))
+        events.clear()
+
+        assertTrue(controller.connect(TunnelConnectRequest("p")).isFailure)
+
+        assertFalse("proxy-reconcile" in events, "a running session owns the proxy, events=$events")
+    }
+
+    @Test
+    fun theLocalEndpointIsVerifiedAfterCoreStartsAndBeforeTheTunnelStarts() = runBlocking {
+        recordVerify = true
+        val controller = controller()
+
+        assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
+
+        assertEquals(listOf("tun-prepare", "core-start", "tun-verify", "tun-start"), events)
+    }
+
+    @Test
+    fun aDeadLocalEndpointFailsTheConnectInsteadOfLeavingADeadTunnel() = runBlocking {
+        recordVerify = true
+        verifyTunResult = Result.failure(IllegalStateException("nothing listens on 127.0.0.1:11741"))
+        val controller = controller()
+
+        val error = controller.connect(TunnelConnectRequest("p")).exceptionOrNull() as TunnelOperationException
+
+        assertTrue("11741" in error.failure.message)
+        assertEquals(listOf("tun-prepare", "core-start", "tun-verify", "core-stop", "tun-release"), events)
+        assertEquals(TunnelPhase.Failed, controller.snapshot().phase)
+    }
+
+    @Test
+    fun theLocalEndpointIsNotVerifiedInProxyMode() = runBlocking {
+        recordVerify = true
+        tunMode = false
+        val controller = controller()
+
+        controller.connect(TunnelConnectRequest("p"))
+
+        assertFalse("tun-verify" in events)
     }
 }

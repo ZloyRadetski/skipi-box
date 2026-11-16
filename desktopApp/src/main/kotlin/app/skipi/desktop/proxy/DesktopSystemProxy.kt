@@ -49,6 +49,12 @@ interface DesktopSystemProxyManager {
     fun release(): Result<DesktopSystemProxyLeaseResult>
     fun recover(): Result<DesktopSystemProxyLeaseResult>
     fun forceClear(): Result<Unit>
+
+    /**
+     * Before a start: switches off a system proxy of ours that an earlier session left pointing at a port nobody
+     * serves. True when something was changed. Only Windows needs it so far.
+     */
+    fun repairStale(): Result<Boolean> = Result.success(false)
 }
 
 internal fun isDesktopSystemProxySupported(

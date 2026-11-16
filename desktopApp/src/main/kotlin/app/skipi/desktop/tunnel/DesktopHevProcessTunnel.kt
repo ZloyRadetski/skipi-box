@@ -18,7 +18,7 @@ internal class DesktopHevProcessTunnel(
     private val startProcess: (command: List<String>, directory: Path) -> Process = ::startHevProcess,
     // hev prints nothing when it is up, and a start that cannot work (a missing DLL, a bad config)
     // ends within a few tens of milliseconds, so a long wait only delays every connect.
-    private val startupGraceMillis: Long = 400,
+    private val startupGraceMillis: Long = 150,
     private val stopTimeoutMillis: Long = 5_000,
 ) : DesktopHevTunnel {
     private var process: Process? = null
