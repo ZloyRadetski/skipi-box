@@ -35,6 +35,9 @@ class ProxyServerEditorUiState internal constructor() {
         private set
     var showDiscardConfirmation by mutableStateOf(false)
         private set
+    /** Why the draft could not be saved; shown inside the discard dialog so the reason is never lost. */
+    var discardReason by mutableStateOf<String?>(null)
+        private set
 
     val showFullValidationWarning: Boolean get() = pendingSaveIssues.isNotEmpty()
 
@@ -46,12 +49,14 @@ class ProxyServerEditorUiState internal constructor() {
         pendingSaveIssues = emptyList()
     }
 
-    fun requestDiscardConfirmation() {
+    fun requestDiscardConfirmation(reason: String? = null) {
+        discardReason = reason
         showDiscardConfirmation = true
     }
 
     fun dismissDiscardConfirmation() {
         showDiscardConfirmation = false
+        discardReason = null
     }
 }
 

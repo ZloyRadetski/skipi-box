@@ -83,8 +83,11 @@ fun SkipiProxyServerEditorScreen(
     fullValidationMessages: List<String>,
     showDiscardConfirmation: Boolean,
     showFullValidationWarning: Boolean,
-    /** Leaving saves the draft (or asks what to do with it), so there is no separate save action. */
+    /** Leaving saves the draft (or asks what to do with it). */
     onRequestBack: () -> Unit,
+    /** Explicit save in the top bar; it runs the same save as leaving, so a draft that cannot be saved says why. */
+    onSave: () -> Unit,
+    discardReason: String? = null,
     onConfirmDiscard: () -> Unit,
     onDismissDiscard: () -> Unit,
     onCopy: (() -> Unit)?,
@@ -107,6 +110,11 @@ fun SkipiProxyServerEditorScreen(
                     BackNavigationIcon(onClick = onRequestBack)
                 },
                 actions = {
+                    NavigationIcon(
+                        onClick = onSave,
+                        imageVector = MiuixIcons.Ok,
+                        contentDescription = stringResource(Res.string.common_save),
+                    )
                     if (serverEdit is StrategyGroup) {
                         val menuEntries = buildList {
                             if (onCopy != null) {
@@ -197,7 +205,9 @@ fun SkipiProxyServerEditorScreen(
     WarningConfirmDialog(
         show = showDiscardConfirmation,
         title = messages.discardTitle,
-        summary = messages.discardSummary,
+        summary = discardReason?.takeIf { it.isNotBlank() }
+            ?.let { reason -> reason + "\n\n" + messages.discardSummary }
+            ?: messages.discardSummary,
         dismissText = messages.returnEdit,
         confirmText = messages.discard,
         onDismissRequest = onDismissDiscard,

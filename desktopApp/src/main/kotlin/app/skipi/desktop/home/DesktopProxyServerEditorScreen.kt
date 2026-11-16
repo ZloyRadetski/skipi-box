@@ -125,8 +125,7 @@ internal fun DesktopProxyServerEditorHost(
         }
         when (val decision = ProxyServerEditorController.requestSave(serverEdit)) {
             is ProxyServerEditorSaveDecision.Reject -> {
-                onMessage(validationMessageOf(decision.issue))
-                editorUiState.requestDiscardConfirmation()
+                editorUiState.requestDiscardConfirmation(validationMessageOf(decision.issue))
             }
             is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
             ProxyServerEditorSaveDecision.Save -> {
@@ -134,6 +133,17 @@ internal fun DesktopProxyServerEditorHost(
                 editorUiState.dismissDiscardConfirmation()
                 onDismiss()
             }
+        }
+    }
+
+    fun requestBack() {
+        if (strategyGroupMemberIds != (original as? StrategyGroup)?.proxyServerIds.orEmpty() ||
+            strategyGroupWholeGroupIds != (original as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty() ||
+            ProxyServerEditorController.hasChanges(original, serverEdit)
+        ) {
+            saveDraft()
+        } else {
+            onDismiss()
         }
     }
 
@@ -223,16 +233,9 @@ internal fun DesktopProxyServerEditorHost(
             fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
             showDiscardConfirmation = editorUiState.showDiscardConfirmation,
             showFullValidationWarning = editorUiState.showFullValidationWarning,
-            onRequestBack = {
-                if (strategyGroupMemberIds != (original as? StrategyGroup)?.proxyServerIds.orEmpty() ||
-                    strategyGroupWholeGroupIds != (original as? StrategyGroup)?.effectiveWholeGroupIds().orEmpty() ||
-                    ProxyServerEditorController.hasChanges(original, serverEdit)
-                ) {
-                    saveDraft()
-                } else {
-                    onDismiss()
-                }
-            },
+            discardReason = editorUiState.discardReason,
+            onSave = ::requestBack,
+            onRequestBack = ::requestBack,
             onConfirmDiscard = {
                 editorUiState.dismissDiscardConfirmation()
                 onDismiss()

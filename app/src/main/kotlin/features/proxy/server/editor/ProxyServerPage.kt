@@ -177,8 +177,7 @@ fun ProxyServerPage(
         }
         when (val decision = ProxyServerEditorController.requestSave(psEdit)) {
             is ProxyServerEditorSaveDecision.Reject -> {
-                scope.launch { tipNotifier.show(validationMessageOf(decision.issue)) }
-                editorUiState.requestDiscardConfirmation()
+                editorUiState.requestDiscardConfirmation(validationMessageOf(decision.issue))
             }
             is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
             ProxyServerEditorSaveDecision.Save -> saveProxyServer()
@@ -236,6 +235,8 @@ fun ProxyServerPage(
         fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
         showDiscardConfirmation = editorUiState.showDiscardConfirmation,
         showFullValidationWarning = editorUiState.showFullValidationWarning,
+        discardReason = editorUiState.discardReason,
+        onSave = ::requestBack,
         onRequestBack = ::requestBack,
         onConfirmDiscard = {
             editorUiState.dismissDiscardConfirmation()
