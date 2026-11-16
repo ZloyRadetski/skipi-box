@@ -27,6 +27,32 @@ class DesktopStatusNotifierMenuTest {
     }
 
     @Test
+    fun theTunToggleSitsRightAfterTheConnectToggleAndRunsItsOwnAction() {
+        val calls = mutableListOf<String>()
+        val entries = desktopTrayMenuEntries(
+            serverName = null,
+            toggleLabel = "Connect",
+            exitLabel = "Exit",
+            onToggleTunnel = { calls += "toggle" },
+            onExit = { calls += "exit" },
+            tunLabel = "Enable TUN",
+            onToggleTun = { calls += "tun" },
+        )
+
+        assertEquals(listOf("Connect", "Enable TUN", null, "Exit"), entries.map { (it as? DesktopTrayMenuEntry.Action)?.label })
+        // Menu ids count from 1: the connect toggle is 1, the TUN switch 2.
+        DesktopStatusNotifierMenu(entries).click(2)
+        assertEquals(listOf("tun"), calls)
+    }
+
+    @Test
+    fun withoutATunLabelTheMenuIsUnchanged() {
+        val entries = desktopTrayMenuEntries(null, "Connect", "Exit", {}, {})
+
+        assertEquals(3, entries.size)
+    }
+
+    @Test
     fun newLabelsBumpTheRevisionAndSameLabelsDoNot() {
         val calls = mutableListOf<String>()
         val menu = DesktopStatusNotifierMenu(entries(calls))

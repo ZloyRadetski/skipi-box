@@ -100,6 +100,7 @@ import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import app.skipi.ui.navigation.SkipiNavigationAction
 import app.skipi.ui.navigation.SkipiTool
 import app.skipi.ui.navigation.label
 import app.skipi.ui.navigation.skipiToolFromMenuId
@@ -127,6 +128,7 @@ fun ProxyHomeScreen(
     onLeftColumnExtraChange: (Dp) -> Unit = {},
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
+    extraPinnedActions: List<SkipiNavigationAction> = emptyList(),
 ) {
     val state by store.uiState.collectAsState()
 
@@ -143,6 +145,7 @@ fun ProxyHomeScreen(
         onLeftColumnExtraChange = onLeftColumnExtraChange,
         pinnedTools = pinnedTools,
         onOpenPinnedTool = onOpenPinnedTool,
+        extraPinnedActions = extraPinnedActions,
     )
 }
 
@@ -166,6 +169,8 @@ fun ProxyHomeScreenContent(
     /** Tools shown as a menu in the header; empty hides the button. */
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
+    /** Switches shown with the pinned tools in that menu: they do something instead of opening a page. */
+    extraPinnedActions: List<SkipiNavigationAction> = emptyList(),
 ) {
 val easterEgg = rememberHeaderEasterEggState()
     val windowClass = SkipiTheme.windowClass
@@ -417,8 +422,16 @@ val easterEgg = rememberHeaderEasterEggState()
                 toolActions = toolActions,
                 pinnedToolActions = pinnedTools.map { tool ->
                     SkipiProxyHomeHeaderAction(id = skipiToolMenuId(tool), title = tool.label(), icon = tool.icon)
+                } + extraPinnedActions.mapIndexed { index, action ->
+                    SkipiProxyHomeHeaderAction(id = ExtraPinnedActionIdPrefix + index, title = action.label, icon = action.icon)
                 },
-                onPinnedToolAction = { id -> skipiToolFromMenuId(id)?.let(onOpenPinnedTool) },
+                onPinnedToolAction = { id ->
+                    if (id.startsWith(ExtraPinnedActionIdPrefix)) {
+                        extraPinnedActions.getOrNull(id.removePrefix(ExtraPinnedActionIdPrefix).toIntOrNull() ?: -1)?.onClick?.invoke()
+                    } else {
+                        skipiToolFromMenuId(id)?.let(onOpenPinnedTool)
+                    }
+                },
                 easterEgg = easterEgg,
                 onAddAction = { id ->
                     when {
@@ -1175,3 +1188,5 @@ internal fun pagerSettledGroupToSelect(
     val groupId = groupIds.getOrNull(settledIndex) ?: return null
     return groupId.takeIf { it != selectedGroupId }
 }
+
+private const val ExtraPinnedActionIdPrefix = "pinned-action:"

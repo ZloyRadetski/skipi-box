@@ -22,6 +22,15 @@ internal fun createDesktopTunnelController(
     readLatency: () -> Map<Int, DesktopServerLatencyResult>,
     tunHost: DesktopTunHost,
 ): DesktopTunnelController {
+    // One consistent view of the user's data per connect: the Core configuration and the TUN interface are built
+    // at different moments, and a settings edit between them must not make the two disagree. The controller
+    // reads `tunMode` first at every connect, which is where the view is taken.
+    var pinned: DesktopConnectInputs? = null
+    fun settings() = pinned?.settings ?: readSettings()
+    fun servers() = pinned?.servers ?: readServers()
+    fun configs() = pinned?.configs ?: readConfigs()
+    fun latency() = pinned?.latency ?: readLatency()
+
     fun runningHttpProxyOptions(): Result<LocalProxyXrayConfigOptions> {
         val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
         return if (options?.enableHttpProxy == true) {
@@ -33,13 +42,13 @@ internal fun createDesktopTunnelController(
 
     return DesktopTunnelController(
         configForProfile = {
-            val settingsSnapshot = readSettings()
+            val settingsSnapshot = settings()
             val routingSnapshot = settingsSnapshot.toRoutingConfigRecord()
-            val serverLibrarySnapshot = readServers()
-            val configLibrarySnapshot = readConfigs()
+            val serverLibrarySnapshot = servers()
+            val configLibrarySnapshot = configs()
             val trafficConfigContentSnapshot = configLibrarySnapshot.configs
                 .associate { config -> config.id to config.content }
-            val latencySnapshot = readLatency().toMap()
+            val latencySnapshot = latency().toMap()
             runCatching {
                 val globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory
                 val options = localProxyRuntime.prepareStart(
@@ -63,10 +72,10 @@ internal fun createDesktopTunnelController(
         },
         startPlanForProfile = { _ ->
             runCatching {
-                val settingsSnapshot = readSettings()
-                val serverLibrarySnapshot = readServers()
-                val configLibrarySnapshot = readConfigs()
-                val latencySnapshot = readLatency().toMap()
+                val settingsSnapshot = settings()
+                val serverLibrarySnapshot = servers()
+                val configLibrarySnapshot = configs()
+                val latencySnapshot = latency().toMap()
                 prepareDesktopTunnelStartPlan(
                     settings = settingsSnapshot,
                     serverLibrary = serverLibrarySnapshot,
@@ -81,7 +90,7 @@ internal fun createDesktopTunnelController(
         startCore = { request ->
             // Like Android: truncate the previous run's files, then follow the new ones.
             coreLogs.clear()
-            coreLogs.startTailers(readSettings())
+            coreLogs.startTailers(settings())
             localProxyRuntime.onCoreStarted(
                 coreController.start(request.configuration, request.assetsDirectory, request.amneziaWg),
             )
@@ -94,7 +103,7 @@ internal fun createDesktopTunnelController(
         coreState = coreController::state,
         readCoreTraffic = coreController::readTunnelTraffic,
         awaitSystemProxyEndpoint = {
-            if (!readSettings().useSystemProxy || !systemProxyManager.isSupportedHost()) {
+            if (!settings().useSystemProxy || !systemProxyManager.isSupportedHost()) {
                 Result.success(Unit)
             } else {
                 runningHttpProxyOptions().fold(
@@ -110,7 +119,7 @@ internal fun createDesktopTunnelController(
         },
         acquireSystemProxy = {
             when {
-                !readSettings().useSystemProxy -> Result.success(Unit)
+                !settings().useSystemProxy -> Result.success(Unit)
                 !systemProxyManager.isSupportedHost() -> Result.failure(
                     IllegalStateException(desktopText(Res.string.desktop_system_proxy_unsupported_platform)),
                 )
@@ -135,12 +144,16 @@ internal fun createDesktopTunnelController(
         },
         systemProxySupported = systemProxyManager::isSupportedHost,
         // No silent fallback: with TUN mode on, a machine that cannot run it fails the connect and says why.
-        tunMode = { readSettings().enableTunMode },
+        tunMode = {
+            val inputs = DesktopConnectInputs(readSettings(), readServers(), readConfigs(), readLatency().toMap())
+            pinned = inputs
+            inputs.settings.enableTunMode
+        },
         prepareTun = {
             timedTunStage("prepare") {
                 runCatching {
                     tunHost.unavailableReason()?.let { reason -> error(reason) }
-                    tunHost.tunRuntime().prepare(desktopTunInterfacePlan(readSettings(), readConfigs())).getOrThrow()
+                    tunHost.tunRuntime().prepare(desktopTunInterfacePlan(settings(), configs())).getOrThrow()
                 }
             }
         },
@@ -151,10 +164,10 @@ internal fun createDesktopTunnelController(
                     tunHost.unavailableReason()?.let { reason -> error(reason) }
                     val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
                         ?: error("SKIPI Core is not running")
-                    val settings = readSettings()
-                    val configs = readConfigs()
+                    val settings = settings()
+                    val configs = configs()
                     // The system resolves through the tunnel only if the running config answers it.
-                    val coreAnswersDns = desktopAnswersTunDns(settings, configs) && readServers().coreAnswersTunDns()
+                    val coreAnswersDns = desktopAnswersTunDns(settings, configs) && servers().coreAnswersTunDns()
                     val request = desktopTunStartRequest(
                         plan = desktopTunInterfacePlan(settings, configs, coreAnswersDns),
                         options = options,
@@ -179,3 +192,11 @@ private inline fun <T> timedTunStage(stage: String, block: () -> Result<T>): Res
     DesktopLogger.info("Tun", "TUN $stage took $millis ms" + if (result.isFailure) " (failed)" else "")
     return result
 }
+
+/** What one connect reads: the settings, servers, profiles and latencies as they were when it began. */
+private class DesktopConnectInputs(
+    val settings: DesktopAppSettings,
+    val servers: DesktopServerLibrary,
+    val configs: DesktopConfigLibrary,
+    val latency: Map<Int, DesktopServerLatencyResult>,
+)

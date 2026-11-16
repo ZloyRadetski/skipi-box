@@ -120,6 +120,12 @@ import app.skipi.ui.resources.connection_status_disconnected
 import app.skipi.ui.resources.tray_connect
 import app.skipi.ui.resources.tray_disconnect
 import app.skipi.ui.resources.tray_exit
+import app.skipi.ui.resources.tray_tun_disable
+import app.skipi.ui.resources.tray_tun_enable
+import app.skipi.ui.resources.settings_tun_mode_unavailable
+import app.skipi.ui.resources.desktop_settings_admin_rights_failed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.SettingsEthernet
 import app.skipi.ui.resources.home_memory_kilobytes
 import app.skipi.ui.resources.home_memory_megabytes
 import app.skipi.ui.resources.ic_skipi_logo
@@ -409,7 +415,14 @@ private fun runDesktopApplication(
                         measure = { config, url, amneziaWg -> coreController.measureOutboundDelay(config, url, amneziaWg) },
                     )
                 }
-                var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
+                val latencyStore = remember { DesktopLatencyStore(DesktopSettingsLibraries.defaultPath().parent) }
+                var latencyByServerId by remember { mutableStateOf(latencyStore.load()) }
+                // Written a moment after the last change, so a mass ping is one write, not one per server.
+                LaunchedEffect(latencyByServerId) {
+                    delay(1_500)
+                    val snapshot = latencyByServerId
+                    withContext(Dispatchers.IO) { latencyStore.save(snapshot) }
+                }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var connectionTestingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var pingingSubscriptionIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -1226,6 +1239,49 @@ private fun runDesktopApplication(
                         systemProxyEnabled = { desktopSettings.useSystemProxy },
                     )
                 }
+                // One switch for the tray, the sidebar and the Home menu. A running tunnel reconnects in the new mode.
+                val desktopToggleTunMode: () -> Unit = {
+                    subscriptionScope.launch {
+                        val enable = !desktopSettings.enableTunMode
+                        val updated = desktopSettings.copy(enableTunMode = enable)
+                        suspend fun save(settings: DesktopAppSettings) = homeSortSaveMutex.withLock {
+                            withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(settings) }
+                        }
+                        if (enable && desktopTunHost.needsElevation()) {
+                            // Windows creates the adapter only for an administrator: the elevated copy starts with TUN on,
+                            // and a declined prompt puts the setting back. This instance keeps running its own mode.
+                            save(updated)
+                            withContext(Dispatchers.IO) { relaunchCurrentProcessElevated() }
+                                .onSuccess { tunnel.closeRequested = true }
+                                .onFailure { error ->
+                                    save(desktopSettings)
+                                    tunnel.coreMessage = desktopText(Res.string.desktop_settings_admin_rights_failed, error.message.orEmpty())
+                                }
+                            return@launch
+                        }
+                        if (enable) {
+                            val reason = withContext(Dispatchers.IO) { desktopTunHost.unavailableReason() }
+                            if (reason != null) {
+                                tunnel.coreMessage = desktopText(Res.string.settings_tun_mode_unavailable, reason)
+                                return@launch
+                            }
+                        }
+                        val reconnect = desktopSettingsNeedReconnect(desktopSettings, updated)
+                        desktopSettings = updated
+                        if (reconnect && tunnel.coreState.isRunning) {
+                            tunnel.requestReconnect(desktopText(Res.string.desktop_reason_connection_settings_changed))
+                        }
+                        save(updated)
+                    }
+                }
+                val tunToggleLabel = if (desktopTunHost.hostSupported) {
+                    stringResource(if (desktopSettings.enableTunMode) Res.string.tray_tun_disable else Res.string.tray_tun_enable)
+                } else {
+                    null
+                }
+                val tunToggleAction = tunToggleLabel?.let { label ->
+                    SkipiNavigationAction(label = label, icon = Icons.Rounded.SettingsEthernet, onClick = desktopToggleTunMode)
+                }
                 LaunchedEffect(tunnel.coreState.isRunning) { connectionClock.update(tunnel.coreState.isRunning) }
                 val trayConnectText = stringResource(Res.string.tray_connect)
                 val trayDisconnectText = stringResource(Res.string.tray_disconnect)
@@ -1246,6 +1302,8 @@ private fun runDesktopApplication(
                         DesktopTrayToggle.Disconnect -> trayDisconnectText
                     },
                     exitLabel = trayExitText,
+                    tunLabel = tunToggleLabel,
+                    onToggleTunMode = desktopToggleTunMode,
                     statusNotifier = statusNotifier,
                     statusNotifierShown = statusNotifierShown,
                     actions = trayActions,
@@ -1436,7 +1494,7 @@ private fun runDesktopApplication(
                 if (sidebar) DesktopSidebarNavigation(
                     selected = currentSection,
                     onSelect = selectSection,
-                    actions = skipiToolActions(SkipiTool.defaultPinned, openTool),
+                    actions = skipiToolActions(SkipiTool.defaultPinned, openTool) + listOfNotNull(tunToggleAction),
                     expanded = !desktopSettings.sidebarCollapsed,
                     onExpandedChange = { expanded ->
                         val next = desktopSettings.copy(sidebarCollapsed = !expanded)
@@ -1934,6 +1992,7 @@ private fun runDesktopApplication(
                             },
                             pinnedTools = if (desktopSettings.navigationStyle == 1) emptyList() else SkipiTool.defaultPinned,
                             onOpenPinnedTool = openTool,
+                            extraPinnedActions = if (desktopSettings.navigationStyle == 1) emptyList() else listOfNotNull(tunToggleAction),
                             onHomeLeftColumnExtraChange = { extraDp ->
                                 subscriptionScope.launch {
                                     homeSortSaveMutex.withLock {

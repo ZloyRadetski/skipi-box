@@ -13,12 +13,15 @@ import kotlin.test.assertTrue
  * ~/SKIPI/logs/skipi.log, which then misled the diagnosis of a real ping problem.
  */
 class DesktopTestIsolationTest {
-    private val buildDirectory: Path = Path.of(System.getProperty("user.dir")).resolve("build").toAbsolutePath().normalize()
+    // Gradle points user.home at <build directory>/test-home. The build directory itself may live elsewhere
+    // (a user-level init script can move it), so the isolated home is the reference, not "./build".
+    private val testHome: Path = Path.of(System.getProperty("user.home")).toAbsolutePath().normalize()
 
     @Test
     fun theDefaultLogAndDataPathsOfATestRunAreInsideTheBuildDirectory() {
+        assertTrue(testHome.endsWith("test-home"), "user.home is not the isolated test home: $testHome")
         for (path in listOf(DesktopLogger.logFile(), DesktopSettingsLibraries.defaultPath(), DesktopServerLibraries.defaultPath())) {
-            assertTrue(path.toAbsolutePath().normalize().startsWith(buildDirectory), "$path is outside $buildDirectory")
+            assertTrue(path.toAbsolutePath().normalize().startsWith(testHome), "$path is outside $testHome")
         }
     }
 }

@@ -32,7 +32,6 @@ import app.skipi.ui.resources.desktop_settings_folder_open_unsupported
 import app.skipi.ui.resources.desktop_settings_general_saved
 import app.skipi.ui.resources.desktop_settings_hide_log
 import app.skipi.ui.resources.desktop_settings_http_port_conflict
-import app.skipi.ui.resources.desktop_settings_launcher_unknown
 import app.skipi.ui.resources.desktop_settings_link_open_failed
 import app.skipi.ui.resources.desktop_settings_local_proxy_saved
 import app.skipi.ui.resources.desktop_settings_log_empty
@@ -319,17 +318,7 @@ internal fun DesktopSettingsScreen(
                     // The elevated instance starts with TUN on; a declined UAC prompt puts the setting back.
                     persist(currentSettings.copy(enableTunMode = true), desktopText(Res.string.desktop_settings_vpn_saved))
                     scope.launch {
-                        val launcher = ProcessHandle.current().info().command().orElse(null)
-                        val currentArguments = ProcessHandle.current().info().arguments().orElse(emptyArray()).toList()
-                        // The elevated instance waits for this one to exit before it claims the single-instance channel.
-                        val arguments = currentArguments.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
-                        val result = withContext(Dispatchers.IO) {
-                            if (launcher == null) {
-                                Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_launcher_unknown)))
-                            } else {
-                                relaunchElevated(launcher, arguments, exitDelaySeconds = 0)
-                            }
-                        }
+                        val result = withContext(Dispatchers.IO) { relaunchCurrentProcessElevated() }
                         result.onSuccess { onExitApplication() }
                             .onFailure { error ->
                                 persist(currentSettings.copy(enableTunMode = false), "")

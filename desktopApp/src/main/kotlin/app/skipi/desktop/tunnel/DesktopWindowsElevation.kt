@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.desktop_settings_launcher_unknown
 import utils.powerShellLiteral
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.Linker
@@ -43,6 +45,21 @@ internal fun relaunchElevated(
     exitDelaySeconds: Int = 2,
     run: (List<String>) -> Result<Unit> = ::runWindowsCommand,
 ): Result<Unit> = run(windowsElevatedRelaunchCommand(launcher, arguments, exitDelaySeconds))
+
+/**
+ * Starts this very application again elevated; the copy waits for this process to exit before it takes the
+ * single-instance channel. Shared by the TUN switch in Settings and the one in the tray and the menus.
+ */
+internal fun relaunchCurrentProcessElevated(
+    run: (List<String>) -> Result<Unit> = ::runWindowsCommand,
+): Result<Unit> {
+    val info = ProcessHandle.current().info()
+    val launcher = info.command().orElse(null)
+        ?: return Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_launcher_unknown)))
+    val currentArguments = info.arguments().orElse(emptyArray()).toList()
+    val arguments = currentArguments.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
+    return relaunchElevated(launcher, arguments, exitDelaySeconds = 0, run = run)
+}
 
 /**
  * Whether a start should hand over to an elevated copy: TUN mode is saved as on, this process lacks

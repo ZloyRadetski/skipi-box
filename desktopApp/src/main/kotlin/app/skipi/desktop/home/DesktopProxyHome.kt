@@ -103,6 +103,7 @@ import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.createProxyServerEditorDraft
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.SkipiConnectionLogPanel
+import app.skipi.ui.navigation.SkipiNavigationAction
 import app.skipi.ui.navigation.SkipiTool
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
@@ -241,6 +242,7 @@ internal fun DesktopProxyHome(
     /** Tools listed as a menu in the Home header; the sidebar lists them itself, so it passes none. */
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
+    extraPinnedActions: List<SkipiNavigationAction> = emptyList(),
 ) {
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
@@ -691,6 +693,7 @@ internal fun DesktopProxyHome(
                 onLeftColumnExtraChange = { extra -> onHomeLeftColumnExtraChange(extra.value) },
                 pinnedTools = pinnedTools,
                 onOpenPinnedTool = onOpenPinnedTool,
+                extraPinnedActions = extraPinnedActions,
                 wideSidePanel = connectionLog?.let { log ->
                     { panelModifier ->
                         val logState by log.state.collectAsState()

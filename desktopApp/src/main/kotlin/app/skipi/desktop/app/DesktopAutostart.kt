@@ -41,7 +41,8 @@ internal fun resolveAutostartLauncher(
     appImagePath?.takeIf(String::isNotBlank)?.takeIf { path -> Files.isRegularFile(Path.of(path)) }
         ?.let { return@runCatching it }
     val launcher = command?.takeIf(String::isNotBlank) ?: error(desktopText(Res.string.desktop_settings_launcher_unknown))
-    val name = Path.of(launcher).fileName?.toString().orEmpty()
+    // Both separators: a Windows path must be read the same whatever host this runs on.
+    val name = launcher.substringAfterLast('/').substringAfterLast('\\')
     val bareName = name.removeSuffix(".exe").removeSuffix(".EXE")
     require(!bareName.equals("java", ignoreCase = true) && !bareName.equals("javaw", ignoreCase = true)) {
         "Start at login needs the packaged SKIPI launcher, not $name"

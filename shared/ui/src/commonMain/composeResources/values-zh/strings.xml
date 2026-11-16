@@ -130,6 +130,8 @@
     <string name="tray_connect">连接</string>
     <string name="tray_disconnect">断开连接</string>
     <string name="tray_exit">退出</string>
+    <string name="tray_tun_enable">开启 TUN 模式</string>
+    <string name="tray_tun_disable">关闭 TUN 模式</string>
     <string name="settings_deletion_confirmation">删除确认</string>
     <string name="settings_deletion_confirmation_summary">删除服务器、路由、组或资源之前需要确认</string>
     <string name="settings_close_to_background">关闭后在后台运行</string>
@@ -1173,10 +1175,10 @@
     <string name="settings_pin_connection_panel_summary">滚动服务器列表时固定连接面板和订阅选择器</string>
     <string name="settings_enable_subscription_swipe">滑动切换订阅</string>
     <string name="settings_enable_subscription_swipe_summary">允许通过向左或向右滑动来切换订阅</string>
-    <string name="settings_font_family">界面字体</string>
-    <string name="settings_font_family_default">默认（系统）</string>
     <string name="settings_seasonal_events">季节性装饰</string>
     <string name="settings_seasonal_events_summary">在节日期间装饰应用：新年彩灯和雪花</string>
+    <string name="settings_font_family">界面字体</string>
+    <string name="settings_font_family_default">默认（系统）</string>
     <string name="settings_font_family_inter">Inter</string>
     <string name="settings_font_family_golos_text">Golos Text</string>
     <string name="settings_font_family_manrope">Manrope</string>

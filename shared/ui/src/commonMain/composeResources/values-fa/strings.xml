@@ -130,6 +130,8 @@
     <string name="tray_connect">اتصال</string>
     <string name="tray_disconnect">قطع اتصال</string>
     <string name="tray_exit">خروج</string>
+    <string name="tray_tun_enable">فعال‌سازی حالت TUN</string>
+    <string name="tray_tun_disable">غیرفعال‌سازی حالت TUN</string>
     <string name="settings_deletion_confirmation">تایید حذف</string>
     <string name="settings_deletion_confirmation_summary">پیش از حذف سرورها، مسیرها، گروه‌ها یا منابع، تأیید خواسته شود</string>
     <string name="settings_close_to_background">اجرا در پس‌زمینه پس از بستن</string>
@@ -1164,10 +1166,10 @@
     <string name="settings_pin_connection_panel_summary">ثابت نگه داشتن پنل اتصال و انتخاب اشتراک هنگام اسکرول</string>
     <string name="settings_enable_subscription_swipe">سوایپ برای تغییر اشتراک</string>
     <string name="settings_enable_subscription_swipe_summary">اجازه جابجایی بین اشتراک‌ها با کشیدن به چپ و راست</string>
-    <string name="settings_font_family">فونت رابط کاربری</string>
-    <string name="settings_font_family_default">پیش‌فرض (سیستم)</string>
     <string name="settings_seasonal_events">تزئینات فصلی</string>
     <string name="settings_seasonal_events_summary">تزیین برنامه در تعطیلات: چراغ‌های رنگی و برف برای سال نو</string>
+    <string name="settings_font_family">فونت رابط کاربری</string>
+    <string name="settings_font_family_default">پیش‌فرض (سیستم)</string>
     <string name="settings_font_family_inter">Inter</string>
     <string name="settings_font_family_golos_text">Golos Text</string>
     <string name="settings_font_family_manrope">Manrope</string>

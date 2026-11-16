@@ -179,6 +179,8 @@
     <string name="tray_connect">Подключить</string>
     <string name="tray_disconnect">Отключить</string>
     <string name="tray_exit">Выход</string>
+    <string name="tray_tun_enable">Включить режим TUN</string>
+    <string name="tray_tun_disable">Выключить режим TUN</string>
     <string name="settings_resolve_proxy_server_domain">Разрешать домены прокси-серверов</string>
     <string name="settings_resolve_proxy_server_domain_summary">Записывать IP-адреса прокси-серверов в DNS hosts локально</string>
     <string name="settings_proxy_vpn_service">Настройки прокси (VPN Service)</string>

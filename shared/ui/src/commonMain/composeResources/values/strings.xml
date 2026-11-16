@@ -167,6 +167,8 @@
     <string name="tray_connect">Connect</string>
     <string name="tray_disconnect">Disconnect</string>
     <string name="tray_exit">Exit</string>
+    <string name="tray_tun_enable">Enable TUN mode</string>
+    <string name="tray_tun_disable">Disable TUN mode</string>
     <string name="settings_deletion_confirmation">Deletion confirmation</string>
     <string name="settings_deletion_confirmation_summary">Require confirmation before deleting servers, routes, groups, or resources</string>
     <string name="settings_close_to_background">Keep running when closed</string>

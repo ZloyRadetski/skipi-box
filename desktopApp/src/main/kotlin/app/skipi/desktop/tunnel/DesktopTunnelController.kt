@@ -160,7 +160,10 @@ class DesktopTunnelController(
 
     override suspend fun disconnect(): Result<Unit> = synchronized(this) {
         latestSnapshot = TunnelLifecyclePolicy.beginDisconnect(latestSnapshot)
-        val result = releaseSystemProxy().mapCatching {
+        // In proxy mode a proxy that cannot be restored keeps Core serving it. A TUN session never took the
+        // system proxy, so that cleanup failing must not keep the tunnel and Core alive.
+        val proxyRelease = releaseSystemProxy().let { release -> if (tunActive) Result.success(Unit) else release }
+        val result = proxyRelease.mapCatching {
             if (tunActive) {
                 stopTun().getOrThrow()
                 tunActive = false
@@ -178,8 +181,13 @@ class DesktopTunnelController(
     override suspend fun snapshot(): TunnelSnapshot = synchronized(this) {
         if (latestSnapshot.phase == TunnelPhase.Connected && !coreState().isRunning) {
             val proxyRestoreFailure = releaseSystemProxy().exceptionOrNull()
+            // A TUN session whose Core died carries nothing, yet keeps the system routed into it: release it too.
+            val tunStopFailure = if (tunActive) stopTun().exceptionOrNull() else null
+            tunActive = false
             val stopped = if (proxyRestoreFailure == null) {
-                IllegalStateException("SKIPI Core stopped unexpectedly")
+                IllegalStateException("SKIPI Core stopped unexpectedly").also { error ->
+                    tunStopFailure?.let(error::addSuppressed)
+                }
             } else {
                 IllegalStateException(
                     "SKIPI Core stopped unexpectedly; system proxy may still point to SKIPI: " +

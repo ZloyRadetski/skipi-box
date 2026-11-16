@@ -22,6 +22,7 @@ class DesktopTunnelControllerTunModeTest {
     private var startTunResult: Result<Unit> = Result.success(Unit)
     private var stopTunResult: Result<Unit> = Result.success(Unit)
     private var prepareTunResult: Result<Unit> = Result.success(Unit)
+    private var releaseProxyResult: Result<Unit> = Result.success(Unit)
     private var coreStartResult: Result<DesktopCoreState> = Result.success(DesktopCoreState(isRunning = true))
 
     private fun controller() = DesktopTunnelController(
@@ -39,7 +40,7 @@ class DesktopTunnelControllerTunModeTest {
         coreState = { DesktopCoreState(isRunning = coreRunning) },
         awaitSystemProxyEndpoint = { events += "proxy-await"; Result.success(Unit) },
         acquireSystemProxy = { events += "proxy-acquire"; Result.success(Unit) },
-        releaseSystemProxy = { events += "proxy-release"; Result.success(Unit) },
+        releaseSystemProxy = { events += "proxy-release"; releaseProxyResult },
         systemProxySupported = { true },
         tunMode = { tunMode },
         prepareTun = {
@@ -161,6 +162,64 @@ class DesktopTunnelControllerTunModeTest {
         assertEquals(TunnelPhase.Failed, snapshot.phase)
         assertEquals(TunnelOperationStage.ReadStatus, snapshot.failure?.stage)
         assertTrue("tun-stop" in events)
+    }
+
+    @Test
+    fun aDeadCoreWhileConnectedInTunModeReleasesTheTunInterface() = runBlocking {
+        val controller = controller()
+        controller.connect(TunnelConnectRequest("p"))
+        // Core crashes under a live tunnel: leaving the interface up would route the system into nothing.
+        coreRunning = false
+        events.clear()
+
+        val snapshot = controller.snapshot()
+
+        assertEquals(TunnelPhase.Failed, snapshot.phase)
+        assertTrue("tun-stop" in events, "the TUN interface must be released, events=$events")
+        assertFalse(tunRunning)
+    }
+
+    @Test
+    fun aNewConnectAfterADeadCoreStartsCleanInTunMode() = runBlocking {
+        val controller = controller()
+        controller.connect(TunnelConnectRequest("p"))
+        coreRunning = false
+        controller.snapshot()
+        events.clear()
+
+        val result = controller.connect(TunnelConnectRequest("p"))
+
+        assertTrue(result.isSuccess, "reconnect failed: ${result.exceptionOrNull()}")
+        assertEquals(listOf("tun-prepare", "core-start", "tun-start"), events)
+    }
+
+    @Test
+    fun aFailedSystemProxyReleaseNeverKeepsATunSessionAlive() = runBlocking {
+        val controller = controller()
+        controller.connect(TunnelConnectRequest("p"))
+        events.clear()
+        // TUN mode never takes the system proxy, so the cleanup attempt failing says nothing about the session.
+        releaseProxyResult = Result.failure(IllegalStateException("registry locked"))
+
+        val result = controller.disconnect()
+
+        assertTrue(result.isSuccess, "disconnect failed: ${result.exceptionOrNull()}")
+        assertEquals(listOf("proxy-release", "tun-stop", "core-stop"), events)
+        assertEquals(TunnelPhase.Disconnected, controller.snapshot().phase)
+    }
+
+    @Test
+    fun aFailedSystemProxyReleaseStillKeepsCoreRunningInProxyMode() = runBlocking {
+        tunMode = false
+        val controller = controller()
+        controller.connect(TunnelConnectRequest("p"))
+        events.clear()
+        releaseProxyResult = Result.failure(IllegalStateException("registry locked"))
+
+        val result = controller.disconnect()
+
+        assertTrue(result.isFailure)
+        assertFalse("core-stop" in events, "Core must keep serving the proxy the system still points at")
     }
 
     @Test

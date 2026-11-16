@@ -65,12 +65,16 @@ internal fun desktopTrayMenuEntries(
     exitLabel: String,
     onToggleTunnel: () -> Unit,
     onExit: () -> Unit,
+    /** The TUN mode switch; null when this host has no TUN mode. */
+    tunLabel: String? = null,
+    onToggleTun: () -> Unit = {},
 ): List<DesktopTrayMenuEntry> = buildList {
     if (!serverName.isNullOrBlank()) {
         add(DesktopTrayMenuEntry.Info(serverName))
         add(DesktopTrayMenuEntry.Separator)
     }
     add(DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel))
+    if (tunLabel != null) add(DesktopTrayMenuEntry.Action(tunLabel, onToggleTun))
     add(DesktopTrayMenuEntry.Separator)
     add(DesktopTrayMenuEntry.Action(exitLabel, onExit))
 }
@@ -150,6 +154,9 @@ internal fun ApplicationScope.DesktopTrayIcon(
     tooltip: String,
     toggleLabel: String,
     exitLabel: String,
+    /** The TUN switch entry's text ("Enable TUN"/"Disable TUN"); null hides it where there is no TUN mode. */
+    tunLabel: String?,
+    onToggleTunMode: () -> Unit,
     /** The active server's name, shown at the top of the menu; null when none is selected. */
     serverName: String?,
     statusNotifier: DesktopStatusNotifier?,
@@ -168,8 +175,12 @@ internal fun ApplicationScope.DesktopTrayIcon(
         // The panel keeps the actions of the entries it was last given, so they read the live ones when clicked.
         val toggleTunnel by rememberUpdatedState(onToggleTunnel)
         val exit by rememberUpdatedState(onExit)
-        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel) {
-            val menu = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, { toggleTunnel() }, { exit() })
+        val toggleTun by rememberUpdatedState(onToggleTunMode)
+        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel, tunLabel) {
+            val menu = desktopTrayMenuEntries(
+                serverName, toggleLabel, exitLabel, { toggleTunnel() }, { exit() },
+                tunLabel = tunLabel, onToggleTun = { toggleTun() },
+            )
             withContext(Dispatchers.IO) {
                 statusNotifier.update(DesktopStatusNotifierState(tooltip, menu, icons))
             }
@@ -204,7 +215,10 @@ internal fun ApplicationScope.DesktopTrayIcon(
         }
     }
     menuClick?.let { click ->
-        val entries = desktopTrayMenuEntries(serverName, toggleLabel, exitLabel, onToggleTunnel, onExit)
+        val entries = desktopTrayMenuEntries(
+            serverName, toggleLabel, exitLabel, onToggleTunnel, onExit,
+            tunLabel = tunLabel, onToggleTun = onToggleTunMode,
+        )
         key(click) {
             DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
         }
