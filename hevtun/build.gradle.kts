@@ -44,7 +44,9 @@ android {
         }
 
         onVariants { variant ->
-            variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/jniLibs")
+            // Same directory the native build writes to. A relative "build/..." path misses it when the
+            // build directory is moved elsewhere, and the APK then ships without libhev-socks5-tunnel.so.
+            variant.sources.jniLibs?.addStaticSourceDirectory(generatedJniLibsDir.get().asFile.absolutePath)
         }
     }
 
