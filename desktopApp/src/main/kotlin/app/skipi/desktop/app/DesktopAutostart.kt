@@ -55,7 +55,25 @@ internal interface DesktopAutostartControl {
     fun isEnabled(): Boolean
 
     fun apply(enabled: Boolean, launcher: String): Result<Unit>
+
+    /**
+     * Whether the registration already starts [launcher]. A registration that points at a file
+     * that has moved starts nothing at login. Windows keeps its own elevated-task upkeep, so it
+     * reports true.
+     */
+    fun registeredFor(launcher: String): Boolean = true
 }
+
+/**
+ * With start at login on, re-registers the entry when it is missing or names another launcher (the
+ * AppImage was moved or renamed). Reports whether it rewrote the entry.
+ */
+internal fun healAutostart(control: DesktopAutostartControl, launchOnLogin: Boolean, launcher: String): Result<Boolean> =
+    runCatching {
+        if (!launchOnLogin || control.registeredFor(launcher)) return@runCatching false
+        control.apply(enabled = true, launcher = launcher).getOrThrow()
+        true
+    }
 
 /**
  * Windows registers per-user autostart in the registry, macOS in a LaunchAgent, everything else in
@@ -101,6 +119,9 @@ internal class DesktopMacAutostart(
 
     override fun isEnabled(): Boolean = Files.isRegularFile(entry)
 
+    override fun registeredFor(launcher: String): Boolean =
+        runCatching { Files.readString(entry) == macAutostartPlist(launcher) }.getOrDefault(false)
+
     override fun apply(enabled: Boolean, launcher: String): Result<Unit> = runCatching {
         if (!enabled) {
             Files.deleteIfExists(entry)
@@ -124,6 +145,9 @@ internal class DesktopAutostart(
     private val entry: Path get() = configHome.resolve("autostart").resolve("skipi.desktop")
 
     override fun isEnabled(): Boolean = Files.isRegularFile(entry)
+
+    override fun registeredFor(launcher: String): Boolean =
+        runCatching { Files.readString(entry) == desktopAutostartEntry(launcher) }.getOrDefault(false)
 
     override fun apply(enabled: Boolean, launcher: String): Result<Unit> = runCatching {
         if (!enabled) {

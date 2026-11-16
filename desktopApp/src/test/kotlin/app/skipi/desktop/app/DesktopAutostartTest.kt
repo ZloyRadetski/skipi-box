@@ -96,4 +96,45 @@ class DesktopAutostartTest {
 
         assertEquals(desktopAutostartEntry(launcher), Files.readString(config.resolve("autostart/skipi.desktop")))
     }
+
+    @Test
+    fun aStaleEntryIsRewrittenForTheLauncherThatIsRunning() {
+        val config = createTempDirectory("skipi-autostart-heal")
+        val autostart = DesktopAutostart(configHome = config)
+        autostart.apply(enabled = true, launcher = "/moved/away/SKIPI.AppImage")
+
+        val healed = healAutostart(autostart, launchOnLogin = true, launcher = launcher)
+
+        assertTrue(healed.getOrThrow())
+        assertEquals(desktopAutostartEntry(launcher), Files.readString(config.resolve("autostart/skipi.desktop")))
+    }
+
+    @Test
+    fun aMissingEntryIsRecreatedWhenStartAtLoginIsOn() {
+        val config = createTempDirectory("skipi-autostart-missing")
+        val autostart = DesktopAutostart(configHome = config)
+
+        assertTrue(healAutostart(autostart, launchOnLogin = true, launcher = launcher).getOrThrow())
+
+        assertTrue(autostart.isEnabled())
+    }
+
+    @Test
+    fun aCurrentEntryIsLeftAlone() {
+        val config = createTempDirectory("skipi-autostart-current")
+        val autostart = DesktopAutostart(configHome = config)
+        autostart.apply(enabled = true, launcher = launcher)
+
+        assertFalse(healAutostart(autostart, launchOnLogin = true, launcher = launcher).getOrThrow())
+    }
+
+    @Test
+    fun nothingIsRegisteredWhenStartAtLoginIsOff() {
+        val config = createTempDirectory("skipi-autostart-off")
+        val autostart = DesktopAutostart(configHome = config)
+
+        assertFalse(healAutostart(autostart, launchOnLogin = false, launcher = launcher).getOrThrow())
+
+        assertFalse(autostart.isEnabled())
+    }
 }

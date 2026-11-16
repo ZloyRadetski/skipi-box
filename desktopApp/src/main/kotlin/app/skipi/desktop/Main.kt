@@ -212,7 +212,18 @@ fun main(args: Array<String>) {
     val elevated = if (isWindowsHost()) isWindowsElevated() else false
     if (relaunchElevatedForSavedTunMode(args.toList(), launch, startupSettings, elevated)) exitWithoutClassArchive()
     moveAutostartToElevatedTask(startupSettings, elevated)
+    healAutostartAtStart(startupSettings)
     runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks, initialSettings = startupSettings)
+}
+
+/** The login entry names the launcher of the last registration; a moved AppImage leaves it pointing at nothing. */
+private fun healAutostartAtStart(settings: DesktopAppSettings?) {
+    if (settings?.launchOnLogin != true) return
+    val launcher = resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null)).getOrNull() ?: return
+    Thread {
+        healAutostart(desktopAutostartFor(), launchOnLogin = true, launcher = launcher)
+            .onFailure { error -> DesktopLogger.warn("Autostart", "The login entry could not be refreshed", error) }
+    }.apply { isDaemon = true }.start()
 }
 
 /**
