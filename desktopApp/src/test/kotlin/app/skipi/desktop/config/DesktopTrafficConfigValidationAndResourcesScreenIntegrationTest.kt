@@ -256,7 +256,7 @@ class DesktopTrafficConfigValidationAndResourcesScreenIntegrationTest {
 
     private fun openInactiveProfileFromMore(screen: ScreenHarness, labels: Labels) {
         assertNotEquals(screen.fixture.library.selectedConfigId, screen.fixture.target.id)
-        clickProfileIcon(screen.scene, screen.fixture.target.name, "Ещё", screen.width, screen.height)
+        clickProfileIcon(screen.scene, screen.fixture.target.name, ProfileEditButtonDescription, screen.width, screen.height)
         clickText(screen.scene, labels.uiEdit, screen.width, screen.height)
         assertNotNull(
             awaitEditableNode(screen.scene, screen.fixture.target.name, screen.width, screen.height),

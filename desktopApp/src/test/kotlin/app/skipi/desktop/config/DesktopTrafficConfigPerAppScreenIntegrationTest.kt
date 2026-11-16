@@ -547,7 +547,7 @@ class DesktopTrafficConfigPerAppScreenIntegrationTest {
     }
 
     private suspend fun openPerApp(screen: PerAppScreen, labels: Labels) {
-        clickRowContentDescriptionAction(screen.scene, labels.targetName, "Ещё")
+        clickRowContentDescriptionAction(screen.scene, labels.targetName, ProfileEditButtonDescription)
         clickTextAction(screen.scene, labels.uiEdit)
         assertNotNull(awaitEditableText(screen.scene, labels.targetName), "More → UI Edit should open Basics for target 7")
         val perAppSectionText = scrollBasicsToVisibleSection(screen, labels.perAppSection)

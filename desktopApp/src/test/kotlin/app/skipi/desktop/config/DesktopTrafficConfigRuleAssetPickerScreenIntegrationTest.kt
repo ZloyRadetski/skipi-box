@@ -186,6 +186,7 @@ FINAL,PROXY
 
                 // The target profile is first in library order, while another profile remains selected.
                 clickContentDescription(scene, uiEditLabel)
+                clickText(scene, uiEditLabel)
                 clickClickableText(scene, rulesTitle)
                 clickClickableText(scene, rulesTitle)
 

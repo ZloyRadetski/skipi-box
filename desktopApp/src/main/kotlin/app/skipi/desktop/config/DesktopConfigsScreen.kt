@@ -997,8 +997,9 @@ internal fun DesktopConfigsScreen(
                         )
                     }
                 },
+                // As on the phone, Edit offers the ways to edit (text, UI), duplicate and export; it does not pick one.
                 onEditProfile = { id ->
-                    configLibrary.configs.firstOrNull { config -> config.id == id }?.let(::openVisualEditor)
+                    contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == id }
                 },
                 onDeleteProfile = { id ->
                     configLibrary.configs.firstOrNull { config -> config.id == id }?.let { config ->
@@ -1016,14 +1017,6 @@ internal fun DesktopConfigsScreen(
                 },
                 onDeleteGlobalProxyGroup = collection.onDelete,
                 onGlobalProxyGroupMenu = collection.onContextMenu,
-                // Mouse users cannot long-press, so the profile menu also gets an explicit button.
-                profileTrailingActions = { item ->
-                    IconButton(onClick = {
-                        contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
-                    }) {
-                        Icon(MiuixIcons.More, contentDescription = stringResource(Res.string.common_more), tint = MiuixTheme.colorScheme.onSurface)
-                    }
-                },
                 statusContent = profileStatusText?.let { text ->
                     { Text(text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp)) }
                 },

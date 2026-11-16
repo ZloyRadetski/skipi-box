@@ -403,12 +403,13 @@ class DesktopTrafficConfigProfileFormsScreenIntegrationTest {
     }
 
     private fun openVisualEditor(screen: ProfileFormsScreen, targetName: String, labels: Labels) {
-        clickIconInsideProfileCard(screen.scene, targetName, labels.uiEdit, screen.width, screen.height)
+        clickIconInsideProfileCard(screen.scene, targetName, ProfileEditButtonDescription, screen.width, screen.height)
+        clickClickableText(screen.scene, labels.uiEdit, screen.width, screen.height)
         assertNotNull(awaitEditableNode(screen.scene, targetName, screen.width, screen.height), "The public UI Edit action should open Basics")
     }
 
     private fun openRawEditor(screen: ProfileFormsScreen, targetName: String, labels: Labels, width: Int, height: Int) {
-        clickIconInsideProfileCard(screen.scene, targetName, "Ещё", width, height)
+        clickIconInsideProfileCard(screen.scene, targetName, ProfileEditButtonDescription, width, height)
         clickClickableText(screen.scene, labels.rawEdit, width, height)
         assertNotNull(awaitVisibleText(screen.scene, "Название", width, height), "The profile context menu should open Raw Edit")
     }

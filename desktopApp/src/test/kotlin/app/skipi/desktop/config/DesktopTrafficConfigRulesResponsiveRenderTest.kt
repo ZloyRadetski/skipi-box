@@ -154,6 +154,7 @@ FINAL,PROXY
                 render(scene)
 
                 clickContentDescription(scene, labels.uiEdit, width, height)
+                clickText(scene, labels.uiEdit, width, height)
                 scrollUntilClickableTextFromVisibleAnchor(
                     scene = scene,
                     anchorLabel = labels.scrollAnchor,

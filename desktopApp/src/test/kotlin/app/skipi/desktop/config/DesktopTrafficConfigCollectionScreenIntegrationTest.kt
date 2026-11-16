@@ -44,6 +44,7 @@ import app.skipi.ui.resources.configs_preserved_unsupported
 import app.skipi.ui.resources.configs_resources
 import app.skipi.ui.resources.configs_rules_title
 import app.skipi.ui.resources.configs_raw_edit
+import app.skipi.ui.resources.common_more
 import app.skipi.ui.resources.configs_ui_edit
 import app.skipi.ui.resources.configs_update_anyway
 import app.skipi.ui.resources.configs_update_locked_warning_title
@@ -87,6 +88,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/** The profile card's Edit button; it opens the same menu a long press does, as on the phone. */
+internal const val ProfileEditButtonDescription = "Редактировать через UI"
 private const val TestSceneWidth = 1500
 private const val TestSceneHeight = 1600
 private const val TestResourceUserAgent = "Desktop config collection integration test"
@@ -612,12 +615,14 @@ loglevel = debug
             activeProfile = active,
         ) { screen ->
             assertNotNull(awaitText(screen.scene, profileName))
-            assertTrue(rowHasContentDescriptionAction(screen.scene, profileName, "Ещё"))
+            assertTrue(rowHasContentDescriptionAction(screen.scene, profileName, ProfileEditButtonDescription))
+            // As on the phone the card has Edit and Delete only; there is no separate "More" button.
+            assertEquals(false, rowHasContentDescriptionAction(screen.scene, profileName, getString(Res.string.common_more)))
 
-            clickRowContentDescriptionAction(screen.scene, profileName, "Ещё")
-            assertNotNull(awaitText(screen.scene, duplicateLabel), "The More action should open the profile context menu")
+            clickRowContentDescriptionAction(screen.scene, profileName, ProfileEditButtonDescription)
+            assertNotNull(awaitText(screen.scene, duplicateLabel), "The Edit action should open the profile context menu")
 
-            assertEquals(screen.initialLibrary, screen.persistedLibrary(), "Reading profile metadata and opening More must not alter saved profiles")
+            assertEquals(screen.initialLibrary, screen.persistedLibrary(), "Reading profile metadata and opening the menu must not alter saved profiles")
             assertEquals(0, screen.libraryTransformCount())
             assertEquals(3, screen.persistedLibrary().selectedConfigId)
         }
@@ -730,7 +735,7 @@ loglevel = info
                 configFile = file
             },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, clicked.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, clicked.name, ProfileEditButtonDescription)
             assertNotNull(awaitText(screen.scene, duplicateLabel), "The profile More menu should expose Duplicate")
 
             val lateLibrary = configRepository.transformLatest { latest ->
@@ -946,7 +951,7 @@ loglevel = warning
             activeProfile = only,
             initialLibraryOverride = initialLibrary,
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, only.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, only.name, ProfileEditButtonDescription)
             val uiEdit = assertNotNull(awaitText(screen.scene, uiEditLabel), "The menu should offer the visual editor")
             val rawEdit = assertNotNull(awaitText(screen.scene, rawEditLabel), "The menu should offer the raw editor")
             assertTrue(
@@ -1042,7 +1047,7 @@ vendor-option = keep-on-raw-save"""
         ) { screen ->
             // Scope More to the actual profile row so a duplicate profile/group label
             // cannot route the test through the sourced-group row.
-            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, ProfileEditButtonDescription)
             clickTextAction(screen.scene, rawEditLabel)
             assertNotNull(awaitText(screen.scene, "Редактор конфига"))
             setEditableTextByCurrentValue(screen.scene, fixture.target.content, rawDraft)
@@ -1091,7 +1096,7 @@ vendor-option = keep-on-raw-save"""
             activeProfile = fixture.sibling,
             initialLibraryOverride = fixture.library,
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, ProfileEditButtonDescription)
             clickTextAction(screen.scene, rawEditLabel)
             assertNotNull(awaitText(screen.scene, "Редактор конфига"))
 
@@ -1143,7 +1148,7 @@ FINAL,DIRECT"""
             activeProfile = fixture.sibling,
             initialLibraryOverride = fixture.library,
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, ProfileEditButtonDescription)
             clickTextAction(screen.scene, rawEditLabel)
             assertNotNull(awaitText(screen.scene, "Редактор конфига"))
             setEditableTextByCurrentValue(screen.scene, fixture.target.content, invalidDocument)
@@ -1186,6 +1191,7 @@ loglevel = debug
             activeProfile = active,
         ) { screen ->
             clickRowContentDescriptionAction(screen.scene, profileName, editLabel)
+            clickTextAction(screen.scene, editLabel)
             assertEquals(profileName, awaitEditableText(screen.scene, profileName), "Edit should open the requested existing profile")
             assertEquals(sourceUrl, awaitEditableText(screen.scene, sourceUrl), "The editor should retain the selected profile's URL")
 
@@ -1233,7 +1239,7 @@ loglevel = debug
             initialLibraryOverride = initialLibrary,
             libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
         ) { screen ->
-            clickRowContentDescriptionAction(screen.scene, target.name, "Ещё")
+            clickRowContentDescriptionAction(screen.scene, target.name, ProfileEditButtonDescription)
             assertNotNull(awaitText(screen.scene, uiEditLabel), "The profile More menu should expose UI Edit")
             clickTextAction(screen.scene, uiEditLabel)
 
@@ -1286,6 +1292,7 @@ loglevel = debug
             activeProfile = active,
         ) { screen ->
             clickRowContentDescriptionAction(screen.scene, profileName, editLabel)
+            clickTextAction(screen.scene, editLabel)
             assertEquals(profileName, awaitEditableText(screen.scene, profileName))
             clickTextAction(screen.scene, routingTitle)
             assertNotNull(awaitText(screen.scene, routingTitle), "The Basics section should open Routing")
@@ -1404,12 +1411,12 @@ loglevel = debug
                     predicates = listOf<(SemanticsNode) -> Boolean>(
                         { it.hasText(profilesTitle) },
                         { it.hasText(profileName) },
-                        { it.hasContentDescription("Ещё") },
+                        { it.hasContentDescription(ProfileEditButtonDescription) },
                     ),
                     predicateNames = listOf(
                         profilesTitle,
                         profileName,
-                        "Ещё",
+                        ProfileEditButtonDescription,
                     ),
                 )
                 saveViewportSnapshot(screen.scene, "collection-profile-metadata-actions", width, height)
@@ -2169,9 +2176,9 @@ $ActiveProfileGroupName = select, DIRECT
     private fun clickProfileCardSelection(scene: ImageComposeScene, profileName: String) {
         val profileCard = assertNotNull(
             rowCards(scene, profileName).firstOrNull { candidate ->
-                candidate.descendants().any { it.hasContentDescription("Ещё") }
+                candidate.descendants().any { it.hasContentDescription(ProfileEditButtonDescription) }
             },
-            "Expected profile card '$profileName' with its More action",
+            "Expected profile card '$profileName' with its Edit action",
         )
         clickNodeAction(scene, profileCard, "The '$profileName' profile selection card")
     }

@@ -172,6 +172,7 @@ FINAL,PROXY
 
                 // The profiles follow library order, so the first visible UI-edit action opens id 7.
                 clickContentDescription(scene, uiEditLabel)
+                clickText(scene, uiEditLabel)
                 val rulesSection = awaitText(scene, rulesTitle)
                 assertNotNull(
                     rulesSection,
@@ -303,6 +304,8 @@ vendor-option = keep-me
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
+
+                clickText(scene, uiEditLabel)
                 clickClickableText(scene, rulesTitle)
                 clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)
@@ -438,6 +441,8 @@ vendor-option = keep-me
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
+
+                clickText(scene, uiEditLabel)
                 clickClickableText(scene, rulesTitle)
                 clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)
@@ -576,6 +581,8 @@ FINAL,PROXY
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
+
+                clickText(scene, uiEditLabel)
                 clickClickableText(scene, rulesTitle)
                 clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)

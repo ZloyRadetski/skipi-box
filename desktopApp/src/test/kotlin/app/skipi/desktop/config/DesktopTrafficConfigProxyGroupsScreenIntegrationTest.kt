@@ -97,6 +97,7 @@ vendor-option = keep-me
             proxyServers = initialCatalog,
         ) { screen ->
             clickContentDescription(screen.scene, uiEditLabel)
+            clickText(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             assertNotNull(awaitText(screen.scene, "Remove this group"))
@@ -141,6 +142,7 @@ vendor-option = keep-me
             proxyServers = initialCatalog,
         ) { screen ->
             clickContentDescription(screen.scene, uiEditLabel)
+            clickText(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, addLabel)
@@ -193,6 +195,7 @@ vendor-option = keep-me
             proxyServers = initialCatalog,
         ) { screen ->
             clickContentDescription(screen.scene, uiEditLabel)
+            clickText(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, "Original profile group")
@@ -273,6 +276,7 @@ Original copied group = select, $OldMemberName, skipi-display=active_config
             copyTextToClipboard = { text -> clipboardText.set(text) },
         ) { screen ->
             clickContentDescriptionAction(screen.scene, uiEditLabel)
+            clickTextAction(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, "Original copied group")
@@ -372,6 +376,7 @@ Metadata group = select, $memberName, skipi-display=active_config
             subscriptionCatalog = subscriptionCatalog,
         ) { screen ->
             clickContentDescriptionAction(screen.scene, uiEditLabel)
+            clickTextAction(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, "Metadata group")
@@ -418,6 +423,7 @@ Keep in profile = select, $OldMemberName, skipi-display=never
             proxyServers = initialCatalog,
         ) { screen ->
             clickContentDescriptionAction(screen.scene, uiEditLabel)
+            clickTextAction(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, "Remove from profile")
@@ -479,6 +485,7 @@ loglevel = warning
             proxyServers = initialCatalog,
         ) { screen ->
             clickContentDescriptionAction(screen.scene, uiEditLabel)
+            clickTextAction(screen.scene, uiEditLabel)
             clickTextAction(screen.scene, routingTitle)
             clickTextAction(screen.scene, groupsTitle)
             clickTextAction(screen.scene, addLabel)

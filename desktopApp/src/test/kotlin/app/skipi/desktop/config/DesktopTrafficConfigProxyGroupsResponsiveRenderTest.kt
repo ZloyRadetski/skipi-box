@@ -156,6 +156,7 @@ ${labels.groupName} = select, ${labels.memberName}, skipi-display=active_config
                 render(scene)
 
                 clickContentDescriptionAction(scene, labels.uiEdit, width, height)
+                clickClickableTextAction(scene, labels.uiEdit, width, height)
                 clickClickableTextAction(scene, labels.routingTitle, width, height)
                 assertVisibleText(scene, labels.resourcesTitle, width, height)
                 assertVisibleText(scene, labels.groupsTitle, width, height)
