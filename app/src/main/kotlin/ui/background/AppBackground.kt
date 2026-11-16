@@ -235,8 +235,12 @@ fun AppBackground(
     val seasonalEvent = remember(settings.seasonalEvents) {
         // java.time needs API 26; the app supports 24.
         val today = java.util.Calendar.getInstance()
-        // TEMP-PREVIEW: forced to December so the New Year decoration shows out of season; remove before commit.
-        activeSeasonalEvent(12, today.get(java.util.Calendar.DAY_OF_MONTH), settings.seasonalEvents)
+        // Calendar.MONTH counts from 0.
+        activeSeasonalEvent(
+            today.get(java.util.Calendar.MONTH) + 1,
+            today.get(java.util.Calendar.DAY_OF_MONTH),
+            settings.seasonalEvents,
+        )
     }
 
     SkipiAppBackground(

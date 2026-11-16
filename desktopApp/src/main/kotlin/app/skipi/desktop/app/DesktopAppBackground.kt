@@ -39,8 +39,7 @@ internal fun DesktopAppBackground(
     }
     val seasonalEvent = remember(settings.enableSeasonalEvents) {
         val today = java.time.LocalDate.now()
-        // TEMP-PREVIEW: forced to December so the New Year decoration shows out of season; remove before commit.
-        activeSeasonalEvent(12, today.dayOfMonth, settings.enableSeasonalEvents)
+        activeSeasonalEvent(today.monthValue, today.dayOfMonth, settings.enableSeasonalEvents)
     }
     SkipiAppBackground(
         style = style,
