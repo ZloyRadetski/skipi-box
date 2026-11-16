@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.theme.customColorIfEnabled
 import app.skipi.app.home.ProxyHomeActionId
 import java.awt.Desktop
 import app.skipi.app.home.proxyHomeProtocolColors
@@ -130,21 +131,21 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
     showTunnelMemory = showTunnelMemory,
     showTunnelIp = showTunnelIp,
     maskTunnelIp = maskTunnelIp,
-    latencyFastColor = customPingFastColor,
-    latencyMediumColor = customPingMediumColor,
-    latencySlowColor = customPingSlowColor,
-    latencyErrorColor = customStatusStoppedColor,
+    latencyFastColor = customColorIfEnabled(customPingFastColor, customColorsEnabled),
+    latencyMediumColor = customColorIfEnabled(customPingMediumColor, customColorsEnabled),
+    latencySlowColor = customColorIfEnabled(customPingSlowColor, customColorsEnabled),
+    latencyErrorColor = customColorIfEnabled(customStatusStoppedColor, customColorsEnabled),
     protocolColors = proxyHomeProtocolColors(
-        vless = customProtocolVlessColor,
-        vmess = customProtocolVmessColor,
-        hysteria2 = customProtocolHysteria2Color,
-        trojan = customProtocolTrojanColor,
-        shadowsocks = customProtocolShadowsocksColor,
-        wireguard = customProtocolWireguardColor,
-        socks = customProtocolSocksColor,
-        http = customProtocolHttpColor,
-        strategy = customProtocolStrategyColor,
-        chain = customProtocolChainColor,
-        json = customProtocolJsonColor,
+        vless = customColorIfEnabled(customProtocolVlessColor, customColorsEnabled),
+        vmess = customColorIfEnabled(customProtocolVmessColor, customColorsEnabled),
+        hysteria2 = customColorIfEnabled(customProtocolHysteria2Color, customColorsEnabled),
+        trojan = customColorIfEnabled(customProtocolTrojanColor, customColorsEnabled),
+        shadowsocks = customColorIfEnabled(customProtocolShadowsocksColor, customColorsEnabled),
+        wireguard = customColorIfEnabled(customProtocolWireguardColor, customColorsEnabled),
+        socks = customColorIfEnabled(customProtocolSocksColor, customColorsEnabled),
+        http = customColorIfEnabled(customProtocolHttpColor, customColorsEnabled),
+        strategy = customColorIfEnabled(customProtocolStrategyColor, customColorsEnabled),
+        chain = customColorIfEnabled(customProtocolChainColor, customColorsEnabled),
+        json = customColorIfEnabled(customProtocolJsonColor, customColorsEnabled),
     ),
 )

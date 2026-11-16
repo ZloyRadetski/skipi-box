@@ -7,6 +7,12 @@ import androidx.compose.ui.graphics.Color
 import app.skipi.app.model.AppearanceSettings
 import app.skipi.app.model.ThemeMode
 
+/**
+ * A color the user picked counts only while "Custom colors" is on. Every picked color goes through here, so turning the
+ * switch off brings back the theme's own colors everywhere, not just in the palette.
+ */
+fun customColorIfEnabled(color: Long?, enabled: Boolean): Long? = color.takeIf { enabled }
+
 /** Applies Android's persisted appearance color preferences to an already resolved host palette. */
 fun applyAppearanceSettings(
     base: AppColors,

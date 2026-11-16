@@ -342,6 +342,7 @@
     <string name="option_follow_system">مطابق سیستم</string>
     <string name="option_light">روشن</string>
     <string name="option_dark">تاریک</string>
+    <string name="option_custom_colors">سفارشی</string>
     <string name="option_amoled">AMOLED</string>
     <string name="option_theme_aurora">شفق قطبی</string>
     <string name="option_theme_sakura">ساکورا</string>
@@ -867,11 +868,9 @@
     <string name="settings_color_ping_medium_summary">رنگ برای تأخیر متوسط ​​سرور</string>
     <string name="settings_color_ping_slow">پینگ بالا (&gt; 200 میلی‌ثانیه)</string>
     <string name="settings_color_ping_slow_summary">رنگ برای تأخیر بالای سرور</string>
-    <string name="settings_custom_colors_categories_title">آیکون‌های دسته</string>
-    <string name="settings_color_category_icons">پس‌زمینه آیکون‌ها</string>
-    <string name="settings_color_category_icons_summary">رنگ کاشی زیر آیکون‌های همه بخش‌ها</string>
-    <string name="settings_color_category_icon_glyphs">رنگ آیکون‌ها</string>
-    <string name="settings_color_category_icon_glyphs_summary">رنگ خود آیکون‌ها؛ تا زمانی که انتخاب نکنید، سیاه یا سفید بر اساس تضاد</string>
+    <string name="settings_custom_colors_categories_title">آیکون‌ها</string>
+    <string name="settings_color_icons">رنگ آیکون‌ها</string>
+    <string name="settings_color_icons_summary">رنگ همه آیکون‌های برنامه؛ تا زمانی که انتخاب نکنید، آیکون‌ها از تم پیروی می‌کنند</string>
     <string name="settings_custom_colors_protocols_title">رنگ های پروتکل و اشتراک</string>
     <string name="settings_color_protocol_vless">پروتکل VLESS</string>
     <string name="settings_color_protocol_vmess">پروتکل VMess</string>

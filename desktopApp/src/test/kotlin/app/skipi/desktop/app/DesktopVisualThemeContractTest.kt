@@ -84,6 +84,7 @@ class DesktopVisualThemeContractTest {
                     surfaceVariant = palette.surfaceVariant,
                     onSurfaceVariant = palette.onSurfaceVariant,
                     isDark = true,
+                    icon = palette.icon,
                 )
             },
             desktopAppearanceColors(

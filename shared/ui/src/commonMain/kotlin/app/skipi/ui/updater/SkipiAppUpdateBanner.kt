@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.sp
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -98,10 +98,10 @@ fun SkipiAppUpdateBanner(
                                 .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
+                            SkipiIcon(
                                 imageVector = MiuixIcons.Refresh,
                                 contentDescription = null,
-                                tint = MiuixTheme.colorScheme.primary,
+                                fallbackTint = MiuixTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -128,10 +128,10 @@ fun SkipiAppUpdateBanner(
                             onDismiss()
                         },
                     ) {
-                        Icon(
+                        SkipiIcon(
                             imageVector = MiuixIcons.Close,
                             contentDescription = stringResource(Res.string.app_update_dismiss_action),
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             modifier = Modifier.size(18.dp),
                         )
                     }

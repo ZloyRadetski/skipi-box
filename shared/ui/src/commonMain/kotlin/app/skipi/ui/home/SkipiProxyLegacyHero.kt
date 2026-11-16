@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
+import app.skipi.ui.components.skipiDrawnIconColor
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.connection_status_tap_to_connect
 import app.skipi.ui.resources.home_runtime_outbound_metric
@@ -304,12 +305,12 @@ fun SkipiProxyHeroLegacyCard(
                                 SkipiProxyHeroLegacyMetricSeparator(colors.mutedText)
                                 if (latency.testing) {
                                     SkipiProxyHeroAnimatedHourglassIcon(
-                                        color = latency.color,
+                                        color = skipiDrawnIconColor(latency.color),
                                         size = 13.dp,
                                     )
                                 } else {
                                     SkipiProxyHeroSignalBarsIcon(
-                                        color = latency.color,
+                                        color = skipiDrawnIconColor(latency.color),
                                         modifier = Modifier.size(12.dp),
                                     )
                                 }

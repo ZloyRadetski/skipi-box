@@ -24,7 +24,7 @@ import features.config.ShadowrocketRule
 import features.routing.usecase.GeoSuggestionItem
 import features.routing.usecase.RoutingSuggestionPresets
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -79,10 +79,10 @@ fun SkipiTrafficConfigRuleEditorPage(
         platformBackHandler = platformBackHandler,
         actions = {
             IconButton(onClick = { showInfoBottomSheet = true }) {
-                Icon(
+                SkipiIcon(
                     imageVector = SkipiSettingsIcons.Info,
                     contentDescription = stringResource(Res.string.routing_info_title),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    fallbackTint = MiuixTheme.colorScheme.onSurface,
                 )
             }
         },

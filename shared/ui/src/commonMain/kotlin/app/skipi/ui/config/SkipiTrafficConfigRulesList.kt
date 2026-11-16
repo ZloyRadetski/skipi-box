@@ -51,7 +51,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -224,10 +224,10 @@ private fun TrafficConfigVisualRuleCard(
                 )
             }
             IconButton(onClick = onEdit) {
-                Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_edit), tint = MiuixTheme.colorScheme.onSurface)
+                SkipiIcon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_edit), fallbackTint = MiuixTheme.colorScheme.onSurface)
             }
             IconButton(onClick = onDelete) {
-                Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface)
+                SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), fallbackTint = MiuixTheme.colorScheme.onSurface)
             }
         }
     }
@@ -258,7 +258,7 @@ private fun TrafficConfigFinalRuleCard(rule: ShadowrocketRule?, onEdit: () -> Un
                 )
             }
             IconButton(onClick = onEdit) {
-                Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_edit), tint = MiuixTheme.colorScheme.onSurface)
+                SkipiIcon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_edit), fallbackTint = MiuixTheme.colorScheme.onSurface)
             }
         }
     }

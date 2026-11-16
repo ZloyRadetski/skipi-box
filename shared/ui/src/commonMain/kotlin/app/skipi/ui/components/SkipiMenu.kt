@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -117,10 +116,10 @@ fun SkipiMenu(
                         onClick = { openedKeys = openedKeys.dropLast(1) },
                         text = text,
                         leadingIcon = {
-                            Icon(
+                            SkipiContentIcon(
                                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                                 contentDescription = null,
-                                tint = mutedText,
+                                fallbackTint = mutedText,
                                 modifier = Modifier.size(18.dp),
                             )
                         },
@@ -189,23 +188,23 @@ private fun SkipiMenuRow(
         enabled = item.enabled,
         text = text,
         leadingIcon = item.icon?.let { icon ->
-            { Icon(imageVector = icon, contentDescription = null, tint = mutedText, modifier = Modifier.size(20.dp)) }
+            { SkipiContentIcon(imageVector = icon, contentDescription = null, fallbackTint = mutedText, modifier = Modifier.size(20.dp)) }
         },
         trailingIcon = when {
             item.hasChildren -> ({
-                Icon(
+                SkipiContentIcon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = mutedText,
+                    fallbackTint = mutedText,
                     modifier = Modifier.size(18.dp),
                 )
             })
 
             item.selected -> ({
-                Icon(
+                SkipiContentIcon(
                     imageVector = Icons.Outlined.Check,
                     contentDescription = null,
-                    tint = accent,
+                    fallbackTint = accent,
                     modifier = Modifier.size(18.dp),
                 )
             })

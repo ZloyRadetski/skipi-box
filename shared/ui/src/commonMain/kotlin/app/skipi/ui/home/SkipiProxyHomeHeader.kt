@@ -18,7 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -121,10 +121,10 @@ fun SkipiProxyHomeHeader(
             if (pinnedToolActions.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { pinnedMenuExpanded = true }) {
-                        Icon(
+                        SkipiContentIcon(
                             imageVector = Icons.Outlined.GridView,
                             contentDescription = labels.pinnedToolsActionDescription,
-                            tint = colors.text,
+                            fallbackTint = colors.text,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -143,10 +143,10 @@ fun SkipiProxyHomeHeader(
             if (addActions.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { addMenuExpanded = true }) {
-                        Icon(
+                        SkipiContentIcon(
                             imageVector = Icons.Outlined.Add,
                             contentDescription = labels.addActionDescription,
-                            tint = colors.text,
+                            fallbackTint = colors.text,
                             modifier = Modifier.size(30.dp),
                         )
                     }
@@ -165,10 +165,10 @@ fun SkipiProxyHomeHeader(
             if (toolActions.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { toolsMenuExpanded = true }) {
-                        Icon(
+                        SkipiContentIcon(
                             imageVector = Icons.Outlined.MoreVert,
                             contentDescription = labels.moreActionDescription,
-                            tint = colors.text,
+                            fallbackTint = colors.text,
                             modifier = Modifier.size(27.dp),
                         )
                     }

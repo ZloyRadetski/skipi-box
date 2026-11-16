@@ -46,7 +46,7 @@ import app.skipi.ui.resources.proxy_editor_custom_override_inbound_dns_summary
 import app.skipi.ui.resources.proxy_editor_remarks
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -115,7 +115,7 @@ fun SkipiCustomProxyServerEditorPresentation(
                 modifier = Modifier.align(Alignment.BottomEnd)
                     .padding(8.dp).clip(RoundedCornerShape(12.dp)).background(formatButtonBackground),
             ) {
-                Icon(imageVector = MiuixIcons.ConvertFile, contentDescription = formatJsonContentDescription, tint = formatButtonTint)
+                SkipiIcon(imageVector = MiuixIcons.ConvertFile, contentDescription = formatJsonContentDescription, fallbackTint = formatButtonTint)
             }
         }
     }

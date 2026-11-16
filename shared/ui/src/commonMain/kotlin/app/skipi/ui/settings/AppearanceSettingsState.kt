@@ -71,8 +71,7 @@ enum class AppearanceColorTarget {
     PING_FAST,
     PING_MEDIUM,
     PING_SLOW,
-    CATEGORY_ICONS,
-    CATEGORY_ICON_GLYPHS,
+    ICONS,
     PROTOCOL_VLESS,
     PROTOCOL_VMESS,
     PROTOCOL_HYSTERIA2,
@@ -147,3 +146,10 @@ object AppearanceSettingValues {
 
     fun isFontWeightSupported(fontFamilyMode: Int): Boolean = fontFamilyMode != 5
 }
+
+/**
+ * Picking a color mode (a theme) starts from that theme's own colors, so "Custom colors" goes off. The colors the
+ * user picked stay saved and come back when the switch is turned on again.
+ */
+fun AppearanceSettingsState.withColorMode(mode: Int): AppearanceSettingsState =
+    copy(colorMode = mode, enableCustomColors = false)

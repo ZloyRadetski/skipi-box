@@ -56,7 +56,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Switch
@@ -405,7 +405,7 @@ fun SubscriptionGroupEditorDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
-                        Icon(
+                        SkipiIcon(
                             imageVector = MiuixIcons.Delete,
                             contentDescription = null,
                             tint = MiuixTheme.colorScheme.error,
@@ -627,33 +627,29 @@ fun SubscriptionGroupCard(
                             )
                         }
                     } else {
-                        Icon(
+                        SkipiIcon(
                             imageVector = MiuixIcons.Refresh,
                             contentDescription = stringResource(Res.string.subscription_update_group),
-                            tint = MiuixTheme.colorScheme.onSurface,
+                            fallbackTint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
                 }
             }
             IconButton(onClick = onEdit) {
-                Icon(
+                SkipiIcon(
                     imageVector = MiuixIcons.Edit,
                     contentDescription = stringResource(Res.string.subscription_edit_group),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    fallbackTint = MiuixTheme.colorScheme.onSurface,
                 )
             }
             IconButton(
                 onClick = onDelete,
                 enabled = !group.builtIn,
             ) {
-                Icon(
+                SkipiIcon(
                     imageVector = MiuixIcons.Delete,
                     contentDescription = stringResource(Res.string.subscription_delete_group),
-                    tint = if (group.builtIn) {
-                        MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                    } else {
-                        MiuixTheme.colorScheme.onSurface
-                    },
+                    tint = if (group.builtIn) MiuixTheme.colorScheme.disabledOnSecondaryVariant else Color.Unspecified,
                 )
             }
         }

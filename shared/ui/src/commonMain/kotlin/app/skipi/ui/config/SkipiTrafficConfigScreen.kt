@@ -40,7 +40,7 @@ import features.config.TrafficConfigState
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -118,7 +118,7 @@ fun SkipiTrafficConfigScreen(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onAddGlobalProxyGroup) {
-                    Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+                    SkipiIcon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), fallbackTint = MiuixTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -151,7 +151,7 @@ fun SkipiTrafficConfigScreen(
                     if (showAddProfileAction) {
                         Box {
                             IconButton(onClick = onAddConfig) {
-                                Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+                                SkipiIcon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), fallbackTint = MiuixTheme.colorScheme.onSurface)
                             }
                             addConfigMenu?.invoke()
                         }
@@ -241,7 +241,7 @@ private fun ProxyGroupCard(
                 Text(group.subtitle, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Text(group.badge, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-            if (onDelete != null) IconButton(onClick = onDelete) { Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface) }
+            if (onDelete != null) IconButton(onClick = onDelete) { SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), fallbackTint = MiuixTheme.colorScheme.onSurface) }
         }
     }
 }

@@ -44,7 +44,7 @@ import features.subscription.SubscriptionExpiryReminder
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -164,10 +164,10 @@ private fun ReminderItemCard(
                     .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
+                SkipiIcon(
                     imageVector = MiuixIcons.Tune,
                     contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary,
+                    fallbackTint = MiuixTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -183,10 +183,10 @@ private fun ReminderItemCard(
             onClick = onDelete,
             modifier = Modifier.size(32.dp),
         ) {
-            Icon(
+            SkipiIcon(
                 imageVector = MiuixIcons.Close,
                 contentDescription = stringResource(Res.string.common_cancel),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.size(18.dp),
             )
         }

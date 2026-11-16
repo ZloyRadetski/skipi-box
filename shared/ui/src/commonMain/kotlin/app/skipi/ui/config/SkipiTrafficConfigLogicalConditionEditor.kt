@@ -54,7 +54,7 @@ import features.config.xrayUnsupportedReasonForCondition
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
@@ -275,7 +275,7 @@ private fun NestedGroup(
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = { onChange(null) }) {
-                        Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface)
+                        SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), fallbackTint = MiuixTheme.colorScheme.onSurface)
                     }
                 }
                 OperatorChoice(
@@ -314,7 +314,7 @@ private fun LeafRow(
                 onSelectedIndexChange = { onChange(leaf.copy(type = types[it])) },
             )
             IconButton(onClick = { onChange(null) }) {
-                Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface)
+                SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), fallbackTint = MiuixTheme.colorScheme.onSurface)
             }
         }
         TextField(

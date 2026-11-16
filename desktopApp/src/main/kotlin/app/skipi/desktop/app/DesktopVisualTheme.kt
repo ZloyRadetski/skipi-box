@@ -16,7 +16,9 @@ import app.skipi.app.model.ThemeMode
 import app.skipi.ui.text.fontFamilyAssetName
 import app.skipi.ui.theme.AppColors
 import app.skipi.ui.theme.NamedThemePalette
+import app.skipi.ui.settings.ProvideIconColor
 import app.skipi.ui.theme.ProvideSkipiTheme
+import app.skipi.ui.theme.customColorIfEnabled
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.theme.SkipiVisualProfile
 import app.skipi.ui.theme.applyAppearanceSettings
@@ -48,14 +50,16 @@ internal fun DesktopAppTheme(content: @Composable () -> Unit) {
         resolveDesktopFontFamily(fontFamilyMode)?.family
     }
 
-    ProvideSkipiTheme(
-        colors = appColors,
-        fontFamily = resolvedFontFamily,
-        fontSizeMode = appearance.fontSizeMode,
-        fontWeightMode = appearance.fontWeightMode,
-        visualProfile = SkipiVisualProfile.Desktop,
-        content = content,
-    )
+    ProvideIconColor(customColorIfEnabled(appearance.customCategoryIconGlyphColor, appearance.customColorsEnabled)) {
+        ProvideSkipiTheme(
+            colors = appColors,
+            fontFamily = resolvedFontFamily,
+            fontSizeMode = appearance.fontSizeMode,
+            fontWeightMode = appearance.fontWeightMode,
+            visualProfile = SkipiVisualProfile.Desktop,
+            content = content,
+        )
+    }
 }
 
 internal fun desktopAppearanceColors(

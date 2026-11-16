@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -28,13 +27,13 @@ fun NavigationIcon(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     IconButton(modifier = modifier, onClick = onClick) {
-        Icon(
+        SkipiIcon(
             modifier = Modifier.graphicsLayer {
                 if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
             },
             imageVector = imageVector,
             contentDescription = contentDescription,
-            tint = MiuixTheme.colorScheme.onBackground,
+            fallbackTint = MiuixTheme.colorScheme.onBackground,
         )
     }
 }

@@ -233,9 +233,6 @@ internal fun desktopSettingsParent(destination: DesktopSettingsDestination): Des
     else -> DesktopSettingsDestination.Overview
 }
 
-/** The icon color of settings rows until the user picks one. */
-internal const val DesktopDefaultSettingsIconColor = 0xFF5C6DB0L
-
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
 @Composable
 internal fun DesktopSettingsScreen(
@@ -541,8 +538,7 @@ private fun DesktopSettingsOverview(
             tunMtu = settings.tunMtu,
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
-            categoryIconColor = settings.customCategoryIconColor?.let(::Color) ?: Color(DesktopDefaultSettingsIconColor),
-            categoryIconGlyphColor = settings.customCategoryIconGlyphColor?.let(::Color),
+            categoryIconGlyphColor = app.skipi.ui.theme.customColorIfEnabled(settings.customCategoryIconGlyphColor, settings.customColorsEnabled)?.let(::Color),
             visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
         ),
         padding = contentPadding,

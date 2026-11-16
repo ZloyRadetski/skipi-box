@@ -59,7 +59,7 @@ import app.modes.AppIconMonet
 import app.modes.AppIconNordic
 import app.modes.AppIconStealth
 import app.modes.AppIconSunset
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -249,10 +249,10 @@ internal fun AppIconSelectionBottomSheet(
                                     .border(1.5.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(
+                                SkipiIcon(
                                     imageVector = MiuixIcons.Ok,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    fallbackTint = Color.White,
                                     modifier = Modifier.size(12.dp),
                                 )
                             }

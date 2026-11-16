@@ -29,7 +29,7 @@ import androidx.compose.material3.CardDefaults
 import app.skipi.ui.components.SkipiMenu
 import app.skipi.ui.components.SkipiMenuItem
 import app.skipi.ui.components.SkipiMenuSection
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -217,7 +217,7 @@ internal fun EmptyStateActionButton(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
+        SkipiContentIcon(icon, contentDescription = null, fallbackTint = contentColor, modifier = Modifier.size(20.dp))
         if (label != null) {
             Spacer(Modifier.size(6.dp))
             Text(

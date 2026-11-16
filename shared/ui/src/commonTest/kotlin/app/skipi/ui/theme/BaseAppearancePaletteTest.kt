@@ -77,6 +77,7 @@ class BaseAppearancePaletteTest {
                 surfaceVariant = named.surfaceVariant,
                 onSurfaceVariant = named.onSurfaceVariant,
                 isDark = true,
+                icon = named.icon,
             ),
             resolveBaseAppearanceColors(isDark = true, namedPalette = named),
         )

@@ -77,7 +77,7 @@ import app.skipi.ui.resources.desktop_configs_save_failed
 import app.skipi.ui.resources.common_more
 import java.util.Base64
 import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More

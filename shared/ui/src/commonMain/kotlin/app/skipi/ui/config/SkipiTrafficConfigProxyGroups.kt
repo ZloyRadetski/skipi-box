@@ -21,7 +21,7 @@ import features.config.ShadowrocketPolicyGroup
 import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -99,10 +99,10 @@ fun SkipiTrafficConfigProxyGroups(
                         )
                     }
                     IconButton(onClick = { onEditGroup(group) }) {
-                        Icon(MiuixIcons.Edit, contentDescription = editContentDescription)
+                        SkipiIcon(MiuixIcons.Edit, contentDescription = editContentDescription)
                     }
                     IconButton(onClick = { onDeleteGroup(group) }) {
-                        Icon(MiuixIcons.Delete, contentDescription = deleteContentDescription)
+                        SkipiIcon(MiuixIcons.Delete, contentDescription = deleteContentDescription)
                     }
                 }
             }

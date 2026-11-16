@@ -37,7 +37,7 @@ import features.routing.model.RouteRule
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
@@ -81,10 +81,10 @@ fun SkipiRouteRuleCard(
             RuleLine(stringResource(Res.string.routing_network_label), rule.network)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(44.dp)) {
-                    Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.routing_edit), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                    SkipiIcon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.routing_edit), fallbackTint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(44.dp)) {
-                    Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.routing_delete), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
+                    SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.routing_delete), fallbackTint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                 }
             }
         }

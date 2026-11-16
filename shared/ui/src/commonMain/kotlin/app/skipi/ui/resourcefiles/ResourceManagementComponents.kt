@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +54,7 @@ import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -527,10 +528,10 @@ private fun ResourceFileIconAction(
         ResourceFileRowActionKind.Update -> stringResource(Res.string.common_update)
     }
     IconButton(enabled = enabled, onClick = onClick) {
-        Icon(
+        SkipiIcon(
             imageVector = imageVector,
             contentDescription = description,
-            tint = if (enabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+            tint = if (enabled) Color.Unspecified else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
         )
     }
 }
@@ -546,20 +547,20 @@ private fun ResourceFileUpdateAction(
             enabled = enabled,
             onClick = onClick,
         ) {
-            Icon(
+            SkipiIcon(
                 imageVector = MiuixIcons.Refresh,
                 contentDescription = stringResource(Res.string.common_update),
-                tint = if (enabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                tint = if (enabled) Color.Unspecified else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
             )
         }
         ResourceFileUpdateDisplayState.Queued -> IconButton(
             enabled = false,
             onClick = {},
         ) {
-            Icon(
+            SkipiIcon(
                 imageVector = MiuixIcons.Refresh,
                 contentDescription = stringResource(Res.string.settings_resource_file_update_queued),
-                tint = MiuixTheme.colorScheme.primary,
+                fallbackTint = MiuixTheme.colorScheme.primary,
             )
         }
         ResourceFileUpdateDisplayState.Running -> IconButton(

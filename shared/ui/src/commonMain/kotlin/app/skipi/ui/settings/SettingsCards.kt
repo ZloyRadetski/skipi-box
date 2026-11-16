@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
@@ -122,7 +122,7 @@ fun SkipiSettingsCategoryEntry(
                     .background(iconBackgroundColor),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
+                SkipiContentIcon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconColor,
@@ -160,10 +160,10 @@ fun SkipiSettingsCategoryEntry(
             }
             trailingIcon?.let {
                 Spacer(Modifier.width(SkipiTheme.spacing.small))
-                Icon(
+                SkipiContentIcon(
                     imageVector = it,
                     contentDescription = null,
-                    tint = SkipiTheme.colors.onSurfaceVariant.copy(alpha = 0.72f),
+                    fallbackTint = SkipiTheme.colors.onSurfaceVariant.copy(alpha = 0.72f),
                     modifier = Modifier.size(20.dp),
                 )
             }

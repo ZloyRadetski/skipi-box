@@ -35,7 +35,7 @@ import androidx.compose.material3.CardDefaults
 import app.skipi.ui.components.SkipiMenu
 import app.skipi.ui.components.SkipiMenuItem
 import app.skipi.ui.components.SkipiMenuSection
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -164,11 +164,11 @@ fun SkipiProxyGroupPicker(
                 maxLines = 1,
             )
             Spacer(Modifier.width(2.dp))
-            Icon(
+            SkipiContentIcon(
                 imageVector = Icons.Outlined.ExpandMore,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = chevronRotation },
-                tint = if (expanded) colors.accent else colors.mutedText,
+                fallbackTint = if (expanded) colors.accent else colors.mutedText,
             )
         }
         val visibleGroups = if (query.isBlank()) {

@@ -22,7 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
@@ -54,7 +54,7 @@ fun SkipiIpAddressRow(label: String, ip: String, copyDescription: String, onCopy
             Modifier.size(34.dp).clip(CircleShape).background(MiuixTheme.colorScheme.primary.copy(alpha = .1f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(MiuixIcons.Copy, contentDescription = copyDescription, modifier = Modifier.size(16.dp), tint = MiuixTheme.colorScheme.primary)
+            SkipiIcon(MiuixIcons.Copy, contentDescription = copyDescription, modifier = Modifier.size(16.dp), fallbackTint = MiuixTheme.colorScheme.primary)
         }
     }
 }

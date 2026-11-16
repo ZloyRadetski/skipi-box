@@ -16,6 +16,8 @@ data class NamedThemePalette(
     val onSurface: Color,
     val surfaceVariant: Color,
     val onSurfaceVariant: Color,
+    /** The color of the icons in this theme; the user can still pick another one. */
+    val icon: Color,
 )
 
 fun namedThemePaletteFor(themeName: String): NamedThemePalette? = when (themeName.lowercase()) {
@@ -28,6 +30,7 @@ fun namedThemePaletteFor(themeName: String): NamedThemePalette? = when (themeNam
         onSurface = Color(0xFFE7F1FF),
         surfaceVariant = Color(0xFF18345E),
         onSurfaceVariant = Color(0xFFB2C8EA),
+        icon = Color(0xFF8FC1FF),
     )
     "sakura" -> NamedThemePalette(
         background = Color(0xFFFFF7FB),
@@ -38,6 +41,7 @@ fun namedThemePaletteFor(themeName: String): NamedThemePalette? = when (themeNam
         onSurface = Color(0xFF351321),
         surfaceVariant = Color(0xFFF7E4EE),
         onSurfaceVariant = Color(0xFF806171),
+        icon = Color(0xFF9C2A5E),
     )
     "forest" -> NamedThemePalette(
         background = Color(0xFF061B15),
@@ -48,6 +52,7 @@ fun namedThemePaletteFor(themeName: String): NamedThemePalette? = when (themeNam
         onSurface = Color(0xFFE6FFF4),
         surfaceVariant = Color(0xFF164235),
         onSurfaceVariant = Color(0xFFA9D7C0),
+        icon = Color(0xFF6FE3B0),
     )
     "sunset" -> NamedThemePalette(
         background = Color(0xFF211015),
@@ -58,6 +63,7 @@ fun namedThemePaletteFor(themeName: String): NamedThemePalette? = when (themeNam
         onSurface = Color(0xFFFFF0ED),
         surfaceVariant = Color(0xFF4A2029),
         onSurfaceVariant = Color(0xFFE9B8B1),
+        icon = Color(0xFFFF9A8F),
     )
     else -> null
 }

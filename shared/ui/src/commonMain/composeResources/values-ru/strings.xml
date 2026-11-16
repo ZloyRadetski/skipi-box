@@ -384,6 +384,7 @@
     <string name="option_follow_system">Как в системе</string>
     <string name="option_light">Светлая</string>
     <string name="option_dark">Тёмная</string>
+    <string name="option_custom_colors">Кастомный</string>
     <string name="option_amoled">AMOLED</string>
     <string name="option_theme_aurora">Аврора</string>
     <string name="option_theme_sakura">Сакура</string>
@@ -947,11 +948,9 @@
     <string name="settings_color_ping_medium_summary">Цвет индикации умеренной задержки сервера</string>
     <string name="settings_color_ping_slow">Высокий пинг (&gt; 200 мс)</string>
     <string name="settings_color_ping_slow_summary">Цвет индикации повышенной задержки сервера</string>
-    <string name="settings_custom_colors_categories_title">Иконки категорий</string>
-    <string name="settings_color_category_icons">Фон иконок</string>
-    <string name="settings_color_category_icons_summary">Цвет плитки под иконками всех разделов</string>
-    <string name="settings_color_category_icon_glyphs">Цвет иконок</string>
-    <string name="settings_color_category_icon_glyphs_summary">Цвет самих иконок; пока не выбран, чёрный или белый по контрасту</string>
+    <string name="settings_custom_colors_categories_title">Иконки</string>
+    <string name="settings_color_icons">Цвет иконок</string>
+    <string name="settings_color_icons_summary">Цвет всех иконок в приложении; пока не выбран, иконки берут цвет темы</string>
     <string name="settings_custom_colors_protocols_title">Цвета протоколов и подписок</string>
     <string name="settings_color_protocol_vless">Протокол VLESS</string>
     <string name="settings_color_protocol_vmess">Протокол VMess</string>

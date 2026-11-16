@@ -33,7 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -143,16 +143,16 @@ fun SkipiProxyHomeFloatingToolbar(
                     ) { buttonState ->
                         when (buttonState) {
                             1 -> SkipiProxyHeroConnectingSpinner(accent = onAccent, size = 32.dp)
-                            2 -> Icon(
+                            2 -> SkipiContentIcon(
                                 imageVector = Icons.Outlined.Pause,
                                 contentDescription = stringResource(Res.string.home_connection_disconnect),
-                                tint = onAccent,
+                                onAccent = true,
                                 modifier = Modifier.size(28.dp),
                             )
-                            else -> Icon(
+                            else -> SkipiContentIcon(
                                 imageVector = Icons.Outlined.PlayArrow,
                                 contentDescription = stringResource(Res.string.home_connection_connect),
-                                tint = onAccent,
+                                onAccent = true,
                                 modifier = Modifier.size(30.dp),
                             )
                         }

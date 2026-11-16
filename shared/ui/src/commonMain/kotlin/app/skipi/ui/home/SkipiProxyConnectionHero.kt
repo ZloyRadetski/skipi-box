@@ -68,6 +68,7 @@ import app.skipi.app.home.ProxyHomeButtonSize
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
+import app.skipi.ui.components.skipiDrawnIconColor
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.connection_status_tap_to_connect
 import app.skipi.ui.resources.home_runtime_outbound_metric
@@ -610,9 +611,9 @@ private fun SkipiProxyHeroBadge(
             contentAlignment = Alignment.Center,
         ) {
             if (flag == StrategyFlagMarker) {
-                SkipiProxyBalancerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.size(22.dp))
+                SkipiProxyBalancerIcon(color = skipiDrawnIconColor(SkipiTheme.colors.onSurface.copy(alpha = 0.85f)), modifier = Modifier.size(22.dp))
             } else if (flag == null) {
-                SkipiProxyServerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.75f), modifier = Modifier.size(22.dp))
+                SkipiProxyServerIcon(color = skipiDrawnIconColor(SkipiTheme.colors.onSurface.copy(alpha = 0.75f)), modifier = Modifier.size(22.dp))
             } else {
                 Text(flag, fontSize = 20.sp)
             }
@@ -633,9 +634,9 @@ private fun SkipiProxyHeroLatencyChip(
             .padding(horizontal = 6.dp, vertical = 3.dp),
     ) {
         if (latency.testing) {
-            SkipiProxyHeroAnimatedHourglassIcon(color = latency.color, size = 12.dp)
+            SkipiProxyHeroAnimatedHourglassIcon(color = skipiDrawnIconColor(latency.color), size = 12.dp)
         } else {
-            SkipiProxyHeroSignalBarsIcon(color = latency.color, modifier = Modifier.size(12.dp))
+            SkipiProxyHeroSignalBarsIcon(color = skipiDrawnIconColor(latency.color), modifier = Modifier.size(12.dp))
         }
         Spacer(Modifier.width(4.dp))
         Text(

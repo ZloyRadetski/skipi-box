@@ -54,7 +54,7 @@ import features.proxy.server.model.StrategyGroupDisplayMode
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -453,7 +453,7 @@ fun LazyListScope.chainProxyServer(
                         }
                     },
                 ) {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Delete,
                         contentDescription = stringResource(Res.string.common_delete),
                     )

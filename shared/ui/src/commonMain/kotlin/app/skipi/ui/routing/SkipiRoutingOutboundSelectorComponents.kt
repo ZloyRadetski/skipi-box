@@ -31,7 +31,7 @@ import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.text.themedFontWeight
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -87,7 +87,7 @@ fun SkipiRoutingOutboundGroupHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { onExpandedChange(!expanded) }) {
-                    Icon(if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore, contentDescription = null, tint = MiuixTheme.colorScheme.onSurface)
+                    SkipiIcon(if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore, contentDescription = null, fallbackTint = MiuixTheme.colorScheme.onSurface)
                 }
                 Spacer(Modifier.width(4.dp))
                 Column(Modifier.weight(1f)) {

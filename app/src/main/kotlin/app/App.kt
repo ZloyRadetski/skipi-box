@@ -282,7 +282,7 @@ fun App(
                     TipNotifier { message -> notificationScope.launch { tipNotifier.show(message) } }
                 },
             ) {
-                app.skipi.ui.settings.ProvideSettingsIconColor(chromeState.customCategoryIconColor, chromeState.customCategoryIconGlyphColor) {
+                app.skipi.ui.settings.ProvideIconColor(app.skipi.ui.theme.customColorIfEnabled(chromeState.customCategoryIconGlyphColor, chromeState.enableCustomColors)) {
                     ui.background.AppBackground {
                         AppContent(padding = padding)
                     }

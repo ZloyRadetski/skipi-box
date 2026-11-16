@@ -5,7 +5,6 @@
 
 package app.skipi.desktop
 
-import app.skipi.ui.settings.ProvideSettingsIconColor
 import app.skipi.ui.resources.desktop_active_group_server_changed
 import app.skipi.ui.resources.desktop_group_member_change_failed
 import app.skipi.ui.resources.desktop_group_member_save_failed
@@ -2081,7 +2080,7 @@ private fun runDesktopApplication(
                             resourceFileStatusMessage = resourceFileStatusMessage,
                         ) }
 
-                        SkipiMainDestination.Settings -> key(settingsOpenCount) { ProvideSettingsIconColor(desktopSettings.customCategoryIconColor ?: DesktopDefaultSettingsIconColor, desktopSettings.customCategoryIconGlyphColor) { DesktopSettingsScreen(
+                        SkipiMainDestination.Settings -> key(settingsOpenCount) { DesktopSettingsScreen(
                             initialDestination = settingsStart,
                             appUpdateState = appUpdateState,
                             onCheckForAppUpdate = ::checkForAppUpdate,
@@ -2114,7 +2113,7 @@ private fun runDesktopApplication(
                                         }
                                 }
                             },
-                        ) } }
+                        ) }
                     }
                 }
                 }

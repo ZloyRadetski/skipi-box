@@ -3,6 +3,7 @@
 
 package features.proxy.server.list
 
+import app.skipi.ui.theme.customColorIfEnabled
 import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
@@ -150,22 +151,22 @@ internal fun AppState.toProxyHomeInput(
             showTunnelIp = showTunnelIpOnHome,
             maskTunnelIp = maskTunnelIpOnHome,
             protocolColors = proxyHomeProtocolColors(
-                vless = customProtocolVlessColor,
-                vmess = customProtocolVmessColor,
-                hysteria2 = customProtocolHysteria2Color,
-                trojan = customProtocolTrojanColor,
-                shadowsocks = customProtocolShadowsocksColor,
-                wireguard = customProtocolWireguardColor,
-                socks = customProtocolSocksColor,
-                http = customProtocolHttpColor,
-                strategy = customProtocolStrategyColor,
-                chain = customProtocolChainColor,
-                json = customProtocolJsonColor,
+                vless = customColorIfEnabled(customProtocolVlessColor, enableCustomColors),
+                vmess = customColorIfEnabled(customProtocolVmessColor, enableCustomColors),
+                hysteria2 = customColorIfEnabled(customProtocolHysteria2Color, enableCustomColors),
+                trojan = customColorIfEnabled(customProtocolTrojanColor, enableCustomColors),
+                shadowsocks = customColorIfEnabled(customProtocolShadowsocksColor, enableCustomColors),
+                wireguard = customColorIfEnabled(customProtocolWireguardColor, enableCustomColors),
+                socks = customColorIfEnabled(customProtocolSocksColor, enableCustomColors),
+                http = customColorIfEnabled(customProtocolHttpColor, enableCustomColors),
+                strategy = customColorIfEnabled(customProtocolStrategyColor, enableCustomColors),
+                chain = customColorIfEnabled(customProtocolChainColor, enableCustomColors),
+                json = customColorIfEnabled(customProtocolJsonColor, enableCustomColors),
             ),
-            latencyFastColor = customPingFastColor,
-            latencyMediumColor = customPingMediumColor,
-            latencySlowColor = customPingSlowColor,
-            latencyErrorColor = customStatusStoppedColor,
+            latencyFastColor = customColorIfEnabled(customPingFastColor, enableCustomColors),
+            latencyMediumColor = customColorIfEnabled(customPingMediumColor, enableCustomColors),
+            latencySlowColor = customColorIfEnabled(customPingSlowColor, enableCustomColors),
+            latencyErrorColor = customColorIfEnabled(customStatusStoppedColor, enableCustomColors),
         ),
         runtimeOutboundMetric = runtimeOutboundMetric,
         tunnelIp = tunnelIp,

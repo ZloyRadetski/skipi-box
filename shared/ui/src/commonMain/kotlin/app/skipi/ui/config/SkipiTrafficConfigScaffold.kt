@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Edit
@@ -117,7 +117,7 @@ fun SkipiTrafficConfigEditorGroupCard(
                 Text(title, fontSize = 17.sp, fontWeight = themedFontWeight(FontWeight.SemiBold), color = MiuixTheme.colorScheme.onSurface)
                 Text(summary, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Icon(imageVector = MiuixIcons.Edit, contentDescription = null, tint = SkipiTheme.colors.onSurfaceVariant)
+            SkipiIcon(imageVector = MiuixIcons.Edit, contentDescription = null, fallbackTint = SkipiTheme.colors.onSurfaceVariant)
         }
     }
 }

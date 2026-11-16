@@ -6,6 +6,7 @@ package app.skipi.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
+import app.skipi.ui.components.skipiDrawnIconColor
 import app.skipi.ui.theme.SkipiTheme
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
@@ -28,7 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 
 /** Shared country/emoji badge. Hosts supply their own fallback asset and colors. */
@@ -52,7 +53,7 @@ fun SkipiProxyServerFlagBadge(
         contentAlignment = Alignment.Center,
     ) {
         if (flag == StrategyFlagMarker) {
-            SkipiProxyBalancerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.size(size * 0.58f))
+            SkipiProxyBalancerIcon(color = skipiDrawnIconColor(SkipiTheme.colors.onSurface.copy(alpha = 0.85f)), modifier = Modifier.size(size * 0.58f))
         } else if (flagBitmap != null) {
             SkipiCountryFlagImage(flagBitmap, Modifier.fillMaxSize())
         } else if (flag != null) {
@@ -62,14 +63,14 @@ fun SkipiProxyServerFlagBadge(
                 lineHeight = (size.value * 0.58f).sp,
             )
         } else if (fallbackPainter != null) {
-            Icon(
+            SkipiIcon(
                 painter = fallbackPainter,
                 contentDescription = null,
-                tint = fallbackTint,
+                fallbackTint = fallbackTint,
                 modifier = Modifier.size(size * 0.62f),
             )
         } else {
-            SkipiProxyServerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.75f), modifier = Modifier.size(size * 0.56f))
+            SkipiProxyServerIcon(color = skipiDrawnIconColor(SkipiTheme.colors.onSurface.copy(alpha = 0.75f)), modifier = Modifier.size(size * 0.56f))
         }
     }
 }

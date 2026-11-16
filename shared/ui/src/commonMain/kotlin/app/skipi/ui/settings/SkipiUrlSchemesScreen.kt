@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -351,10 +351,10 @@ private fun SchemeChip(
             onClick = { onCopy(command) },
             modifier = Modifier.size(36.dp),
         ) {
-            Icon(
+            SkipiIcon(
                 imageVector = MiuixIcons.Copy,
                 contentDescription = stringResource(Res.string.common_copy),
-                tint = MiuixTheme.colorScheme.primary,
+                fallbackTint = MiuixTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
         }

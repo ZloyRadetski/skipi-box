@@ -49,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,7 +80,6 @@ import app.skipi.ui.text.themedFontWeight
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -234,11 +234,11 @@ fun StringListEditor(
                         modifier = Modifier.size(StringListBulkEditButtonSize),
                         onClick = showBulkEdit,
                     ) {
-                        Icon(
+                        SkipiIcon(
                             modifier = Modifier.size(StringListBulkEditIconSize),
                             imageVector = MiuixIcons.Edit,
                             contentDescription = stringResource(Res.string.common_edit_all),
-                            tint = MiuixTheme.colorScheme.onSurface,
+                            fallbackTint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -272,15 +272,11 @@ fun StringListEditor(
                     onClick = addInput,
                     enabled = canAddInput,
                 ) {
-                    Icon(
+                    SkipiIcon(
                         modifier = Modifier.size(20.dp),
                         imageVector = MiuixIcons.Add,
                         contentDescription = stringResource(Res.string.common_add),
-                        tint = if (canAddInput) {
-                            MiuixTheme.colorScheme.onSurface
-                        } else {
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        },
+                        tint = if (canAddInput) Color.Unspecified else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
                     )
                 }
             }
@@ -483,15 +479,11 @@ private fun StringListItemActionButton(
         onClick = onClick,
         enabled = enabled,
     ) {
-        Icon(
+        SkipiIcon(
             modifier = Modifier.size(StringListItemActionIconSize),
             imageVector = imageVector,
             contentDescription = contentDescription,
-            tint = if (enabled) {
-                MiuixTheme.colorScheme.onSurface
-            } else {
-                MiuixTheme.colorScheme.disabledOnSecondaryVariant
-            },
+            tint = if (enabled) Color.Unspecified else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
         )
     }
 }

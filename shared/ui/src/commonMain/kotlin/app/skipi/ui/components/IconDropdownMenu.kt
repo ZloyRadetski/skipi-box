@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -43,10 +42,10 @@ fun <T> IconDropdownMenu(
             onClick = { expanded = true },
             holdDownState = expanded,
         ) {
-            Icon(
+            SkipiIcon(
                 imageVector = imageVector,
                 contentDescription = contentDescription,
-                tint = MiuixTheme.colorScheme.onBackground,
+                fallbackTint = MiuixTheme.colorScheme.onBackground,
             )
         }
         SkipiMenu(

@@ -43,6 +43,8 @@ data class AppColors(
     val onWarning: Color = Color.Black,
     val info: Color = accent,
     val onInfo: Color = onAccent,
+    /** The color icons are drawn in unless the user picked one; unspecified keeps the host's own default. */
+    val icon: Color = Color.Unspecified,
 )
 
 val DefaultAppAccentColor = Color(0xFF4B6078)

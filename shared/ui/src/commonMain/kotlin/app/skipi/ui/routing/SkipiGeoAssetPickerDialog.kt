@@ -45,7 +45,7 @@ import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 import features.routing.usecase.GeoSuggestionItem
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -81,10 +81,10 @@ fun SkipiGeoAssetPickerDialog(
                 label = stringResource(Res.string.routing_suggestions_search_hint),
                 lineLimits = TextFieldLineLimits.SingleLine,
                 leadingIcon = {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Search,
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(18.dp),
                     )
                 },

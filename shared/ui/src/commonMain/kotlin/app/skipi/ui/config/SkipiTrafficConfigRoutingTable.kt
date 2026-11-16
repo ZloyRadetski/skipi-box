@@ -134,7 +134,7 @@ import features.config.V2rayRoutingSkipReason
 import features.config.toRoutingTable
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -723,7 +723,7 @@ private fun RoutingTableEditor(
                     Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).clickable { state.close() }.testTag("routing-close"),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(MiuixIcons.Close, contentDescription = stringResource(Res.string.common_close), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
+                    SkipiIcon(MiuixIcons.Close, contentDescription = stringResource(Res.string.common_close), fallbackTint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
                 }
             }
 

@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.text.themedFontWeight
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -409,10 +409,10 @@ fun SkipiExpressiveNavigationBar(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
-                            Icon(
+                            SkipiIcon(
                                 imageVector = item.icon,
                                 contentDescription = item.label,
-                                tint = itemColor,
+                                fallbackTint = itemColor,
                                 modifier = Modifier
                                     .size(dimensions.iconSize)
                                     .graphicsLayer {

@@ -47,5 +47,6 @@ fun resolveBaseAppearanceColors(
         surfaceVariant = surfaceVariant,
         onSurfaceVariant = onSurfaceVariant,
         isDark = isDark,
+        icon = namedPalette?.icon ?: Color.Unspecified,
     )
 }

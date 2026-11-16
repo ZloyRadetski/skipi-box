@@ -90,7 +90,7 @@ import features.networkautomation.policy.NetworkAutomationRules
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -293,17 +293,17 @@ private fun RuleCard(
             Spacer(modifier = Modifier.width(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onEdit) {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Edit,
                         contentDescription = stringResource(Res.string.network_automation_edit_rule),
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        fallbackTint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Delete,
                         contentDescription = stringResource(Res.string.network_automation_delete_rule),
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        fallbackTint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
                 Spacer(modifier = Modifier.width(2.dp))

@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.skipiDrawnIconColor
 import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -136,10 +137,10 @@ private fun SubscriptionHeaderActions(
                         )
                     }
                 } else {
-                    Icon(
+                    SkipiContentIcon(
                         imageVector = MiuixIcons.Refresh,
                         contentDescription = null,
-                        tint = colors.text,
+                        fallbackTint = colors.text,
                     )
                 }
             }
@@ -166,7 +167,7 @@ private fun SubscriptionHeaderActions(
                     if (state.pinging) {
                         SkipiProxyHeroAnimatedHourglassIcon(color = colors.enabled, size = 20.dp)
                     } else {
-                        SkipiProxyHeroStaticHourglassIcon(color = colors.text, size = 20.dp)
+                        SkipiProxyHeroStaticHourglassIcon(color = skipiDrawnIconColor(colors.text), size = 20.dp)
                     }
                 }
             }
@@ -178,7 +179,7 @@ private fun SubscriptionHeaderActions(
                     contentDescription = labels.editContentDescription
                 },
             ) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = null, tint = colors.text)
+                SkipiContentIcon(Icons.Outlined.MoreVert, contentDescription = null, fallbackTint = colors.text)
             }
         }
     }

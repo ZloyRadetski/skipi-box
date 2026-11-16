@@ -6,7 +6,7 @@ package app.skipi.ui.home
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +28,7 @@ fun SkipiProxyHomeSearchField(
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
         singleLine = true,
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        leadingIcon = { SkipiContentIcon(Icons.Outlined.Search, contentDescription = null) },
         label = { Text(label) },
         shape = SkipiTheme.shapes.medium,
     )

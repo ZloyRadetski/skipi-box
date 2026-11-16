@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.toArgb
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -79,6 +80,7 @@ internal fun AppearanceThemeSection(
         AppearanceSettingValues.ColorModeSunset to stringResource(Res.string.option_theme_sunset),
     ).filter { capabilities.systemTheme || it.first != AppearanceSettingValues.ColorModeSystem }
 
+    val customColorModeWord = stringResource(Res.string.option_custom_colors)
     val selectedColorModeIndex = colorModeOptions.indexOfFirst { (mode) ->
         AppearanceSettingValues.normalizeColorMode(mode) == AppearanceSettingValues.normalizeColorMode(appState.colorMode)
     }.coerceAtLeast(0)
@@ -115,11 +117,13 @@ internal fun AppearanceThemeSection(
             } else {
                 stringResource(Res.string.settings_color_mode_summary)
             },
-            items = colorModeOptions.map { (_, label) -> label },
+            items = colorModeOptions.mapIndexed { index, (_, label) ->
+                if (index == selectedColorModeIndex) colorModeLabel(label, appState.enableCustomColors, customColorModeWord) else label
+            },
             selectedIndex = selectedColorModeIndex,
             onSelectedIndexChange = { index ->
                 colorModeOptions.getOrNull(index)?.first?.let { mode ->
-                    updateAppState { it.copy(colorMode = mode) }
+                    updateAppState { it.withColorMode(mode) }
                 }
             },
         )
@@ -153,27 +157,6 @@ internal fun AppearanceThemeSection(
                 startAction = settingIcon(Icons.Rounded.Apps),
                 summary = appIconTitle,
                 onClick = onRequestAppIconSelection,
-            )
-        }
-        SkipiSettingsReveal(visible = capabilities.dynamicColors && !isNamedThemeSelected) {
-            // Only the system accent: no seed colour to choose. The seed index goes back to "system", which also
-            // clears a colour that onboarding picked.
-            SwitchPreference(
-                title = stringResource(Res.string.settings_enable_material_you),
-                startAction = settingIcon(Icons.Rounded.ColorLens),
-                summary = stringResource(Res.string.settings_enable_material_you_summary),
-                checked = appState.enableMaterialYou,
-                onCheckedChange = { enabled ->
-                    updateAppState { it.copy(enableMaterialYou = enabled, seedIndex = if (enabled) 0 else it.seedIndex) }
-                },
-            )
-        }
-        SkipiSettingsReveal(visible = capabilities.customColors && !appState.enableMaterialYou && !isNamedThemeSelected) {
-            SettingsColorItem(
-                title = stringResource(Res.string.settings_color_accent),
-                summary = stringResource(Res.string.settings_color_accent_summary),
-                color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
-                onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
             )
         }
     }
@@ -273,12 +256,34 @@ internal fun AppearanceCustomColorsSection(
     val appState = state
     val updateAppState = onSettingsChange
     val isDark = LocalAppColors.current.isDark
+    val isNamedThemeSelected = AppearanceSettingValues.isNamedColorTheme(appState.colorMode)
 
     val resetCompletedMessage = stringResource(Res.string.settings_colors_reset_completed)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         SmallTitle(text = stringResource(Res.string.settings_custom_colors_title))
         SkipiSettingsSectionCard {
+            SkipiSettingsReveal(visible = capabilities.dynamicColors && !isNamedThemeSelected) {
+                // Only the system accent: no seed colour to choose. The seed index goes back to "system", which also
+                // clears a colour that onboarding picked.
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_enable_material_you),
+                    startAction = settingIcon(Icons.Rounded.ColorLens),
+                    summary = stringResource(Res.string.settings_enable_material_you_summary),
+                    checked = appState.enableMaterialYou,
+                    onCheckedChange = { enabled ->
+                        updateAppState { it.copy(enableMaterialYou = enabled, seedIndex = if (enabled) 0 else it.seedIndex) }
+                    },
+                )
+            }
+            SkipiSettingsReveal(visible = !appState.enableMaterialYou && !isNamedThemeSelected) {
+                SettingsColorItem(
+                    title = stringResource(Res.string.settings_color_accent),
+                    summary = stringResource(Res.string.settings_color_accent_summary),
+                    color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
+                    onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
+                )
+            }
             SwitchPreference(
                 title = stringResource(Res.string.settings_enable_custom_colors),
                 startAction = settingIcon(Icons.Rounded.Colorize),
@@ -290,15 +295,6 @@ internal fun AppearanceCustomColorsSection(
             )
             SkipiSettingsReveal(visible = appState.enableCustomColors) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // With the system accent on, an accent chosen here would be ignored, so it is not offered.
-                    if (!(capabilities.dynamicColors && appState.enableMaterialYou)) {
-                        SettingsColorItem(
-                            title = stringResource(Res.string.settings_color_accent),
-                            summary = stringResource(Res.string.settings_color_accent_summary),
-                            color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
-                            onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
-                        )
-                    }
                     SettingsColorItem(
                         title = stringResource(Res.string.settings_color_background),
                         summary = stringResource(Res.string.settings_color_background_summary),
@@ -372,19 +368,10 @@ internal fun AppearanceCustomColorsSection(
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_categories_title))
                 SkipiSettingsSectionCard {
                     SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_category_icons),
-                        summary = stringResource(Res.string.settings_color_category_icons_summary),
-                        color = appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                        onClick = { onPickColor(AppearanceColorTarget.CATEGORY_ICONS) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_category_icon_glyphs),
-                        summary = stringResource(Res.string.settings_color_category_icon_glyphs_summary),
-                        color = settingIconGlyphColor(
-                            appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                            appState.customCategoryIconGlyphColor?.let { Color(it) },
-                        ),
-                        onClick = { onPickColor(AppearanceColorTarget.CATEGORY_ICON_GLYPHS) },
+                        title = stringResource(Res.string.settings_color_icons),
+                        summary = stringResource(Res.string.settings_color_icons_summary),
+                        color = shownIconColor(appState.customCategoryIconGlyphColor),
+                        onClick = { onPickColor(AppearanceColorTarget.ICONS) },
                     )
                 }
 
@@ -463,7 +450,6 @@ internal fun AppearanceCustomColorsSection(
                                     customPingFastColor = null,
                                     customPingMediumColor = null,
                                     customPingSlowColor = null,
-                                    customCategoryIconColor = null,
                                     customCategoryIconGlyphColor = null,
                                     customProtocolVlessColor = null,
                                     customProtocolVmessColor = null,
@@ -690,8 +676,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PING_FAST -> stringResource(Res.string.settings_color_ping_fast)
             AppearanceColorTarget.PING_MEDIUM -> stringResource(Res.string.settings_color_ping_medium)
             AppearanceColorTarget.PING_SLOW -> stringResource(Res.string.settings_color_ping_slow)
-            AppearanceColorTarget.CATEGORY_ICONS -> stringResource(Res.string.settings_color_category_icons)
-            AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> stringResource(Res.string.settings_color_category_icon_glyphs)
+            AppearanceColorTarget.ICONS -> stringResource(Res.string.settings_color_icons)
             AppearanceColorTarget.PROTOCOL_VLESS -> stringResource(Res.string.settings_color_protocol_vless)
             AppearanceColorTarget.PROTOCOL_VMESS -> stringResource(Res.string.settings_color_protocol_vmess)
             AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> stringResource(Res.string.settings_color_protocol_hysteria2)
@@ -716,8 +701,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PING_FAST -> appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark)
             AppearanceColorTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark)
             AppearanceColorTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark)
-            AppearanceColorTarget.CATEGORY_ICONS -> appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-            AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> settingIconGlyphColor(appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary, appState.customCategoryIconGlyphColor?.let { Color(it) })
+            AppearanceColorTarget.ICONS -> shownIconColor(appState.customCategoryIconGlyphColor)
             AppearanceColorTarget.PROTOCOL_VLESS -> appearanceProtocolColor("vless", appState, isDark)
             AppearanceColorTarget.PROTOCOL_VMESS -> appearanceProtocolColor("vmess", appState, isDark)
             AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> appearanceProtocolColor("hysteria2", appState, isDark)
@@ -750,8 +734,7 @@ internal fun AppearanceColorPickerDialog(
                         AppearanceColorTarget.PING_FAST -> state.copy(customPingFastColor = colorLong)
                         AppearanceColorTarget.PING_MEDIUM -> state.copy(customPingMediumColor = colorLong)
                         AppearanceColorTarget.PING_SLOW -> state.copy(customPingSlowColor = colorLong)
-                        AppearanceColorTarget.CATEGORY_ICONS -> state.copy(customCategoryIconColor = colorLong)
-                        AppearanceColorTarget.CATEGORY_ICON_GLYPHS -> state.copy(customCategoryIconGlyphColor = colorLong)
+                        AppearanceColorTarget.ICONS -> state.copy(customCategoryIconGlyphColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_VLESS -> state.copy(customProtocolVlessColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_VMESS -> state.copy(customProtocolVmessColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_HYSTERIA2 -> state.copy(customProtocolHysteria2Color = colorLong)
@@ -768,3 +751,12 @@ internal fun AppearanceColorPickerDialog(
             },
         )
 }
+
+/** The icon color a row or the picker shows: the picked one, else the theme's, else the text color icons fall back to. */
+@Composable
+private fun shownIconColor(picked: Long?): Color =
+    picked?.let { Color(it) } ?: SkipiTheme.colors.icon.takeIf { it.isSpecified } ?: SkipiTheme.colors.onSurface
+
+/** The color mode as the row shows it: with "Custom colors" on it says so and keeps the mode the colors sit on. */
+internal fun colorModeLabel(mode: String, customColorsOn: Boolean, customWord: String): String =
+    if (customColorsOn) "$customWord · $mode" else mode

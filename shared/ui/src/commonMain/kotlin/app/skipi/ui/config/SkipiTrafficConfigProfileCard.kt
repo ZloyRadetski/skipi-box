@@ -30,7 +30,7 @@ import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -104,17 +104,17 @@ fun SkipiTrafficConfigProfileCard(
             if (showUpdateAction && item.hasUpdateLink) {
                 IconButton(onClick = onUpdate, enabled = !item.updating) {
                     if (item.updating) InfiniteProgressIndicator(modifier = Modifier.size(20.dp))
-                    else Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.common_refresh), tint = MiuixTheme.colorScheme.onSurface)
+                    else SkipiIcon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.common_refresh), fallbackTint = MiuixTheme.colorScheme.onSurface)
                 }
             }
             if (showEditAction) {
                 IconButton(onClick = onEdit) {
-                    Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_ui_edit), tint = MiuixTheme.colorScheme.onSurface)
+                    SkipiIcon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_ui_edit), fallbackTint = MiuixTheme.colorScheme.onSurface)
                 }
             }
             if (showDeleteAction) {
                 IconButton(onClick = onDelete, enabled = item.canDelete) {
-                    Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface)
+                    SkipiIcon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), fallbackTint = MiuixTheme.colorScheme.onSurface)
                 }
             }
             trailingActions?.invoke(this)

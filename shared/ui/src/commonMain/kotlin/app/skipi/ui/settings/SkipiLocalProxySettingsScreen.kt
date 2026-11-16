@@ -87,7 +87,7 @@ import app.skipi.ui.resources.settings_local_proxy_socks_auth_mode
 import app.skipi.ui.resources.settings_local_proxy_username
 import org.jetbrains.compose.resources.stringResource
 import platform.LocalProxyAuthMode
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -387,10 +387,10 @@ private fun AuthBlock(
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onGenerate).padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
+                SkipiIcon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    fallbackTint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
@@ -432,19 +432,19 @@ private fun ValueRow(
         }
         onToggleMask?.let { toggle ->
             IconButton(onClick = toggle, modifier = Modifier.size(40.dp)) {
-                Icon(
+                SkipiIcon(
                     imageVector = if (masked) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     contentDescription = if (masked) showText else hideText,
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.size(20.dp),
                 )
             }
         }
         IconButton(onClick = onCopy, modifier = Modifier.size(40.dp)) {
-            Icon(
+            SkipiIcon(
                 imageVector = MiuixIcons.Copy,
                 contentDescription = copyDescription,
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.size(20.dp),
             )
         }

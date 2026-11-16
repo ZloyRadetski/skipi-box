@@ -23,7 +23,7 @@ import androidx.compose.material3.CardDefaults
 import app.skipi.ui.components.SkipiMenu
 import app.skipi.ui.components.SkipiMenuItem
 import app.skipi.ui.components.SkipiMenuSection
-import androidx.compose.material3.Icon
+import app.skipi.ui.components.SkipiContentIcon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -222,10 +222,10 @@ private fun ProxyGroupChip(
                         onClick = { expanded = true },
                         modifier = Modifier.semantics { contentDescription = groupMenuDescription },
                     ) {
-                        Icon(
+                        SkipiContentIcon(
                             imageVector = Icons.Outlined.MoreVert,
                             contentDescription = null,
-                            tint = if (selected) colors.selectedText else colors.text,
+                            fallbackTint = if (selected) colors.selectedText else colors.text,
                         )
                     }
                     SkipiMenu(

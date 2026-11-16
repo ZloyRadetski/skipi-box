@@ -58,7 +58,7 @@ import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -219,10 +219,10 @@ fun SkipiOnboardingScreen(
                             },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
+                        SkipiIcon(
                             imageVector = MiuixIcons.Back,
                             contentDescription = stringResource(Res.string.onboarding_back),
-                            tint = colors.onSurface,
+                            fallbackTint = colors.onSurface,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -480,7 +480,7 @@ private fun ImportStep(state: SkipiOnboardingState, actions: SkipiOnboardingActi
                 // The action sits under the text: beside it the title was squeezed to ~100dp on a phone.
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(MiuixIcons.Copy, null, tint = SkipiTheme.colors.accent, modifier = Modifier.size(28.dp))
+                        SkipiIcon(MiuixIcons.Copy, null, fallbackTint = SkipiTheme.colors.accent, modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(Res.string.onboarding_clipboard_detected_title), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface, maxLines = 2)
@@ -559,7 +559,7 @@ private fun CompleteStep(state: SkipiOnboardingState) {
                 .background(Brush.radialGradient(listOf(PermissionGreen.copy(alpha = if (colors.isDark) 0.4f else 0.22f), PermissionGreen.copy(alpha = 0.08f), Color.Transparent))),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(MiuixIcons.Ok, null, tint = PermissionGreen, modifier = Modifier.size(56.dp))
+            SkipiIcon(MiuixIcons.Ok, null, tint = PermissionGreen, modifier = Modifier.size(56.dp))
         }
         Spacer(Modifier.height(22.dp))
         Text(stringResource(Res.string.onboarding_complete_title), fontSize = 24.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = colors.onSurface, textAlign = TextAlign.Center)
@@ -607,7 +607,7 @@ private fun Hero(title: String, subtitle: String, icon: ImageVector?, logoPainte
             icon != null -> Box(
                 Modifier.size(104.dp).clip(CircleShape).background(Brush.radialGradient(listOf(glow.copy(alpha = 0.3f), Color.Transparent))),
                 contentAlignment = Alignment.Center,
-            ) { Icon(icon, null, tint = glow, modifier = Modifier.size(36.dp)) }
+            ) { SkipiIcon(icon, null, tint = glow, modifier = Modifier.size(36.dp)) }
         }
         Spacer(Modifier.height(20.dp))
         Text(title, fontSize = 24.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = colors.onSurface, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.92f))
@@ -660,7 +660,7 @@ private fun AccentDot(color: Color, selected: Boolean, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) Icon(MiuixIcons.Ok, null, tint = if (color == Color(0xFF9AA0A6)) Color.White else Color.White, modifier = Modifier.size(18.dp))
+        if (selected) SkipiIcon(MiuixIcons.Ok, null, tint = if (color == Color(0xFF9AA0A6)) Color.White else Color.White, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -672,7 +672,7 @@ private fun PermissionCard(icon: ImageVector, iconColor: Color, title: String, d
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (granted) PermissionGreen.copy(alpha = 0.16f) else iconColor.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                    Icon(if (granted) MiuixIcons.Ok else icon, null, tint = if (granted) PermissionGreen else iconColor, modifier = Modifier.size(24.dp))
+                    SkipiIcon(if (granted) MiuixIcons.Ok else icon, null, tint = if (granted) PermissionGreen else iconColor, modifier = Modifier.size(24.dp))
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
@@ -700,7 +700,7 @@ private fun ImportActionCard(icon: ImageVector, iconColor: Color, title: String,
     SurfaceCard {
         Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)).background(iconColor.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = iconColor, modifier = Modifier.size(24.dp))
+                SkipiIcon(icon, null, tint = iconColor, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {

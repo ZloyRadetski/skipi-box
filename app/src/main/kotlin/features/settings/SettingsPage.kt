@@ -19,7 +19,6 @@ import app.navigation.Route
 import app.skipi.ui.settings.SkipiSettingsDestination
 import app.skipi.ui.settings.SkipiSettingsHomeScreen
 import app.skipi.ui.settings.SkipiSettingsHomeState
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Android application adapter for the shared settings overview. */
 @Composable
@@ -38,15 +37,13 @@ fun SettingsPage(
     }
 
     val versionLabel = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})"
-    val categoryIconColor = appState.customCategoryIconColor?.let(::Color) ?: MiuixTheme.colorScheme.primary
     SkipiSettingsHomeScreen(
         state = SkipiSettingsHomeState(
             versionLabel = versionLabel,
             tunMtu = appState.tunMtu,
             localProxyPort = appState.localProxyPort,
             coreLogLevel = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
-            categoryIconColor = categoryIconColor,
-            categoryIconGlyphColor = appState.customCategoryIconGlyphColor?.let(::Color),
+            categoryIconGlyphColor = app.skipi.ui.theme.customColorIfEnabled(appState.customCategoryIconGlyphColor, appState.enableCustomColors)?.let(::Color),
         ),
         padding = padding,
         isWideScreen = LocalIsWideScreen.current,

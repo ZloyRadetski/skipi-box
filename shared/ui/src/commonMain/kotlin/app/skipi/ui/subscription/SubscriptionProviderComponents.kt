@@ -40,7 +40,7 @@ import app.skipi.ui.resources.*
 import app.skipi.ui.text.formatTemplate
 import app.skipi.ui.text.themedFontWeight
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.Icon
+import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -90,10 +90,10 @@ fun SubscriptionProviderHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { onExpandedChange(!expanded) }) {
-                Icon(
+                SkipiIcon(
                     imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
                     contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    fallbackTint = MiuixTheme.colorScheme.onSurface,
                 )
             }
             Spacer(Modifier.width(4.dp))
@@ -131,10 +131,10 @@ fun SubscriptionProviderHeader(
                         )
                     }
                 } else {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Refresh,
                         contentDescription = stringResource(Res.string.subscription_provider_update),
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        fallbackTint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -156,19 +156,19 @@ fun SubscriptionProviderHeader(
                         )
                     }
                 } else {
-                    Icon(
+                    SkipiIcon(
                         imageVector = MiuixIcons.Timer,
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        fallbackTint = MiuixTheme.colorScheme.onSurface,
                         modifier = Modifier.size(20.dp),
                     )
                 }
             }
             IconButton(onClick = onEdit) {
-                Icon(
+                SkipiIcon(
                     imageVector = MiuixIcons.More,
                     contentDescription = stringResource(Res.string.subscription_edit),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    fallbackTint = MiuixTheme.colorScheme.onSurface,
                 )
             }
         }

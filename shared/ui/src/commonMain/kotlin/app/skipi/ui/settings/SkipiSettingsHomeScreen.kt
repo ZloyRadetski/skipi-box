@@ -94,7 +94,6 @@ data class SkipiSettingsHomeState(
     val tunMtu: String,
     val localProxyPort: String,
     val coreLogLevel: String?,
-    val categoryIconColor: Color,
     /** The icon's own color; null reads black or white on the tile. */
     val categoryIconGlyphColor: Color? = null,
     val visibleDestinations: Set<SkipiSettingsDestination> =
@@ -113,7 +112,7 @@ fun SkipiSettingsHomeScreen(
 ) {
     val listState = rememberLazyListState()
     OnNavigationReselect { listState.animateScrollToItem(0) }
-    val categoryIconColor = state.categoryIconColor
+    val categoryIconColor = settingIconBackgroundColor(SkipiTheme.colors.accent)
     val categoryIconGlyphColor = settingIconGlyphColor(categoryIconColor, state.categoryIconGlyphColor)
     val visible = state.visibleDestinations
     val scrollBehavior = MiuixScrollBehavior()
