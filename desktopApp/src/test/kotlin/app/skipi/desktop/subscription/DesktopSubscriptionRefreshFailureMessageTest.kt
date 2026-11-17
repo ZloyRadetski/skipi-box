@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.SubscriptionHttpException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import kotlin.test.Test
@@ -27,7 +28,7 @@ class DesktopSubscriptionRefreshFailureMessageTest {
 
     @Test
     fun httpFailureKeepsTheExistingDesktopExceptionMessage() {
-        val failure = DesktopSubscriptionHttpException(503, "maintenance")
+        val failure = SubscriptionHttpException(503, responseBody = "maintenance")
 
         assertEquals(failure.message, desktopSubscriptionRefreshFailureMessage(failure))
     }

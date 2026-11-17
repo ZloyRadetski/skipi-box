@@ -17,6 +17,7 @@ import utils.encodeBase64
 import java.net.InetAddress
 import java.net.URI
 import java.time.Duration
+import features.subscription.SubscriptionHttpException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -53,10 +54,28 @@ class DesktopSubscriptionFetcherTest {
                 exchange.close()
             }
 
-            val error = assertFailsWith<DesktopSubscriptionHttpException> {
+            val error = assertFailsWith<SubscriptionHttpException> {
                 DesktopSubscriptionFetcher().fetch("http://127.0.0.1:${server.address.port}/denied")
             }
             assertEquals(403, error.statusCode)
+        }
+    }
+
+    @Test
+    fun a_failing_status_carries_the_message_the_server_wrote() {
+        withSubscriptionServer { server ->
+            server.createContext("/limit") { exchange ->
+                val body = """{"message":"Device limit reached"}""".encodeToByteArray()
+                exchange.sendResponseHeaders(403, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+
+            val error = assertFailsWith<SubscriptionHttpException> {
+                DesktopSubscriptionFetcher().fetch("http://127.0.0.1:${server.address.port}/limit")
+            }
+
+            assertEquals("Device limit reached", error.serverMessage)
+            assertEquals("HTTP 403: Device limit reached", error.message)
         }
     }
 
@@ -445,6 +464,96 @@ class DesktopSubscriptionFetcherTest {
         val proxy = if (useProxy) DesktopSubscriptionSocksProxy(host = "127.0.0.1", port = 10808) else null
 
         assertEquals(null, proxy)
+    }
+
+    // The policy is the Android one (decideSubscriptionRedirect): another site never receives the
+    // hardware id or the age key, and a redirect may not downgrade, leave http(s) or reach the LAN.
+    private fun redirectingFetcher(server: HttpServer, requested: MutableList<String>) = DesktopSubscriptionFetcher(
+        ageCrypto = RecordingAgeCrypto("ok"),
+        urlConnectionFactory = { url, _ ->
+            requested += url.toString()
+            java.net.URL("http://127.0.0.1:${server.address.port}${url.path}").openConnection() as java.net.HttpURLConnection
+        },
+    )
+
+    private fun serveRedirectThenRecord(server: HttpServer, location: String, received: MutableMap<String, String>) {
+        server.createContext("/first") { exchange ->
+            exchange.responseHeaders.add("Location", location)
+            exchange.sendResponseHeaders(302, -1)
+            exchange.close()
+        }
+        server.createContext("/second") { exchange ->
+            exchange.requestHeaders.forEach { (key, values) -> received[key.lowercase()] = values.firstOrNull().orEmpty() }
+            val body = "ok"
+            exchange.sendResponseHeaders(200, body.length.toLong())
+            exchange.responseBody.use { it.write(body.encodeToByteArray()) }
+        }
+    }
+
+    @Test
+    fun a_redirect_to_another_site_does_not_carry_the_device_identity() {
+        withSubscriptionServer { server ->
+            val received = mutableMapOf<String, String>()
+            val requested = mutableListOf<String>()
+            serveRedirectThenRecord(server, "https://other.example/second", received)
+
+            val response = redirectingFetcher(server, requested).fetch(
+                url = "https://panel.example/first",
+                deviceHeaders = mapOf("x-hwid" to "secret-hwid", "x-client" to "SKIPI"),
+                ageSecretKey = "AGE-SECRET-KEY-1TEST",
+            )
+
+            assertEquals("ok", response.body)
+            assertEquals(listOf("https://panel.example/first", "https://other.example/second"), requested)
+            assertEquals(null, received["x-hwid"])
+            assertEquals(null, received["x-client"])
+            assertEquals(null, received["x-age-public-key"])
+        }
+    }
+
+    @Test
+    fun a_redirect_inside_the_same_site_keeps_the_device_identity() {
+        withSubscriptionServer { server ->
+            val received = mutableMapOf<String, String>()
+            serveRedirectThenRecord(server, "https://panel.example/second", received)
+
+            redirectingFetcher(server, mutableListOf()).fetch(
+                url = "https://panel.example/first",
+                deviceHeaders = mapOf("x-hwid" to "secret-hwid"),
+            )
+
+            assertEquals("secret-hwid", received["x-hwid"])
+        }
+    }
+
+    @Test
+    fun a_redirect_that_downgrades_https_to_http_is_refused() {
+        withSubscriptionServer { server ->
+            val requested = mutableListOf<String>()
+            serveRedirectThenRecord(server, "http://panel.example/second", mutableMapOf())
+
+            val error = assertFailsWith<IllegalStateException> {
+                redirectingFetcher(server, requested).fetch(url = "https://panel.example/first")
+            }
+
+            assertTrue(error.message.orEmpty().contains("downgrades"))
+            assertEquals(listOf("https://panel.example/first"), requested)
+        }
+    }
+
+    @Test
+    fun a_redirect_to_an_internal_address_is_refused() {
+        for (location in listOf("http://192.168.1.1/second", "http://127.0.0.1:9/second", "http://localhost/second", "ftp://panel.example/second")) {
+            withSubscriptionServer { server ->
+                val requested = mutableListOf<String>()
+                serveRedirectThenRecord(server, location, mutableMapOf())
+
+                assertFailsWith<IllegalStateException>(location) {
+                    redirectingFetcher(server, requested).fetch(url = "https://panel.example/first")
+                }
+                assertEquals(listOf("https://panel.example/first"), requested)
+            }
+        }
     }
 
     @Test

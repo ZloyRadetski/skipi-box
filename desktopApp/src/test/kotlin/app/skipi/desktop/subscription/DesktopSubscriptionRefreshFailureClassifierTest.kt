@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.SubscriptionHttpException
 import java.io.IOException
 import java.net.http.HttpTimeoutException
 import kotlin.test.Test
@@ -13,16 +14,16 @@ class DesktopSubscriptionRefreshFailureClassifierTest {
     @Test
     fun httpStatusAndJdkTimeoutFailuresMatchTheSharedAndroidRetryPolicy() {
         listOf(408, 429, 500, 599).forEach { statusCode ->
-            assertTrue(isTransientDesktopSubscriptionRefreshFailure(DesktopSubscriptionHttpException(statusCode, "")))
+            assertTrue(isTransientDesktopSubscriptionRefreshFailure(SubscriptionHttpException(statusCode, responseBody = "")))
             assertTrue(
                 isTransientDesktopSubscriptionRefreshFailure(
-                    IllegalStateException("scheduled refresh", DesktopSubscriptionHttpException(statusCode, "")),
+                    IllegalStateException("scheduled refresh", SubscriptionHttpException(statusCode, responseBody = "")),
                 ),
             )
         }
 
         listOf(200, 400, 407, 409, 499, 600).forEach { statusCode ->
-            assertFalse(isTransientDesktopSubscriptionRefreshFailure(DesktopSubscriptionHttpException(statusCode, "")))
+            assertFalse(isTransientDesktopSubscriptionRefreshFailure(SubscriptionHttpException(statusCode, responseBody = "")))
         }
 
         assertTrue(isTransientDesktopSubscriptionRefreshFailure(HttpTimeoutException("request timed out")))

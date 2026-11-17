@@ -10,6 +10,10 @@ import engine.network.SocksProxyEndpoint
 import engine.network.withAuthenticator
 import engine.network.readUtf8Limited
 import engine.network.setEmbeddedBasicAuth
+import features.subscription.SubscriptionHttpException
+import features.subscription.SubscriptionRedirectDecision
+import features.subscription.parseSubscriptionHttpErrorMessage
+import features.subscription.decideSubscriptionRedirect
 import engine.network.toIdnUrl
 import engine.network.toBasicAuthHeaderOrNull
 import features.subscription.DefaultSubscriptionUserAgent
@@ -309,6 +313,7 @@ class DesktopSubscriptionFetcher(
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
         var requestUri = URI(url.trim().toIdnUrl()).withoutFragment()
         var redirects = 0
+        var sendIdentity = true
 
         while (true) {
             if (automaticResource) {
@@ -318,13 +323,15 @@ class DesktopSubscriptionFetcher(
                 .timeout(timeout)
                 .header("User-Agent", normalizeSkipiUserAgent(userAgent))
                 .header("Accept-Encoding", "gzip, deflate")
-            deviceHeaders.forEach { (name, value) ->
-                if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
-                    requestBuilder.header(name, value)
+            if (sendIdentity) {
+                deviceHeaders.forEach { (name, value) ->
+                    if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
+                        requestBuilder.header(name, value)
+                    }
                 }
-            }
-            requestUri.toBasicAuthHeaderOrNull()?.let { authHeader ->
-                requestBuilder.header("Authorization", authHeader)
+                requestUri.toBasicAuthHeaderOrNull()?.let { authHeader ->
+                    requestBuilder.header("Authorization", authHeader)
+                }
             }
             val request = requestBuilder.GET().build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
@@ -343,7 +350,9 @@ class DesktopSubscriptionFetcher(
                 val location = response.headers().firstValue("location").orElseThrow {
                     IllegalStateException("Subscription redirect does not provide Location")
                 }
-                requestUri = requestUri.resolve(location.trim()).withoutFragment()
+                val target = requestUri.resolve(location.trim()).withoutFragment()
+                if (applyRedirectPolicy(requestUri, target)) sendIdentity = false
+                requestUri = target
                 require(requestUri.toString().isValidManualSubscriptionUrl()) {
                     "Subscription redirect has an invalid URL"
                 }
@@ -353,8 +362,9 @@ class DesktopSubscriptionFetcher(
 
             val responseBody = response.readUtf8BodyAtMost(maxBodyBytes)
             if (response.statusCode() !in 200..299) {
-                throw DesktopSubscriptionHttpException(
+                throw SubscriptionHttpException(
                     statusCode = response.statusCode(),
+                    serverMessage = parseSubscriptionHttpErrorMessage(responseBody),
                     responseBody = responseBody,
                 )
             }
@@ -380,6 +390,7 @@ class DesktopSubscriptionFetcher(
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
         var requestUri = URI(url.trim().toIdnUrl()).withoutFragment()
         var redirects = 0
+        var sendIdentity = true
         val timeoutMillis = if (automaticResource) {
             timeout.toMillis().coerceIn(1_000, 600_000).toInt()
         } else {
@@ -400,13 +411,15 @@ class DesktopSubscriptionFetcher(
                     setRequestProperty("User-Agent", normalizeSkipiUserAgent(userAgent))
                     setRequestProperty("Connection", "close")
                     if (automaticResource) setRequestProperty("Accept-Encoding", "gzip, deflate")
-                    deviceHeaders.forEach { (name, value) ->
-                        if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
-                            setRequestProperty(name, value)
+                    if (sendIdentity) {
+                        deviceHeaders.forEach { (name, value) ->
+                            if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
+                                setRequestProperty(name, value)
+                            }
                         }
+                        agePublicKey?.let { setRequestProperty("X-Age-Public-Key", it) }
+                        setEmbeddedBasicAuth(requestUri.toString())
                     }
-                    agePublicKey?.let { setRequestProperty("X-Age-Public-Key", it) }
-                    setEmbeddedBasicAuth(requestUri.toString())
                 }
 
                 try {
@@ -417,7 +430,9 @@ class DesktopSubscriptionFetcher(
                         }
                         val location = connection.getHeaderField("Location")
                             ?: throw IllegalStateException("Subscription redirect does not provide Location")
-                        requestUri = requestUri.resolve(location.trim()).withoutFragment()
+                        val target = requestUri.resolve(location.trim()).withoutFragment()
+                        if (applyRedirectPolicy(requestUri, target)) sendIdentity = false
+                        requestUri = target
                         require(requestUri.toString().isValidManualSubscriptionUrl()) {
                             "Subscription redirect has an invalid URL"
                         }
@@ -442,8 +457,9 @@ class DesktopSubscriptionFetcher(
                                 maxBytes = maxBodyBytes,
                             )
                         }.getOrNull().orEmpty()
-                        throw DesktopSubscriptionHttpException(
+                        throw SubscriptionHttpException(
                             statusCode = statusCode,
+                            serverMessage = parseSubscriptionHttpErrorMessage(errorBody),
                             responseBody = errorBody,
                         )
                     }
@@ -606,6 +622,18 @@ private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int?): String
     )
 }
 
+/**
+ * Applies the redirect policy Android uses ([decideSubscriptionRedirect]): no downgrade to cleartext, no
+ * leaving http(s), no hop to an internal address. Returns true when the target is another site, which must
+ * not receive the hardware id, the age key or the credentials of the first request.
+ */
+private fun applyRedirectPolicy(from: URI, to: URI): Boolean =
+    when (val decision = decideSubscriptionRedirect(from.toString(), to.toString())) {
+        SubscriptionRedirectDecision.Follow -> false
+        SubscriptionRedirectDecision.FollowWithoutIdentity -> true
+        is SubscriptionRedirectDecision.Reject -> error("Subscription redirect refused: ${decision.reason}")
+    }
+
 private fun Int.isRedirect(automaticResource: Boolean): Boolean =
     if (automaticResource) this in HttpRedirectStatusCodes else this in 300..399
 
@@ -665,11 +693,6 @@ private fun List<Int>.isUnsafeAutomaticSubscriptionIpv6(): Boolean {
     return (first and 0xFE) == 0xFC || // fc00::/7 unique local
         (first == 0x20 && second == 0x01 && third == 0x0D && fourth == 0xB8) // documentation range
 }
-
-class DesktopSubscriptionHttpException(
-    val statusCode: Int,
-    val responseBody: String,
-) : IllegalStateException("Subscription server returned HTTP $statusCode")
 
 class DesktopSubscriptionResponseTooLargeException(
     val maxBytes: Int,

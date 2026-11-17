@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.SubscriptionHttpException
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.repository.SubscriptionRepository
@@ -325,7 +326,7 @@ class DesktopSubscriptionRefreshCoordinatorTest {
             "an inapplicable receipt without a commit error matches Android's skipped apply",
         )
 
-        thrownFailure = DesktopSubscriptionHttpException(503, "temporarily unavailable")
+        thrownFailure = SubscriptionHttpException(503, responseBody = "temporarily unavailable")
         assertEquals(SubscriptionWorkerOutcome.RETRY, coordinator.refreshScheduled(saved.id))
 
         thrownFailure = IllegalArgumentException("invalid payload")

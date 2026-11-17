@@ -10,6 +10,7 @@ import engine.network.setEmbeddedBasicAuth
 import engine.network.toIdnUrl
 import engine.network.withSocksProxyAuthenticator
 import features.subscription.SubscriptionRedirectDecision
+import features.subscription.parseSubscriptionHttpErrorMessage
 import features.subscription.decideSubscriptionRedirect
 import android.content.Context
 import android.os.Build
@@ -207,49 +208,6 @@ private fun String.toConnection(
         instanceFollowRedirects = false
         requestMethod = "GET"
     }
-}
-
-internal fun parseSubscriptionHttpErrorMessage(errorBody: String?): String? {
-    if (errorBody.isNullOrBlank()) return null
-    val trimmed = errorBody.trim()
-
-    // 1. Try parsing JSON format
-    val jsonMessage = runCatching {
-        val json = org.json.JSONObject(trimmed)
-        val keys = listOf("message", "error", "detail", "msg", "description", "title", "reason", "error_description")
-        for (key in keys) {
-            if (json.has(key)) {
-                val value = json.opt(key)
-                if (value is String && value.isNotBlank()) return@runCatching value.trim()
-                if (value is org.json.JSONObject) {
-                    val innerMsg = value.optString("message").ifBlank { value.optString("detail") }
-                    if (innerMsg.isNotBlank()) return@runCatching innerMsg.trim()
-                }
-            }
-        }
-        null
-    }.getOrNull()
-
-    if (!jsonMessage.isNullOrBlank()) {
-        return jsonMessage.take(200)
-    }
-
-    // 2. Check if it's an HTML document
-    if (trimmed.startsWith("<!DOCTYPE", ignoreCase = true) || trimmed.startsWith("<html", ignoreCase = true)) {
-        val titleMatch = Regex("<title>(.*?)</title>", RegexOption.IGNORE_CASE).find(trimmed)
-        val title = titleMatch?.groupValues?.getOrNull(1)?.trim()
-        if (!title.isNullOrBlank()) {
-            return title.take(100)
-        }
-        return null
-    }
-
-    // 3. Plain text message
-    if (trimmed.length <= 250 && !trimmed.contains("<html", ignoreCase = true)) {
-        return trimmed.lines().firstOrNull { it.isNotBlank() }?.trim()?.take(150)
-    }
-
-    return null
 }
 
 private const val MaxSubscriptionBodyBytes = 32 * 1024 * 1024

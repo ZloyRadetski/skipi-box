@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.SubscriptionHttpException
 import features.subscription.isTransientSubscriptionRefreshFailure
 import java.net.http.HttpTimeoutException
 
@@ -10,6 +11,6 @@ import java.net.http.HttpTimeoutException
 internal fun isTransientDesktopSubscriptionRefreshFailure(error: Throwable): Boolean =
     isTransientSubscriptionRefreshFailure(
         error = error,
-        httpStatusCode = { cause -> (cause as? DesktopSubscriptionHttpException)?.statusCode },
+        httpStatusCode = { cause -> (cause as? SubscriptionHttpException)?.statusCode },
         isHostConnectionFailure = { cause -> cause is HttpTimeoutException },
     )
