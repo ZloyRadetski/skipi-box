@@ -6,6 +6,10 @@ package app.skipi.desktop
 import app.skipi.app.config.TrafficConfigLibraryOperations
 import app.modes.FontSizeModeSmall
 import app.skipi.app.model.ApplicationPreferences
+import app.skipi.app.model.CoreEnginePreferences
+import app.skipi.app.model.LogPreferences
+import app.skipi.app.model.NetworkAutomationPreferences
+import app.skipi.app.model.VpnPreferences
 import app.skipi.app.model.AppearanceSettings
 import app.skipi.app.model.LocalProxyPreferences
 import app.skipi.app.model.SubscriptionPreferences
@@ -79,6 +83,12 @@ class DesktopSettingsRepository(
         if (requested.application != before.application) {
             newSettings = newSettings.withApplicationPreferences(requested.application)
         }
+        if (requested.vpn != before.vpn) newSettings = newSettings.withVpnPreferences(requested.vpn)
+        if (requested.networkAutomation != before.networkAutomation) {
+            newSettings = newSettings.withNetworkAutomationPreferences(requested.networkAutomation)
+        }
+        if (requested.engine != before.engine) newSettings = newSettings.withEnginePreferences(requested.engine)
+        if (requested.logs != before.logs) newSettings = newSettings.withLogPreferences(requested.logs)
         if (requested.localProxy != before.localProxy) {
             newSettings = newSettings.withLocalProxyPreferences(
                 requested = requested.localProxy,
@@ -473,6 +483,8 @@ private fun DesktopAppSettings.toPersistedSettings(
         languageTag = languageTag,
         hapticsEnabled = hapticsEnabled,
         onboardingCompleted = onboardingCompleted,
+        autoCheckAppUpdates = autoCheckAppUpdates,
+        autoConnectOnAppOpen = autoConnectOnAppOpen,
     ),
     localProxy = LocalProxyPreferences(
         port = localProxyPortRaw ?: localProxyPort.toString(),
@@ -500,7 +512,42 @@ private fun DesktopAppSettings.toPersistedSettings(
         expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
         expiryReminders = subscriptionExpiryReminders,
     ),
+    vpn = VpnPreferences(
+        strictFullTunnel = enableStrictFullTunnel,
+        localDns = enableVpnLocalDns,
+        mtu = tunMtu,
+        dns = tunVpnDns,
+        ipv4Cidr = tunIpv4Cidr,
+        ipv6Cidr = tunIpv6Cidr,
+        tcpKeepAliveInterval = tunTcpKeepAliveInterval,
+        tcpUserTimeout = tunTcpUserTimeout,
+    ),
+    networkAutomation = NetworkAutomationPreferences(
+        enabled = enableNetworkAutomation,
+        onDemandVpn = enableOnDemandVpn,
+        rules = networkAutomationRules,
+    ),
+    engine = CoreEnginePreferences(
+        sniffing = enableSniffing,
+        sniffingRouteOnly = enableSniffingRouteOnly,
+        mux = enableMux,
+        muxConcurrency = muxConcurrency,
+        muxXudpConcurrency = muxXudpConcurrency,
+        muxXudpProxyUdp443 = muxXudpProxyUdp443,
+        fragment = enableFragment,
+        fragmentPackets = fragmentPackets,
+        fragmentLength = fragmentLength,
+        fragmentInterval = fragmentInterval,
+    ),
+    logs = LogPreferences(
+        coreLogLevel = DesktopCoreLogLevels.indexOf(coreLogLevel).takeIf { it >= 0 } ?: DefaultDesktopCoreLogLevelIndex,
+        accessLogEnabled = enableAccessLog,
+        retentionDays = logRetentionDays,
+    ),
 )
+
+/** "error", the level Desktop starts with. */
+private val DefaultDesktopCoreLogLevelIndex = DesktopCoreLogLevels.indexOf("error")
 
 internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsState = AppearanceSettingsState(
     backgroundPhotoDimPercent = backgroundPhotoDimPercent ?: 45,
@@ -671,6 +718,46 @@ private fun DesktopAppSettings.withApplicationPreferences(preferences: Applicati
     languageTag = preferences.languageTag,
     hapticsEnabled = preferences.hapticsEnabled,
     onboardingCompleted = preferences.onboardingCompleted,
+    autoCheckAppUpdates = preferences.autoCheckAppUpdates,
+    autoConnectOnAppOpen = preferences.autoConnectOnAppOpen,
+)
+
+private fun DesktopAppSettings.withVpnPreferences(vpn: VpnPreferences?): DesktopAppSettings = if (vpn == null) this else copy(
+    enableStrictFullTunnel = vpn.strictFullTunnel,
+    enableVpnLocalDns = vpn.localDns,
+    tunMtu = vpn.mtu,
+    tunVpnDns = vpn.dns,
+    tunIpv4Cidr = vpn.ipv4Cidr,
+    tunIpv6Cidr = vpn.ipv6Cidr,
+    tunTcpKeepAliveInterval = vpn.tcpKeepAliveInterval,
+    tunTcpUserTimeout = vpn.tcpUserTimeout,
+)
+
+private fun DesktopAppSettings.withNetworkAutomationPreferences(preferences: NetworkAutomationPreferences?): DesktopAppSettings =
+    if (preferences == null) this else copy(
+        enableNetworkAutomation = preferences.enabled,
+        enableOnDemandVpn = preferences.onDemandVpn,
+        networkAutomationRules = preferences.rules,
+    )
+
+private fun DesktopAppSettings.withEnginePreferences(engine: CoreEnginePreferences?): DesktopAppSettings = if (engine == null) this else copy(
+    enableSniffing = engine.sniffing,
+    enableSniffingRouteOnly = engine.sniffingRouteOnly,
+    enableMux = engine.mux,
+    muxConcurrency = engine.muxConcurrency,
+    muxXudpConcurrency = engine.muxXudpConcurrency,
+    muxXudpProxyUdp443 = engine.muxXudpProxyUdp443,
+    enableFragment = engine.fragment,
+    fragmentPackets = engine.fragmentPackets,
+    fragmentLength = engine.fragmentLength,
+    fragmentInterval = engine.fragmentInterval,
+)
+
+/** A level index Desktop has no name for keeps the current level. */
+private fun DesktopAppSettings.withLogPreferences(logs: LogPreferences?): DesktopAppSettings = if (logs == null) this else copy(
+    coreLogLevel = DesktopCoreLogLevels.getOrNull(logs.coreLogLevel) ?: coreLogLevel,
+    enableAccessLog = logs.accessLogEnabled,
+    logRetentionDays = logs.retentionDays,
 )
 
 private fun DesktopAppSettings.withLocalProxyPreferences(

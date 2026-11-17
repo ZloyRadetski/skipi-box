@@ -8,6 +8,10 @@ import app.ProxyServerState
 import app.AppState
 import app.SubscriptionGroupState
 import app.skipi.app.model.ApplicationPreferences
+import app.skipi.app.model.CoreEnginePreferences
+import app.skipi.app.model.LogPreferences
+import app.skipi.app.model.NetworkAutomationPreferences
+import app.skipi.app.model.VpnPreferences
 import app.skipi.app.model.AppearanceSettings
 import app.skipi.app.model.HomeDisplaySettings
 import app.skipi.app.model.LocalProxyPreferences
@@ -99,6 +103,8 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         },
         hapticsEnabled = enableHaptics,
         onboardingCompleted = hasCompletedOnboarding,
+        autoCheckAppUpdates = autoCheckAppUpdates,
+        autoConnectOnAppOpen = autoConnectOnAppOpen,
     ),
     localProxy = LocalProxyPreferences(
         port = localProxyPort,
@@ -125,6 +131,38 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
         expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
         expiryReminders = subscriptionExpiryReminders,
+    ),
+    vpn = VpnPreferences(
+        strictFullTunnel = enableStrictFullTunnel,
+        localDns = enableVpnLocalDns,
+        mtu = tunMtu,
+        dns = tunVpnDns,
+        ipv4Cidr = tunIpv4Cidr,
+        ipv6Cidr = tunIpv6Cidr,
+        tcpKeepAliveInterval = tunTcpKeepAliveInterval,
+        tcpUserTimeout = tunTcpUserTimeout,
+    ),
+    networkAutomation = NetworkAutomationPreferences(
+        enabled = enableNetworkAutomation,
+        onDemandVpn = enableOnDemandVpn,
+        rules = networkAutomationRules,
+    ),
+    engine = CoreEnginePreferences(
+        sniffing = enableSniffing,
+        sniffingRouteOnly = enableSniffingRouteOnly,
+        mux = enableMux,
+        muxConcurrency = muxConcurrency,
+        muxXudpConcurrency = muxXudpConcurrency,
+        muxXudpProxyUdp443 = muxXudpProxyUdp443,
+        fragment = enableFragment,
+        fragmentPackets = fragmentPackets,
+        fragmentLength = fragmentLength,
+        fragmentInterval = fragmentInterval,
+    ),
+    logs = LogPreferences(
+        coreLogLevel = coreLogLevel,
+        accessLogEnabled = enableAccessLog,
+        retentionDays = logRetentionDays,
     ),
 )
 
@@ -178,6 +216,32 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         selectedProxyServerId = settings.proxy.selectedServerId ?: selectedProxyServerId,
         enableHaptics = settings.application.hapticsEnabled,
         hasCompletedOnboarding = settings.application.onboardingCompleted,
+        autoCheckAppUpdates = settings.application.autoCheckAppUpdates,
+        autoConnectOnAppOpen = settings.application.autoConnectOnAppOpen,
+        enableStrictFullTunnel = settings.vpn?.strictFullTunnel ?: enableStrictFullTunnel,
+        enableVpnLocalDns = settings.vpn?.localDns ?: enableVpnLocalDns,
+        tunMtu = settings.vpn?.mtu ?: tunMtu,
+        tunVpnDns = settings.vpn?.dns ?: tunVpnDns,
+        tunIpv4Cidr = settings.vpn?.ipv4Cidr ?: tunIpv4Cidr,
+        tunIpv6Cidr = settings.vpn?.ipv6Cidr ?: tunIpv6Cidr,
+        tunTcpKeepAliveInterval = settings.vpn?.tcpKeepAliveInterval ?: tunTcpKeepAliveInterval,
+        tunTcpUserTimeout = settings.vpn?.tcpUserTimeout ?: tunTcpUserTimeout,
+        enableNetworkAutomation = settings.networkAutomation?.enabled ?: enableNetworkAutomation,
+        enableOnDemandVpn = settings.networkAutomation?.onDemandVpn ?: enableOnDemandVpn,
+        networkAutomationRules = settings.networkAutomation?.rules ?: networkAutomationRules,
+        enableSniffing = settings.engine?.sniffing ?: enableSniffing,
+        enableSniffingRouteOnly = settings.engine?.sniffingRouteOnly ?: enableSniffingRouteOnly,
+        enableMux = settings.engine?.mux ?: enableMux,
+        muxConcurrency = settings.engine?.muxConcurrency ?: muxConcurrency,
+        muxXudpConcurrency = settings.engine?.muxXudpConcurrency ?: muxXudpConcurrency,
+        muxXudpProxyUdp443 = settings.engine?.muxXudpProxyUdp443 ?: muxXudpProxyUdp443,
+        enableFragment = settings.engine?.fragment ?: enableFragment,
+        fragmentPackets = settings.engine?.fragmentPackets ?: fragmentPackets,
+        fragmentLength = settings.engine?.fragmentLength ?: fragmentLength,
+        fragmentInterval = settings.engine?.fragmentInterval ?: fragmentInterval,
+        coreLogLevel = settings.logs?.coreLogLevel ?: coreLogLevel,
+        enableAccessLog = settings.logs?.accessLogEnabled ?: enableAccessLog,
+        logRetentionDays = settings.logs?.retentionDays ?: logRetentionDays,
         languageMode = nextLanguageMode,
         localProxyPort = settings.localProxy?.port ?: localProxyPort,
         enableDynamicLocalProxyPort = settings.localProxy?.dynamicPort ?: enableDynamicLocalProxyPort,

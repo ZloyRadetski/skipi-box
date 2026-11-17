@@ -3,6 +3,7 @@
 
 package app.skipi.app.model
 
+import features.networkautomation.model.NetworkAutomationRule
 import features.config.SkipiPerAppSettings
 import features.config.parseSkipiPerAppSettings
 import features.proxy.server.model.ProxyServer
@@ -90,6 +91,11 @@ data class PersistedSettings(
     val localProxy: LocalProxyPreferences? = null,
     /** Null lets older host settings keep their existing subscription defaults. */
     val subscriptions: SubscriptionPreferences? = null,
+    /** The sections below are null in records written before they existed; the host then keeps its own values. */
+    val vpn: VpnPreferences? = null,
+    val networkAutomation: NetworkAutomationPreferences? = null,
+    val engine: CoreEnginePreferences? = null,
+    val logs: LogPreferences? = null,
 )
 
 /** User-controlled Home presentation choices shared by the Android and Desktop UIs. */
@@ -114,6 +120,47 @@ data class ApplicationPreferences(
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
+    val autoCheckAppUpdates: Boolean = true,
+    val autoConnectOnAppOpen: Boolean = false,
+)
+
+/** Tunnel settings, in the raw text form both clients store. */
+data class VpnPreferences(
+    val strictFullTunnel: Boolean,
+    val localDns: Boolean,
+    val mtu: String,
+    val dns: String,
+    val ipv4Cidr: String,
+    val ipv6Cidr: String,
+    val tcpKeepAliveInterval: String,
+    val tcpUserTimeout: String,
+)
+
+data class NetworkAutomationPreferences(
+    val enabled: Boolean,
+    val onDemandVpn: Boolean,
+    val rules: List<NetworkAutomationRule>,
+)
+
+/** Sniffing, multiplexing and fragmenting of the core's outbound traffic. */
+data class CoreEnginePreferences(
+    val sniffing: Boolean,
+    val sniffingRouteOnly: Boolean,
+    val mux: Boolean,
+    val muxConcurrency: String,
+    val muxXudpConcurrency: String,
+    val muxXudpProxyUdp443: Int,
+    val fragment: Boolean,
+    val fragmentPackets: String,
+    val fragmentLength: String,
+    val fragmentInterval: String,
+)
+
+/** [coreLogLevel] is the index Android stores: 0 debug, 1 info, 2 warning, 3 error, 4 none. */
+data class LogPreferences(
+    val coreLogLevel: Int,
+    val accessLogEnabled: Boolean,
+    val retentionDays: Int,
 )
 
 /** Local SOCKS listener preferences in the same raw form used by Android storage. */
