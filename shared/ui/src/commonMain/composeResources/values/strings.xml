@@ -461,6 +461,7 @@
     <string name="proxy_server_list_option_sort_default">Default</string>
     <string name="proxy_server_list_option_sort_name">Name</string>
     <string name="proxy_server_list_option_sort_latency">Latency</string>
+    <string name="proxy_server_list_option_sort_protocol">Protocol</string>
     <string name="proxy_server_copy_qr_code">QR code</string>
     <string name="proxy_server_copy_url">Share URL</string>
     <string name="proxy_server_copy_full_json">Full JSON</string>

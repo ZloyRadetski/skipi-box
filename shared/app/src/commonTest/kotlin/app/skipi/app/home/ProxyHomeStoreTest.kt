@@ -604,6 +604,29 @@ class ProxyHomeStoreTest {
     }
 
     @Test
+    fun protocolSortGroupsServersByProtocolAndOrdersByNameInside() {
+        val servers = listOf(
+            ProxyServerSummary(id = "t-b", title = "Beta", address = "1", protocol = "Trojan"),
+            ProxyServerSummary(id = "v-z", title = "Zulu", address = "2", protocol = "vless"),
+            ProxyServerSummary(id = "h-a", title = "Alpha", address = "3", protocol = "Hysteria2"),
+            ProxyServerSummary(id = "v-a", title = "Alpha", address = "4", protocol = "VLESS"),
+            ProxyServerSummary(id = "t-a", title = "Alpha", address = "5", protocol = "Trojan"),
+        )
+        val store = createStore(
+            ProxyHomeInput(
+                servers = servers,
+                groups = listOf(group("all", "All", servers.mapTo(linkedSetOf()) { it.id })),
+                sortMode = ProxyHomeSortMode.Protocol,
+            ),
+        )
+
+        assertEquals(
+            listOf("h-a", "t-a", "t-b", "v-a", "v-z"),
+            store.uiState.value.pages.single().servers.map { it.id },
+        )
+    }
+
+    @Test
     fun latencySortPlacesTestingServersBeforeUnmeasuredAndKeepsFailuresLast() {
         val servers = listOf(
             ProxyServerSummary(id = "untested", title = "Alpha", address = "a", protocol = "p"),

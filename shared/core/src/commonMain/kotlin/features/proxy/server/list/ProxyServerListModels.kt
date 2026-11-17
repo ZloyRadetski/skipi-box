@@ -29,6 +29,7 @@ enum class ProxyServerListToolAction {
     SetSortDefault,
     SetSortName,
     SetSortLatency,
+    SetSortProtocol,
     DeleteDuplicateServers,
     DeleteInvalidServers,
     DeleteAllServers,

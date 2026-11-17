@@ -194,6 +194,7 @@ enum class ProxyHomeSortMode {
     Default,
     Name,
     Latency,
+    Protocol,
 }
 
 enum class ProxyHomeServerKind {
@@ -774,6 +775,12 @@ class ProxyHomeStore(
             val keyA = a.sortKey ?: a.title
             val keyB = b.sortKey ?: b.title
             keyA.compareTo(keyB, ignoreCase = true)
+        }
+        // Servers of one protocol stay together, ordered by name inside it.
+        ProxyHomeSortMode.Protocol -> servers.sortedWith { a, b ->
+            a.protocol.compareTo(b.protocol, ignoreCase = true)
+                .takeIf { it != 0 }
+                ?: (a.sortKey ?: a.title).compareTo(b.sortKey ?: b.title, ignoreCase = true)
         }
         ProxyHomeSortMode.Latency -> servers.sortedWith { a, b ->
             val aGroup = a.latencySortGroup()

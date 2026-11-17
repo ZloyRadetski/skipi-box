@@ -16,6 +16,7 @@ import app.R
 import features.proxy.server.model.StrategyGroup
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
+import app.modes.ProxyServerListSortProtocol
 import app.navigation.Navigator
 import app.navigation.Route
 import data.AndroidAppStateStore
@@ -333,6 +334,10 @@ internal fun handleProxyServerListToolAction(
 
         ProxyServerListToolAction.SetSortLatency -> {
             updateAppState { state -> state.copy(proxyServerListSort = ProxyServerListSortLatency) }
+        }
+
+        ProxyServerListToolAction.SetSortProtocol -> {
+            updateAppState { state -> state.copy(proxyServerListSort = ProxyServerListSortProtocol) }
         }
 
         ProxyServerListToolAction.UpdateSubscriptions -> {

@@ -33,6 +33,7 @@ import app.skipi.ui.resources.proxy_server_list_import_file
 import app.skipi.ui.resources.proxy_server_list_manual_input
 import app.skipi.ui.resources.proxy_server_list_option_sort_default
 import app.skipi.ui.resources.proxy_server_list_option_sort_latency
+import app.skipi.ui.resources.proxy_server_list_option_sort_protocol
 import app.skipi.ui.resources.proxy_server_list_option_sort_name
 import app.skipi.ui.resources.proxy_server_list_restart_service
 import app.skipi.ui.resources.proxy_server_list_scan_qr_code
@@ -82,6 +83,7 @@ internal fun sortModeTitle(mode: ProxyHomeSortMode): String = stringResource(
         ProxyHomeSortMode.Default -> Res.string.proxy_server_list_option_sort_default
         ProxyHomeSortMode.Name -> Res.string.proxy_server_list_option_sort_name
         ProxyHomeSortMode.Latency -> Res.string.proxy_server_list_option_sort_latency
+        ProxyHomeSortMode.Protocol -> Res.string.proxy_server_list_option_sort_protocol
     },
 )
 

@@ -3,7 +3,7 @@
 
 package app.skipi.ui.home
 
-import app.skipi.ui.components.skipiDrawnIconColor
+import app.skipi.ui.components.skipiIconTintLike
 import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -167,7 +167,7 @@ private fun SubscriptionHeaderActions(
                     if (state.pinging) {
                         SkipiProxyHeroAnimatedHourglassIcon(color = colors.enabled, size = 20.dp)
                     } else {
-                        SkipiProxyHeroStaticHourglassIcon(color = skipiDrawnIconColor(colors.text), size = 20.dp)
+                        SkipiProxyHeroStaticHourglassIcon(color = skipiIconTintLike(colors.text), size = 20.dp)
                     }
                 }
             }

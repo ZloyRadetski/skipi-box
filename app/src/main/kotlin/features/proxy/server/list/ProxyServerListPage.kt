@@ -61,6 +61,7 @@ import app.collectAppState
 import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
+import app.modes.ProxyServerListSortProtocol
 import app.collectProxyServerListState
 import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
@@ -1210,6 +1211,7 @@ fun ProxyServerListPage(
                             ProxyHomeSortMode.Default -> ProxyServerListSortDefault
                             ProxyHomeSortMode.Name -> ProxyServerListSortName
                             ProxyHomeSortMode.Latency -> ProxyServerListSortLatency
+                            ProxyHomeSortMode.Protocol -> ProxyServerListSortProtocol
                         }
                         updateAppState { state -> state.copy(proxyServerListSort = sort) }
                     }

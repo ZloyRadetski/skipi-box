@@ -47,7 +47,7 @@ class AppearanceColorOverridesTest {
     }
 
     @Test
-    fun disabledCustomPaletteOnlyKeepsAndroidAccentFallback() {
+    fun disabledCustomColorsIgnoreEveryPickedColorTheAccentIncluded() {
         val base = AppColors(
             background = Color(0xFF101112),
             onBackground = Color(0xFF202122),
@@ -64,7 +64,7 @@ class AppearanceColorOverridesTest {
             AppearanceSettings(dynamicColors = false, customAccentColor = 0xFF919293L),
         )
 
-        assertEquals(Color(0xFF919293), actual.accent)
+        assertEquals(base.accent, actual.accent)
         assertEquals(base.background, actual.background)
         assertEquals(base.surface, actual.surface)
         assertEquals(base.surfaceVariant, actual.surfaceVariant)
@@ -193,5 +193,28 @@ class AppearanceColorOverridesTest {
         assertEquals(base.accent, actual.accent)
         assertEquals(Color(0xFF212223), actual.background)
         assertEquals(base.surface, actual.surface)
+    }
+
+    @Test
+    fun aSavedAccentDoesNotTintAnyBuiltInThemeWhileCustomColorsAreOff() {
+        val picked = 0xFF919293L
+        listOf(true to false, false to false, true to true).forEach { (dark, amoled) ->
+            val base = resolveBaseAppearanceColors(isDark = dark, amoledBlack = amoled)
+            val actual = applyAppearanceSettings(
+                base,
+                AppearanceSettings(dynamicColors = false, customColorsEnabled = false, customAccentColor = picked, customBackgroundColor = picked),
+            )
+            assertEquals(base, actual, "dark=$dark amoled=$amoled")
+        }
+    }
+
+    @Test
+    fun enabledCustomColorsStillPaintTheAccentOfABuiltInTheme() {
+        val base = resolveBaseAppearanceColors(isDark = true, amoledBlack = true)
+        val actual = applyAppearanceSettings(
+            base,
+            AppearanceSettings(dynamicColors = false, customColorsEnabled = true, customAccentColor = 0xFF919293L),
+        )
+        assertEquals(Color(0xFF919293), actual.accent)
     }
 }

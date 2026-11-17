@@ -448,6 +448,7 @@
     <string name="proxy_server_list_option_sort_default">По умолчанию</string>
     <string name="proxy_server_list_option_sort_name">По имени</string>
     <string name="proxy_server_list_option_sort_latency">По задержке (Пингу)</string>
+    <string name="proxy_server_list_option_sort_protocol">По протоколу</string>
     <string name="proxy_server_copy_qr_code">Показать QR-код</string>
     <string name="proxy_server_copy_url">Поделиться URL</string>
     <string name="proxy_server_copy_full_json">Полный Xray JSON</string>

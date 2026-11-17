@@ -13,6 +13,7 @@ const val ProxyAppListModeGlobal = 2
 const val ProxyServerListSortDefault = 0
 const val ProxyServerListSortName = 1
 const val ProxyServerListSortLatency = 2
+const val ProxyServerListSortProtocol = 3
 
 const val SubscriptionPingModeTcp = 0
 const val SubscriptionPingModeHttp = 1

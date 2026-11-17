@@ -121,3 +121,10 @@ internal fun resolveDrawnIconColor(picked: Color?, themeIcon: Color, default: Co
 @Composable
 fun skipiDrawnIconColor(default: Color): Color =
     resolveDrawnIconColor(LocalIconColor.current, SkipiTheme.colors.icon, default)
+
+/**
+ * The color a [SkipiIcon] with this [fallback] would have, for an icon the app draws itself next to such icons: the
+ * picked "Icon color", else [fallback]. The theme's own icon color is not used, so a drawn icon matches its neighbours.
+ */
+@Composable
+fun skipiIconTintLike(fallback: Color): Color = appIconTint(Color.Unspecified, onAccent = false, fallback = fallback)

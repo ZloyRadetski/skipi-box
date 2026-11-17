@@ -7,6 +7,7 @@ import app.ProxyServerLatencyTesting
 import app.ProxyServerState
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
+import app.modes.ProxyServerListSortProtocol
 
 fun List<ProxyServerState>.sortedForProxyServerList(
     sort: Int,
@@ -14,6 +15,10 @@ fun List<ProxyServerState>.sortedForProxyServerList(
     return when (sort) {
         ProxyServerListSortName -> sortedWith(
             compareBy(String.CASE_INSENSITIVE_ORDER) { server -> server.displaySortTitle() },
+        )
+        ProxyServerListSortProtocol -> sortedWith(
+            compareBy<ProxyServerState, String>(String.CASE_INSENSITIVE_ORDER) { server -> server.server.getInfo().protocol }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { server -> server.displaySortTitle() },
         )
         ProxyServerListSortLatency -> sortedWith(
             compareBy<ProxyServerState> { server -> server.latency.proxyServerListLatencySortKey() }

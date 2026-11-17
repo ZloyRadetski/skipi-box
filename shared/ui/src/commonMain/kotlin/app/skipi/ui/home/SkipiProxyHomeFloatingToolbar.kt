@@ -3,6 +3,8 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.settings.LocalIconColor
+import app.skipi.ui.settings.settingIconGlyphColor
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -174,7 +176,8 @@ private fun PingToolbarButton(
     onLongClick: (() -> Unit)?,
 ) {
     val haptics = LocalHapticFeedback.current
-    val onAccent = SkipiTheme.colors.onAccent
+    // The glyph sits on the accent fill, so it takes the "Icon color" the user picked, else the theme's on-accent color.
+    val onAccent = settingIconGlyphColor(SkipiTheme.colors.onAccent, LocalIconColor.current)
     val longClick: (() -> Unit)? = onLongClick?.let { action ->
         {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)

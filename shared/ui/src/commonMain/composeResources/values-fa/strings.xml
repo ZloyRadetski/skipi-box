@@ -403,6 +403,7 @@
     <string name="proxy_server_list_option_sort_default">پیش فرض</string>
     <string name="proxy_server_list_option_sort_name">نام</string>
     <string name="proxy_server_list_option_sort_latency">تأخیر</string>
+    <string name="proxy_server_list_option_sort_protocol">پروتکل</string>
     <string name="proxy_server_copy_qr_code">کد QR</string>
     <string name="proxy_server_copy_url">URL را به اشتراک بگذارید</string>
     <string name="proxy_server_copy_full_json">JSON کامل</string>

@@ -18,18 +18,17 @@ fun applyAppearanceSettings(
     base: AppColors,
     appearance: AppearanceSettings,
 ): AppColors {
+    // With "Custom colors" off nothing the user picked counts, the accent included: the theme's own accent
+    // (a named palette, the system accent for dynamic colors, or the default) is what shows. With it on, a picked
+    // accent wins, except that the system accent is what "dynamic colors" asks for on a theme without a palette.
     val customAccent = appearance.customAccentColor?.let(::Color)
-    // The system accent is what "dynamic colors" asks for, so an accent picked by hand never hides it; a named
-    // theme keeps its own unless the custom colors set one. Otherwise a custom accent (from the custom colors or the plain accent row) wins.
     val accent = when {
-        appearance.themeMode == ThemeMode.Named ->
-            if (appearance.customColorsEnabled && customAccent != null) customAccent else base.accent
-        appearance.dynamicColors -> base.accent
-        customAccent != null -> customAccent
-        else -> DefaultAppAccentColor
+        !appearance.customColorsEnabled -> base.accent
+        appearance.themeMode != ThemeMode.Named && appearance.dynamicColors -> base.accent
+        else -> customAccent ?: base.accent
     }
 
-    if (!appearance.customColorsEnabled) return base.copy(accent = accent)
+    if (!appearance.customColorsEnabled) return base
 
     return base.copy(
         accent = accent,

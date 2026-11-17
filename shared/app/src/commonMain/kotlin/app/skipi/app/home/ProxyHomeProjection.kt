@@ -6,6 +6,7 @@ package app.skipi.app.home
 import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
+import app.modes.ProxyServerListSortProtocol
 import app.skipi.app.proxy.ProxyServerGroupingRequest
 import app.skipi.app.proxy.ProxyServerGroupingResult
 
@@ -59,11 +60,13 @@ fun ProxyHomeSortMode.toAndroidValue(): Int = when (this) {
     ProxyHomeSortMode.Default -> ProxyServerListSortDefault
     ProxyHomeSortMode.Name -> ProxyServerListSortName
     ProxyHomeSortMode.Latency -> ProxyServerListSortLatency
+    ProxyHomeSortMode.Protocol -> ProxyServerListSortProtocol
 }
 
 /** Unknown persisted values follow Android's existing fallback to default order. */
 fun proxyHomeSortModeFromAndroidValue(value: Int): ProxyHomeSortMode = when (value) {
     ProxyServerListSortName -> ProxyHomeSortMode.Name
     ProxyServerListSortLatency -> ProxyHomeSortMode.Latency
+    ProxyServerListSortProtocol -> ProxyHomeSortMode.Protocol
     else -> ProxyHomeSortMode.Default
 }

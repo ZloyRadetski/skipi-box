@@ -411,6 +411,7 @@
     <string name="proxy_server_list_option_sort_default">默认</string>
     <string name="proxy_server_list_option_sort_name">名称</string>
     <string name="proxy_server_list_option_sort_latency">延迟</string>
+    <string name="proxy_server_list_option_sort_protocol">协议</string>
     <string name="proxy_server_copy_qr_code">二维码</string>
     <string name="proxy_server_copy_url">分享网址</string>
     <string name="proxy_server_copy_full_json">完整 JSON</string>
