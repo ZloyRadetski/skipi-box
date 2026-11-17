@@ -462,7 +462,7 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
         customThemes = customThemes,
     ).withCustomColors(customColors())
 
-private fun DesktopAppSettings.toPersistedSettings(
+internal fun DesktopAppSettings.toPersistedSettings(
     servers: DesktopServerLibrary,
     configs: DesktopConfigLibrary,
 ) = PersistedSettings(

@@ -8,6 +8,8 @@ import app.ProxyServerState
 import app.AppState
 import app.SubscriptionGroupState
 import app.skipi.app.model.ApplicationPreferences
+import app.skipi.app.model.languageModeOfTagOrNull
+import app.skipi.app.model.languageTagOfMode
 import app.skipi.app.model.colorModeOfAppearance
 import app.skipi.app.model.themeChoiceOfColorMode
 import app.skipi.app.model.CoreEnginePreferences
@@ -84,13 +86,7 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
     ),
     traffic = TrafficSelectionSettings(activeConfigId = activeTrafficConfigId),
     application = ApplicationPreferences(
-        languageTag = when (languageMode) {
-            app.modes.LanguageModeEnglish -> "en"
-            app.modes.LanguageModeChinese -> "zh"
-            app.modes.LanguageModeRussian -> "ru"
-            app.modes.LanguageModePersian -> "fa"
-            else -> null
-        },
+        languageTag = languageTagOfMode(languageMode),
         hapticsEnabled = enableHaptics,
         onboardingCompleted = hasCompletedOnboarding,
         autoCheckAppUpdates = autoCheckAppUpdates,
@@ -197,7 +193,7 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
     val nextActiveConfigId = settings.traffic.activeConfigId ?: activeTrafficConfigId
     val nextLanguageMode = when {
         languageTag == null -> app.modes.LanguageModeSystem
-        else -> languageModeForTag(languageTag) ?: languageMode
+        else -> languageModeOfTagOrNull(languageTag) ?: languageMode
     }
     val updated = applyAppearanceSettings(settings.appearance, settings.home).copy(
         enableDeletionConfirmation = settings.home.confirmDeletion,
@@ -257,14 +253,6 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
     )
     return if (updated.activeTrafficConfigId == nextActiveConfigId) updated
     else updated.withActiveTrafficConfigProfile(nextActiveConfigId)
-}
-
-private fun languageModeForTag(tag: String): Int? = when (tag.lowercase().substringBefore('-')) {
-    "en" -> app.modes.LanguageModeEnglish
-    "zh" -> app.modes.LanguageModeChinese
-    "ru" -> app.modes.LanguageModeRussian
-    "fa" -> app.modes.LanguageModePersian
-    else -> null
 }
 
 fun AppState.toRoutingConfigRecord() = RoutingConfigRecord(

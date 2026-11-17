@@ -31,6 +31,8 @@ class DesktopEverySettingBackupTest {
     private val acceptedValues: Map<String, JsonElement> = mapOf(
         "appUpdateChannelId" to JsonPrimitive("nightly"),
         "bottomBarSize" to JsonPrimitive(0),
+        // A step of the font-size slider: a backup writes the nearest step, as Android always did.
+        "fontSizeMode" to JsonPrimitive(120),
         "classicButtonSize" to JsonPrimitive(3),
         "coreLogLevel" to JsonPrimitive("warning"),
         "localProxyListenAddress" to JsonPrimitive("0.0.0.0"),

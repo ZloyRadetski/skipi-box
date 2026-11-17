@@ -38,6 +38,7 @@ import platform.DefaultLocalSocksPort
 import platform.parseLocalProxyAuthMode
 import features.backup.customColors
 import features.backup.withCustomColors
+import data.backup.toBackupSettings
 
 /** Every Desktop store a backup covers, restored or reset together. */
 internal data class DesktopUserData(
@@ -263,88 +264,16 @@ private fun AppBackupSubscriptionGroup.toStoredSubscription() = StoredSubscripti
     customExpiryReminders = customExpiryReminders,
 )
 
+/** The shared backup mapper over the shared view of the settings, plus what only Desktop writes. */
 private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBackupSettings {
-    val base = AppBackupSettings()
-    return base.copy(
-        colorMode = themeMode.toColorMode(),
-        languageMode = GeneralSettingsValues.languageModeOfTag(languageTag),
-        enableMaterialYou = dynamicColors,
-        seedIndex = seedIndex,
-        customMaterialYouSeed = customMaterialYouSeed,
-        enableCustomColors = customColorsEnabled,
-        customThemes = customThemes,
-        fontFamilyMode = fontFamilyMode ?: base.fontFamilyMode,
-        fontSizeMode = fontSizeMode ?: base.fontSizeMode,
-        fontWeightMode = fontWeightMode ?: base.fontWeightMode,
-        bottomBarSize = bottomBarSize ?: base.bottomBarSize,
-        classicButtonSize = classicButtonSize ?: base.classicButtonSize,
-        backgroundStyle = backgroundStyle ?: base.backgroundStyle,
-        backgroundPhotoDimPercent = backgroundPhotoDimPercent ?: base.backgroundPhotoDimPercent,
-        connectionDisplayMode = connectionDisplayMode ?: base.connectionDisplayMode,
-        enableAllProxyGroup = enableAllProxyGroup,
-        enableDeletionConfirmation = confirmDeletion,
-        localProxyPort = localProxyPortRaw ?: localProxyPort.toString(),
-        enableDynamicLocalProxyPort = enableDynamicLocalProxyPort,
-        localProxyListenAllInterfaces = localProxyListenAddress == ListenAllInterfaces,
-        enableLocalProxyAuth = enableLocalProxyAuth,
-        localProxyUsername = localProxyUsername,
-        localProxyPassword = localProxyPassword,
-        localProxyAuthMode = localProxyAuthMode.name,
-        appUpdateChannel = appUpdateChannel.id,
-        autoCheckAppUpdates = autoCheckAppUpdates,
-        enableLocalHttpProxy = enableLocalHttpProxy,
-        localHttpProxyPort = localHttpProxyPort.toString(),
-        enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
-        localHttpProxyAuthMode = localHttpProxyAuthMode.name,
-        localHttpProxyUsername = localHttpProxyUsername,
-        localHttpProxyPassword = localHttpProxyPassword,
-        enableNetworkAutomation = enableNetworkAutomation,
-        enableOnDemandVpn = enableOnDemandVpn,
-        networkAutomationRules = networkAutomationRules,
-        selectedProxyServerId = selectedServerId ?: base.selectedProxyServerId,
-        proxyServerListSort = proxyServerListSort,
-        subscriptionPingMode = subscriptionPingMode,
-        subscriptionPingUrl = subscriptionPingUrl,
-        subscriptionPingTimeoutMillis = subscriptionPingTimeoutMillis,
-        subscriptionPingConcurrency = subscriptionPingConcurrency,
-        subscriptionUserAgents = subscriptionUserAgents,
-        enableSubscriptionDeviceHeaders = sendDeviceHeaders,
-        subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
-        routeDomainStrategy = routeDomainStrategy,
-        defaultRouteOutboundTag = defaultRouteOutboundTag,
-        coreLogLevel = DesktopCoreLogLevels.indexOf(coreLogLevel).takeIf { it >= 0 } ?: base.coreLogLevel,
-        enableAccessLog = enableAccessLog,
-        logRetentionDays = logRetentionDays,
-        enableSniffing = enableSniffing,
-        enableSniffingRouteOnly = enableSniffingRouteOnly,
-        enableMux = enableMux,
-        muxConcurrency = muxConcurrency,
-        muxXudpConcurrency = muxXudpConcurrency,
-        muxXudpProxyUdp443 = muxXudpProxyUdp443,
-        enableFragment = enableFragment,
-        fragmentPackets = fragmentPackets,
-        fragmentLength = fragmentLength,
-        fragmentInterval = fragmentInterval,
-        showServerSearch = showServerSearch,
-        pinConnectionPanelOnHome = pinConnectionPanelOnHome,
-        enableSubscriptionSwipe = enableSubscriptionSwipe,
-        enableHaptics = hapticsEnabled,
-        classicShowFloatingPowerButton = classicShowFloatingPowerButton,
-        enableSeasonalEvents = enableSeasonalEvents,
-        showTunnelMemoryOnHome = showTunnelMemory,
-        showTunnelIpOnHome = showTunnelIp,
-        maskTunnelIpOnHome = maskTunnelIp,
-        enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
-        subscriptionExpiryReminders = subscriptionExpiryReminders,
-        enableStrictFullTunnel = enableStrictFullTunnel,
-        tunMtu = tunMtu,
-        tunVpnDns = tunVpnDns,
-        enableVpnLocalDns = enableVpnLocalDns,
-        tunIpv4Cidr = tunIpv4Cidr,
-        tunIpv6Cidr = tunIpv6Cidr,
-        tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
-        tunTcpUserTimeout = tunTcpUserTimeout,
-    ).withCustomColors(customColors())
+    val persisted = toPersistedSettings(DesktopServerLibrary(), DesktopConfigLibrary())
+    return persisted.copy(proxy = persisted.proxy.copy(selectedServerId = selectedServerId)).toBackupSettings(
+        base = AppBackupSettings(
+            appUpdateChannel = appUpdateChannel.id,
+            routeDomainStrategy = routeDomainStrategy,
+            defaultRouteOutboundTag = defaultRouteOutboundTag,
+        ),
+    )
 }
 
 /** Backup values replace Desktop's mapped fields; everything Android-only is ignored and the install's identity stays. */
