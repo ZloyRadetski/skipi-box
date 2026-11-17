@@ -1251,7 +1251,7 @@ fun ProxyServerListPage(
                         }
                     }
                     is ProxyHomeEffect.OpenExternalLink -> {
-                        val safeUri = requireSafeAndroidExternalUri(effect.url)
+                        val safeUri = requireSafeExternalUri(effect.url)
                         context.startActivity(
                             Intent(Intent.ACTION_VIEW, Uri.parse(safeUri.toASCIIString()))
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

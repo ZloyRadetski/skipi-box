@@ -31,7 +31,7 @@ internal class GitHubReleaseChecker(
 ) {
     /** Backward-compatible one-off check used by the explicit user action. */
     suspend fun checkLatestRelease(channel: AppUpdateChannel = AppUpdateChannel.Stable): AppUpdateInfo? {
-        return (checkLatestReleaseResult(channel) as? GitHubReleaseCheckResult.Success)?.update
+        return (checkLatestReleaseResult(channel) as? UpdateCheckResult.Success)?.update
     }
 
     /**
@@ -42,89 +42,73 @@ internal class GitHubReleaseChecker(
     suspend fun checkLatestReleaseResult(
         channel: AppUpdateChannel = AppUpdateChannel.Stable,
         ifNoneMatch: String? = null,
-    ): GitHubReleaseCheckResult = withContext(Dispatchers.IO) {
-        checkManifest(channel)?.let { return@withContext it }
-        runCatching {
-            TunnelNetworks.withLocalProxyAuthenticator {
-                val url = URL(channel.releasesUrl)
-                // The app is excluded from its own VPN, so bind to the tunnel
-                // explicitly when it is up; otherwise check via the direct path.
-                val connection = TunnelNetworks.openHttpConnection(context, url).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 15000
-                    readTimeout = 20000
-                    setRequestProperty("Accept", "application/vnd.github.v3+json")
-                    setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
-                    ifNoneMatch?.takeIf(String::isNotBlank)?.let { value ->
-                        setRequestProperty("If-None-Match", value)
-                    }
-                }
-
-                try {
-                    when (val statusCode = connection.responseCode) {
-                        HttpURLConnection.HTTP_OK -> {
-                            val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
-                            // A malformed body throws and is reported as a failed check, so a
-                            // previously discovered update is never cleared by a corrupt response.
-                            check(GitHubReleaseParser.isReleaseBody(responseText, channel)) {
-                                "Unexpected ${channel.id} release response"
-                            }
-                            GitHubReleaseCheckResult.Success(
-                                update = parseRelease(responseText, channel),
-                                eTag = connection.getHeaderField("ETag"),
-                            )
-                        }
-
-                        HttpURLConnection.HTTP_NOT_MODIFIED -> GitHubReleaseCheckResult.NotModified
-
-                        else -> {
-                            AppLog.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
-                            GitHubReleaseCheckResult.Failed
-                        }
-                    }
-                } finally {
-                    connection.disconnect()
-                }
-            }
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Error checking GitHub release: ${error.message}", error)
-        }.getOrElse { GitHubReleaseCheckResult.Failed }
+    ): UpdateCheckResult = withContext(Dispatchers.IO) {
+        val current = CurrentAppVersion(name = ProjectInfo.VERSION_NAME, code = ProjectInfo.VERSION_CODE)
+        runUpdateCheck(
+            fetchManifest = { fetchManifest(channel) },
+            parseManifest = UpdateManifestParser::parse,
+            manifestOffer = { manifest -> UpdateManifestParser.androidOffer(manifest, current, Build.SUPPORTED_ABIS.toList()) },
+            fetchReleases = { fetchReleaseList(channel, ifNoneMatch) },
+            isReleaseBody = { body -> GitHubReleaseParser.isReleaseBody(body, channel) },
+            releaseOffer = { body -> parseRelease(body, channel) },
+            onManifestUnavailable = { error ->
+                AppLog.warn(LogTag, "Update manifest unavailable, asking the release list: ${error?.message}")
+            },
+            onReleaseListFailed = { error ->
+                AppLog.warn(LogTag, "Error checking GitHub release: ${error?.message ?: "unexpected response"}", error)
+            },
+        )
     }
 
-    /**
-     * The manifest the release workflow publishes at a fixed address: no GitHub API and no rate limit, and it names a
-     * release only after all its files are uploaded. Null when it cannot be had or read, so the release list answers.
-     */
-    private suspend fun checkManifest(channel: AppUpdateChannel): GitHubReleaseCheckResult? = runCatching {
+    /** The manifest text, or null when the server does not answer 200; the app is excluded from its own VPN. */
+    private fun fetchManifest(channel: AppUpdateChannel): String? = TunnelNetworks.withLocalProxyAuthenticator {
+        val connection = TunnelNetworks.openHttpConnection(context, URL(channel.manifestUrl)).apply {
+            requestMethod = "GET"
+            connectTimeout = 15000
+            readTimeout = 20000
+            instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
+        }
+        try {
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                null
+            } else {
+                connection.inputStream.bufferedReader().use(BufferedReader::readText)
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun fetchReleaseList(channel: AppUpdateChannel, ifNoneMatch: String?): ReleaseListResponse =
         TunnelNetworks.withLocalProxyAuthenticator {
-            val connection = TunnelNetworks.openHttpConnection(context, URL(channel.manifestUrl)).apply {
+            // Bind to the tunnel explicitly when it is up; otherwise check via the direct path.
+            val connection = TunnelNetworks.openHttpConnection(context, URL(channel.releasesUrl)).apply {
                 requestMethod = "GET"
                 connectTimeout = 15000
                 readTimeout = 20000
-                instanceFollowRedirects = true
+                setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
+                ifNoneMatch?.takeIf(String::isNotBlank)?.let { value ->
+                    setRequestProperty("If-None-Match", value)
+                }
             }
             try {
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) return@withLocalProxyAuthenticator null
-                val manifest = UpdateManifestParser.parse(connection.inputStream.bufferedReader().use(BufferedReader::readText))
-                    ?: return@withLocalProxyAuthenticator null
-                GitHubReleaseCheckResult.Success(
-                    update = UpdateManifestParser.androidOffer(
-                        manifest,
-                        CurrentAppVersion(name = ProjectInfo.VERSION_NAME, code = ProjectInfo.VERSION_CODE),
-                        Build.SUPPORTED_ABIS.toList(),
-                    ),
-                    // Nothing to send back as If-None-Match: the manifest is a few hundred bytes.
-                    eTag = null,
-                )
+                when (val statusCode = connection.responseCode) {
+                    HttpURLConnection.HTTP_OK -> ReleaseListResponse.Ok(
+                        body = connection.inputStream.bufferedReader().use(BufferedReader::readText),
+                        eTag = connection.getHeaderField("ETag"),
+                    )
+                    HttpURLConnection.HTTP_NOT_MODIFIED -> ReleaseListResponse.NotModified
+                    else -> {
+                        AppLog.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
+                        ReleaseListResponse.Failed
+                    }
+                }
             } finally {
                 connection.disconnect()
             }
         }
-    }.onFailure { error ->
-        if (error is kotlinx.coroutines.CancellationException) throw error
-        AppLog.warn(LogTag, "Update manifest unavailable, asking the release list: ${error.message}")
-    }.getOrNull()
 
     private fun parseRelease(body: String, channel: AppUpdateChannel): AppUpdateInfo? = GitHubReleaseParser.parse(
         body = body,
@@ -132,15 +116,4 @@ internal class GitHubReleaseChecker(
         supportedAbis = Build.SUPPORTED_ABIS.toList(),
         channel = channel,
     )
-}
-
-internal sealed interface GitHubReleaseCheckResult {
-    data class Success(
-        val update: AppUpdateInfo?,
-        val eTag: String?,
-    ) : GitHubReleaseCheckResult
-
-    data object NotModified : GitHubReleaseCheckResult
-
-    data object Failed : GitHubReleaseCheckResult
 }

@@ -89,6 +89,24 @@ object GeneralSettingsValues {
     const val LanguageChinese = 2
     const val LanguageRussian = 3
     const val LanguagePersian = 4
+    /** The language mode of a stored tag; region and case are ignored, no tag or an unknown one follows the system. */
+    fun languageModeOfTag(tag: String?): Int = when (tag?.substringBefore('-')?.lowercase()) {
+        "en" -> LanguageEnglish
+        "zh" -> LanguageChinese
+        "ru" -> LanguageRussian
+        "fa" -> LanguagePersian
+        else -> LanguageSystem
+    }
+
+    /** The tag stored for a language mode; null for "system". */
+    fun languageTagOfMode(mode: Int): String? = when (mode) {
+        LanguageEnglish -> "en"
+        LanguageChinese -> "zh"
+        LanguageRussian -> "ru"
+        LanguagePersian -> "fa"
+        else -> null
+    }
+
     const val MinTrafficRefreshSeconds = 1
     const val MaxTrafficRefreshSeconds = 10
 

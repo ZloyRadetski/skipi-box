@@ -12,11 +12,11 @@ class ProxyHomeAndroidExternalUriTest {
     fun allowsHttpsAndSingleAddressMailtoOnly() {
         assertEquals(
             "https://support.example.com/help",
-            requireSafeAndroidExternalUri("https://support.example.com/help").toString(),
+            requireSafeExternalUri("https://support.example.com/help").toString(),
         )
         assertEquals(
             "mailto:help@example.com",
-            requireSafeAndroidExternalUri("mailto:help@example.com").toString(),
+            requireSafeExternalUri("mailto:help@example.com").toString(),
         )
     }
 
@@ -31,7 +31,7 @@ class ProxyHomeAndroidExternalUriTest {
             "https://user:password@support.example.com/help",
         ).forEach { value ->
             assertThrows(RuntimeException::class.java) {
-                requireSafeAndroidExternalUri(value)
+                requireSafeExternalUri(value)
             }
         }
     }

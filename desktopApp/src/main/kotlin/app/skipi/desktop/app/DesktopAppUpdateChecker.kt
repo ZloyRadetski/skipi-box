@@ -9,6 +9,9 @@ import features.updater.AppUpdateInfo
 import features.updater.CurrentAppVersion
 import features.updater.DesktopUpdatePackage
 import features.updater.GitHubReleaseParser
+import features.updater.runUpdateCheck
+import features.updater.ReleaseListResponse
+import features.updater.UpdateCheckResult
 import features.updater.UpdateManifestParser
 import java.net.URI
 import java.net.http.HttpClient
@@ -37,36 +40,20 @@ internal class DesktopAppUpdateChecker(
     suspend fun check(
         channel: AppUpdateChannel = AppUpdateChannel.Stable,
         desktopPackage: DesktopUpdatePackage? = null,
-    ): DesktopAppUpdateCheck = checkManifest(channel, desktopPackage) ?: checkReleaseList(channel, desktopPackage)
-
-    /**
-     * The manifest the release workflow publishes at a fixed address: no GitHub API, no rate limit, and it names a
-     * release only after all its installers are uploaded. Null when it cannot be had or read, so the release list answers.
-     */
-    private suspend fun checkManifest(channel: AppUpdateChannel, desktopPackage: DesktopUpdatePackage?): DesktopAppUpdateCheck? = try {
-        val manifest = fetchManifestBody(channel)?.let(UpdateManifestParser::parse)
-        manifest?.let { UpdateManifestParser.desktopOffer(it, current, desktopPackage) }
-            ?.let(DesktopAppUpdateCheck::Available)
-            ?: manifest?.let { DesktopAppUpdateCheck.UpToDate }
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: Throwable) {
-        null
-    }
-
-    private suspend fun checkReleaseList(channel: AppUpdateChannel, desktopPackage: DesktopUpdatePackage?): DesktopAppUpdateCheck = try {
-        val body = fetchReleaseBody(channel)
-        if (!GitHubReleaseParser.isReleaseBody(body, channel)) {
-            DesktopAppUpdateCheck.Failed
-        } else {
-            GitHubReleaseParser.parseAvailability(body, current, channel, desktopPackage)
-                ?.let(DesktopAppUpdateCheck::Available)
-                ?: DesktopAppUpdateCheck.UpToDate
-        }
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: Throwable) {
-        DesktopAppUpdateCheck.Failed
+    ): DesktopAppUpdateCheck = when (
+        val result = runUpdateCheck(
+            fetchManifest = { fetchManifestBody(channel) },
+            parseManifest = UpdateManifestParser::parse,
+            manifestOffer = { manifest -> UpdateManifestParser.desktopOffer(manifest, current, desktopPackage) },
+            fetchReleases = {
+                ReleaseListResponse.Ok(body = fetchReleaseBody(channel), eTag = null)
+            },
+            isReleaseBody = { body -> GitHubReleaseParser.isReleaseBody(body, channel) },
+            releaseOffer = { body -> GitHubReleaseParser.parseAvailability(body, current, channel, desktopPackage) },
+        )
+    ) {
+        is UpdateCheckResult.Success -> result.update?.let(DesktopAppUpdateCheck::Available) ?: DesktopAppUpdateCheck.UpToDate
+        UpdateCheckResult.NotModified, UpdateCheckResult.Failed -> DesktopAppUpdateCheck.Failed
     }
 }
 

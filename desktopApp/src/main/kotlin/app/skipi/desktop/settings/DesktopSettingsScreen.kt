@@ -598,7 +598,7 @@ private fun DesktopGeneralSettings(
     contentPadding: PaddingValues,
 ) {
     val locale = remember { DesktopApplicationLocale(Locale.getDefault(), Locale::setDefault) }
-    val languageMode = settings.languageTag.toGeneralLanguageMode()
+    val languageMode = GeneralSettingsValues.languageModeOfTag(settings.languageTag)
     val state = GeneralSettingsState(
         languageMode = languageMode,
         enableHaptics = settings.hapticsEnabled,
@@ -616,7 +616,7 @@ private fun DesktopGeneralSettings(
         onSettingsChange = { transform ->
             val updated = transform(state)
             val languageChanged = updated.languageMode != state.languageMode
-            val languageTag = if (languageChanged) updated.languageMode.toDesktopLanguageTag() else settings.languageTag
+            val languageTag = if (languageChanged) GeneralSettingsValues.languageTagOfMode(updated.languageMode) else settings.languageTag
             if (languageChanged) locale.apply(languageTag)
             val next = settings.copy(
                 languageTag = languageTag,
@@ -635,24 +635,8 @@ private fun DesktopGeneralSettings(
     if (message.isNotBlank()) SkipiSettingsStatusMessage(message)
 }
 
-private fun String?.toGeneralLanguageMode(): Int = when (this?.substringBefore('-')?.lowercase()) {
-    "en" -> GeneralSettingsValues.LanguageEnglish
-    "zh" -> GeneralSettingsValues.LanguageChinese
-    "ru" -> GeneralSettingsValues.LanguageRussian
-    "fa" -> GeneralSettingsValues.LanguagePersian
-    else -> GeneralSettingsValues.LanguageSystem
-}
-
-private fun Int.toDesktopLanguageTag(): String? = when (this) {
-    GeneralSettingsValues.LanguageEnglish -> "en"
-    GeneralSettingsValues.LanguageChinese -> "zh"
-    GeneralSettingsValues.LanguageRussian -> "ru"
-    GeneralSettingsValues.LanguagePersian -> "fa"
-    else -> null
-}
-
 private fun DesktopAppSettings.toGeneralSettingsState() = GeneralSettingsState(
-    languageMode = languageTag.toGeneralLanguageMode(),
+    languageMode = GeneralSettingsValues.languageModeOfTag(languageTag),
     enableHaptics = hapticsEnabled,
     enableTrafficStatsNotification = false,
     trafficStatsNotificationRefreshIntervalSeconds = GeneralSettingsValues.MinTrafficRefreshSeconds,

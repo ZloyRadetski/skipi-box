@@ -19,7 +19,7 @@ import features.updater.AppUpdateRestoreAction
 import features.updater.AppUpdateInfo
 import features.updater.isSameReleaseAs
 import features.updater.AppUpdateNotifier
-import features.updater.GitHubReleaseCheckResult
+import features.updater.UpdateCheckResult
 import features.updater.GitHubReleaseChecker
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -61,7 +61,7 @@ internal class AppUpdateCheckCoordinator(
         // Older app versions persisted the ETag but not the discovered update.
         // A 304 in that state must not hide the update forever after process death.
         val result = if (
-            conditionalResult == GitHubReleaseCheckResult.NotModified &&
+            conditionalResult == UpdateCheckResult.NotModified &&
             stateStore.currentState.availableAppUpdate == null
         ) {
             checker.checkLatestReleaseResult(channel)
@@ -69,7 +69,7 @@ internal class AppUpdateCheckCoordinator(
             conditionalResult
         }
         when (result) {
-            is GitHubReleaseCheckResult.Success -> {
+            is UpdateCheckResult.Success -> {
                 checkStore.recordSuccessfulCheck(result.eTag)
                 val update = result.update
                 var notify = false
@@ -86,12 +86,12 @@ internal class AppUpdateCheckCoordinator(
                 }
             }
 
-            GitHubReleaseCheckResult.NotModified -> {
+            UpdateCheckResult.NotModified -> {
                 checkStore.recordSuccessfulCheck(checkStore.eTag())
                 AppUpdateCheckOutcome.NotModified
             }
 
-            GitHubReleaseCheckResult.Failed -> AppUpdateCheckOutcome.Failed
+            UpdateCheckResult.Failed -> AppUpdateCheckOutcome.Failed
         }
     }
 }

@@ -164,6 +164,8 @@ import java.awt.Frame
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
+import features.proxy.server.list.ExternalLinkMessages
+import features.proxy.server.list.requireSafeExternalUri
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -1358,29 +1360,13 @@ internal class DesktopProxyHomeEffectContext(
  * Subscription metadata is remote input. Only web pages and one plain email
  * recipient may be sent to the operating system's external URI handlers.
  */
-internal fun requireSafeDesktopExternalUri(value: String): URI {
-    val uri = URI(value.trim())
-    when (uri.scheme?.lowercase()) {
-        "https" -> {
-            require(uri.host?.isNotBlank() == true) { desktopText(Res.string.desktop_link_https_host_required) }
-            require(uri.userInfo.isNullOrBlank()) { desktopText(Res.string.desktop_link_https_no_credentials) }
-        }
-
-        "mailto" -> {
-            val recipient = uri.rawSchemeSpecificPart
-            require(!recipient.isNullOrBlank() && !recipient.contains('?') && !recipient.contains('#')) {
-                desktopText(Res.string.desktop_link_mailto_single_address)
-            }
-            require(SafeDesktopMailtoRecipient.matches(recipient)) {
-                desktopText(Res.string.desktop_link_mailto_invalid_address)
-            }
-        }
-
-        else -> error(desktopText(Res.string.desktop_link_unsupported_scheme))
-    }
-    return uri
-}
-
-private val SafeDesktopMailtoRecipient = Regex(
-    "^[A-Za-z0-9.!#${'$'}%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+${'$'}",
+internal fun requireSafeDesktopExternalUri(value: String): URI = requireSafeExternalUri(
+    value,
+    ExternalLinkMessages(
+        httpsHostRequired = desktopText(Res.string.desktop_link_https_host_required),
+        httpsNoCredentials = desktopText(Res.string.desktop_link_https_no_credentials),
+        mailtoSingleAddress = desktopText(Res.string.desktop_link_mailto_single_address),
+        mailtoInvalidAddress = desktopText(Res.string.desktop_link_mailto_invalid_address),
+        unsupportedScheme = desktopText(Res.string.desktop_link_unsupported_scheme),
+    ),
 )
