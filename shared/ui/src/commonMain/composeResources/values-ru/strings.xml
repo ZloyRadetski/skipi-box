@@ -412,6 +412,8 @@
     <string name="logs_export">Экспорт логов</string>
     <string name="logs_exported">Логи успешно экспортированы</string>
     <string name="logs_export_failed">Не удалось экспортировать логи</string>
+    <string name="logs_search_hint">Поиск по логам: слова, "фраза", -исключить, level:error</string>
+    <string name="logs_nothing_found">Ничего не найдено</string>
     <string name="logs_output">Вывод логов</string>
     <string name="logs_pull_to_refresh">Потяните вниз для обновления</string>
     <string name="logs_release_to_refresh">Отпустите для обновления</string>

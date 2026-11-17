@@ -49,7 +49,9 @@ import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
 import engine.xray.stopCoreLogTailers
+import features.logs.AndroidAccessLogRepository
 import features.logs.AppLog
+import features.logs.ConnectionAccessLogFeed
 import features.logs.CoreLogFileTailer
 import ui.feedback.AppHapticFeedback
 import kotlinx.coroutines.CompletableDeferred
@@ -61,6 +63,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,6 +82,7 @@ class SkipiVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
     private var hevTunRuntime: HevTunRuntime? = null
     private var coreLogTailers: List<CoreLogFileTailer> = emptyList()
+    private var connectionAccessLogJob: Job? = null
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val operationMutex = Mutex()
@@ -328,7 +332,7 @@ class SkipiVpnService : VpnService() {
         config.coreLogPaths.clearCoreLogs(LogTag)
         // Start before Xray so startup and first DNS/access events cannot be
         // missed by a tailer that otherwise begins at the current file end.
-        coreLogTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
+        coreLogTailers = config.coreLogPaths.startCoreLogTailers()
         SkipiCoreRuntime.setSocketProtector { fd ->
             this@SkipiVpnService.protect(fd)
         }
@@ -381,6 +385,25 @@ class SkipiVpnService : VpnService() {
             )
         }
         registerNetworkHandoverCallback(config)
+        startConnectionAccessLog(config)
+    }
+
+    /** Feeds the Access logs page from Core's connection log while the tunnel runs. */
+    private fun startConnectionAccessLog(config: VpnServiceStartConfig) {
+        connectionAccessLogJob?.cancel()
+        connectionAccessLogJob = null
+        if (!config.enableAccessLog) return
+        val feed = ConnectionAccessLogFeed(
+            repository = AndroidAccessLogRepository,
+            read = SkipiCoreRuntime::readConnectionLog,
+            formatTime = ::formatConnectionLogTime,
+        )
+        connectionAccessLogJob = serviceScope.launch {
+            while (isActive) {
+                feed.poll()
+                delay(ConnectionAccessLogPollMillis)
+            }
+        }
     }
 
     private fun establishTun(config: VpnServiceStartConfig): ParcelFileDescriptor {
@@ -500,6 +523,8 @@ class SkipiVpnService : VpnService() {
         unregisterNetworkHandoverCallback()
         NetworkHandoverRecoveryGate.clear()
         releaseWakeLock()
+        connectionAccessLogJob?.cancel()
+        connectionAccessLogJob = null
         currentConfig = null
         runCatching {
             hevTunRuntime?.stop()

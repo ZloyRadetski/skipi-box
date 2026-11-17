@@ -422,6 +422,8 @@
     <string name="logs_export">Export logs</string>
     <string name="logs_exported">Logs exported</string>
     <string name="logs_export_failed">Failed to export logs</string>
+    <string name="logs_search_hint">Search logs: words, "phrase", -exclude, level:error</string>
+    <string name="logs_nothing_found">Nothing found</string>
     <string name="logs_output">Log output</string>
     <string name="logs_pull_to_refresh">Pull down to refresh</string>
     <string name="logs_release_to_refresh">Release to refresh</string>

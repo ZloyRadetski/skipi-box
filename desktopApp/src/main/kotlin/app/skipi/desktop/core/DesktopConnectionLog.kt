@@ -6,6 +6,7 @@ package app.skipi.desktop
 import app.skipi.app.home.ConnectionLogEntry
 import app.skipi.app.home.ConnectionLogItem
 import app.skipi.app.home.ConnectionLogLevel
+import app.skipi.app.home.ConnectionLogReader
 import app.skipi.app.home.ConnectionLogMessage
 import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.ConnectionLogState
@@ -69,11 +70,11 @@ internal fun connectionLogThreshold(levelName: String): ConnectionLogLevel? =
 
 /** Host of the Home log: reads what Core and the logs recorded since the last poll. */
 internal class DesktopConnectionLog(
-    private val read: (Long) -> Result<String>,
+    read: (Long) -> Result<String>,
     private val readMessages: (Long) -> DesktopLogFeedSnapshot = { DesktopLogFeedSnapshot(0, emptyList()) },
 ) {
     private val mutableState = MutableStateFlow(ConnectionLogState())
-    private var cursor = 0L
+    private val connections = ConnectionLogReader(read)
     private var messageCursor = 0L
 
     val state: StateFlow<ConnectionLogState> = mutableState.asStateFlow()
@@ -96,16 +97,7 @@ internal class DesktopConnectionLog(
         mutableState.update { state -> state.append(items) }
     }
 
-    private fun newConnections(): List<ConnectionLogEntry> {
-        val snapshot = read(cursor).mapCatching(::parseConnectionLogSnapshot).getOrNull() ?: return emptyList()
-        // Every Core session counts from zero, so a smaller cursor means a new session.
-        if (snapshot.seq < cursor) {
-            cursor = 0
-            return emptyList()
-        }
-        cursor = snapshot.seq
-        return snapshot.entries
-    }
+    private fun newConnections(): List<ConnectionLogEntry> = connections.next()
 
     private fun newMessages(): List<ConnectionLogMessage> {
         val snapshot = readMessages(messageCursor)
@@ -116,12 +108,12 @@ internal class DesktopConnectionLog(
     /** A session change keeps the rows, so what led to a failure stays readable. */
     @Synchronized
     fun startSession() {
-        cursor = 0
+        connections.reset()
     }
 
     @Synchronized
     fun clear() {
-        cursor = 0
+        connections.reset()
         messageCursor = 0
         mutableState.update(ConnectionLogState::clear)
     }

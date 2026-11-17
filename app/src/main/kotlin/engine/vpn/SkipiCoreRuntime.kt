@@ -57,6 +57,8 @@ internal object SkipiCoreRuntime {
         }
         val controller = Skipicore.newCoreController(SkipiCoreCallbackHandler())
         runCatching {
+            // Applies to this and later sessions; off keeps Core from recording anything.
+            controller.setConnectionLogEnabled(config.enableAccessLog)
             controller.startLoop(config.xrayConfigJson, tunFd.toLong())
         }.onFailure { error ->
             stopNativeBridges()
@@ -82,6 +84,11 @@ internal object SkipiCoreRuntime {
             AppLog.error(LogTag, "Failed to stop SKIPI Core", error)
         }
         coreController = null
+    }
+
+    /** Connections routed since [afterSeq], as the JSON Core returns; a failure is a failed read. */
+    fun readConnectionLog(afterSeq: Long): Result<String> = runCatching {
+        checkNotNull(coreController) { "SKIPI Core is not running" }.readConnectionLog(afterSeq)
     }
 
     fun setSocketProtector(protector: (Int) -> Boolean) {
@@ -316,3 +323,9 @@ private class SkipiCoreCallbackHandler : CoreCallbackHandler {
 private fun Throwable.readableMessage(): String {
     return message ?: javaClass.simpleName.orEmpty()
 }
+
+/** How often the Access logs page asks Core for new connections. */
+internal const val ConnectionAccessLogPollMillis = 1_000L
+
+internal fun formatConnectionLogTime(timeMillis: Long): String =
+    java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date(timeMillis))

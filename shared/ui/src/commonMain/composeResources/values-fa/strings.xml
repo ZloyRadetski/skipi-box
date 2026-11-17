@@ -368,6 +368,8 @@
     <string name="logs_export">خروجی گرفتن از گزارش‌ها</string>
     <string name="logs_exported">گزارش‌ها صادر شد</string>
     <string name="logs_export_failed">گزارش‌ها صادر نشد</string>
+    <string name="logs_search_hint">جستجو در گزارش‌ها: کلمه، "عبارت"، -حذف، level:error</string>
+    <string name="logs_nothing_found">چیزی پیدا نشد</string>
     <string name="logs_output">خروجی گزارش</string>
     <string name="logs_pull_to_refresh">برای تازه کردن، پایین بکشید</string>
     <string name="logs_release_to_refresh">برای بازخوانی رها کنید</string>

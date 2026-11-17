@@ -10,7 +10,8 @@ import features.logs.CoreLogFile
 import features.logs.CoreLogFileTailer
 import java.io.File
 
-internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): List<CoreLogFileTailer> {
+internal fun XrayCoreLogPaths.startCoreLogTailers(): List<CoreLogFileTailer> {
+    // The Access logs page is fed by Core's connection log, not by tailing access.log.
     return buildList {
         add(
             CoreLogFileTailer(
@@ -20,16 +21,6 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                 onFailure = { message, error -> AppLog.warn("CoreLogFileTailer", message, error) },
             ),
         )
-        if (enableAccessLog) {
-            add(
-                CoreLogFileTailer(
-                    logFiles = listOf(accessLogFile()),
-                    repository = AndroidAccessLogRepository,
-                    startAtEnd = false,
-                    onFailure = { message, error -> AppLog.warn("CoreLogFileTailer", message, error) },
-                ),
-            )
-        }
     }.onEach { tailer -> tailer.start() }
 }
 
@@ -63,10 +54,6 @@ internal fun clearCoreLogFilesAsApp(logPaths: List<String>, logTag: String) {
                 AppLog.warn(logTag, "Failed to clear Xray log file: $logPath", error)
             }
         }
-}
-
-private fun XrayCoreLogPaths.accessLogFile(): CoreLogFile {
-    return CoreLogFile(path = accessLogPath, defaultLevel = "info")
 }
 
 private fun XrayCoreLogPaths.errorLogFile(): CoreLogFile {
