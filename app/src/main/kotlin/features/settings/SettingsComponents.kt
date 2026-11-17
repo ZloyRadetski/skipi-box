@@ -39,15 +39,3 @@ internal fun SettingsSectionCard(
         content = content,
     )
 }
-
-
-@Composable
-internal fun subscriptionPingSettingsSummary(
-    url: String,
-    timeoutMillis: String,
-): String {
-    return stringResource(R.string.subscription_ping_settings_summary).formatTemplate(
-        "url" to url,
-        "timeout" to timeoutMillis,
-    )
-}

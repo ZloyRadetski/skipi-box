@@ -15,6 +15,9 @@ import app.skipi.app.model.LocalProxyPreferences
 import app.skipi.app.model.SubscriptionPreferences
 import app.skipi.ui.settings.AppearanceSettingValues
 import app.skipi.ui.settings.AppearanceSettingsState
+import app.skipi.ui.settings.withAppearanceSettingsState
+import app.skipi.ui.settings.toAppearanceSettingsState
+import app.skipi.ui.settings.AppearanceHostSettings
 import app.skipi.ui.settings.LocalProxySettingsState
 import app.skipi.ui.settings.SubscriptionSettingsState
 import features.subscription.SubscriptionExpiryReminder
@@ -551,45 +554,11 @@ private fun DesktopAppSettings.toPersistedSettings(
 /** "error", the level Desktop starts with. */
 private val DefaultDesktopCoreLogLevelIndex = DesktopCoreLogLevels.indexOf("error")
 
-internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsState = AppearanceSettingsState(
-    backgroundPhotoDimPercent = backgroundPhotoDimPercent ?: 45,
-    backgroundStyle = backgroundStyle ?: AppearanceSettingValues.BackgroundStyleClassic,
-    bottomBarSize = bottomBarSize ?: 1,
-    classicButtonSize = classicButtonSize ?: AppearanceSettingValues.ClassicButtonSizeMedium,
-    enableSeasonalEvents = enableSeasonalEvents,
-    customThemes = customThemes,
-    classicShowFloatingPowerButton = classicShowFloatingPowerButton,
-    colorMode = when (themeMode) {
-        DesktopThemeMode.Dark -> AppearanceSettingValues.ColorModeDark
-        DesktopThemeMode.Amoled -> AppearanceSettingValues.ColorModeAmoled
-        DesktopThemeMode.Light -> AppearanceSettingValues.ColorModeLight
-        DesktopThemeMode.Aurora -> AppearanceSettingValues.ColorModeAurora
-        DesktopThemeMode.Sakura -> AppearanceSettingValues.ColorModeSakura
-        DesktopThemeMode.Forest -> AppearanceSettingValues.ColorModeForest
-        DesktopThemeMode.Sunset -> AppearanceSettingValues.ColorModeSunset
-    },
-    connectionDisplayMode = connectionDisplayMode ?: if (compactHome) {
-        AppearanceSettingValues.ConnectionDisplayModeCompact
-    } else {
-        AppearanceSettingValues.ConnectionDisplayModeClassic
-    },
-    customMaterialYouSeed = customMaterialYouSeed,
-    enableAllProxyGroup = enableAllProxyGroup,
-    enableCustomColors = customColorsEnabled,
-    enableMaterialYou = dynamicColors,
-    enableSubscriptionSwipe = enableSubscriptionSwipe,
-    fontFamilyMode = fontFamilyMode ?: 0,
-    fontSizeMode = fontSizeMode ?: FontSizeModeSmall,
-    fontWeightMode = fontWeightMode ?: 0,
-    pinConnectionPanelOnHome = pinConnectionPanelOnHome,
-    seedIndex = seedIndex,
-    showServerSearch = showServerSearch,
-    showTunnelMemoryOnHome = showTunnelMemory,
-    showTunnelIpOnHome = showTunnelIp,
-    maskTunnelIpOnHome = maskTunnelIp,
-    showConnectionLogOnHome = showConnectionLog,
-    navigationStyle = navigationStyle,
-).withCustomColors(customColors())
+/** The appearance screen's state: the shared mapper over the shared view, plus the choices only Desktop keeps. */
+internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsState =
+    toPersistedSettings(DesktopServerLibrary(), DesktopConfigLibrary()).toAppearanceSettingsState(
+        AppearanceHostSettings(navigationStyle = navigationStyle, showConnectionLogOnHome = showConnectionLog),
+    )
 
 internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
     val address = localProxyListenAddress.trim().ifBlank { "127.0.0.1" }
@@ -613,12 +582,13 @@ internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsS
     )
 }
 
-internal fun DesktopAppSettings.toSubscriptionSettingsState(): SubscriptionSettingsState = SubscriptionSettingsState(
+/** [pingSummary] is the localized line for the ping settings; the mode is the protocol name, which is not translated. */
+internal fun DesktopAppSettings.toSubscriptionSettingsState(pingSummary: String): SubscriptionSettingsState = SubscriptionSettingsState(
     fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
     deviceHeadersEnabled = sendDeviceHeaders,
     expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
     expiryReminders = subscriptionExpiryReminders,
-    pingSummary = "${if (subscriptionPingMode == app.modes.SubscriptionPingModeHttp) "HTTP" else "TCP"} · $subscriptionPingUrl · ${subscriptionPingTimeoutMillis} ms",
+    pingSummary = "${if (subscriptionPingMode == app.modes.SubscriptionPingModeHttp) "HTTP" else "TCP"} · $pingSummary",
 )
 
 internal fun DesktopAppSettings.withSubscriptionSettingsState(state: SubscriptionSettingsState): DesktopAppSettings = copy(
@@ -627,46 +597,15 @@ internal fun DesktopAppSettings.withSubscriptionSettingsState(state: Subscriptio
     enableSubscriptionExpiryNotifications = state.expiryNotificationsEnabled,
     subscriptionExpiryReminders = state.expiryReminders,
 )
+/** What the appearance screen chose, written into the settings the way the shared repository writes it. */
 internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsState): DesktopAppSettings {
-    val nextTheme = when (AppearanceSettingValues.normalizeColorMode(state.colorMode)) {
-        AppearanceSettingValues.ColorModeLight -> DesktopThemeMode.Light
-        AppearanceSettingValues.ColorModeDark -> DesktopThemeMode.Dark
-        AppearanceSettingValues.ColorModeAmoled -> DesktopThemeMode.Amoled
-        AppearanceSettingValues.ColorModeAurora -> DesktopThemeMode.Aurora
-        AppearanceSettingValues.ColorModeSakura -> DesktopThemeMode.Sakura
-        AppearanceSettingValues.ColorModeForest -> DesktopThemeMode.Forest
-        AppearanceSettingValues.ColorModeSunset -> DesktopThemeMode.Sunset
-        else -> throw IllegalArgumentException("System theme mode is not supported by Desktop settings")
-    }
-    return copy(
-        themeMode = nextTheme,
-        dynamicColors = state.enableMaterialYou,
-        compactHome = state.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeCompact,
-        connectionDisplayMode = state.connectionDisplayMode,
-        classicShowFloatingPowerButton = state.classicShowFloatingPowerButton,
-        pinConnectionPanelOnHome = state.pinConnectionPanelOnHome,
-        enableAllProxyGroup = state.enableAllProxyGroup,
-        showServerSearch = state.showServerSearch,
-        enableSubscriptionSwipe = state.enableSubscriptionSwipe,
-        showTunnelMemory = state.showTunnelMemoryOnHome,
-        showTunnelIp = state.showTunnelIpOnHome,
-        maskTunnelIp = state.maskTunnelIpOnHome,
-        showConnectionLog = state.showConnectionLogOnHome,
+    val updated = toPersistedSettings(DesktopServerLibrary(), DesktopConfigLibrary()).withAppearanceSettingsState(state)
+    return withAppearance(updated.appearance).withHomeDisplay(updated.home).copy(
         navigationStyle = state.navigationStyle.coerceIn(0, 1),
-        customColorsEnabled = state.enableCustomColors,
-        fontFamilyMode = state.fontFamilyMode,
-        fontSizeMode = state.fontSizeMode,
-        fontWeightMode = state.fontWeightMode,
-        backgroundStyle = state.backgroundStyle,
-        backgroundPhotoDimPercent = state.backgroundPhotoDimPercent,
-        bottomBarSize = state.bottomBarSize,
-        classicButtonSize = state.classicButtonSize,
-        enableSeasonalEvents = state.enableSeasonalEvents,
-        customThemes = state.customThemes,
-        seedIndex = state.seedIndex,
-        customMaterialYouSeed = state.customMaterialYouSeed,
-    ).withCustomColors(state.customColors())
+        showConnectionLog = state.showConnectionLogOnHome,
+    )
 }
+
 private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): DesktopAppSettings {
     require(appearance.themeMode != ThemeMode.System) {
         "System theme mode is not supported by Desktop settings"

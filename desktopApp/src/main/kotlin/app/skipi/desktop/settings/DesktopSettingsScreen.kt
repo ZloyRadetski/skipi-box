@@ -167,6 +167,7 @@ import app.skipi.ui.settings.SkipiUrlSchemesScreen
 import app.skipi.ui.settings.rememberAboutSettingsLabels
 import app.skipi.ui.settings.rememberLocalProxySettingsLabels
 import app.skipi.ui.settings.rememberSubscriptionSettingsLabels
+import app.skipi.ui.settings.subscriptionPingSettingsSummary
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import app.skipi.ui.settings.SkipiGeneralSettingsScreen
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
@@ -819,31 +820,32 @@ private fun DesktopSubscriptionSettings(
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
     LaunchedEffect(settings) { draft = settings }
+    val pingSummary = subscriptionPingSettingsSummary(draft.subscriptionPingUrl, draft.subscriptionPingTimeoutMillis.toString())
 
     SkipiSubscriptionSettingsScreen(
-        state = draft.toSubscriptionSettingsState(),
+        state = draft.toSubscriptionSettingsState(pingSummary),
         labels = rememberSubscriptionSettingsLabels(draft.subscriptionUserAgents.size),
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
         onFetchTimeoutChange = { seconds ->
-            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(fetchTimeoutSeconds = seconds))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState(pingSummary).copy(fetchTimeoutSeconds = seconds))
             draft = next
             onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onOpenUserAgents = onOpenUserAgents,
         onDeviceHeadersChange = { enabled ->
-            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deviceHeadersEnabled = enabled))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState(pingSummary).copy(deviceHeadersEnabled = enabled))
             draft = next
             onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onExpiryNotificationsChange = { enabled ->
-            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryNotificationsEnabled = enabled))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState(pingSummary).copy(expiryNotificationsEnabled = enabled))
             draft = next
             onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onExpiryRemindersChange = { reminders ->
-            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryReminders = reminders))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState(pingSummary).copy(expiryReminders = reminders))
             draft = next
             onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },

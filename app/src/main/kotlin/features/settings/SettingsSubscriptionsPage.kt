@@ -17,6 +17,7 @@ import app.navigation.Route
 import app.skipi.ui.settings.SkipiSubscriptionSettingsScreen
 import app.skipi.ui.settings.rememberSubscriptionSettingsLabels
 import app.skipi.ui.settings.SubscriptionSettingsState
+import app.skipi.ui.settings.subscriptionPingSettingsSummary
 
 @Composable
 fun SettingsSubscriptionsPage(padding: PaddingValues) {

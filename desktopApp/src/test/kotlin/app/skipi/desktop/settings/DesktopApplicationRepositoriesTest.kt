@@ -762,7 +762,8 @@ class DesktopApplicationRepositoriesTest {
         assertEquals("0.0.0.0:10808", proxy.socksEndpoint)
         assertEquals(platform.LocalProxyAuthMode.Off, proxy.socksAuthMode)
 
-        val subscriptions = original.toSubscriptionSettingsState()
+        val subscriptions = original.toSubscriptionSettingsState(pingSummary = "ping")
+        assertEquals("HTTP · ping", subscriptions.pingSummary)
         assertEquals(30, subscriptions.fetchTimeoutSeconds)
         assertTrue(subscriptions.deviceHeadersEnabled)
         // The deletion confirmation lives on the General page only; the subscription page must not touch it.

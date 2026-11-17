@@ -22,6 +22,11 @@ import app.R
 import app.collectAppState
 import androidx.compose.ui.platform.LocalClipboard
 import app.skipi.ui.settings.AppearanceSettingsState
+import data.repository.toPersistedSettings
+import data.repository.applyAppearanceSettings
+import app.skipi.ui.settings.withAppearanceSettingsState
+import app.skipi.ui.settings.toAppearanceSettingsState
+import app.skipi.ui.settings.AppearanceHostSettings
 import ui.clipboard.setPlainText
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import features.settings.sheets.AppIconSelectionBottomSheet
@@ -98,56 +103,11 @@ fun SettingsAppearancePage(padding: PaddingValues) {
     )
 }
 
-internal fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
-    appIcon = appIcon,
-    backgroundPhotoDimPercent = backgroundPhotoDimPercent,
-    backgroundStyle = backgroundStyle,
-    bottomBarSize = bottomBarSize,
-    classicButtonSize = classicButtonSize,
-    enableSeasonalEvents = enableSeasonalEvents,
-    customThemes = customThemes,
-    classicShowFloatingPowerButton = classicShowFloatingPowerButton,
-    colorMode = colorMode,
-    connectionDisplayMode = connectionDisplayMode,
-    customMaterialYouSeed = customMaterialYouSeed,
-    enableAllProxyGroup = enableAllProxyGroup,
-    enableCustomColors = enableCustomColors,
-    enableMaterialYou = enableMaterialYou,
-    enableSubscriptionSwipe = enableSubscriptionSwipe,
-    fontFamilyMode = fontFamilyMode,
-    fontSizeMode = fontSizeMode,
-    fontWeightMode = fontWeightMode,
-    pinConnectionPanelOnHome = pinConnectionPanelOnHome,
-    seedIndex = seedIndex,
-    showServerSearch = showServerSearch,
-    showTunnelMemoryOnHome = showTunnelMemoryOnHome,
-    showTunnelIpOnHome = showTunnelIpOnHome,
-    maskTunnelIpOnHome = maskTunnelIpOnHome,
-).withCustomColors(customColors())
+private fun app.AppState.toAppearanceSettingsState() =
+    toPersistedSettings().toAppearanceSettingsState(AppearanceHostSettings(appIcon = appIcon))
 
-internal fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState) = copy(
-    appIcon = settings.appIcon,
-    backgroundPhotoDimPercent = settings.backgroundPhotoDimPercent,
-    backgroundStyle = settings.backgroundStyle,
-    bottomBarSize = settings.bottomBarSize,
-    classicButtonSize = settings.classicButtonSize,
-    enableSeasonalEvents = settings.enableSeasonalEvents,
-    customThemes = settings.customThemes,
-    classicShowFloatingPowerButton = settings.classicShowFloatingPowerButton,
-    colorMode = settings.colorMode,
-    connectionDisplayMode = settings.connectionDisplayMode,
-    customMaterialYouSeed = settings.customMaterialYouSeed,
-    enableAllProxyGroup = settings.enableAllProxyGroup,
-    enableCustomColors = settings.enableCustomColors,
-    enableMaterialYou = settings.enableMaterialYou,
-    enableSubscriptionSwipe = settings.enableSubscriptionSwipe,
-    fontFamilyMode = settings.fontFamilyMode,
-    fontSizeMode = settings.fontSizeMode,
-    fontWeightMode = settings.fontWeightMode,
-    pinConnectionPanelOnHome = settings.pinConnectionPanelOnHome,
-    seedIndex = settings.seedIndex,
-    showServerSearch = settings.showServerSearch,
-    showTunnelMemoryOnHome = settings.showTunnelMemoryOnHome,
-    showTunnelIpOnHome = settings.showTunnelIpOnHome,
-    maskTunnelIpOnHome = settings.maskTunnelIpOnHome,
-).withCustomColors(settings.customColors())
+/** The screen's choices written back: the shared sections through the shared mapper, the app icon on its own. */
+private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState): app.AppState {
+    val updated = toPersistedSettings().withAppearanceSettingsState(settings)
+    return applyAppearanceSettings(updated.appearance, updated.home).copy(appIcon = settings.appIcon)
+}

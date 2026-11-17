@@ -156,42 +156,51 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
     ),
 )
 
+/**
+ * Applies the appearance and Home sections of stored settings, leaving everything else alone. Settings the sections
+ * leave open keep the state's own values.
+ */
+fun AppState.applyAppearanceSettings(
+    appearance: app.skipi.app.model.AppearanceSettings,
+    home: app.skipi.app.model.HomeDisplaySettings,
+): AppState = copy(
+        // A named theme older shared data has no variant for keeps the current one.
+        colorMode = colorModeOfAppearance(appearance, fallback = colorMode),
+        enableMaterialYou = appearance.dynamicColors,
+        connectionDisplayMode = home.connectionDisplayMode ?: connectionDisplayMode,
+        pinConnectionPanelOnHome = home.pinConnectionPanel,
+        enableSubscriptionSwipe = home.subscriptionSwipeEnabled,
+        classicShowFloatingPowerButton = home.showFloatingPowerButton,
+        showServerSearch = home.showServerSearch,
+        proxyServerListSort = home.proxyServerListSort ?: proxyServerListSort,
+        enableAllProxyGroup = home.enableAllProxyGroup ?: enableAllProxyGroup,
+        showTunnelMemoryOnHome = home.showTunnelMemoryOnHome ?: showTunnelMemoryOnHome,
+        showTunnelIpOnHome = home.showTunnelIpOnHome ?: showTunnelIpOnHome,
+        maskTunnelIpOnHome = home.maskTunnelIpOnHome ?: maskTunnelIpOnHome,
+        seedIndex = appearance.seedIndex,
+        customMaterialYouSeed = appearance.customMaterialYouSeed,
+        enableCustomColors = appearance.customColorsEnabled,
+        fontFamilyMode = appearance.fontFamilyMode ?: fontFamilyMode,
+        fontSizeMode = appearance.fontSizeMode ?: fontSizeMode,
+        fontWeightMode = appearance.fontWeightMode ?: fontWeightMode,
+        backgroundStyle = appearance.backgroundStyle ?: backgroundStyle,
+        backgroundPhotoDimPercent = appearance.backgroundPhotoDimPercent ?: backgroundPhotoDimPercent,
+        bottomBarSize = appearance.bottomBarSize ?: bottomBarSize,
+        classicButtonSize = appearance.classicButtonSize ?: classicButtonSize,
+        enableSeasonalEvents = appearance.seasonalEvents,
+        customThemes = appearance.customThemes,
+).withCustomColors(appearance.customColors())
+
 /** Applies shared settings while leaving host-only and absent persisted fields untouched. */
 fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSettings): AppState {
     val languageTag = settings.application.languageTag
     val nextActiveConfigId = settings.traffic.activeConfigId ?: activeTrafficConfigId
-    // A named theme older shared data has no variant for keeps the current one.
-    val nextColorMode = colorModeOfAppearance(settings.appearance, fallback = colorMode)
     val nextLanguageMode = when {
         languageTag == null -> app.modes.LanguageModeSystem
         else -> languageModeForTag(languageTag) ?: languageMode
     }
-    val updated = copy(
-        colorMode = nextColorMode,
-        enableMaterialYou = settings.appearance.dynamicColors,
-        connectionDisplayMode = settings.home.connectionDisplayMode ?: connectionDisplayMode,
-        pinConnectionPanelOnHome = settings.home.pinConnectionPanel,
-        enableSubscriptionSwipe = settings.home.subscriptionSwipeEnabled,
-        classicShowFloatingPowerButton = settings.home.showFloatingPowerButton,
+    val updated = applyAppearanceSettings(settings.appearance, settings.home).copy(
         enableDeletionConfirmation = settings.home.confirmDeletion,
-        showServerSearch = settings.home.showServerSearch,
-        proxyServerListSort = settings.home.proxyServerListSort ?: proxyServerListSort,
-        enableAllProxyGroup = settings.home.enableAllProxyGroup ?: enableAllProxyGroup,
-        showTunnelMemoryOnHome = settings.home.showTunnelMemoryOnHome ?: showTunnelMemoryOnHome,
-        showTunnelIpOnHome = settings.home.showTunnelIpOnHome ?: showTunnelIpOnHome,
-        maskTunnelIpOnHome = settings.home.maskTunnelIpOnHome ?: maskTunnelIpOnHome,
-        seedIndex = settings.appearance.seedIndex,
-        customMaterialYouSeed = settings.appearance.customMaterialYouSeed,
-        enableCustomColors = settings.appearance.customColorsEnabled,
-        fontFamilyMode = settings.appearance.fontFamilyMode ?: fontFamilyMode,
-        fontSizeMode = settings.appearance.fontSizeMode ?: fontSizeMode,
-        fontWeightMode = settings.appearance.fontWeightMode ?: fontWeightMode,
-        backgroundStyle = settings.appearance.backgroundStyle ?: backgroundStyle,
-        backgroundPhotoDimPercent = settings.appearance.backgroundPhotoDimPercent ?: backgroundPhotoDimPercent,
-        bottomBarSize = settings.appearance.bottomBarSize ?: bottomBarSize,
-        classicButtonSize = settings.appearance.classicButtonSize ?: classicButtonSize,
-        enableSeasonalEvents = settings.appearance.seasonalEvents,
-        customThemes = settings.appearance.customThemes,
         selectedProxyServerId = settings.proxy.selectedServerId ?: selectedProxyServerId,
         enableHaptics = settings.application.hapticsEnabled,
         hasCompletedOnboarding = settings.application.onboardingCompleted,
@@ -245,7 +254,7 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         enableSubscriptionExpiryNotifications =
             settings.subscriptions?.expiryNotificationsEnabled ?: enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = settings.subscriptions?.expiryReminders ?: subscriptionExpiryReminders,
-    ).withCustomColors(settings.appearance.customColors())
+    )
     return if (updated.activeTrafficConfigId == nextActiveConfigId) updated
     else updated.withActiveTrafficConfigProfile(nextActiveConfigId)
 }
