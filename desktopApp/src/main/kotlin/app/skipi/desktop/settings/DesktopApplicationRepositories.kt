@@ -466,7 +466,9 @@ private fun DesktopAppSettings.toPersistedSettings(
     appearance = toSharedAppearanceSettings(),
     proxy = ProxySelectionSettings(selectedServerId = servers.selectedServerId),
     home = HomeDisplaySettings(
-        connectionDisplayMode = connectionDisplayMode,
+        // Settings written before the mode existed only have the compact flag.
+        connectionDisplayMode = connectionDisplayMode
+            ?: AppearanceSettingValues.ConnectionDisplayModeCompact.takeIf { compactHome },
         pinConnectionPanel = pinConnectionPanelOnHome,
         subscriptionSwipeEnabled = enableSubscriptionSwipe,
         showFloatingPowerButton = classicShowFloatingPowerButton,
@@ -702,6 +704,8 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
 
 private fun DesktopAppSettings.withHomeDisplay(home: HomeDisplaySettings): DesktopAppSettings = copy(
     connectionDisplayMode = home.connectionDisplayMode,
+    // The compact layout is kept as its own flag as well; it follows the mode a screen writes.
+    compactHome = home.connectionDisplayMode?.let { it == AppearanceSettingValues.ConnectionDisplayModeCompact } ?: compactHome,
     pinConnectionPanelOnHome = home.pinConnectionPanel,
     enableSubscriptionSwipe = home.subscriptionSwipeEnabled,
     classicShowFloatingPowerButton = home.showFloatingPowerButton,

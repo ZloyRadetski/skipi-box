@@ -8,6 +8,8 @@ import app.ProxyServerState
 import app.AppState
 import app.SubscriptionGroupState
 import app.skipi.app.model.ApplicationPreferences
+import app.skipi.app.model.colorModeOfAppearance
+import app.skipi.app.model.themeChoiceOfColorMode
 import app.skipi.app.model.CoreEnginePreferences
 import app.skipi.app.model.LogPreferences
 import app.skipi.app.model.NetworkAutomationPreferences
@@ -49,22 +51,10 @@ import app.skipi.app.model.customColors
 import app.skipi.app.model.withCustomColors
 fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
     appearance = AppearanceSettings(
-        themeMode = when (colorMode) {
-            app.modes.ColorModeLight -> ThemeMode.Light
-            app.modes.ColorModeDark -> ThemeMode.Dark
-            app.modes.ColorModeAmoled -> ThemeMode.Dark
-            in app.modes.ColorModeAurora..app.modes.ColorModeSunset -> ThemeMode.Named
-            else -> ThemeMode.System
-        },
+        themeMode = themeChoiceOfColorMode(colorMode).themeMode,
         dynamicColors = enableMaterialYou,
-        amoledBlack = colorMode == app.modes.ColorModeAmoled,
-        themeVariant = when (colorMode) {
-            app.modes.ColorModeAurora -> "aurora"
-            app.modes.ColorModeSakura -> "sakura"
-            app.modes.ColorModeForest -> "forest"
-            app.modes.ColorModeSunset -> "sunset"
-            else -> null
-        },
+        amoledBlack = themeChoiceOfColorMode(colorMode).amoledBlack,
+        themeVariant = themeChoiceOfColorMode(colorMode).themeVariant,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         customColorsEnabled = enableCustomColors,
@@ -170,19 +160,8 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
 fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSettings): AppState {
     val languageTag = settings.application.languageTag
     val nextActiveConfigId = settings.traffic.activeConfigId ?: activeTrafficConfigId
-    val nextColorMode = when {
-        settings.appearance.amoledBlack -> app.modes.ColorModeAmoled
-        settings.appearance.themeMode == ThemeMode.Light -> app.modes.ColorModeLight
-        settings.appearance.themeMode == ThemeMode.Dark -> app.modes.ColorModeDark
-        settings.appearance.themeMode == ThemeMode.System -> app.modes.ColorModeSystem
-        else -> when (settings.appearance.themeVariant) {
-            "aurora" -> app.modes.ColorModeAurora
-            "sakura" -> app.modes.ColorModeSakura
-            "forest" -> app.modes.ColorModeForest
-            "sunset" -> app.modes.ColorModeSunset
-            else -> colorMode // Preserve a named theme when older shared data has no variant key.
-        }
-    }
+    // A named theme older shared data has no variant for keeps the current one.
+    val nextColorMode = colorModeOfAppearance(settings.appearance, fallback = colorMode)
     val nextLanguageMode = when {
         languageTag == null -> app.modes.LanguageModeSystem
         else -> languageModeForTag(languageTag) ?: languageMode

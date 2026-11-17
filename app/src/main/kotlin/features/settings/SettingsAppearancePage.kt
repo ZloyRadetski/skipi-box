@@ -98,7 +98,7 @@ fun SettingsAppearancePage(padding: PaddingValues) {
     )
 }
 
-private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
+internal fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     appIcon = appIcon,
     backgroundPhotoDimPercent = backgroundPhotoDimPercent,
     backgroundStyle = backgroundStyle,
@@ -125,7 +125,7 @@ private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     maskTunnelIpOnHome = maskTunnelIpOnHome,
 ).withCustomColors(customColors())
 
-private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState) = copy(
+internal fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState) = copy(
     appIcon = settings.appIcon,
     backgroundPhotoDimPercent = settings.backgroundPhotoDimPercent,
     backgroundStyle = settings.backgroundStyle,
