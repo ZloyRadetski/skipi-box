@@ -37,11 +37,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Width of the open desktop sidebar: wide enough for an icon and the longest label. */
-private val SidebarWidth = 196.dp
+private val SidebarWidth = 224.dp
 
 /** Width of the collapsed sidebar: the icons only. */
 private val CollapsedSidebarWidth = 68.dp
@@ -160,9 +161,12 @@ private fun SidebarItem(
                 text = label,
                 color = content.copy(alpha = content.alpha * labelAlpha),
                 fontSize = 14.sp,
+                lineHeight = 16.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1,
-                softWrap = false,
+                // A long label wraps to a second line and only then ends in an ellipsis, instead of being cut mid-word.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
         }
     }

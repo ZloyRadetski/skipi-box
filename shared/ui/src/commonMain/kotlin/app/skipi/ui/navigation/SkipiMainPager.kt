@@ -14,6 +14,10 @@ import androidx.compose.ui.Modifier
  *
  * Hosts own screen-specific state and services; this component owns only the
  * shared conversion from pager position to SKIPI's top-level destination.
+ *
+ * All top-level pages stay composed. With only the visible page kept, a switch composed the next page (Home is the
+ * heavy one) for the first time inside the page animation and dropped frames; now a switch only slides pages that
+ * are already there.
  */
 @Composable
 fun SkipiMainPager(
@@ -26,6 +30,7 @@ fun SkipiMainPager(
         state = pagerState,
         modifier = modifier,
         userScrollEnabled = userScrollEnabled,
+        beyondViewportPageCount = SkipiMainDestination.entries.size - 1,
         verticalAlignment = Alignment.Top,
     ) { pageIndex ->
         content(SkipiMainDestination.fromPageIndex(pageIndex))

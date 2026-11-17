@@ -9,6 +9,7 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import app.AppState
+import features.proxy.DisplayedLatencies
 import app.skipi.app.store.SharedApplicationStore
 import data.repository.AndroidAppRepositories
 import data.repository.AndroidProxyServerRepository
@@ -19,7 +20,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -48,8 +53,13 @@ class AndroidAppStateStore private constructor(
     private val persistenceTracker = AppStatePersistenceTracker(initialSettings)
     private val mutableState = MutableStateFlow(initialSettings)
 
+    // The pings Home shows are not part of Room; they are kept on the side so they survive a restart.
+    private val displayedLatencyPreferences =
+        appContext.getSharedPreferences(DisplayedLatencyPreferencesName, Context.MODE_PRIVATE)
+
     init {
         scope.launch { loadRoomState() }
+        scope.launch { persistDisplayedLatencies() }
     }
 
     val context: Context get() = appContext
@@ -140,6 +150,7 @@ class AndroidAppStateStore private constructor(
         }
         saveMutex.withLock {
             settingsPreferences.clear()
+            displayedLatencyPreferences.edit().clear().apply()
             resetDatabase()
             settingsPreferences.save(stockState)
             dao.saveState(
@@ -169,8 +180,13 @@ class AndroidAppStateStore private constructor(
                     persistenceTracker.markPersisted(persistedState.toAppState(initialSettings))
                     hasPersistedState.set(true)
                     val hadUpdates = saveRevision.get() > 0
-                    mutableState.value = persistedState.toAppState(current)
-                        .copy(proxyRunning = current.proxyRunning)
+                    val loaded = persistedState.toAppState(current).copy(proxyRunning = current.proxyRunning)
+                    val savedLatencies = DisplayedLatencies.decode(
+                        displayedLatencyPreferences.getString(KeyDisplayedLatencies, null),
+                    )
+                    mutableState.value = loaded.copy(
+                        proxyServers = DisplayedLatencies.restore(loaded.proxyServers, savedLatencies),
+                    )
                     // Saves queued before the lists existed describe empty lists; replace them.
                     val revision = saveRevision.incrementAndGet()
                     if (hadUpdates) PendingStateSave(mutableState.value, revision) else null
@@ -180,6 +196,23 @@ class AndroidAppStateStore private constructor(
         } finally {
             loadGate.markReady()
         }
+    }
+
+    /** Writes the shown pings a moment after the last change, so a mass ping is one write, not one per server. */
+    @OptIn(FlowPreview::class)
+    private suspend fun persistDisplayedLatencies() {
+        loadGate.awaitReady()
+        mutableState
+            .map { state -> DisplayedLatencies.forPersistence(state.proxyServers) }
+            .distinctUntilChanged()
+            .debounce(DisplayedLatencyPersistDebounceMillis)
+            .collect { latencies ->
+                runCatching {
+                    displayedLatencyPreferences.edit()
+                        .putString(KeyDisplayedLatencies, DisplayedLatencies.encode(latencies))
+                        .apply()
+                }.onFailure { error -> AppLog.warn(LogTag, "Failed to persist the shown pings", error) }
+            }
     }
 
     private fun persist(nextState: AppState, revision: Long) {
@@ -262,6 +295,9 @@ class AndroidAppStateStore private constructor(
 
     companion object {
         private const val LogTag = "AndroidAppStateStore"
+        private const val DisplayedLatencyPreferencesName = "skipi_displayed_latency"
+        private const val KeyDisplayedLatencies = "entries"
+        private const val DisplayedLatencyPersistDebounceMillis = 1_500L
 
         @Volatile
         private var instance: AndroidAppStateStore? = null

@@ -349,7 +349,9 @@ fun SubscriptionGroupEditorDialog(
                             SubscriptionOptionsCard {
                                 SkipiSpinnerPreference(
                                     title = stringResource(Res.string.subscription_user_agent),
-                                    summary = resolvedUserAgent,
+                                    // The value on the right already says which preset is chosen; the string itself
+                                    // is worth showing only for a custom one, where the right side just says "custom".
+                                    summary = resolvedUserAgent.takeIf { selectedUserAgentIndex == customUserAgentIndex },
                                     items = userAgentItems,
                                     selectedIndex = selectedUserAgentIndex,
                                     onSelectedIndexChange = { index ->

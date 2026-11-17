@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -100,18 +101,20 @@ fun SkipiRoutingRulesInfoBottomSheet(show: Boolean, onDismissRequest: () -> Unit
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = item.name,
+                                modifier = Modifier.weight(1f, fill = false),
                                 fontSize = 14.sp,
                                 fontWeight = themedFontWeight(FontWeight.Bold),
                                 color = if (item.isAndroidLimitation) MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 else MiuixTheme.colorScheme.primary,
                             )
                             if (item.isAndroidLimitation) {
+                                Spacer(Modifier.width(8.dp))
                                 Box(
                                     modifier = Modifier.clip(RoundedCornerShape(4.dp))
                                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
                                         .padding(horizontal = 6.dp, vertical = 2.dp),
                                 ) {
-                                    Text("Android", fontSize = 11.sp, fontWeight = themedFontWeight(FontWeight.Medium), color = MiuixTheme.colorScheme.primary)
+                                    Text("Android", fontSize = 11.sp, maxLines = 1, softWrap = false, fontWeight = themedFontWeight(FontWeight.Medium), color = MiuixTheme.colorScheme.primary)
                                 }
                             }
                         }
