@@ -26,3 +26,21 @@ fun CoreLogEntry.logLine(showMetadata: Boolean): LogLine =
 /** The shown rows as one block of text, for the copy action. */
 fun logBlockText(entries: List<CoreLogEntry>, showMetadata: Boolean): String =
     entries.joinToString("\n") { it.exportText(showMetadata) }
+
+/**
+ * Where a log list should scroll after it changed, or null to leave it. A log reads like a terminal: the newest
+ * line is at the bottom, a log is first looked at from there, and a reader who stayed at the bottom keeps seeing
+ * the newest lines as they arrive. [newestId] is used instead of the count, because a full log keeps its length.
+ */
+fun logScrollTarget(
+    previousNewestId: Long?,
+    newestId: Long?,
+    count: Int,
+    following: Boolean,
+    listChanged: Boolean = false,
+): Int? = when {
+    count == 0 -> null
+    listChanged || previousNewestId == null -> count - 1
+    following && newestId != previousNewestId -> count - 1
+    else -> null
+}

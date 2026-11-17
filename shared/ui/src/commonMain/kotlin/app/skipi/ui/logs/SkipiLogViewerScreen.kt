@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import app.skipi.ui.resources.logs_nothing_found
@@ -110,9 +111,9 @@ fun SkipiLogViewerScreen(
     var refreshing by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val search = remember(query) { LogSearch.parse(query) }
-    val newestFirst = remember(entries) { entries.asReversed() }
-    val displayed = remember(newestFirst, search, showMetadata) {
-        if (search.isEmpty) newestFirst else newestFirst.filter { search.matches(it, it.exportText(showMetadata)) }
+    // Oldest first, like a terminal: the newest line is at the bottom, where the log opens.
+    val displayed = remember(entries, search, showMetadata) {
+        if (search.isEmpty) entries else entries.filter { search.matches(it, it.exportText(showMetadata)) }
     }
     val copiedMessage = stringResource(Res.string.logs_copied_to_clipboard)
     val hapticFeedback = LocalHapticFeedback.current
@@ -129,13 +130,13 @@ fun SkipiLogViewerScreen(
                 actions = {
                     if (onExport != null) {
                         NavigationIcon(
-                            onClick = { onExport(displayed.asReversed(), title) },
+                            onClick = { onExport(displayed.toList(), title) },
                             imageVector = MiuixIcons.Share,
                             contentDescription = stringResource(Res.string.logs_export),
                         )
                     }
                     NavigationIcon(
-                        onClick = { onCopy(logBlockText(displayed.asReversed(), showMetadata), copiedMessage) },
+                        onClick = { onCopy(logBlockText(displayed, showMetadata), copiedMessage) },
                         imageVector = MiuixIcons.Copy,
                         contentDescription = stringResource(Res.string.common_copy),
                     )
@@ -149,6 +150,25 @@ fun SkipiLogViewerScreen(
         },
     ) { innerPadding ->
         val lazyListState = rememberLazyListState()
+        // A reader who stays at the bottom keeps following the newest lines; one who scrolled up is left alone.
+        var following by remember { mutableStateOf(true) }
+        LaunchedEffect(lazyListState) {
+            snapshotFlow { lazyListState.isScrollInProgress }
+                .filter { scrolling -> !scrolling }
+                .collect { following = !lazyListState.canScrollForward }
+        }
+        var previousNewestId by remember { mutableStateOf<Long?>(null) }
+        var previousQuery by remember { mutableStateOf(query) }
+        val newestId = displayed.lastOrNull()?.id
+        LaunchedEffect(newestId, displayed.size, query) {
+            val target = logScrollTarget(previousNewestId, newestId, displayed.size, following, listChanged = query != previousQuery)
+            previousNewestId = newestId
+            previousQuery = query
+            if (target != null) {
+                lazyListState.scrollToItem(target)
+                following = true
+            }
+        }
         val contentPadding = pageContentPaddingWithCutout(
             innerPadding = innerPadding,
             outerPadding = padding,
