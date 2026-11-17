@@ -266,6 +266,7 @@ private fun AppBackupSubscriptionGroup.toStoredSubscription() = StoredSubscripti
 private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBackupSettings {
     val base = AppBackupSettings()
     return base.copy(
+        colorMode = themeMode.toColorMode(),
         languageMode = GeneralSettingsValues.languageModeOfTag(languageTag),
         enableMaterialYou = dynamicColors,
         seedIndex = seedIndex,
@@ -350,6 +351,8 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
 private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, data: AppBackupData): DesktopAppSettings {
     val routeRules = data.routeRules.map { it.toRouteRule() }
     return current.copy(
+        // Desktop has no system theme: a backup that names it keeps the theme this install has.
+        themeMode = desktopThemeModeOfColorMode(colorMode) ?: current.themeMode,
         languageTag = GeneralSettingsValues.languageTagOfMode(languageMode),
         dynamicColors = enableMaterialYou,
         seedIndex = seedIndex,

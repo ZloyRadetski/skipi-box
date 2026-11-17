@@ -42,7 +42,7 @@ class DesktopEverySettingBackupTest {
         "tunIpv6Cidr" to JsonPrimitive("fd00:20::1/126"),
         "tunVpnDns" to JsonPrimitive("1.1.1.1"),
         "languageTag" to JsonPrimitive("ru"),
-        "themeMode" to JsonPrimitive("Dark"),
+        "themeMode" to JsonPrimitive("Light"),
         "localProxyAuthMode" to JsonPrimitive("Manual"),
         "localHttpProxyAuthMode" to JsonPrimitive("Manual"),
     )
