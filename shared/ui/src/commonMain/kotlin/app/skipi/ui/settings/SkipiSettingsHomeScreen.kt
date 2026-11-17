@@ -113,7 +113,7 @@ fun SkipiSettingsHomeScreen(
     val listState = rememberLazyListState()
     OnNavigationReselect { listState.animateScrollToItem(0) }
     val categoryIconColor = settingIconBackgroundColor(SkipiTheme.colors.accent)
-    val categoryIconGlyphColor = settingIconGlyphColor(categoryIconColor, state.categoryIconGlyphColor)
+    val categoryIconGlyphColor = settingIconGlyphColor(SkipiTheme.colors.onAccent, state.categoryIconGlyphColor)
     val visible = state.visibleDestinations
     val scrollBehavior = MiuixScrollBehavior()
 

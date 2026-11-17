@@ -37,8 +37,8 @@ fun ProvideIconColor(argb: Long?, content: @Composable () -> Unit) {
 /** The tile behind a settings icon is always the accent; there is no setting for it. */
 internal fun settingIconBackgroundColor(accent: Color): Color = accent
 
-/** The color of an icon drawn on a tile of [background]: the one the user picked, else black or white by contrast. */
-internal fun settingIconGlyphColor(background: Color, picked: Color?): Color = picked ?: readableOn(background)
+/** The color of an icon drawn on the accent tile: the one the user picked, else the theme's color on accent. */
+internal fun settingIconGlyphColor(onAccent: Color, picked: Color?): Color = picked ?: onAccent
 
 /** Edge of the small tile in front of a settings row, and the shape every such tile shares. */
 private val SettingIconTileSize = 38.dp
@@ -52,7 +52,7 @@ private val SettingIconTileShape = RoundedCornerShape(12.dp)
 private val SettingIconShiftLeft = 6.dp
 
 /**
- * The small tile with an icon in front of a settings row: the accent with a glyph that reads on it, like the
+ * The small tile with an icon in front of a settings row: the accent with the theme's on-accent glyph, like the
  * tiles of the settings home. A soft tint was tried first, but a dark icon color vanished on a dark card.
  */
 @Composable
@@ -69,7 +69,7 @@ fun SkipiSettingIcon(icon: ImageVector, modifier: Modifier = Modifier) {
         SkipiContentIcon(
             imageVector = icon,
             contentDescription = null,
-            tint = settingIconGlyphColor(color, LocalIconColor.current),
+            tint = settingIconGlyphColor(SkipiTheme.colors.onAccent, LocalIconColor.current),
             modifier = Modifier.size(SettingIconGlyphSize),
         )
     }

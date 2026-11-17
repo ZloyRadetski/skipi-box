@@ -9,17 +9,20 @@ import kotlin.test.assertEquals
 
 class SettingIconColorsTest {
     @Test
-    fun theUsersGlyphColorIsUsedAsPickedOnAnyBackground() {
+    fun theUsersGlyphColorIsUsedAsPickedOnAnyTheme() {
         val picked = Color(0xFF12AB34)
 
-        assertEquals(picked, settingIconGlyphColor(background = Color.Black, picked = picked))
-        assertEquals(picked, settingIconGlyphColor(background = Color.White, picked = picked))
+        assertEquals(picked, settingIconGlyphColor(onAccent = Color.Black, picked = picked))
+        assertEquals(picked, settingIconGlyphColor(onAccent = Color.White, picked = picked))
     }
 
     @Test
-    fun withoutAPickedColorTheGlyphReadsOnItsBackground() {
-        assertEquals(Color.White, settingIconGlyphColor(background = Color(0xFF101010), picked = null))
-        assertEquals(Color.Black, settingIconGlyphColor(background = Color(0xFFF5F5F5), picked = null))
+    fun withoutAPickedColorTheGlyphHasTheThemesColorOnAccent() {
+        // The same color as the text on every other accent surface, so a light accent such as orange keeps a
+        // light glyph in a dark theme instead of flipping to black by contrast.
+        val onAccent = Color(0xFFEDEDEF)
+
+        assertEquals(onAccent, settingIconGlyphColor(onAccent = onAccent, picked = null))
     }
 
     @Test
@@ -27,6 +30,5 @@ class SettingIconColorsTest {
         val accent = Color(0xFF3B82F6)
 
         assertEquals(accent, settingIconBackgroundColor(accent))
-        assertEquals(Color.White, settingIconGlyphColor(settingIconBackgroundColor(Color(0xFF101010)), picked = null))
     }
 }
