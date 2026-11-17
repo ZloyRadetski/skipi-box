@@ -36,6 +36,8 @@ import features.subscription.SubscriptionProviderLibrary
 import platform.DefaultLocalHttpProxyPort
 import platform.DefaultLocalSocksPort
 import platform.parseLocalProxyAuthMode
+import features.backup.customColors
+import features.backup.withCustomColors
 
 /** Every Desktop store a backup covers, restored or reset together. */
 internal data class DesktopUserData(
@@ -264,36 +266,12 @@ private fun AppBackupSubscriptionGroup.toStoredSubscription() = StoredSubscripti
 private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBackupSettings {
     val base = AppBackupSettings()
     return base.copy(
-        languageMode = languageTag.toLanguageMode(),
+        languageMode = GeneralSettingsValues.languageModeOfTag(languageTag),
         enableMaterialYou = dynamicColors,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         enableCustomColors = customColorsEnabled,
-        customAccentColor = customAccentColor,
-        customBackgroundColor = customBackgroundColor,
-        customSurfaceColor = customSurfaceColor,
-        customSurfaceVariantColor = customSurfaceVariantColor,
-        customTextColor = customTextColor,
-        customTextSecondaryColor = customTextSecondaryColor,
-        customStatusRunningColor = customStatusRunningColor,
-        customStatusStoppedColor = customStatusStoppedColor,
-        customPingFastColor = customPingFastColor,
-        customPingMediumColor = customPingMediumColor,
-        customPingSlowColor = customPingSlowColor,
-        customCategoryIconColor = customCategoryIconColor,
-        customCategoryIconGlyphColor = customCategoryIconGlyphColor,
         customThemes = customThemes,
-        customProtocolVlessColor = customProtocolVlessColor,
-        customProtocolVmessColor = customProtocolVmessColor,
-        customProtocolHysteria2Color = customProtocolHysteria2Color,
-        customProtocolTrojanColor = customProtocolTrojanColor,
-        customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-        customProtocolWireguardColor = customProtocolWireguardColor,
-        customProtocolSocksColor = customProtocolSocksColor,
-        customProtocolHttpColor = customProtocolHttpColor,
-        customProtocolStrategyColor = customProtocolStrategyColor,
-        customProtocolChainColor = customProtocolChainColor,
-        customProtocolJsonColor = customProtocolJsonColor,
         fontFamilyMode = fontFamilyMode ?: base.fontFamilyMode,
         fontSizeMode = fontSizeMode ?: base.fontSizeMode,
         fontWeightMode = fontWeightMode ?: base.fontWeightMode,
@@ -365,43 +343,19 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
         tunIpv6Cidr = tunIpv6Cidr,
         tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
         tunTcpUserTimeout = tunTcpUserTimeout,
-    )
+    ).withCustomColors(customColors())
 }
 
 /** Backup values replace Desktop's mapped fields; everything Android-only is ignored and the install's identity stays. */
 private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, data: AppBackupData): DesktopAppSettings {
     val routeRules = data.routeRules.map { it.toRouteRule() }
     return current.copy(
-        languageTag = languageMode.toLanguageTag(),
+        languageTag = GeneralSettingsValues.languageTagOfMode(languageMode),
         dynamicColors = enableMaterialYou,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         customColorsEnabled = enableCustomColors,
-        customAccentColor = customAccentColor,
-        customBackgroundColor = customBackgroundColor,
-        customSurfaceColor = customSurfaceColor,
-        customSurfaceVariantColor = customSurfaceVariantColor,
-        customTextColor = customTextColor,
-        customTextSecondaryColor = customTextSecondaryColor,
-        customStatusRunningColor = customStatusRunningColor,
-        customStatusStoppedColor = customStatusStoppedColor,
-        customPingFastColor = customPingFastColor,
-        customPingMediumColor = customPingMediumColor,
-        customPingSlowColor = customPingSlowColor,
-        customCategoryIconColor = customCategoryIconColor,
-        customCategoryIconGlyphColor = customCategoryIconGlyphColor,
         customThemes = customThemes,
-        customProtocolVlessColor = customProtocolVlessColor,
-        customProtocolVmessColor = customProtocolVmessColor,
-        customProtocolHysteria2Color = customProtocolHysteria2Color,
-        customProtocolTrojanColor = customProtocolTrojanColor,
-        customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-        customProtocolWireguardColor = customProtocolWireguardColor,
-        customProtocolSocksColor = customProtocolSocksColor,
-        customProtocolHttpColor = customProtocolHttpColor,
-        customProtocolStrategyColor = customProtocolStrategyColor,
-        customProtocolChainColor = customProtocolChainColor,
-        customProtocolJsonColor = customProtocolJsonColor,
         fontFamilyMode = fontFamilyMode,
         fontSizeMode = fontSizeMode,
         fontWeightMode = fontWeightMode,
@@ -477,24 +431,8 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         tunIpv6Cidr = tunIpv6Cidr,
         tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
         tunTcpUserTimeout = tunTcpUserTimeout,
-    ).normalized()
+    ).withCustomColors(customColors()).normalized()
 }
 
 private const val ListenAllInterfaces = "0.0.0.0"
 private const val ListenLoopback = "127.0.0.1"
-
-private fun String?.toLanguageMode(): Int = when (this?.substringBefore('-')?.lowercase()) {
-    "en" -> GeneralSettingsValues.LanguageEnglish
-    "zh" -> GeneralSettingsValues.LanguageChinese
-    "ru" -> GeneralSettingsValues.LanguageRussian
-    "fa" -> GeneralSettingsValues.LanguagePersian
-    else -> GeneralSettingsValues.LanguageSystem
-}
-
-private fun Int.toLanguageTag(): String? = when (this) {
-    GeneralSettingsValues.LanguageEnglish -> "en"
-    GeneralSettingsValues.LanguageChinese -> "zh"
-    GeneralSettingsValues.LanguageRussian -> "ru"
-    GeneralSettingsValues.LanguagePersian -> "fa"
-    else -> null
-}

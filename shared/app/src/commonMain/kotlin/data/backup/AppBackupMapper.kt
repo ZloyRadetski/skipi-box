@@ -48,6 +48,12 @@ import features.backup.AppBackupFormat
 import features.backup.CurrentAppBackupVersion
 import features.backup.AppBackupWarning
 import platform.parseLocalProxyAuthMode
+import app.customColors
+import app.withCustomColors
+import features.backup.customColors
+import features.backup.withCustomColors
+import app.skipi.app.model.customColors
+import app.skipi.app.model.withCustomColors
 
 fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -97,31 +103,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         enableCustomColors = enableCustomColors,
-        customAccentColor = customAccentColor,
-        customBackgroundColor = customBackgroundColor,
-        customSurfaceColor = customSurfaceColor,
-        customSurfaceVariantColor = customSurfaceVariantColor,
-        customTextColor = customTextColor,
-        customTextSecondaryColor = customTextSecondaryColor,
-        customStatusRunningColor = customStatusRunningColor,
-        customStatusStoppedColor = customStatusStoppedColor,
-        customPingFastColor = customPingFastColor,
-        customPingMediumColor = customPingMediumColor,
-        customPingSlowColor = customPingSlowColor,
-        customCategoryIconColor = customCategoryIconColor,
-        customCategoryIconGlyphColor = customCategoryIconGlyphColor,
         customThemes = customThemes,
-        customProtocolVlessColor = customProtocolVlessColor,
-        customProtocolVmessColor = customProtocolVmessColor,
-        customProtocolHysteria2Color = customProtocolHysteria2Color,
-        customProtocolTrojanColor = customProtocolTrojanColor,
-        customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-        customProtocolWireguardColor = customProtocolWireguardColor,
-        customProtocolSocksColor = customProtocolSocksColor,
-        customProtocolHttpColor = customProtocolHttpColor,
-        customProtocolStrategyColor = customProtocolStrategyColor,
-        customProtocolChainColor = customProtocolChainColor,
-        customProtocolJsonColor = customProtocolJsonColor,
         enableAllProxyGroup = enableAllProxyGroup,
         enableDeletionConfirmation = enableDeletionConfirmation,
         enableResolveProxyServerDomain = enableResolveProxyServerDomain,
@@ -224,7 +206,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         proxyAppListMode = proxyAppListMode,
         enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = subscriptionExpiryReminders,
-    )
+    ).withCustomColors(customColors())
 }
 
 private fun SubscriptionGroupState.toBackup(): AppBackupSubscriptionGroup {
@@ -319,39 +301,7 @@ private fun AppBackupData.toAppState(): AppState {
         seedIndex = settings.seedIndex,
         customMaterialYouSeed = settings.customMaterialYouSeed,
         enableCustomColors = settings.enableCustomColors,
-        customAccentColor = settings.customAccentColor,
-        customBackgroundColor = settings.customBackgroundColor,
-        customSurfaceColor = settings.customSurfaceColor,
-        customSurfaceVariantColor = settings.customSurfaceVariantColor,
-        customTextColor = settings.customTextColor,
-        customTextSecondaryColor = settings.customTextSecondaryColor,
-        customStatusRunningColor = settings.customStatusRunningColor,
-        customStatusStoppedColor = settings.customStatusStoppedColor,
-        customPingFastColor = settings.customPingFastColor,
-        customPingMediumColor = settings.customPingMediumColor,
-        customPingSlowColor = settings.customPingSlowColor,
         customThemes = settings.customThemes,
-        customCategoryIconColor = settings.customCategoryIconColor
-            ?: settings.customCategoryAppearanceColor
-            ?: settings.customCategoryVpnColor
-            ?: settings.customCategoryProxyColor
-            ?: settings.customCategorySubscriptionsColor
-            ?: settings.customCategoryIntegrationColor
-            ?: settings.customCategoryLogsColor
-            ?: settings.customCategoryBackupColor
-            ?: settings.customCategoryAboutColor,
-        customCategoryIconGlyphColor = settings.customCategoryIconGlyphColor,
-        customProtocolVlessColor = settings.customProtocolVlessColor,
-        customProtocolVmessColor = settings.customProtocolVmessColor,
-        customProtocolHysteria2Color = settings.customProtocolHysteria2Color,
-        customProtocolTrojanColor = settings.customProtocolTrojanColor,
-        customProtocolShadowsocksColor = settings.customProtocolShadowsocksColor,
-        customProtocolWireguardColor = settings.customProtocolWireguardColor,
-        customProtocolSocksColor = settings.customProtocolSocksColor,
-        customProtocolHttpColor = settings.customProtocolHttpColor,
-        customProtocolStrategyColor = settings.customProtocolStrategyColor,
-        customProtocolChainColor = settings.customProtocolChainColor,
-        customProtocolJsonColor = settings.customProtocolJsonColor,
         subscriptionGroups = restoredSubscriptionGroups,
         nextSubscriptionGroupId = nextId(
             defaultValue = defaults.nextSubscriptionGroupId,
@@ -487,6 +437,18 @@ private fun AppBackupData.toAppState(): AppState {
         proxyAppListSelectedApps = proxyAppListSelectedApps,
         enableSubscriptionExpiryNotifications = settings.enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = settings.subscriptionExpiryReminders,
+    ).withCustomColors(
+        settings.customColors().copy(
+            categoryIcon = settings.customCategoryIconColor
+                    ?: settings.customCategoryAppearanceColor
+                    ?: settings.customCategoryVpnColor
+                    ?: settings.customCategoryProxyColor
+                    ?: settings.customCategorySubscriptionsColor
+                    ?: settings.customCategoryIntegrationColor
+                    ?: settings.customCategoryLogsColor
+                    ?: settings.customCategoryBackupColor
+                    ?: settings.customCategoryAboutColor,
+        ),
     ).withConfigProxyGroupsReflected()
 }
 

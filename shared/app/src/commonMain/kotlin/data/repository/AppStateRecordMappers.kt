@@ -39,6 +39,10 @@ import features.config.withUpdatedTrafficConfigProfile
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
 import features.subscription.SubscriptionMetadata
+import app.customColors
+import app.withCustomColors
+import app.skipi.app.model.customColors
+import app.skipi.app.model.withCustomColors
 fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
     appearance = AppearanceSettings(
         themeMode = when (colorMode) {
@@ -60,30 +64,6 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         customColorsEnabled = enableCustomColors,
-        customAccentColor = customAccentColor,
-        customBackgroundColor = customBackgroundColor,
-        customSurfaceColor = customSurfaceColor,
-        customSurfaceVariantColor = customSurfaceVariantColor,
-        customTextColor = customTextColor,
-        customTextSecondaryColor = customTextSecondaryColor,
-        customStatusRunningColor = customStatusRunningColor,
-        customStatusStoppedColor = customStatusStoppedColor,
-        customPingFastColor = customPingFastColor,
-        customPingMediumColor = customPingMediumColor,
-        customPingSlowColor = customPingSlowColor,
-        customCategoryIconColor = customCategoryIconColor,
-        customCategoryIconGlyphColor = customCategoryIconGlyphColor,
-        customProtocolVlessColor = customProtocolVlessColor,
-        customProtocolVmessColor = customProtocolVmessColor,
-        customProtocolHysteria2Color = customProtocolHysteria2Color,
-        customProtocolTrojanColor = customProtocolTrojanColor,
-        customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-        customProtocolWireguardColor = customProtocolWireguardColor,
-        customProtocolSocksColor = customProtocolSocksColor,
-        customProtocolHttpColor = customProtocolHttpColor,
-        customProtocolStrategyColor = customProtocolStrategyColor,
-        customProtocolChainColor = customProtocolChainColor,
-        customProtocolJsonColor = customProtocolJsonColor,
         fontFamilyMode = fontFamilyMode,
         fontSizeMode = fontSizeMode,
         fontWeightMode = fontWeightMode,
@@ -93,7 +73,7 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         classicButtonSize = classicButtonSize,
         seasonalEvents = enableSeasonalEvents,
         customThemes = customThemes,
-    ),
+    ).withCustomColors(customColors()),
     proxy = ProxySelectionSettings(selectedServerId = selectedProxyServerId),
     home = HomeDisplaySettings(
         connectionDisplayMode = connectionDisplayMode,
@@ -186,30 +166,6 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         seedIndex = settings.appearance.seedIndex,
         customMaterialYouSeed = settings.appearance.customMaterialYouSeed,
         enableCustomColors = settings.appearance.customColorsEnabled,
-        customAccentColor = settings.appearance.customAccentColor,
-        customBackgroundColor = settings.appearance.customBackgroundColor,
-        customSurfaceColor = settings.appearance.customSurfaceColor,
-        customSurfaceVariantColor = settings.appearance.customSurfaceVariantColor,
-        customTextColor = settings.appearance.customTextColor,
-        customTextSecondaryColor = settings.appearance.customTextSecondaryColor,
-        customStatusRunningColor = settings.appearance.customStatusRunningColor,
-        customStatusStoppedColor = settings.appearance.customStatusStoppedColor,
-        customPingFastColor = settings.appearance.customPingFastColor,
-        customPingMediumColor = settings.appearance.customPingMediumColor,
-        customPingSlowColor = settings.appearance.customPingSlowColor,
-        customCategoryIconColor = settings.appearance.customCategoryIconColor,
-        customCategoryIconGlyphColor = settings.appearance.customCategoryIconGlyphColor,
-        customProtocolVlessColor = settings.appearance.customProtocolVlessColor,
-        customProtocolVmessColor = settings.appearance.customProtocolVmessColor,
-        customProtocolHysteria2Color = settings.appearance.customProtocolHysteria2Color,
-        customProtocolTrojanColor = settings.appearance.customProtocolTrojanColor,
-        customProtocolShadowsocksColor = settings.appearance.customProtocolShadowsocksColor,
-        customProtocolWireguardColor = settings.appearance.customProtocolWireguardColor,
-        customProtocolSocksColor = settings.appearance.customProtocolSocksColor,
-        customProtocolHttpColor = settings.appearance.customProtocolHttpColor,
-        customProtocolStrategyColor = settings.appearance.customProtocolStrategyColor,
-        customProtocolChainColor = settings.appearance.customProtocolChainColor,
-        customProtocolJsonColor = settings.appearance.customProtocolJsonColor,
         fontFamilyMode = settings.appearance.fontFamilyMode ?: fontFamilyMode,
         fontSizeMode = settings.appearance.fontSizeMode ?: fontSizeMode,
         fontWeightMode = settings.appearance.fontWeightMode ?: fontWeightMode,
@@ -246,7 +202,7 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         enableSubscriptionExpiryNotifications =
             settings.subscriptions?.expiryNotificationsEnabled ?: enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = settings.subscriptions?.expiryReminders ?: subscriptionExpiryReminders,
-    )
+    ).withCustomColors(settings.appearance.customColors())
     return if (updated.activeTrafficConfigId == nextActiveConfigId) updated
     else updated.withActiveTrafficConfigProfile(nextActiveConfigId)
 }

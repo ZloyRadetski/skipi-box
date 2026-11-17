@@ -44,6 +44,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import platform.TunnelPhase
 import platform.TunnelSnapshot
+import app.skipi.app.model.customColors
+import app.skipi.app.model.withCustomColors
+import app.skipi.ui.settings.customColors
+import app.skipi.ui.settings.withCustomColors
 
 /** Adapts the Desktop JSON settings and library snapshots without owning a second copy. */
 class DesktopSettingsRepository(
@@ -434,30 +438,6 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,
         customColorsEnabled = customColorsEnabled,
-        customAccentColor = customAccentColor,
-        customBackgroundColor = customBackgroundColor,
-        customSurfaceColor = customSurfaceColor,
-        customSurfaceVariantColor = customSurfaceVariantColor,
-        customTextColor = customTextColor,
-        customTextSecondaryColor = customTextSecondaryColor,
-        customStatusRunningColor = customStatusRunningColor,
-        customStatusStoppedColor = customStatusStoppedColor,
-        customPingFastColor = customPingFastColor,
-        customPingMediumColor = customPingMediumColor,
-        customPingSlowColor = customPingSlowColor,
-        customCategoryIconColor = customCategoryIconColor,
-        customCategoryIconGlyphColor = customCategoryIconGlyphColor,
-        customProtocolVlessColor = customProtocolVlessColor,
-        customProtocolVmessColor = customProtocolVmessColor,
-        customProtocolHysteria2Color = customProtocolHysteria2Color,
-        customProtocolTrojanColor = customProtocolTrojanColor,
-        customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-        customProtocolWireguardColor = customProtocolWireguardColor,
-        customProtocolSocksColor = customProtocolSocksColor,
-        customProtocolHttpColor = customProtocolHttpColor,
-        customProtocolStrategyColor = customProtocolStrategyColor,
-        customProtocolChainColor = customProtocolChainColor,
-        customProtocolJsonColor = customProtocolJsonColor,
         fontFamilyMode = fontFamilyMode,
         fontSizeMode = fontSizeMode,
         fontWeightMode = fontWeightMode,
@@ -467,7 +447,7 @@ internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSetting
         classicButtonSize = classicButtonSize,
         seasonalEvents = enableSeasonalEvents,
         customThemes = customThemes,
-    )
+    ).withCustomColors(customColors())
 
 private fun DesktopAppSettings.toPersistedSettings(
     servers: DesktopServerLibrary,
@@ -544,31 +524,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     } else {
         AppearanceSettingValues.ConnectionDisplayModeClassic
     },
-    customAccentColor = customAccentColor,
-    customBackgroundColor = customBackgroundColor,
-    customCategoryIconColor = customCategoryIconColor,
-    customCategoryIconGlyphColor = customCategoryIconGlyphColor,
     customMaterialYouSeed = customMaterialYouSeed,
-    customPingFastColor = customPingFastColor,
-    customPingMediumColor = customPingMediumColor,
-    customPingSlowColor = customPingSlowColor,
-    customProtocolChainColor = customProtocolChainColor,
-    customProtocolHysteria2Color = customProtocolHysteria2Color,
-    customProtocolHttpColor = customProtocolHttpColor,
-    customProtocolJsonColor = customProtocolJsonColor,
-    customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-    customProtocolSocksColor = customProtocolSocksColor,
-    customProtocolStrategyColor = customProtocolStrategyColor,
-    customProtocolTrojanColor = customProtocolTrojanColor,
-    customProtocolVlessColor = customProtocolVlessColor,
-    customProtocolVmessColor = customProtocolVmessColor,
-    customProtocolWireguardColor = customProtocolWireguardColor,
-    customStatusRunningColor = customStatusRunningColor,
-    customStatusStoppedColor = customStatusStoppedColor,
-    customSurfaceColor = customSurfaceColor,
-    customSurfaceVariantColor = customSurfaceVariantColor,
-    customTextColor = customTextColor,
-    customTextSecondaryColor = customTextSecondaryColor,
     enableAllProxyGroup = enableAllProxyGroup,
     enableCustomColors = customColorsEnabled,
     enableMaterialYou = dynamicColors,
@@ -584,7 +540,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     maskTunnelIpOnHome = maskTunnelIp,
     showConnectionLogOnHome = showConnectionLog,
     navigationStyle = navigationStyle,
-)
+).withCustomColors(customColors())
 
 internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
     val address = localProxyListenAddress.trim().ifBlank { "127.0.0.1" }
@@ -649,30 +605,6 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         showConnectionLog = state.showConnectionLogOnHome,
         navigationStyle = state.navigationStyle.coerceIn(0, 1),
         customColorsEnabled = state.enableCustomColors,
-        customAccentColor = state.customAccentColor,
-        customBackgroundColor = state.customBackgroundColor,
-        customSurfaceColor = state.customSurfaceColor,
-        customSurfaceVariantColor = state.customSurfaceVariantColor,
-        customTextColor = state.customTextColor,
-        customTextSecondaryColor = state.customTextSecondaryColor,
-        customStatusRunningColor = state.customStatusRunningColor,
-        customStatusStoppedColor = state.customStatusStoppedColor,
-        customPingFastColor = state.customPingFastColor,
-        customPingMediumColor = state.customPingMediumColor,
-        customPingSlowColor = state.customPingSlowColor,
-        customCategoryIconColor = state.customCategoryIconColor,
-        customCategoryIconGlyphColor = state.customCategoryIconGlyphColor,
-        customProtocolVlessColor = state.customProtocolVlessColor,
-        customProtocolVmessColor = state.customProtocolVmessColor,
-        customProtocolHysteria2Color = state.customProtocolHysteria2Color,
-        customProtocolTrojanColor = state.customProtocolTrojanColor,
-        customProtocolShadowsocksColor = state.customProtocolShadowsocksColor,
-        customProtocolWireguardColor = state.customProtocolWireguardColor,
-        customProtocolSocksColor = state.customProtocolSocksColor,
-        customProtocolHttpColor = state.customProtocolHttpColor,
-        customProtocolStrategyColor = state.customProtocolStrategyColor,
-        customProtocolChainColor = state.customProtocolChainColor,
-        customProtocolJsonColor = state.customProtocolJsonColor,
         fontFamilyMode = state.fontFamilyMode,
         fontSizeMode = state.fontSizeMode,
         fontWeightMode = state.fontWeightMode,
@@ -684,7 +616,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         customThemes = state.customThemes,
         seedIndex = state.seedIndex,
         customMaterialYouSeed = state.customMaterialYouSeed,
-    )
+    ).withCustomColors(state.customColors())
 }
 private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): DesktopAppSettings {
     require(appearance.themeMode != ThemeMode.System) {
@@ -709,30 +641,6 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
         seedIndex = appearance.seedIndex,
         customMaterialYouSeed = appearance.customMaterialYouSeed,
         customColorsEnabled = appearance.customColorsEnabled,
-        customAccentColor = appearance.customAccentColor,
-        customBackgroundColor = appearance.customBackgroundColor,
-        customSurfaceColor = appearance.customSurfaceColor,
-        customSurfaceVariantColor = appearance.customSurfaceVariantColor,
-        customTextColor = appearance.customTextColor,
-        customTextSecondaryColor = appearance.customTextSecondaryColor,
-        customStatusRunningColor = appearance.customStatusRunningColor,
-        customStatusStoppedColor = appearance.customStatusStoppedColor,
-        customPingFastColor = appearance.customPingFastColor,
-        customPingMediumColor = appearance.customPingMediumColor,
-        customPingSlowColor = appearance.customPingSlowColor,
-        customCategoryIconColor = appearance.customCategoryIconColor,
-        customCategoryIconGlyphColor = appearance.customCategoryIconGlyphColor,
-        customProtocolVlessColor = appearance.customProtocolVlessColor,
-        customProtocolVmessColor = appearance.customProtocolVmessColor,
-        customProtocolHysteria2Color = appearance.customProtocolHysteria2Color,
-        customProtocolTrojanColor = appearance.customProtocolTrojanColor,
-        customProtocolShadowsocksColor = appearance.customProtocolShadowsocksColor,
-        customProtocolWireguardColor = appearance.customProtocolWireguardColor,
-        customProtocolSocksColor = appearance.customProtocolSocksColor,
-        customProtocolHttpColor = appearance.customProtocolHttpColor,
-        customProtocolStrategyColor = appearance.customProtocolStrategyColor,
-        customProtocolChainColor = appearance.customProtocolChainColor,
-        customProtocolJsonColor = appearance.customProtocolJsonColor,
         fontFamilyMode = appearance.fontFamilyMode,
         fontSizeMode = appearance.fontSizeMode,
         fontWeightMode = appearance.fontWeightMode,
@@ -742,7 +650,7 @@ private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): D
         classicButtonSize = appearance.classicButtonSize,
         enableSeasonalEvents = appearance.seasonalEvents,
         customThemes = appearance.customThemes,
-    )
+    ).withCustomColors(appearance.customColors())
 }
 
 private fun DesktopAppSettings.withHomeDisplay(home: HomeDisplaySettings): DesktopAppSettings = copy(

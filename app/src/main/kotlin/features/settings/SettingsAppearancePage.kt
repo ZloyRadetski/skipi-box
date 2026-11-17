@@ -35,6 +35,10 @@ import ui.background.saveCustomBackgroundPhoto
 import ui.KeyColors
 import ui.keyColorFor
 import ui.resolveSystemAccentColor
+import app.customColors
+import app.withCustomColors
+import app.skipi.ui.settings.customColors
+import app.skipi.ui.settings.withCustomColors
 
 /** Android adapter for appearance persistence and platform-only photo/icon actions. */
 @Composable
@@ -105,31 +109,7 @@ private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     classicShowFloatingPowerButton = classicShowFloatingPowerButton,
     colorMode = colorMode,
     connectionDisplayMode = connectionDisplayMode,
-    customAccentColor = customAccentColor,
-    customBackgroundColor = customBackgroundColor,
-    customCategoryIconColor = customCategoryIconColor,
-    customCategoryIconGlyphColor = customCategoryIconGlyphColor,
     customMaterialYouSeed = customMaterialYouSeed,
-    customPingFastColor = customPingFastColor,
-    customPingMediumColor = customPingMediumColor,
-    customPingSlowColor = customPingSlowColor,
-    customProtocolChainColor = customProtocolChainColor,
-    customProtocolHysteria2Color = customProtocolHysteria2Color,
-    customProtocolHttpColor = customProtocolHttpColor,
-    customProtocolJsonColor = customProtocolJsonColor,
-    customProtocolShadowsocksColor = customProtocolShadowsocksColor,
-    customProtocolSocksColor = customProtocolSocksColor,
-    customProtocolStrategyColor = customProtocolStrategyColor,
-    customProtocolTrojanColor = customProtocolTrojanColor,
-    customProtocolVlessColor = customProtocolVlessColor,
-    customProtocolVmessColor = customProtocolVmessColor,
-    customProtocolWireguardColor = customProtocolWireguardColor,
-    customStatusRunningColor = customStatusRunningColor,
-    customStatusStoppedColor = customStatusStoppedColor,
-    customSurfaceColor = customSurfaceColor,
-    customSurfaceVariantColor = customSurfaceVariantColor,
-    customTextColor = customTextColor,
-    customTextSecondaryColor = customTextSecondaryColor,
     enableAllProxyGroup = enableAllProxyGroup,
     enableCustomColors = enableCustomColors,
     enableMaterialYou = enableMaterialYou,
@@ -143,7 +123,7 @@ private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     showTunnelMemoryOnHome = showTunnelMemoryOnHome,
     showTunnelIpOnHome = showTunnelIpOnHome,
     maskTunnelIpOnHome = maskTunnelIpOnHome,
-)
+).withCustomColors(customColors())
 
 private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState) = copy(
     appIcon = settings.appIcon,
@@ -156,31 +136,7 @@ private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsStat
     classicShowFloatingPowerButton = settings.classicShowFloatingPowerButton,
     colorMode = settings.colorMode,
     connectionDisplayMode = settings.connectionDisplayMode,
-    customAccentColor = settings.customAccentColor,
-    customBackgroundColor = settings.customBackgroundColor,
-    customCategoryIconColor = settings.customCategoryIconColor,
-    customCategoryIconGlyphColor = settings.customCategoryIconGlyphColor,
     customMaterialYouSeed = settings.customMaterialYouSeed,
-    customPingFastColor = settings.customPingFastColor,
-    customPingMediumColor = settings.customPingMediumColor,
-    customPingSlowColor = settings.customPingSlowColor,
-    customProtocolChainColor = settings.customProtocolChainColor,
-    customProtocolHysteria2Color = settings.customProtocolHysteria2Color,
-    customProtocolHttpColor = settings.customProtocolHttpColor,
-    customProtocolJsonColor = settings.customProtocolJsonColor,
-    customProtocolShadowsocksColor = settings.customProtocolShadowsocksColor,
-    customProtocolSocksColor = settings.customProtocolSocksColor,
-    customProtocolStrategyColor = settings.customProtocolStrategyColor,
-    customProtocolTrojanColor = settings.customProtocolTrojanColor,
-    customProtocolVlessColor = settings.customProtocolVlessColor,
-    customProtocolVmessColor = settings.customProtocolVmessColor,
-    customProtocolWireguardColor = settings.customProtocolWireguardColor,
-    customStatusRunningColor = settings.customStatusRunningColor,
-    customStatusStoppedColor = settings.customStatusStoppedColor,
-    customSurfaceColor = settings.customSurfaceColor,
-    customSurfaceVariantColor = settings.customSurfaceVariantColor,
-    customTextColor = settings.customTextColor,
-    customTextSecondaryColor = settings.customTextSecondaryColor,
     enableAllProxyGroup = settings.enableAllProxyGroup,
     enableCustomColors = settings.enableCustomColors,
     enableMaterialYou = settings.enableMaterialYou,
@@ -194,4 +150,4 @@ private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsStat
     showTunnelMemoryOnHome = settings.showTunnelMemoryOnHome,
     showTunnelIpOnHome = settings.showTunnelIpOnHome,
     maskTunnelIpOnHome = settings.maskTunnelIpOnHome,
-)
+).withCustomColors(settings.customColors())
