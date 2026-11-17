@@ -11,12 +11,10 @@ import app.skipi.ui.onboarding.SkipiOnboardingActions
 import app.skipi.ui.onboarding.SkipiOnboardingScreen
 import app.skipi.ui.onboarding.SkipiOnboardingState
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.ic_about_logo
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
-import org.jetbrains.compose.resources.painterResource
 
 /** Android's first-run flow minus the options Desktop has no equivalent for. */
 internal fun DesktopAppSettings.toOnboardingState(serverCount: Int, subscriptionCount: Int) = SkipiOnboardingState(
@@ -109,6 +107,5 @@ internal fun DesktopOnboardingScreen(
             onImportText = onImportText,
             onScanQr = { null },
         ),
-        logoPainter = painterResource(Res.drawable.ic_about_logo),
     )
 }

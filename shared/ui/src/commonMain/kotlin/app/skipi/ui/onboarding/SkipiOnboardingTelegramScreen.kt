@@ -4,7 +4,6 @@
 package app.skipi.ui.onboarding
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,15 +19,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +42,16 @@ import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import top.yukonga.miuix.kmp.basic.Text
+
 private const val TelegramChannelUrl = "https://t.me/skipi_public"
+private val TelegramBlue = Color(0xFF2AABEE)
 
 /** Shared presentation for the onboarding Telegram step. Platform actions stay callbacks. */
 @Composable
@@ -56,7 +61,6 @@ fun SkipiOnboardingTelegramScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = SkipiTheme.colors
-    val telegram = Color(0xFF2AABEE)
     val copiedMessage = stringResource(Res.string.onboarding_telegram_copied_link)
 
     Column(
@@ -64,88 +68,33 @@ fun SkipiOnboardingTelegramScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        listOf(
-                            telegram.copy(alpha = if (colors.isDark) 0.35f else 0.20f),
-                            telegram.copy(alpha = if (colors.isDark) 0.10f else 0.05f),
-                            Color.Transparent,
-                        ),
-                    ),
-                ),
-            contentAlignment = Alignment.Center,
+        OnboardingHeroCard(
+            title = stringResource(Res.string.onboarding_telegram_title),
+            subtitle = stringResource(Res.string.onboarding_telegram_subtitle),
+            tint = TelegramBlue,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                telegram.copy(alpha = if (colors.isDark) 0.30f else 0.18f),
-                                telegram.copy(alpha = if (colors.isDark) 0.15f else 0.08f),
-                            ),
-                        ),
-                    )
-                    .border(
-                        2.dp,
-                        Brush.linearGradient(listOf(telegram, telegram.copy(alpha = 0.5f))),
-                        CircleShape,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("✈️", fontSize = 32.sp)
-            }
+            OnboardingIconTile(TelegramBlue) { PaperPlane(Color.White, Modifier.size(30.dp)) }
         }
 
-        Spacer(Modifier.height(18.dp))
-        Text(
-            text = stringResource(Res.string.onboarding_telegram_title),
-            fontSize = 24.sp,
-            fontWeight = themedFontWeight(FontWeight.Bold),
-            color = colors.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = stringResource(Res.string.onboarding_telegram_subtitle),
-            fontSize = 14.sp,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 20.sp,
-            modifier = Modifier.fillMaxWidth(0.9f),
-        )
         Spacer(Modifier.height(24.dp))
-
-        val cardShape = RoundedCornerShape(20.dp)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(cardShape)
+                .clip(RoundedCornerShape(28.dp))
                 .background(colors.surface)
-                .border(1.dp, colors.outline.copy(alpha = 0.25f), cardShape)
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             TelegramFeature(
-                emoji = "🚀",
                 title = stringResource(Res.string.onboarding_telegram_feature_releases_title),
                 description = stringResource(Res.string.onboarding_telegram_feature_releases_desc),
             )
             TelegramFeature(
-                emoji = "💬",
                 title = stringResource(Res.string.onboarding_telegram_feature_chat_title),
                 description = stringResource(Res.string.onboarding_telegram_feature_chat_desc),
             )
             TelegramFeature(
-                emoji = "📢",
                 title = stringResource(Res.string.onboarding_telegram_feature_news_title),
                 description = stringResource(Res.string.onboarding_telegram_feature_news_desc),
             )
@@ -155,68 +104,75 @@ fun SkipiOnboardingTelegramScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(telegram)
-                .clickable { onOpenChannel(TelegramChannelUrl) }
-                .padding(vertical = 15.dp, horizontal = 20.dp),
+                .height(56.dp)
+                .clip(CircleShape)
+                .background(TelegramBlue)
+                .clickable { onOpenChannel(TelegramChannelUrl) },
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "✈️  ${stringResource(Res.string.onboarding_telegram_open_button)}",
+                text = stringResource(Res.string.onboarding_telegram_open_button),
                 color = Color.White,
                 fontWeight = themedFontWeight(FontWeight.Bold),
-                fontSize = 15.sp,
+                fontSize = 17.sp,
             )
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = "@skipi_public",
-            color = telegram,
-            fontWeight = themedFontWeight(FontWeight.SemiBold),
-            fontSize = 13.sp,
+            color = colors.onSurfaceVariant,
+            fontWeight = themedFontWeight(FontWeight.Medium),
+            fontSize = 15.sp,
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .align(Alignment.CenterHorizontally)
+                .clip(RoundedCornerShape(14.dp))
                 .clickable { onCopyChannelLink(TelegramChannelUrl, copiedMessage) }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
         )
+        Spacer(Modifier.height(8.dp))
     }
 }
 
+/** A feature line marked by a Telegram-blue bar the height of its text. */
 @Composable
-private fun TelegramFeature(
-    emoji: String,
-    title: String,
-    description: String,
-) {
-    val telegram = Color(0xFF2AABEE)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(telegram.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = emoji, fontSize = 18.sp)
-        }
-        Spacer(Modifier.size(12.dp))
+private fun TelegramFeature(title: String, description: String) {
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Box(Modifier.width(4.dp).fillMaxHeight().clip(CircleShape).background(TelegramBlue))
+        Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 title,
-                fontSize = 14.sp,
+                fontSize = 17.sp,
                 fontWeight = themedFontWeight(FontWeight.Bold),
                 color = SkipiTheme.colors.onSurface,
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 description,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 color = SkipiTheme.colors.onSurfaceVariant,
-                lineHeight = 16.sp,
+                lineHeight = 20.sp,
             )
         }
     }
+}
+
+@Composable
+private fun PaperPlane(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) { drawPlane(color) }
+}
+
+private fun DrawScope.drawPlane(color: Color) {
+    val w = size.width
+    val h = size.height
+    val body = Path().apply {
+        moveTo(w * 0.96f, h * 0.08f)
+        lineTo(w * 0.04f, h * 0.46f)
+        lineTo(w * 0.30f, h * 0.58f)
+        lineTo(w * 0.40f, h * 0.90f)
+        lineTo(w * 0.56f, h * 0.68f)
+        lineTo(w * 0.78f, h * 0.88f)
+        close()
+    }
+    drawPath(body, color)
 }

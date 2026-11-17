@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -59,6 +58,9 @@ import features.subscription.toSubscriptionInstallConfigOrNull
 import kotlinx.coroutines.launch
 import system.isIgnoringBatteryOptimizations
 import system.openBatteryOptimizationSettings
+import androidx.compose.ui.graphics.toArgb
+import app.AppState
+import ui.KeyColors
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
 import java.util.Locale
@@ -154,7 +156,7 @@ fun OnboardingPage(
     val onboardingState = SkipiOnboardingState(
         language = appState.languageMode.toOnboardingLanguage(),
         appearance = appState.colorMode.toOnboardingAppearance(),
-        accentSeedIndex = appState.seedIndex,
+        accentSeedIndex = appState.onboardingAccentIndex(),
         bottomBarSize = appState.bottomBarSize.toOnboardingBottomBarSize(),
         proxyServerCount = appState.proxyServers.size,
         subscriptionGroupCount = appState.subscriptionGroups.size,
@@ -169,7 +171,7 @@ fun OnboardingPage(
         onFinish = onFinish,
         onLanguageSelected = { language -> updateAppState { it.copy(languageMode = language.toLanguageMode()) } },
         onAppearanceSelected = { appearance -> updateAppState { it.copy(colorMode = appearance.toColorMode()) } },
-        onAccentSelected = { seedIndex -> updateAppState { it.copy(seedIndex = seedIndex, enableMaterialYou = true) } },
+        onAccentSelected = { index -> updateAppState { it.withOnboardingAccent(index) } },
         onBottomBarSizeSelected = { size -> updateAppState { it.copy(bottomBarSize = size.toLegacyValue()) } },
         onOpenTelegram = { url -> runCatching { uriHandler.openUri(url) } },
         onCopyTelegram = { url, message ->
@@ -204,7 +206,6 @@ fun OnboardingPage(
     SkipiOnboardingScreen(
         state = onboardingState,
         actions = actions,
-        logoPainter = painterResource(R.drawable.ic_about_logo),
         modifier = modifier,
     )
 }
@@ -251,3 +252,22 @@ private fun OnboardingBottomBarSize.toLegacyValue(): Int = when (this) {
     OnboardingBottomBarSize.Medium -> BottomBarSizeMedium
     OnboardingBottomBarSize.Large -> BottomBarSizeLarge
 }
+
+private fun AppState.onboardingAccentIndex(): Int = when {
+    enableMaterialYou -> 0
+    !enableCustomColors || customAccentColor == null -> -1
+    else -> KeyColors.indexOfFirst { it.toArgb().toLong() and 0xFFFFFFFFL == customAccentColor }.let { if (it < 0) -1 else it + 1 }
+}
+
+/** Index 0 is the system accent; any other index is a plain accent colour, not a generated Material palette. */
+private fun AppState.withOnboardingAccent(index: Int): AppState =
+    if (index <= 0) {
+        copy(enableMaterialYou = true, seedIndex = 0, customAccentColor = null)
+    } else {
+        copy(
+            enableMaterialYou = false,
+            seedIndex = 0,
+            enableCustomColors = true,
+            customAccentColor = KeyColors[index - 1].toArgb().toLong() and 0xFFFFFFFFL,
+        )
+    }

@@ -7,6 +7,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -57,6 +61,7 @@ import app.skipi.ui.resources.*
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import app.skipi.ui.components.SkipiIcon
 import top.yukonga.miuix.kmp.basic.Text
@@ -130,7 +135,6 @@ data class SkipiOnboardingActions(
 fun SkipiOnboardingScreen(
     state: SkipiOnboardingState,
     actions: SkipiOnboardingActions,
-    logoPainter: Painter? = null,
     modifier: Modifier = Modifier,
 ) {
     val steps = onboardingSteps(state)
@@ -141,8 +145,6 @@ fun SkipiOnboardingScreen(
     val colors = SkipiTheme.colors
     val currentPage = pagerState.currentPage
     val isLastPage = currentPage == pageCount - 1
-    val headerChipBg = colors.surface
-    val headerChipBorder = colors.outline.copy(alpha = 0.25f)
 
     Box(
         modifier = modifier
@@ -156,34 +158,25 @@ fun SkipiOnboardingScreen(
                 .navigationBarsPadding(),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                HeaderChip(
-                    text = "${currentPage + 1} / $pageCount",
-                    background = headerChipBg,
-                    border = headerChipBorder,
-                )
+                StepProgress(count = pageCount, current = currentPage)
                 if (!isLastPage) {
-                    Box(
+                    Text(
+                        text = stringResource(Res.string.onboarding_skip),
+                        fontSize = 16.sp,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
+                        color = colors.onSurfaceVariant,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(headerChipBg)
-                            .border(1.dp, headerChipBorder, RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 actions.onFinish()
                             }
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.onboarding_skip),
-                            fontSize = 13.sp,
-                            fontWeight = themedFontWeight(FontWeight.Medium),
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
                 } else Spacer(Modifier.width(1.dp))
             }
 
@@ -192,7 +185,7 @@ fun SkipiOnboardingScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             ) { page ->
                 when (steps[page]) {
-                    OnboardingStep.Welcome -> WelcomeStep(state, actions, logoPainter)
+                    OnboardingStep.Welcome -> WelcomeStep(state, actions)
                     OnboardingStep.Telegram -> SkipiOnboardingTelegramScreen(actions.onOpenTelegram, actions.onCopyTelegram)
                     OnboardingStep.Permissions -> PermissionsStep(state.permissions, actions)
                     OnboardingStep.Appearance -> AppearanceStep(state, actions)
@@ -209,10 +202,9 @@ fun SkipiOnboardingScreen(
                 if (currentPage > 0) {
                     Box(
                         modifier = Modifier
-                            .size(50.dp)
+                            .size(56.dp)
                             .clip(CircleShape)
-                            .background(headerChipBg)
-                            .border(1.dp, headerChipBorder, CircleShape)
+                            .background(colors.surfaceVariant)
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 scope.launch { pagerState.animateScrollToPage(currentPage - 1) }
@@ -223,47 +215,29 @@ fun SkipiOnboardingScreen(
                             imageVector = MiuixIcons.Back,
                             contentDescription = stringResource(Res.string.onboarding_back),
                             fallbackTint = colors.onSurface,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(22.dp),
                         )
                     }
-                } else Spacer(Modifier.size(50.dp))
+                } else Spacer(Modifier.size(56.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    repeat(pageCount) { index ->
-                        val selected = currentPage == index
-                        val width by animateDpAsState(
-                            targetValue = if (selected) 28.dp else 8.dp,
-                            animationSpec = spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
-                            label = "onboarding_dot_width_$index",
-                        )
-                        val color by animateColorAsState(
-                            targetValue = if (selected) colors.accent else colors.outline.copy(alpha = 0.4f),
-                            label = "onboarding_dot_color_$index",
-                        )
-                        Box(Modifier.size(width, 8.dp).clip(CircleShape).background(color))
-                    }
-                }
-
-                val buttonBg by animateColorAsState(colors.accent, label = "onboarding_next_bg")
-                val buttonText by animateColorAsState(colors.onAccent, label = "onboarding_next_text")
                 Box(
                     modifier = Modifier
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(buttonBg)
+                        .height(56.dp)
+                        .clip(CircleShape)
+                        .background(colors.accent)
                         .clickable {
                             runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                             if (isLastPage) actions.onFinish()
                             else scope.launch { pagerState.animateScrollToPage(currentPage + 1) }
                         }
-                        .padding(horizontal = 26.dp),
+                        .padding(horizontal = 40.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(if (isLastPage) Res.string.onboarding_get_started else Res.string.onboarding_next),
-                        color = buttonText,
+                        color = inkOn(colors.accent),
                         fontWeight = themedFontWeight(FontWeight.Bold),
-                        fontSize = 15.sp,
+                        fontSize = 18.sp,
                     )
                 }
             }
@@ -271,68 +245,71 @@ fun SkipiOnboardingScreen(
     }
 }
 
+/** Progress as pills: the current step is a long accent pill, the rest are small dots. */
 @Composable
-private fun HeaderChip(text: String, background: Color, border: Color) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(background)
-            .border(1.dp, border, RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        Text(text, fontSize = 12.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
+private fun StepProgress(count: Int, current: Int) {
+    val colors = SkipiTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        repeat(count) { index ->
+            val selected = current == index
+            val width by animateDpAsState(
+                targetValue = if (selected) 40.dp else 12.dp,
+                animationSpec = spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
+                label = "onboarding_progress_width_$index",
+            )
+            val color by animateColorAsState(
+                targetValue = if (selected) colors.accent else colors.surfaceVariant,
+                label = "onboarding_progress_color_$index",
+            )
+            Box(Modifier.size(width, 12.dp).clip(CircleShape).background(color))
+        }
     }
 }
 
+private val OnboardingLanguageNames = listOf(
+    OnboardingLanguage.English to "English",
+    OnboardingLanguage.Persian to "فارسی",
+    OnboardingLanguage.Russian to "Русский",
+    OnboardingLanguage.Chinese to "中文",
+)
+
 @Composable
-private fun WelcomeStep(state: SkipiOnboardingState, actions: SkipiOnboardingActions, logo: Painter?) {
-    val languages = listOf(
-        OnboardingLanguage.Russian to "🇷🇺  Русский",
-        OnboardingLanguage.English to "🇬🇧  English",
-        OnboardingLanguage.Chinese to "🇨🇳  简体中文",
-        OnboardingLanguage.Persian to "🇮🇷  فارسی",
-        OnboardingLanguage.FollowSystem to "🌐  ${stringResource(Res.string.option_follow_system)}",
-    )
+private fun WelcomeStep(state: SkipiOnboardingState, actions: SkipiOnboardingActions) {
+    val colors = SkipiTheme.colors
     StepColumn {
-        Spacer(Modifier.height(8.dp))
         Hero(
             title = stringResource(Res.string.onboarding_welcome_title),
             subtitle = stringResource(Res.string.onboarding_welcome_subtitle),
             icon = null,
-            logoPainter = logo,
-            glow = SkipiTheme.colors.accent,
+            glow = colors.accent,
+            large = true,
         )
         Spacer(Modifier.height(28.dp))
-        SurfaceCard {
-            Column {
-                Text(
-                    stringResource(Res.string.onboarding_language_title),
-                    fontWeight = themedFontWeight(FontWeight.Bold),
-                    fontSize = 16.sp,
-                    color = SkipiTheme.colors.onSurface,
-                )
-                Spacer(Modifier.height(16.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    languages.dropLast(1).chunked(2).forEach { rowItems ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            rowItems.forEach { (language, label) ->
-                                ChoiceChip(
-                                    label = label,
-                                    selected = state.language == language,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { actions.onLanguageSelected(language) },
-                                )
-                            }
-                            if (rowItems.size == 1) Spacer(Modifier.weight(1f))
-                        }
+        Text(
+            text = stringResource(Res.string.onboarding_language_title),
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
+            fontSize = 15.sp,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+        )
+        Spacer(Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChoiceChip(
+                label = stringResource(Res.string.option_follow_system),
+                selected = state.language == OnboardingLanguage.FollowSystem,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { actions.onLanguageSelected(OnboardingLanguage.FollowSystem) },
+            )
+            OnboardingLanguageNames.chunked(2).forEach { rowItems ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    rowItems.forEach { (language, label) ->
+                        ChoiceChip(
+                            label = label,
+                            selected = state.language == language,
+                            modifier = Modifier.weight(1f),
+                            onClick = { actions.onLanguageSelected(language) },
+                        )
                     }
-                    val systemLanguage = languages.last()
-                    ChoiceChip(
-                        label = systemLanguage.second,
-                        selected = state.language == systemLanguage.first,
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { actions.onLanguageSelected(systemLanguage.first) },
-                    )
                 }
             }
         }
@@ -415,7 +392,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
                         OnboardingAppearance.Dark to stringResource(Res.string.option_dark),
                         OnboardingAppearance.Amoled to stringResource(Res.string.option_amoled),
                     ).forEach { (mode, label) ->
-                        ChoiceChip(label, state.appearance == mode, Modifier.weight(1f)) { actions.onAppearanceSelected(mode) }
+                        ChoiceChip(label, state.appearance == mode, Modifier.weight(1f), compact = true) { actions.onAppearanceSelected(mode) }
                     }
                 }
             }
@@ -426,10 +403,17 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
             Column {
                 Text(stringResource(Res.string.onboarding_accent_color), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
                 Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AccentDot(Color(0xFF9AA0A6), state.accentSeedIndex == 0) { actions.onAccentSelected(0) }
-                    AccentPresets.forEachIndexed { index, color ->
-                        AccentDot(color, state.accentSeedIndex == index + 1) { actions.onAccentSelected(index + 1) }
+                // Index 0 is the system accent, the presets follow. Two rows of equal circles: a single row
+                // squeezed the last colour to a sliver.
+                val swatches = listOf(Color(0xFF9AA0A6)) + AccentPresets
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    swatches.withIndex().chunked(4).forEach { rowItems ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            rowItems.forEach { (index, color) ->
+                                AccentDot(color, state.accentSeedIndex == index, Modifier.weight(1f)) { actions.onAccentSelected(index) }
+                            }
+                            repeat(4 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                        }
                     }
                 }
             }
@@ -450,6 +434,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
                             label = stringResource(label),
                             selected = state.bottomBarSize == size,
                             modifier = Modifier.weight(1f),
+                            compact = true,
                             onClick = { actions.onBottomBarSizeSelected(size) },
                         )
                     }
@@ -551,32 +536,25 @@ private fun CompleteStep(state: SkipiOnboardingState) {
     val colors = SkipiTheme.colors
     val total = state.proxyServerCount + state.subscriptionGroupCount
     StepColumn {
-        Spacer(Modifier.height(16.dp))
-        Box(
-            modifier = Modifier
-                .size(110.dp)
-                .clip(CircleShape)
-                .background(Brush.radialGradient(listOf(PermissionGreen.copy(alpha = if (colors.isDark) 0.4f else 0.22f), PermissionGreen.copy(alpha = 0.08f), Color.Transparent))),
-            contentAlignment = Alignment.Center,
-        ) {
-            SkipiIcon(MiuixIcons.Ok, null, tint = PermissionGreen, modifier = Modifier.size(56.dp))
-        }
-        Spacer(Modifier.height(22.dp))
-        Text(stringResource(Res.string.onboarding_complete_title), fontSize = 24.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = colors.onSurface, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(10.dp))
-        Text(stringResource(Res.string.onboarding_complete_subtitle), fontSize = 14.sp, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, lineHeight = 20.sp, modifier = Modifier.fillMaxWidth(0.85f))
-        Spacer(Modifier.height(28.dp))
+        Hero(
+            title = stringResource(Res.string.onboarding_complete_title),
+            subtitle = stringResource(Res.string.onboarding_complete_subtitle),
+            icon = MiuixIcons.Ok,
+            glow = PermissionGreen,
+        )
+        Spacer(Modifier.height(24.dp))
         SurfaceCard {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(12.dp).clip(CircleShape).background(PermissionGreen))
-                    Spacer(Modifier.width(10.dp))
-                    Text(stringResource(Res.string.onboarding_ready_status_ready), fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 15.sp, color = colors.onSurface)
+                    Box(Modifier.size(14.dp).clip(CircleShape).background(PermissionGreen))
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(Res.string.onboarding_ready_status_ready), fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 18.sp, color = colors.onSurface)
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     text = if (total > 0) stringResource(Res.string.onboarding_servers_added_count, total) else stringResource(Res.string.onboarding_import_later_hint),
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp,
                     color = colors.onSurfaceVariant,
                 )
             }
@@ -589,78 +567,128 @@ private fun StepColumn(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        content = content,
+        content = {
+            content()
+            Spacer(Modifier.height(16.dp))
+        },
     )
 }
 
+/**
+ * The tonal card every step opens with: [lead] on top, a big title and a line of text. Its tone comes from [tint].
+ * Shared with the Telegram step so every page of the flow reads as one family.
+ */
 @Composable
-private fun Hero(title: String, subtitle: String, icon: ImageVector?, logoPainter: Painter? = null, glow: Color) {
+internal fun OnboardingHeroCard(
+    title: String,
+    subtitle: String,
+    tint: Color,
+    large: Boolean = false,
+    lead: @Composable () -> Unit,
+) {
     val colors = SkipiTheme.colors
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        when {
-            logoPainter != null -> androidx.compose.foundation.Image(
-                painter = logoPainter,
+    val cardColor = lerp(colors.background, tint, if (colors.isDark) 0.30f else 0.18f)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(32.dp))
+            .background(cardColor)
+            .padding(horizontal = 24.dp, vertical = 24.dp),
+    ) {
+        lead()
+        Spacer(Modifier.height(if (large) 28.dp else 20.dp))
+        Text(
+            text = title,
+            fontSize = if (large) 32.sp else 28.sp,
+            lineHeight = if (large) 36.sp else 32.sp,
+            fontWeight = themedFontWeight(FontWeight.ExtraBold),
+            color = colors.onSurface,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = subtitle,
+            fontSize = 16.sp,
+            lineHeight = 23.sp,
+            color = colors.onSurface.copy(alpha = 0.78f),
+        )
+    }
+}
+
+/** A rounded-square tile holding [content], the icon slot of a step card. */
+@Composable
+internal fun OnboardingIconTile(tint: Color, content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier.size(64.dp).clip(RoundedCornerShape(20.dp)).background(tint),
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+@Composable
+private fun Hero(title: String, subtitle: String, icon: ImageVector?, glow: Color, large: Boolean = false) {
+    OnboardingHeroCard(title = title, subtitle = subtitle, tint = glow, large = large) {
+        if (icon != null) {
+            OnboardingIconTile(glow) { SkipiIcon(icon, null, tint = inkOn(glow), modifier = Modifier.size(28.dp)) }
+        } else {
+            // The wide logo plate, as big as the card allows.
+            Image(
+                painter = painterResource(Res.drawable.ic_about_logo),
                 contentDescription = stringResource(Res.string.onboarding_logo_content_description),
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                modifier = Modifier.size(width = 260.dp, height = 135.dp).aspectRatio(2f),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().aspectRatio(2f),
             )
-            icon != null -> Box(
-                Modifier.size(104.dp).clip(CircleShape).background(Brush.radialGradient(listOf(glow.copy(alpha = 0.3f), Color.Transparent))),
-                contentAlignment = Alignment.Center,
-            ) { SkipiIcon(icon, null, tint = glow, modifier = Modifier.size(36.dp)) }
         }
-        Spacer(Modifier.height(20.dp))
-        Text(title, fontSize = 24.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = colors.onSurface, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.92f))
-        Spacer(Modifier.height(10.dp))
-        Text(subtitle, fontSize = 14.sp, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, lineHeight = 20.sp, modifier = Modifier.fillMaxWidth(0.88f))
     }
 }
 
 @Composable
 private fun SurfaceCard(content: @Composable ColumnScope.() -> Unit) {
     val colors = SkipiTheme.colors
-    val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(shape)
+            .clip(RoundedCornerShape(28.dp))
             .background(colors.surface)
-            .border(1.dp, colors.outline.copy(alpha = 0.25f), shape)
-            .padding(16.dp),
+            .padding(20.dp),
         content = content,
     )
 }
 
 @Composable
-private fun ChoiceChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun ChoiceChip(label: String, selected: Boolean, modifier: Modifier = Modifier, compact: Boolean = false, onClick: () -> Unit) {
     val colors = SkipiTheme.colors
     val background by animateColorAsState(if (selected) colors.accent else colors.surfaceVariant, label = "choice_bg_$label")
-    val textColor by animateColorAsState(if (selected) colors.onAccent else colors.onSurface, label = "choice_text_$label")
+    val textColor by animateColorAsState(if (selected) inkOn(colors.accent) else colors.onSurface, label = "choice_text_$label")
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .heightIn(min = if (compact) 48.dp else 56.dp)
+            .clip(RoundedCornerShape(28.dp))
             .background(background)
-            .border(1.dp, if (selected) Color.Transparent else colors.outline.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 11.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = if (compact) 6.dp else 22.dp, vertical = 12.dp),
+        contentAlignment = if (compact) Alignment.Center else Alignment.CenterStart,
     ) {
-        Text(label, color = textColor, fontWeight = themedFontWeight(if (selected) FontWeight.Bold else FontWeight.Medium), fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 2)
+        Text(
+            label,
+            color = textColor,
+            fontWeight = themedFontWeight(if (selected) FontWeight.Bold else FontWeight.Medium),
+            fontSize = if (compact) 15.sp else 17.sp,
+            textAlign = if (compact) TextAlign.Center else TextAlign.Start,
+            maxLines = 2,
+        )
     }
 }
 
 @Composable
-private fun AccentDot(color: Color, selected: Boolean, onClick: () -> Unit) {
+private fun AccentDot(color: Color, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .size(38.dp)
+        modifier = modifier
+            .aspectRatio(1f)
             .clip(CircleShape)
             .background(color)
-            .border(if (selected) 3.dp else 0.dp, if (selected) SkipiTheme.colors.onSurface else Color.Transparent, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (selected) SkipiIcon(MiuixIcons.Ok, null, tint = if (color == Color(0xFF9AA0A6)) Color.White else Color.White, modifier = Modifier.size(18.dp))
+        if (selected) SkipiIcon(MiuixIcons.Ok, null, tint = inkOn(color), modifier = Modifier.size(26.dp))
     }
 }
 
@@ -711,3 +739,6 @@ private fun ImportActionCard(icon: ImageVector, iconColor: Color, title: String,
         }
     }
 }
+
+/** Black or white, whichever reads on [background]: the host's on-accent can be dark on a mid-tone accent. */
+private fun inkOn(background: Color): Color = if (background.luminance() > 0.5f) Color(0xFF1B1C1E) else Color.White
