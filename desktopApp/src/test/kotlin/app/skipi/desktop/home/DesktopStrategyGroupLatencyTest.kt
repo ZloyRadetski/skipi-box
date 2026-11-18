@@ -6,6 +6,8 @@ package app.skipi.desktop
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -65,5 +67,28 @@ class DesktopStrategyGroupLatencyTest {
         assertEquals("No servers in group", desktopLatencyErrorText(group, result, noMembersText = "No servers in group"))
         assertEquals(null, desktopLatencyErrorText(group.copy(filter = "fast"), result, noMembersText = "No servers in group"))
         assertEquals(null, desktopLatencyErrorText(fast, result, noMembersText = "No servers in group"))
+    }
+
+    @Test
+    fun severalGroupsPingedAtOnceNeverRunMoreProbesThanTheConcurrencyLimit() = runBlocking {
+        val running = java.util.concurrent.atomic.AtomicInteger()
+        val peak = java.util.concurrent.atomic.AtomicInteger()
+        val members = (1..6).map { server("member$it") }
+        val tester = DesktopStrategyGroupAwareTester(
+            members = { members },
+            concurrency = 2,
+            single = {
+                val now = running.incrementAndGet()
+                peak.updateAndGet { maxOf(it, now) }
+                kotlinx.coroutines.delay(20)
+                running.decrementAndGet()
+                DesktopServerLatencyResult.Success(40)
+            },
+        )
+
+        (1..5).map { id -> async(kotlinx.coroutines.Dispatchers.Default) { tester.test(id, group) } }
+            .awaitAll()
+
+        assertTrue(peak.get() <= 2, "peak probes ${peak.get()}")
     }
 }
