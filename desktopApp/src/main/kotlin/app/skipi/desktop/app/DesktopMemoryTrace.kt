@@ -172,6 +172,9 @@ internal fun summarizeMemoryRegions(regions: List<MemoryRegion>, topCount: Int =
         committed.groupBy { it.kind }.entries.sortedByDescending { entry -> entry.value.sumOf { it.size } }.forEach { (kind, list) ->
             appendLine("$kind committed=${mb(list.sumOf { it.size })} regions=${list.size}")
         }
+        // PAGE_WRITECOMBINE (0x400) is how a GPU driver maps the memory it shares with the CPU.
+        val writeCombined = committed.filter { it.protect and 0x400 != 0 }
+        appendLine("write-combined committed=${mb(writeCombined.sumOf { it.size })} regions=${writeCombined.size}")
         appendLine("largest committed regions:")
         committed.sortedByDescending { it.size }.take(topCount).forEach {
             appendLine("  ${mb(it.size)} at 0x${java.lang.Long.toHexString(it.base)} ${it.kind} protect=0x${Integer.toHexString(it.protect)}")

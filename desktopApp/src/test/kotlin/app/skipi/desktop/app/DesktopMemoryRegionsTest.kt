@@ -37,4 +37,17 @@ class DesktopMemoryRegionsTest {
         assertTrue(!text.contains("17.0 MB"), text)
         assertTrue(text.contains("0x140000"), text)
     }
+
+    @Test
+    fun writeCombinedRegionsAreTotalledSeparatelyBecauseTheyAreGpuDriverMemory() {
+        val text = summarizeMemoryRegions(
+            listOf(
+                MemoryRegion(0x1000, 32 * mib, committed = true, kind = "private", protect = 0x404),
+                MemoryRegion(0x9000, 32 * mib, committed = true, kind = "private", protect = 0x404),
+                MemoryRegion(0xA000, 100 * mib, committed = true, kind = "private", protect = 0x04),
+            ),
+        )
+
+        assertTrue(text.contains("write-combined committed=64.0 MB regions=2"), text)
+    }
 }
