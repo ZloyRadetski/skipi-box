@@ -30,6 +30,7 @@ import features.proxy.server.model.V2RayTransportRaw
 import features.proxy.server.model.V2RayTransportWebSocket
 import features.proxy.server.model.V2RayTransportXdrive
 import features.proxy.server.model.V2RayTransportXhttp
+import features.proxy.server.model.tlsFingerprintEditorOptions
 import features.proxy.server.model.v2RayTransportOptionIndex
 import features.proxy.server.model.v2RayTransportOptionsFor
 import org.jetbrains.compose.resources.stringResource
@@ -439,19 +440,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters, allowXdrive: Boo
         )
 
         val fingerprintOptions = remember {
-            listOf(
-                "",
-                "chrome",
-                "firefox",
-                "safari",
-                "ios",
-                "android",
-                "edge",
-                "360",
-                "qq",
-                "random",
-                "randomized",
-            )
+            tlsFingerprintEditorOptions(params.fp)
         }
         val alpnOptions = remember {
             listOf(

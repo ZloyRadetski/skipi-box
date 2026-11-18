@@ -180,7 +180,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(
     when (security) {
         "none" -> Unit
         "tls" -> {
-            validateOptionalFingerprint(params.fp)
+            validateOptionalFingerprint(params.fp, forReality = false)
             validateOptionalAlpn(params.alpn)
             validateOptionalSha256(params.pcs, "certificate fingerprint")
         }
@@ -191,7 +191,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(
             }
             validateRealityPublicKey(params.pbk.orEmpty())
             validateRequired(params.fp, "TLS fingerprint")
-            validateOptionalFingerprint(params.fp)
+            validateOptionalFingerprint(params.fp, forReality = true)
             validateOptionalRealityMldsa65Verify(params.pqv)
             validateOptionalPath(params.spx, "SpiderX")
             val shortId = params.sid.orEmpty()
@@ -532,13 +532,11 @@ private fun decodeRawUrlSafeBase64(value: String): ByteArray? {
     return value.decodeUrlSafeBase64NoPaddingOrNull()
 }
 
-private fun MutableList<ProxyServerValidationIssue>.validateOptionalFingerprint(value: String?) {
+private fun MutableList<ProxyServerValidationIssue>.validateOptionalFingerprint(value: String?, forReality: Boolean) {
     if (value.isNullOrBlank()) return
-    validateAllowed(
-        value,
-        "TLS fingerprint",
-        setOf("chrome", "firefox", "safari", "ios", "android", "edge", "360", "qq", "random", "randomized"),
-    )
+    if (!isKnownTlsFingerprint(value, forReality)) {
+        addIssue(ProxyServerValidationError.UnsupportedValue, value.trim())
+    }
 }
 
 private fun MutableList<ProxyServerValidationIssue>.validateOptionalAlpn(value: String?) {
