@@ -255,7 +255,7 @@ private fun OnboardingBottomBarSize.toLegacyValue(): Int = when (this) {
 
 private fun AppState.onboardingAccentIndex(): Int = when {
     enableMaterialYou -> 0
-    !enableCustomColors || customAccentColor == null -> -1
+    customAccentColor == null -> -1
     else -> KeyColors.indexOfFirst { it.toArgb().toLong() and 0xFFFFFFFFL == customAccentColor }.let { if (it < 0) -1 else it + 1 }
 }
 

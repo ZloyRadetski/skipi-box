@@ -47,7 +47,7 @@ class AppearanceColorOverridesTest {
     }
 
     @Test
-    fun disabledCustomColorsIgnoreEveryPickedColorTheAccentIncluded() {
+    fun disabledCustomColorsIgnoreEveryPickedColorExceptTheAccent() {
         val base = AppColors(
             background = Color(0xFF101112),
             onBackground = Color(0xFF202122),
@@ -64,7 +64,7 @@ class AppearanceColorOverridesTest {
             AppearanceSettings(dynamicColors = false, customAccentColor = 0xFF919293L),
         )
 
-        assertEquals(base.accent, actual.accent)
+        assertEquals(Color(0xFF919293), actual.accent)
         assertEquals(base.background, actual.background)
         assertEquals(base.surface, actual.surface)
         assertEquals(base.surfaceVariant, actual.surfaceVariant)
@@ -75,7 +75,7 @@ class AppearanceColorOverridesTest {
     }
 
     @Test
-    fun namedThemeAccentWinsOverDisabledCustomAccent() {
+    fun aPickedAccentWinsOverANamedThemeAccentWithoutCustomColors() {
         val base = AppColors(
             background = Color(0xFF081427),
             onBackground = Color(0xFFE7F1FF),
@@ -99,7 +99,7 @@ class AppearanceColorOverridesTest {
             ),
         )
 
-        assertEquals(base, actual)
+        assertEquals(base.copy(accent = Color(0xFF919293)), actual)
     }
 
     @Test
@@ -196,7 +196,7 @@ class AppearanceColorOverridesTest {
     }
 
     @Test
-    fun aSavedAccentDoesNotTintAnyBuiltInThemeWhileCustomColorsAreOff() {
+    fun aPickedAccentPaintsEveryBuiltInThemeButNothingElseWhileCustomColorsAreOff() {
         val picked = 0xFF919293L
         listOf(true to false, false to false, true to true).forEach { (dark, amoled) ->
             val base = resolveBaseAppearanceColors(isDark = dark, amoledBlack = amoled)
@@ -204,7 +204,7 @@ class AppearanceColorOverridesTest {
                 base,
                 AppearanceSettings(dynamicColors = false, customColorsEnabled = false, customAccentColor = picked, customBackgroundColor = picked),
             )
-            assertEquals(base, actual, "dark=$dark amoled=$amoled")
+            assertEquals(base.copy(accent = Color(picked)), actual, "dark=$dark amoled=$amoled")
         }
     }
 
