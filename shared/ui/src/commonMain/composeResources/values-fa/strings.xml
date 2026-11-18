@@ -499,6 +499,8 @@
     <string name="proxy_editor_masque_host">هاست HTTP/3 (اختیاری)</string>
     <string name="proxy_editor_masque_path">مسیر (اختیاری، پشتیبانی از {target} و {ipproto})</string>
     <string name="proxy_editor_masque_remote_dns">سرورهای DNS راه دور (اختیاری، IPها با کاما جدا شوند)</string>
+    <string name="proxy_editor_masque_headers">هدرهای درخواست، شیء JSON (اختیاری)</string>
+    <string name="proxy_editor_masque_xmux">XMUX استفاده مجدد از اتصال، شیء JSON (اختیاری)</string>
     <string name="proxy_editor_masque_warp_title">هویت Cloudflare WARP (جایگزین نام کاربری و رمز عبور)</string>
     <string name="proxy_editor_masque_warp_private_key">کلید خصوصی WARP (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">کلید عمومی WARP (base64)</string>
@@ -899,6 +901,7 @@
     <string name="settings_color_protocol_strategy">تعادل خودکار (استراتژی)</string>
     <string name="settings_color_protocol_chain">زنجیره پروکسی</string>
     <string name="settings_color_protocol_json">پیکربندی JSON (سفارشی)</string>
+    <string name="settings_color_protocol_masque">پروتکل MASQUE</string>
 
     <string name="app_update_available_title">به‌روزرسانی SKIPI موجود است</string>
     <string name="app_update_size">حجم</string>

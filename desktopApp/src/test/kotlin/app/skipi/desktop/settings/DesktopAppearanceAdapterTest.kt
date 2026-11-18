@@ -57,7 +57,7 @@ class DesktopAppearanceAdapterTest {
         val values = listOf(0xFF000001L, 0xFF000002L, 0xFF000003L, 0xFF000004L, 0xFF000005L,
             0xFF000006L, 0xFF000007L, 0xFF000008L, 0xFF000009L, 0xFF00000AL, 0xFF00000BL,
             0xFF00000CL, 0xFF00000DL, 0xFF00000EL, 0xFF00000FL, 0xFF000010L, 0xFF000011L,
-            0xFF000012L, 0xFF000013L, 0xFF000014L, 0xFF000015L, 0xFF000016L, 0xFF000017L)
+            0xFF000012L, 0xFF000013L, 0xFF000014L, 0xFF000015L, 0xFF000016L, 0xFF000017L, 0xFF000018L)
         val expectedAppearance = fixture.repository.state.value.appearance.copy(
             themeMode = ThemeMode.Named,
             themeVariant = "sakura",
@@ -86,6 +86,7 @@ class DesktopAppearanceAdapterTest {
             customProtocolStrategyColor = values[20],
             customProtocolChainColor = values[21],
             customProtocolJsonColor = values[22],
+            customProtocolMasqueColor = values[23],
             fontFamilyMode = 4,
             fontSizeMode = 115,
             fontWeightMode = 5,
@@ -121,6 +122,7 @@ class DesktopAppearanceAdapterTest {
         assertEquals(values[20], settings.customProtocolStrategyColor)
         assertEquals(values[21], settings.customProtocolChainColor)
         assertEquals(values[22], settings.customProtocolJsonColor)
+        assertEquals(values[23], settings.customProtocolMasqueColor)
         assertEquals(0xFF123456L, settings.customMaterialYouSeed)
         assertEquals(4, settings.fontFamilyMode)
         assertEquals(115, settings.fontSizeMode)

@@ -30,10 +30,10 @@ class ProxyHomeProtocolColorsTest {
     fun everyProtocolFamilyHasItsOwnKey() {
         val all = proxyHomeProtocolColors(
             vless = 1, vmess = 2, hysteria2 = 3, trojan = 4, shadowsocks = 5, wireguard = 6,
-            socks = 7, http = 8, strategy = 9, chain = 10, json = 11,
+            socks = 7, http = 8, strategy = 9, chain = 10, json = 11, masque = 12,
         )
         assertEquals(
-            setOf("vless", "vmess", "hysteria2", "trojan", "shadowsocks", "wireguard", "socks", "http", "strategy", "chain", "json"),
+            setOf("vless", "vmess", "hysteria2", "trojan", "shadowsocks", "wireguard", "socks", "http", "strategy", "chain", "json", "masque"),
             all.keys,
         )
     }

@@ -31,6 +31,7 @@ class XrayConfigLogRedactionTest {
                 "s3": {"endpoint": "https://s3.private.example", "bucket": "private-bucket", "region": "eu"}}}},
               {"tag": "m", "protocol": "masque", "streamSettings": {"network": "masque", "masqueSettings": {
                 "user": "masque-user", "pass": "masque-pass", "host": "masque-front.example",
+                "headers": {"Authorization": "Bearer masque-header-token", "X-Api-Key": "masque-api-key"},
                 "warp": {"privateKey": "WARPPRIV", "publicKey": "WARPPUB", "address": ["172.16.0.2/32"]}}}}
             ]}
             """.trimIndent(),
@@ -39,7 +40,7 @@ class XrayConfigLogRedactionTest {
         listOf(
             "drive-client-id", "drive-client-secret", "drive-refresh-token", "template-token",
             "s3.private.example", "private-bucket", "masque-user", "masque-pass", "masque-front.example",
-            "WARPPRIV", "WARPPUB", "172.16.0.2",
+            "WARPPRIV", "WARPPUB", "172.16.0.2", "masque-header-token", "masque-api-key",
         ).forEach { secret ->
             assertFalse(redacted.contains(secret), "$secret leaked into the log")
         }

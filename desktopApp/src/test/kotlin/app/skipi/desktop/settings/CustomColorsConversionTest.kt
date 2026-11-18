@@ -47,6 +47,7 @@ class CustomColorsConversionTest {
         protocolStrategy = 0xFF000016,
         protocolChain = 0xFF000017,
         protocolJson = 0xFF000018,
+        protocolMasque = 0xFF000019,
     )
 
     @Test

@@ -86,6 +86,7 @@ data class AppState(
     val customProtocolStrategyColor: Long? = null,
     val customProtocolChainColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val customProtocolMasqueColor: Long? = null,
 
     val subscriptionGroups: List<SubscriptionGroupState> = DefaultSubscriptionGroups,
     val nextSubscriptionGroupId: Int = 4,

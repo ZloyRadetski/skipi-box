@@ -260,6 +260,7 @@ internal fun appearanceProtocolColor(protocol: String, state: AppearanceSettings
         "strategy" -> Triple(state.customProtocolStrategyColor, 0xFF2E7D32, 0xFF66BB6A)
         "chain" -> Triple(state.customProtocolChainColor, 0xFF00838F, 0xFF4DD0E1)
         "json" -> Triple(state.customProtocolJsonColor, 0xFF8E24AA, 0xFFCE93D8)
+        "masque" -> Triple(state.customProtocolMasqueColor, 0xFF6D4C41, 0xFFA1887F)
         else -> Triple(null, 0xFF546E7A, 0xFFB0BEC5)
     }
     return custom?.let(::Color) ?: Color(if (isDark) dark else light)

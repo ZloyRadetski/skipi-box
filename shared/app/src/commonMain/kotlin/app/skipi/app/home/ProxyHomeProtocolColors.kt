@@ -19,6 +19,7 @@ fun proxyHomeProtocolColors(
     strategy: Long? = null,
     chain: Long? = null,
     json: Long? = null,
+    masque: Long? = null,
 ): Map<String, Long> = buildMap {
     vless?.let { put("vless", it) }
     vmess?.let { put("vmess", it) }
@@ -31,4 +32,5 @@ fun proxyHomeProtocolColors(
     strategy?.let { put("strategy", it) }
     chain?.let { put("chain", it) }
     json?.let { put("json", it) }
+    masque?.let { put("masque", it) }
 }

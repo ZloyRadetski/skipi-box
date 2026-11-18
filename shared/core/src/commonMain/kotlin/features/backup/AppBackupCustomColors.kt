@@ -31,6 +31,7 @@ fun AppBackupSettings.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun AppBackupSettings.withCustomColors(colors: CustomColors): AppBackupSettings = copy(
@@ -58,4 +59,5 @@ fun AppBackupSettings.withCustomColors(colors: CustomColors): AppBackupSettings 
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )

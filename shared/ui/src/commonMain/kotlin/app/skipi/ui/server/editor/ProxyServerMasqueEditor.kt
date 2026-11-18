@@ -39,6 +39,12 @@ fun LazyListScope.masqueProxyServer(masqueEdit: Masque) {
         MasqueTextField(stringResource(Res.string.proxy_editor_masque_remote_dns), masqueEdit.remoteDns) {
             masqueEdit.remoteDns = it
         }
+        MasqueTextField(stringResource(Res.string.proxy_editor_masque_headers), masqueEdit.headers, multiLine = true) {
+            masqueEdit.headers = it
+        }
+        MasqueTextField(stringResource(Res.string.proxy_editor_masque_xmux), masqueEdit.xmux, multiLine = true) {
+            masqueEdit.xmux = it
+        }
         SmallTitle(text = stringResource(Res.string.proxy_editor_masque_warp_title))
         MasqueTextField(stringResource(Res.string.proxy_editor_masque_warp_private_key), masqueEdit.warpPrivateKey) {
             masqueEdit.warpPrivateKey = it
@@ -62,13 +68,18 @@ private fun MasqueTextField(
     label: String,
     initialText: String,
     digitsOnly: Boolean = false,
+    multiLine: Boolean = false,
     onValueChange: (String) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     TextField(
         label = label,
         state = rememberTextFieldState(initialText = initialText),
-        lineLimits = TextFieldLineLimits.SingleLine,
+        lineLimits = if (multiLine) {
+            TextFieldLineLimits.MultiLine(minHeightInLines = 3, maxHeightInLines = 12)
+        } else {
+            TextFieldLineLimits.SingleLine
+        },
         inputTransformation = InputTransformation {
             if (digitsOnly && !asCharSequence().isDigitsOnly()) {
                 revertAllChanges()

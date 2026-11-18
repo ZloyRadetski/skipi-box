@@ -31,6 +31,7 @@ fun AppearanceSettings.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun AppearanceSettings.withCustomColors(colors: CustomColors): AppearanceSettings = copy(
@@ -58,4 +59,5 @@ fun AppearanceSettings.withCustomColors(colors: CustomColors): AppearanceSetting
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )

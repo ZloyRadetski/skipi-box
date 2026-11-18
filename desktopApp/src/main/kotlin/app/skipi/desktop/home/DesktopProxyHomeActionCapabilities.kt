@@ -147,5 +147,6 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
         strategy = customColorIfEnabled(customProtocolStrategyColor, customColorsEnabled),
         chain = customColorIfEnabled(customProtocolChainColor, customColorsEnabled),
         json = customColorIfEnabled(customProtocolJsonColor, customColorsEnabled),
+        masque = customColorIfEnabled(customProtocolMasqueColor, customColorsEnabled),
     ),
 )

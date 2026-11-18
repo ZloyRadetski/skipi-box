@@ -162,6 +162,7 @@ internal fun AppState.toProxyHomeInput(
                 strategy = customColorIfEnabled(customProtocolStrategyColor, enableCustomColors),
                 chain = customColorIfEnabled(customProtocolChainColor, enableCustomColors),
                 json = customColorIfEnabled(customProtocolJsonColor, enableCustomColors),
+                masque = customColorIfEnabled(customProtocolMasqueColor, enableCustomColors),
             ),
             latencyFastColor = customColorIfEnabled(customPingFastColor, enableCustomColors),
             latencyMediumColor = customColorIfEnabled(customPingMediumColor, enableCustomColors),

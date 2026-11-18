@@ -31,6 +31,7 @@ fun DesktopAppSettings.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun DesktopAppSettings.withCustomColors(colors: CustomColors): DesktopAppSettings = copy(
@@ -58,4 +59,5 @@ fun DesktopAppSettings.withCustomColors(colors: CustomColors): DesktopAppSetting
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )

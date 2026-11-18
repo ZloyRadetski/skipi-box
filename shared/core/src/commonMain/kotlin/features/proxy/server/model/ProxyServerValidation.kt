@@ -442,7 +442,11 @@ private fun MutableList<ProxyServerValidationIssue>.validateXdrive(params: V2Ray
         }
         "s3" -> validateXdriveS3(params, extra)
     }
-    val xmux = extra["xmux"] as? JsonObject
+    validateXmuxRanges(extra["xmux"] as? JsonObject)
+}
+
+/** The core refuses `maxConnections` together with `maxConcurrency` (XDRIVE and MASQUE alike). */
+internal fun MutableList<ProxyServerValidationIssue>.validateXmuxRanges(xmux: JsonObject?) {
     if (xmux != null && xmux["maxConnections"].isNonZeroXmuxRange() && xmux["maxConcurrency"].isNonZeroXmuxRange()) {
         addIssue(ProxyServerValidationError.UnsupportedValue, "xmux maxConnections + maxConcurrency")
     }

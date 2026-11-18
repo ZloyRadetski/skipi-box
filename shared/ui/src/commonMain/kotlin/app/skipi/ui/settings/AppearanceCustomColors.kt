@@ -31,6 +31,7 @@ fun AppearanceSettingsState.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun AppearanceSettingsState.withCustomColors(colors: CustomColors): AppearanceSettingsState = copy(
@@ -58,4 +59,5 @@ fun AppearanceSettingsState.withCustomColors(colors: CustomColors): AppearanceSe
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )

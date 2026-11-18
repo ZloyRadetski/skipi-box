@@ -538,6 +538,8 @@
     <string name="proxy_editor_masque_host">Хост HTTP/3 (необязательно)</string>
     <string name="proxy_editor_masque_path">Путь (необязательно, поддерживает {target} и {ipproto})</string>
     <string name="proxy_editor_masque_remote_dns">Удалённые DNS-серверы (необязательно, IP через запятую)</string>
+    <string name="proxy_editor_masque_headers">Заголовки запроса, JSON-объект (необязательно)</string>
+    <string name="proxy_editor_masque_xmux">XMUX, повторное использование соединений, JSON-объект (необязательно)</string>
     <string name="proxy_editor_masque_warp_title">Профиль Cloudflare WARP (заменяет логин и пароль)</string>
     <string name="proxy_editor_masque_warp_private_key">Приватный ключ WARP (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">Публичный ключ WARP (base64)</string>
@@ -979,6 +981,7 @@
     <string name="settings_color_protocol_strategy">Автобалансер (Strategy)</string>
     <string name="settings_color_protocol_chain">Цепочка прокси (Chain)</string>
     <string name="settings_color_protocol_json">JSON-конфигурация (Custom)</string>
+    <string name="settings_color_protocol_masque">Протокол MASQUE</string>
 
     <string name="app_update_available_title">Доступно обновление SKIPI</string>
     <string name="app_update_size">Размер</string>

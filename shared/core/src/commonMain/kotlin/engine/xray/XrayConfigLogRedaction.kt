@@ -18,6 +18,8 @@ private val SensitiveKeys = setOf(
     "email", "ip", "hosts",
     // XDRIVE: account secrets, a template that may carry tokens, and the storage endpoint and bucket.
     "secrets", "template", "endpoint", "bucket",
+    // MASQUE request headers (Authorization, API keys)
+    "headers",
 )
 
 private val prettyJson = Json { prettyPrint = true }

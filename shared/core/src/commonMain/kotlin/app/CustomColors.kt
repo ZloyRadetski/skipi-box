@@ -35,6 +35,7 @@ data class CustomColors(
     val protocolStrategy: Long? = null,
     val protocolChain: Long? = null,
     val protocolJson: Long? = null,
+    val protocolMasque: Long? = null,
 )
 
 /** The colors of [AppState]. */
@@ -63,6 +64,7 @@ fun AppState.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun AppState.withCustomColors(colors: CustomColors): AppState = copy(
@@ -90,4 +92,5 @@ fun AppState.withCustomColors(colors: CustomColors): AppState = copy(
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )

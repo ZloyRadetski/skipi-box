@@ -28,6 +28,7 @@ data class AppearanceSettingsState(
     val customProtocolHysteria2Color: Long? = null,
     val customProtocolHttpColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val customProtocolMasqueColor: Long? = null,
     val customProtocolShadowsocksColor: Long? = null,
     val customProtocolSocksColor: Long? = null,
     val customProtocolStrategyColor: Long? = null,
@@ -83,6 +84,7 @@ enum class AppearanceColorTarget {
     PROTOCOL_STRATEGY,
     PROTOCOL_CHAIN,
     PROTOCOL_JSON,
+    PROTOCOL_MASQUE,
 }
 
 /** Persisted integer values used by the existing Android appearance preferences. */

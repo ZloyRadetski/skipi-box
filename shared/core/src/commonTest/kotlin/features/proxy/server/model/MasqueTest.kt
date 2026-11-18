@@ -110,6 +110,110 @@ class MasqueTest {
         assertEquals(pin, tls["pinnedPeerCertSha256"]?.jsonPrimitive?.content)
     }
 
+    // --- headers and xmux ---
+
+    @Test
+    fun headersAndXmuxAreWrittenAsObjectsAndOmittedWhenBlank() {
+        val none = userPassServer().toXrayOutbound("proxy").streamSettings!!["masqueSettings"]!!.jsonObject
+        val set = userPassServer().copy(
+            headers = """{"X-Token":"abc","User-Agent":"skipi"}""",
+            xmux = """{"maxConnections":"2","hMaxReusableSecs":"1800-3000"}""",
+        ).toXrayOutbound("proxy").streamSettings!!["masqueSettings"]!!.jsonObject
+
+        assertNull(none["headers"])
+        assertNull(none["xmux"])
+        assertEquals("abc", set["headers"]?.jsonObject?.get("X-Token")?.jsonPrimitive?.content)
+        assertEquals("skipi", set["headers"]?.jsonObject?.get("User-Agent")?.jsonPrimitive?.content)
+        assertEquals("2", set["xmux"]?.jsonObject?.get("maxConnections")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun headersAndXmuxSurviveTheUrlTheCopyAndPersistence() {
+        val original = userPassServer().copy(
+            remoteDns = "1.1.1.1,8.8.8.8",
+            headers = """{"X-Token":"abc"}""",
+            xmux = """{"maxConnections":"2"}""",
+        )
+
+        val viaUrl = assertIs<Masque>(ProxyServer.parse(original.getUrl()))
+        val copy = Masque().also { it.update(original) }
+        val persisted = ProxyServer.json.decodeFromString<Masque>(ProxyServer.json.encodeToString(original))
+
+        assertEquals(original, viaUrl)
+        assertEquals(original, copy)
+        assertEquals(original, persisted)
+    }
+
+    @Test
+    fun headersAndXmuxChangeTheFingerprint() {
+        val base = userPassServer()
+
+        assertFalse(base.connectionFingerprint() == base.copy(headers = """{"X-Token":"abc"}""").connectionFingerprint())
+        assertFalse(base.connectionFingerprint() == base.copy(xmux = """{"maxConnections":"2"}""").connectionFingerprint())
+    }
+
+    @Test
+    fun headersMustBeAJsonObjectOfStrings() {
+        listOf("[1]", "not json", """{"X-Token":1}""", """{"X-Token":{"a":"b"}}""").forEach { headers ->
+            val issues = userPassServer().copy(headers = headers).validateFull()
+            assertTrue(
+                issues.any {
+                    it.error == ProxyServerValidationError.JsonObjectRequired ||
+                        it.error == ProxyServerValidationError.UnsupportedValue
+                },
+                "headers '$headers' must be rejected",
+            )
+        }
+        assertTrue(userPassServer().copy(headers = """{"X-Token":"abc"}""").validateFull().isEmpty())
+    }
+
+    @Test
+    fun headerNamesAndValuesFollowTheHttpRules() {
+        // the core: httpguts.ValidHeaderFieldName / ValidHeaderFieldValue
+        listOf("""{"bad name":"v"}""", """{"":"v"}""", """{"X-Token":"a\nb"}""", """{"X-Token":"a\u0000b"}""").forEach { headers ->
+            assertTrue(
+                userPassServer().copy(headers = headers).validateFull()
+                    .any { it.error == ProxyServerValidationError.UnsupportedValue },
+                "headers '$headers' must be rejected",
+            )
+        }
+        assertTrue(userPassServer().copy(headers = """{"X-Tab":"a\tb"}""").validateFull().isEmpty())
+    }
+
+    @Test
+    fun hostAndCapsuleProtocolHeadersAreRefusedInAnyCase() {
+        listOf("host", "Host", "capsule-protocol", "Capsule-Protocol").forEach { name ->
+            assertTrue(
+                userPassServer().copy(headers = """{"$name":"v"}""").validateFull()
+                    .any { it.error == ProxyServerValidationError.UnsupportedValue },
+                "'$name' must be rejected",
+            )
+        }
+    }
+
+    @Test
+    fun anAuthorizationHeaderConflictsOnlyWithUserAndPassword() {
+        val withHeader = """{"Authorization":"Bearer t"}"""
+
+        assertTrue(
+            userPassServer().copy(headers = withHeader).validateFull()
+                .any { it.error == ProxyServerValidationError.UnsupportedValue },
+        )
+        assertTrue(Masque(remarks = "Plain", server = "masque.example.com", headers = withHeader).validateFull().isEmpty())
+        assertTrue(warpServer().copy(headers = withHeader).validateFull().isEmpty())
+    }
+
+    @Test
+    fun xmuxMustBeAJsonObjectWithoutBothMaxConnectionsAndMaxConcurrency() {
+        assertTrue(userPassServer().copy(xmux = "[1]").validateFull().any { it.error == ProxyServerValidationError.JsonObjectRequired })
+        assertTrue(
+            userPassServer().copy(xmux = """{"maxConnections":"2","maxConcurrency":"4"}""").validateFull()
+                .any { it.error == ProxyServerValidationError.UnsupportedValue },
+        )
+        assertTrue(userPassServer().copy(xmux = """{"maxConnections":"2"}""").validateFull().isEmpty())
+        assertTrue(userPassServer().copy(xmux = """{"maxConnections":"2","maxConcurrency":"0"}""").validateFull().isEmpty())
+    }
+
     @Test
     fun parsesAMasqueUrl() {
         val server = assertIs<Masque>(

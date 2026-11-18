@@ -37,6 +37,31 @@ class ProtocolColorUtilsMasqueTest {
     }
 
     @Test
+    fun aCustomMasqueColorWinsOverTheDefault() {
+        val custom = mapOf("masque" to 0xFF123456L)
+
+        assertEquals(
+            androidx.compose.ui.graphics.Color(0xFF123456),
+            ProtocolColorUtils.resolveProtocolColor("MASQUE", false, custom),
+        )
+    }
+
+    @Test
+    fun theSettingsPickerStartsFromTheSameDefaultsAsTheChips() {
+        listOf(false, true).forEach { isDark ->
+            assertEquals(
+                ProtocolColorUtils.resolveProtocolColor("MASQUE", isDark),
+                app.skipi.ui.settings.appearanceProtocolColor("masque", app.skipi.ui.settings.AppearanceSettingsState(), isDark),
+            )
+        }
+        val custom = app.skipi.ui.settings.AppearanceSettingsState(customProtocolMasqueColor = 0xFF123456L)
+        assertEquals(
+            androidx.compose.ui.graphics.Color(0xFF123456),
+            app.skipi.ui.settings.appearanceProtocolColor("masque", custom, false),
+        )
+    }
+
+    @Test
     fun masqueIgnoresOtherProtocolsCustomColors() {
         val custom = mapOf("hysteria2" to 0xFF123456L, "vless" to 0xFF654321L)
 

@@ -49,6 +49,7 @@ data class AppChromeState(
     val customProtocolStrategyColor: Long? = null,
     val customProtocolChainColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val customProtocolMasqueColor: Long? = null,
     val backgroundStyle: Int = app.modes.BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
@@ -84,6 +85,7 @@ fun AppChromeState.customColors(): CustomColors = CustomColors(
     protocolStrategy = customProtocolStrategyColor,
     protocolChain = customProtocolChainColor,
     protocolJson = customProtocolJsonColor,
+    protocolMasque = customProtocolMasqueColor,
 )
 
 fun AppChromeState.withCustomColors(colors: CustomColors): AppChromeState = copy(
@@ -111,6 +113,7 @@ fun AppChromeState.withCustomColors(colors: CustomColors): AppChromeState = copy
     customProtocolStrategyColor = colors.protocolStrategy,
     customProtocolChainColor = colors.protocolChain,
     customProtocolJsonColor = colors.protocolJson,
+    customProtocolMasqueColor = colors.protocolMasque,
 )
 
 data class ProxyServerListState(

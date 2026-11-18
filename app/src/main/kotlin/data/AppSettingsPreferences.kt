@@ -151,6 +151,7 @@ internal class AppSettingsPreferences(
             customProtocolStrategyColor = if (preferences.contains(KeyCustomProtocolStrategyColor)) preferences.getLong(KeyCustomProtocolStrategyColor, 0L) else defaults.customProtocolStrategyColor,
             customProtocolChainColor = if (preferences.contains(KeyCustomProtocolChainColor)) preferences.getLong(KeyCustomProtocolChainColor, 0L) else defaults.customProtocolChainColor,
             customProtocolJsonColor = if (preferences.contains(KeyCustomProtocolJsonColor)) preferences.getLong(KeyCustomProtocolJsonColor, 0L) else defaults.customProtocolJsonColor,
+            customProtocolMasqueColor = if (preferences.contains(KeyCustomProtocolMasqueColor)) preferences.getLong(KeyCustomProtocolMasqueColor, 0L) else defaults.customProtocolMasqueColor,
             nextSubscriptionGroupId = preferences.getInt(
                 KeyNextSubscriptionGroupId,
                 defaults.nextSubscriptionGroupId,
@@ -522,6 +523,7 @@ internal class AppSettingsPreferences(
                 state.customProtocolStrategyColor?.let { putLong(KeyCustomProtocolStrategyColor, it) } ?: remove(KeyCustomProtocolStrategyColor)
                 state.customProtocolChainColor?.let { putLong(KeyCustomProtocolChainColor, it) } ?: remove(KeyCustomProtocolChainColor)
                 state.customProtocolJsonColor?.let { putLong(KeyCustomProtocolJsonColor, it) } ?: remove(KeyCustomProtocolJsonColor)
+                state.customProtocolMasqueColor?.let { putLong(KeyCustomProtocolMasqueColor, it) } ?: remove(KeyCustomProtocolMasqueColor)
             }
             .putInt(KeyNextSubscriptionGroupId, state.nextSubscriptionGroupId)
             .putBoolean(KeyEnableAllProxyGroup, state.enableAllProxyGroup)
@@ -978,6 +980,7 @@ private const val KeyCustomProtocolHttpColor = "custom_protocol_http_color"
 private const val KeyCustomProtocolStrategyColor = "custom_protocol_strategy_color"
 private const val KeyCustomProtocolChainColor = "custom_protocol_chain_color"
 private const val KeyCustomProtocolJsonColor = "custom_protocol_json_color"
+private const val KeyCustomProtocolMasqueColor = "custom_protocol_masque_color"
 private const val KeySubscriptionInstallationUuid = "subscription_installation_uuid"
 private const val KeyNextSubscriptionGroupId = "next_subscription_group_id"
 private const val KeyEnableAllProxyGroup = "enable_all_proxy_group"

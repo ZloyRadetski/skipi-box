@@ -507,6 +507,8 @@
     <string name="proxy_editor_masque_host">HTTP/3 主机（可选）</string>
     <string name="proxy_editor_masque_path">路径（可选，支持 {target} 和 {ipproto}）</string>
     <string name="proxy_editor_masque_remote_dns">远程 DNS 服务器（可选，IP 以逗号分隔）</string>
+    <string name="proxy_editor_masque_headers">请求头，原始 JSON 对象（可选）</string>
+    <string name="proxy_editor_masque_xmux">XMUX 连接复用，原始 JSON 对象（可选）</string>
     <string name="proxy_editor_masque_warp_title">Cloudflare WARP 身份（替代用户名和密码）</string>
     <string name="proxy_editor_masque_warp_private_key">WARP 私钥（base64）</string>
     <string name="proxy_editor_masque_warp_public_key">WARP 公钥（base64）</string>
@@ -909,6 +911,7 @@
     <string name="settings_color_protocol_strategy">自动平衡器（策略）</string>
     <string name="settings_color_protocol_chain">代理链</string>
     <string name="settings_color_protocol_json">JSON 配置（自定义）</string>
+    <string name="settings_color_protocol_masque">MASQUE协议</string>
 
     <string name="app_update_available_title">SKIPI 有可用更新</string>
     <string name="app_update_size">大小</string>

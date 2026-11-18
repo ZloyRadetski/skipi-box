@@ -49,6 +49,7 @@ data class AppearanceSettings(
     val customProtocolStrategyColor: Long? = null,
     val customProtocolChainColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val customProtocolMasqueColor: Long? = null,
     val fontFamilyMode: Int? = null,
     val fontSizeMode: Int? = null,
     val fontWeightMode: Int? = null,

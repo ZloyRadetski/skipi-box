@@ -432,6 +432,11 @@ internal fun AppearanceCustomColorsSection(
                         color = appearanceProtocolColor("json", appState, isDark),
                         onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_JSON) },
                     )
+                    SettingsColorItem(
+                        title = stringResource(Res.string.settings_color_protocol_masque),
+                        color = appearanceProtocolColor("masque", appState, isDark),
+                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_MASQUE) },
+                    )
                     ArrowPreference(
                         title = stringResource(Res.string.settings_colors_reset),
                         startAction = settingIcon(Icons.Rounded.RestartAlt),
@@ -462,6 +467,7 @@ internal fun AppearanceCustomColorsSection(
                                     customProtocolStrategyColor = null,
                                     customProtocolChainColor = null,
                                     customProtocolJsonColor = null,
+                                    customProtocolMasqueColor = null,
                                 )
                             }
                             onColorsReset(resetCompletedMessage)
@@ -688,6 +694,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PROTOCOL_STRATEGY -> stringResource(Res.string.settings_color_protocol_strategy)
             AppearanceColorTarget.PROTOCOL_CHAIN -> stringResource(Res.string.settings_color_protocol_chain)
             AppearanceColorTarget.PROTOCOL_JSON -> stringResource(Res.string.settings_color_protocol_json)
+            AppearanceColorTarget.PROTOCOL_MASQUE -> stringResource(Res.string.settings_color_protocol_masque)
         }
         val initialColor = when (pickerTarget) {
             AppearanceColorTarget.ACCENT -> appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent
@@ -713,6 +720,7 @@ internal fun AppearanceColorPickerDialog(
             AppearanceColorTarget.PROTOCOL_STRATEGY -> appearanceProtocolColor("strategy", appState, isDark)
             AppearanceColorTarget.PROTOCOL_CHAIN -> appearanceProtocolColor("chain", appState, isDark)
             AppearanceColorTarget.PROTOCOL_JSON -> appearanceProtocolColor("json", appState, isDark)
+            AppearanceColorTarget.PROTOCOL_MASQUE -> appearanceProtocolColor("masque", appState, isDark)
         }
         ColorPickerDialog(
             show = true,
@@ -746,6 +754,7 @@ internal fun AppearanceColorPickerDialog(
                         AppearanceColorTarget.PROTOCOL_STRATEGY -> state.copy(customProtocolStrategyColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_CHAIN -> state.copy(customProtocolChainColor = colorLong)
                         AppearanceColorTarget.PROTOCOL_JSON -> state.copy(customProtocolJsonColor = colorLong)
+                        AppearanceColorTarget.PROTOCOL_MASQUE -> state.copy(customProtocolMasqueColor = colorLong)
                     }
                 }
             },

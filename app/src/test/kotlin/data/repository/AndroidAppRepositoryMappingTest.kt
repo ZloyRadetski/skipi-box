@@ -184,6 +184,7 @@ class AndroidAppRepositoryMappingTest {
             customProtocolStrategyColor = 0xFF8899BB,
             customProtocolChainColor = 0xFF99AACC,
             customProtocolJsonColor = 0xFFAABBCC,
+            customProtocolMasqueColor = 0xFFBBCCDD,
             fontFamilyMode = 4,
             fontSizeMode = 115,
             fontWeightMode = 5,

@@ -8,6 +8,9 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -36,6 +39,10 @@ data class Masque(
     var warpPrivateKey: String = "",
     var warpPublicKey: String = "",
     var warpAddress: String = "",
+    /** Extra request headers as a JSON object of strings. */
+    var headers: String = "",
+    /** Connection reuse settings, the raw `xmux` JSON object of the core. */
+    var xmux: String = "",
 ) : UrlProxyServer<Masque> {
     private val usesWarp: Boolean
         get() = warpPrivateKey.isNotBlank() || warpPublicKey.isNotBlank() || warpAddress.isNotBlank()
@@ -67,6 +74,8 @@ data class Masque(
                 putJsonObject("masqueSettings") {
                     putIfNotBlank("host", host)
                     putIfNotBlank("path", path)
+                    headers.toXrayJsonObjectOrNull("MASQUE headers")?.let { put("headers", it) }
+                    xmux.toXrayJsonObjectOrNull("MASQUE xmux")?.let { put("xmux", it) }
                     if (usesWarp) {
                         putJsonObject("warp") {
                             put("privateKey", warpPrivateKey.trim())
@@ -101,6 +110,8 @@ data class Masque(
         warpPrivateKey = url.parameters["warp-private-key"].orEmpty()
         warpPublicKey = url.parameters["warp-public-key"].orEmpty()
         warpAddress = url.parameters["warp-address"].orEmpty()
+        headers = url.parameters["headers"].orEmpty()
+        xmux = url.parameters["xmux"].orEmpty()
         return this
     }
 
@@ -119,6 +130,8 @@ data class Masque(
             appendIfNotBlank("warp-private-key", this@Masque.warpPrivateKey)
             appendIfNotBlank("warp-public-key", this@Masque.warpPublicKey)
             appendIfNotBlank("warp-address", this@Masque.warpAddress.toCsvValues().joinToString(","))
+            appendIfNotBlank("headers", this@Masque.headers)
+            appendIfNotBlank("xmux", this@Masque.xmux)
             fragment = this@Masque.remarks
         }.buildString()
     }
@@ -140,6 +153,8 @@ data class Masque(
         warpPrivateKey = other.warpPrivateKey
         warpPublicKey = other.warpPublicKey
         warpAddress = other.warpAddress
+        headers = other.headers
+        xmux = other.xmux
     }
 
     override fun validateBasic(): List<ProxyServerValidationIssue> = buildList {
@@ -162,6 +177,9 @@ data class Masque(
             }
         }
         validateMasquePath(path)
+        validateMasqueHeaders(headers, hasUserPassword = user.isNotBlank() || pass.isNotBlank())
+        validateOptionalJsonObject(xmux, "MASQUE xmux")
+        validateXmuxRanges(runCatching { Json.parseToJsonElement(xmux.ifBlank { "{}" }) }.getOrNull() as? JsonObject)
         if (host.any { it.isWhitespace() || it == '/' }) {
             addIssue(ProxyServerValidationError.UnsupportedValue, host)
         }
@@ -173,13 +191,40 @@ data class Masque(
 
     override fun connectionFingerprint(): String {
         return "masque|${server.trim().lowercase()}:${port.trim()}|$user|$pass|sni=$sni|pin=$pinSHA256|" +
-            "host=$host|path=$path|dns=$remoteDns|warp=$warpPrivateKey|$warpPublicKey|$warpAddress"
+            "host=$host|path=$path|dns=$remoteDns|warp=$warpPrivateKey|$warpPublicKey|$warpAddress|" +
+            "headers=$headers|xmux=$xmux"
     }
 }
 
 private val MasquePathVariables = listOf(
     "{?target,ipproto}", "{?ipproto,target}", "{&target,ipproto}", "{&ipproto,target}", "{target}", "{ipproto}",
 )
+
+/** RFC 9110 token characters: what the core's httpguts.ValidHeaderFieldName accepts. */
+private val HeaderNameRegex = Regex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$")
+
+/** The core refuses these as headers: it sets them itself. */
+private val MasqueReservedHeaders = setOf("host", "capsule-protocol")
+
+private fun MutableList<ProxyServerValidationIssue>.validateMasqueHeaders(headers: String, hasUserPassword: Boolean) {
+    if (headers.isBlank()) return
+    val parsed = runCatching { Json.parseToJsonElement(headers.trim()) }.getOrNull() as? JsonObject
+    if (parsed == null) {
+        addIssue(ProxyServerValidationError.JsonObjectRequired, "MASQUE headers")
+        return
+    }
+    parsed.forEach { (name, element) ->
+        val value = (element as? JsonPrimitive)?.takeIf { it.isString }?.content
+        // httpguts.ValidHeaderFieldValue: no control characters except tab, and no DEL
+        val valueOk = value != null && value.all { it == '\t' || (it.code >= 0x20 && it.code != 0x7f) }
+        when {
+            !HeaderNameRegex.matches(name) || !valueOk -> addIssue(ProxyServerValidationError.UnsupportedValue, name)
+            name.lowercase() in MasqueReservedHeaders -> addIssue(ProxyServerValidationError.UnsupportedValue, name)
+            name.equals("authorization", ignoreCase = true) && hasUserPassword ->
+                addIssue(ProxyServerValidationError.UnsupportedValue, name)
+        }
+    }
+}
 
 private fun URLBuilder.appendIfNotBlank(name: String, value: String) {
     if (value.isNotBlank()) parameters.append(name, value)

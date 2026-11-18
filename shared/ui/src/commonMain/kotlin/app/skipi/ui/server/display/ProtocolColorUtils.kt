@@ -55,7 +55,10 @@ object ProtocolColorUtils {
                 customColors["hysteria2"]?.let { Color(it) }
                     ?: if (isDark) DefaultHysteria2Dark else DefaultHysteria2Light
             }
-            normalized.contains("masque") -> if (isDark) DefaultMasqueDark else DefaultMasqueLight
+            normalized.contains("masque") -> {
+                customColors["masque"]?.let { Color(it) }
+                    ?: if (isDark) DefaultMasqueDark else DefaultMasqueLight
+            }
             normalized.contains("trojan") -> {
                 customColors["trojan"]?.let { Color(it) }
                     ?: if (isDark) DefaultTrojanDark else DefaultTrojanLight

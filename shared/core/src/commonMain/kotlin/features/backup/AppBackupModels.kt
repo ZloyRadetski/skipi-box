@@ -206,6 +206,7 @@ data class AppBackupSettings(
     val customProtocolStrategyColor: Long? = null,
     val customProtocolChainColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val customProtocolMasqueColor: Long? = null,
     val enableAllProxyGroup: Boolean = BackupDefaults.enableAllProxyGroup,
     val enableDeletionConfirmation: Boolean = BackupDefaults.enableDeletionConfirmation,
     val enableResolveProxyServerDomain: Boolean = BackupDefaults.enableResolveProxyServerDomain,

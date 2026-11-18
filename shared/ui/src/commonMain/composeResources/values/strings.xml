@@ -559,6 +559,8 @@
     <string name="proxy_editor_masque_host">HTTP/3 host (optional)</string>
     <string name="proxy_editor_masque_path">Path (optional, supports {target} and {ipproto})</string>
     <string name="proxy_editor_masque_remote_dns">Remote DNS servers (optional, comma-separated IPs)</string>
+    <string name="proxy_editor_masque_headers">Request headers, raw JSON object (optional)</string>
+    <string name="proxy_editor_masque_xmux">XMUX connection reuse, raw JSON object (optional)</string>
     <string name="proxy_editor_masque_warp_title">Cloudflare WARP identity (replaces username and password)</string>
     <string name="proxy_editor_masque_warp_private_key">WARP private key (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">WARP public key (base64)</string>
@@ -990,6 +992,7 @@
     <string name="settings_color_protocol_strategy">Auto-balancer (Strategy)</string>
     <string name="settings_color_protocol_chain">Proxy Chain</string>
     <string name="settings_color_protocol_json">JSON Config (Custom)</string>
+    <string name="settings_color_protocol_masque">MASQUE Protocol</string>
 
     <string name="app_update_available_title">SKIPI Update Available</string>
     <string name="app_update_size">Size</string>
