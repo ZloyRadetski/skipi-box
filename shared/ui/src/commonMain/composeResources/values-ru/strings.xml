@@ -469,6 +469,7 @@
     <string name="proxy_server_list_add_shadowsocks">Добавить Shadowsocks</string>
     <string name="proxy_server_list_add_socks">Добавить Socks</string>
     <string name="proxy_server_list_add_hysteria2">Добавить Hysteria2</string>
+    <string name="proxy_server_list_add_masque">Добавить MASQUE</string>
     <string name="proxy_server_list_add_wireguard">Добавить WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">Добавить AmneziaWG</string>
     <string name="proxy_server_list_restart_service">Перезапустить службу</string>
@@ -534,6 +535,13 @@
     <string name="proxy_editor_mport_hop_interval">Интервал перескока портов (в секундах)</string>
     <string name="proxy_editor_down_bandwidth">Входящая пропускная способность (поддерживает k/m/g/t)</string>
     <string name="proxy_editor_up_bandwidth">Исходящая пропускная способность (поддерживает k/m/g/t)</string>
+    <string name="proxy_editor_masque_host">Хост HTTP/3 (необязательно)</string>
+    <string name="proxy_editor_masque_path">Путь (необязательно, поддерживает {target} и {ipproto})</string>
+    <string name="proxy_editor_masque_remote_dns">Удалённые DNS-серверы (необязательно, IP через запятую)</string>
+    <string name="proxy_editor_masque_warp_title">Профиль Cloudflare WARP (заменяет логин и пароль)</string>
+    <string name="proxy_editor_masque_warp_private_key">Приватный ключ WARP (base64)</string>
+    <string name="proxy_editor_masque_warp_public_key">Публичный ключ WARP (base64)</string>
+    <string name="proxy_editor_masque_warp_address">Адреса WARP (IPv4/IPv6, через запятую)</string>
     <string name="proxy_editor_certificate_fingerprint">Отпечаток сертификата (SHA-256)</string>
     <string name="proxy_editor_transport">Сетевой транспорт</string>
     <string name="proxy_editor_transport_type">Протокол транспорта</string>
@@ -549,6 +557,11 @@
     <string name="proxy_editor_transport_xhttp">Настройки XHTTP</string>
     <string name="proxy_editor_xhttp_mode">Режим XHTTP</string>
     <string name="proxy_editor_xhttp_extra">Дополнительный сырой JSON для XHTTP, формат: { XHTTPObject }</string>
+    <string name="proxy_editor_transport_xdrive">Настройки XDRIVE</string>
+    <string name="proxy_editor_xdrive_service">Сервис хранилища</string>
+    <string name="proxy_editor_xdrive_folder">Удалённая папка (необязательно)</string>
+    <string name="proxy_editor_xdrive_secrets">Секреты через запятую (Google Drive: ClientID, ClientSecret, RefreshToken)</string>
+    <string name="proxy_editor_xdrive_extra">XDRIVE Extra, JSON-объект: размер сегмента, интервалы, s3, template, xmux</string>
     <string name="proxy_editor_transport_grpc">Настройки gRPC</string>
     <string name="proxy_editor_grpc_mode">Режим транспорта gRPC</string>
     <string name="proxy_editor_final_mask">Сырой JSON для FinalMask, формат: { FinalMaskObject }</string>

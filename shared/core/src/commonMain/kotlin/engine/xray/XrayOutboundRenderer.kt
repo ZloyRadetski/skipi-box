@@ -100,16 +100,20 @@ private fun buildProxyOutbound(
     outboundServer.dialerProxyTag?.let { dialerProxyTag ->
         outbound = outbound.withDialerProxyTag(dialerProxyTag)
     }
-    options.mux?.let { mux ->
-        outbound = outbound.updated {
-            put(
-                "mux",
-                buildXrayMuxConfig(
-                    concurrency = mux.concurrency,
-                    xudpConcurrency = mux.xudpConcurrency,
-                    xudpProxyUdp443Mode = mux.xudpProxyUdp443Mode,
-                ),
-            )
+    if (outbound.isXdriveOutbound()) {
+        outbound = outbound.updated { put("mux", xdriveMuxConfig(options.mux)) }
+    } else {
+        options.mux?.let { mux ->
+            outbound = outbound.updated {
+                put(
+                    "mux",
+                    buildXrayMuxConfig(
+                        concurrency = mux.concurrency,
+                        xudpConcurrency = mux.xudpConcurrency,
+                        xudpProxyUdp443Mode = mux.xudpProxyUdp443Mode,
+                    ),
+                )
+            }
         }
     }
     if (options.fragment != null && outboundServer.allowFragment) {
@@ -155,12 +159,16 @@ fun List<JsonObject>.withXrayMuxAndFragmentOverlay(
     fragment: XrayFragmentOutboundOptions?,
 ): List<JsonObject> = map { source ->
     var outbound = source
-    mux?.let {
-        outbound = outbound.updated {
-            put(
-                "mux",
-                buildXrayMuxConfig(it.concurrency, it.xudpConcurrency, it.xudpProxyUdp443Mode),
-            )
+    if (outbound.isXdriveOutbound()) {
+        outbound = outbound.updated { put("mux", xdriveMuxConfig(mux)) }
+    } else {
+        mux?.let {
+            outbound = outbound.updated {
+                put(
+                    "mux",
+                    buildXrayMuxConfig(it.concurrency, it.xudpConcurrency, it.xudpProxyUdp443Mode),
+                )
+            }
         }
     }
     if (fragment != null) outbound = outbound.withDialerProxyTag(XrayTags.FRAGMENT)

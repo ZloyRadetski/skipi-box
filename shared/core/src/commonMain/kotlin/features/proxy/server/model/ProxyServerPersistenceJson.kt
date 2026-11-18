@@ -26,6 +26,7 @@ fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
         is VLESS -> persisted(ProxyServerConstants.PROTOCOL_VLESS, this)
         is Trojan -> persisted(ProxyServerConstants.PROTOCOL_TROJAN, this)
         is Hysteria2 -> persisted(ProxyServerConstants.PROTOCOL_HYSTERIA2, this)
+        is Masque -> persisted(ProxyServerConstants.PROTOCOL_MASQUE, this)
         is Wireguard -> persisted(ProxyServerConstants.PROTOCOL_WIREGUARD, this)
         is AmneziaWg -> persisted(ProxyServerConstants.PROTOCOL_AMNEZIA_WG, this)
         is StrategyGroup -> persisted(ProxyServerConstants.PROTOCOL_STRATEGY_GROUP, this)
@@ -69,6 +70,9 @@ fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
 
         ProxyServerConstants.PROTOCOL_HYSTERIA2 ->
             ProxyServer.json.decodeFromJsonElement<Hysteria2>(payload)
+
+        ProxyServerConstants.PROTOCOL_MASQUE ->
+            ProxyServer.json.decodeFromJsonElement<Masque>(payload)
 
         ProxyServerConstants.PROTOCOL_WIREGUARD ->
             ProxyServer.json.decodeFromJsonElement<Wireguard>(payload)

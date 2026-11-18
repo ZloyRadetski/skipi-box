@@ -172,6 +172,8 @@ internal fun customXrayConfigTransportDisplay(value: String): String? {
         "httpupgrade" -> "HTTPUpgrade"
         "xhttp", "splithttp" -> "xHTTP"
         "kcp", "mkcp" -> "mKCP"
+        "xdrive" -> "XDRIVE"
+        "masque" -> "MASQUE"
         "quic" -> "QUIC"
         "domainsocket" -> "DomainSocket"
         "http", "h2" -> "HTTP/2"

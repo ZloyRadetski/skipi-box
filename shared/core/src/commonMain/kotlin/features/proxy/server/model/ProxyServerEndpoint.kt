@@ -19,6 +19,7 @@ fun ProxyServer<*>.connectionEndpointOrNull(): ProxyServerEndpoint? {
     return when (this) {
         is HTTP -> endpoint(server, port)
         is Hysteria2 -> endpoint(server, port)
+        is Masque -> endpoint(server, port)
         is Shadowsocks -> endpoint(server, port)
         is Socks -> endpoint(server, port)
         is Trojan -> endpoint(server, port)
@@ -36,6 +37,7 @@ fun ProxyServer<*>.serverHost(): String {
     return when (this) {
         is HTTP -> server
         is Hysteria2 -> server
+        is Masque -> server
         is Shadowsocks -> server
         is Socks -> server
         is Trojan -> server

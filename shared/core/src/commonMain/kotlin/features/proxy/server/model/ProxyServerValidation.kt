@@ -6,9 +6,12 @@ package features.proxy.server.model
 import engine.network.NetworkLimits
 import engine.network.isPort
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import utils.decodeUrlSafeBase64NoPaddingOrNull
 import utils.decodeUrlSafeBase64OptionalPaddingOrNull
+import utils.toCsvValues
 import utils.toIntInRangeOrNull
 
 private val DomainLabelRegex = Regex("[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?")
@@ -133,14 +136,17 @@ internal fun MutableList<ProxyServerValidationIssue>.validateOptionalUserPasswor
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(params: V2RayParameters) {
+internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(
+    params: V2RayParameters,
+    allowXdrive: Boolean = false,
+) {
     val type = params.type.ifBlank { "raw" }
     val security = params.security.ifBlank { "none" }
     validateOptionalJsonObject(params.fm, "FinalMask")
     validateAllowed(
         type,
         "transport protocol",
-        setOf("tcp", "raw", "kcp", "mkcp", "ws", "websocket", "httpupgrade", "xhttp", "splithttp", "grpc"),
+        setOf("tcp", "raw", "kcp", "mkcp", "ws", "websocket", "httpupgrade", "xhttp", "splithttp", "grpc", "xdrive"),
     )
     validateAllowed(security, "transport security", setOf("none", "tls", "reality"))
 
@@ -165,6 +171,10 @@ internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(par
     if (type in setOf("xhttp", "splithttp")) {
         validateAllowed(params.mode ?: "auto", "XHTTP mode", setOf("auto", "packet-up", "stream-up", "stream-one"))
         validateOptionalJsonObject(params.extra, "XHTTP Extra")
+    }
+    if (type == "xdrive") {
+        // The core's validateXDrive: "the xdrive transport can only be used by VLESS".
+        if (allowXdrive) validateXdrive(params) else addIssue(ProxyServerValidationError.UnsupportedValue, "XDRIVE requires VLESS")
     }
 
     when (security) {
@@ -405,6 +415,84 @@ private fun MutableList<ProxyServerValidationIssue>.validateVlessPaddingBlock(
     if (firstPadding && (probability != 100 || min <= 0)) {
         addIssue(ProxyServerValidationError.VlessFirstPaddingInvalid)
     }
+}
+
+private val XdriveServices = setOf("google-drive", "template", "s3", "local")
+private const val XdriveGoogleDriveSecretCount = 3
+
+/** Mirrors the checks the Xray core makes when it builds `xdriveSettings`. */
+private fun MutableList<ProxyServerValidationIssue>.validateXdrive(params: V2RayParameters) {
+    validateOptionalJsonObject(params.extra, "XDRIVE Extra")
+    val extra = runCatching { Json.parseToJsonElement(params.extra.orEmpty().ifBlank { "{}" }) }
+        .getOrNull() as? JsonObject ?: JsonObject(emptyMap())
+    val service = params.xdService.orEmpty().trim()
+    validateAllowed(service, "XDRIVE service", XdriveServices)
+    when (service) {
+        "google-drive" -> {
+            if (params.xdSecrets.toCsvValues().size != XdriveGoogleDriveSecretCount) {
+                addIssue(
+                    ProxyServerValidationError.ValueOutOfRange,
+                    XdriveGoogleDriveSecretCount,
+                    XdriveGoogleDriveSecretCount,
+                )
+            }
+        }
+        "template" -> if (extra["template"] !is JsonObject) {
+            addIssue(ProxyServerValidationError.RequiredField, "template")
+        }
+        "s3" -> validateXdriveS3(params, extra)
+    }
+    val xmux = extra["xmux"] as? JsonObject
+    if (xmux != null && xmux["maxConnections"].isNonZeroXmuxRange() && xmux["maxConcurrency"].isNonZeroXmuxRange()) {
+        addIssue(ProxyServerValidationError.UnsupportedValue, "xmux maxConnections + maxConcurrency")
+    }
+}
+
+/** The checks of the core's ValidateS3Config that do not need the network; region and addressing stay with the core. */
+private fun MutableList<ProxyServerValidationIssue>.validateXdriveS3(params: V2RayParameters, extra: JsonObject) {
+    val s3 = extra["s3"] as? JsonObject
+    if (s3 == null) {
+        addIssue(ProxyServerValidationError.RequiredField, "s3")
+        return
+    }
+    val endpoint = (s3["endpoint"] as? JsonPrimitive)?.content.orEmpty().trim()
+    if (endpoint.isBlank()) {
+        addIssue(ProxyServerValidationError.RequiredField, "S3 endpoint")
+    } else {
+        val rest = endpoint.substringAfter("://", missingDelimiterValue = "")
+        val authority = rest.substringBefore('/')
+        val hasScheme = endpoint.startsWith("http://", ignoreCase = true) || endpoint.startsWith("https://", ignoreCase = true)
+        if (!hasScheme || authority.isBlank() || '@' in authority || '?' in endpoint || '#' in endpoint) {
+            addIssue(ProxyServerValidationError.UnsupportedValue, endpoint)
+        }
+    }
+    val bucket = (s3["bucket"] as? JsonPrimitive)?.content.orEmpty()
+    if (bucket.isBlank()) {
+        addIssue(ProxyServerValidationError.RequiredField, "S3 bucket")
+    } else if ('/' in bucket) {
+        addIssue(ProxyServerValidationError.UnsupportedValue, bucket)
+    }
+
+    val folder = params.xdFolder.orEmpty().trim().removeSuffix("/")
+    if (folder.isBlank()) {
+        addIssue(ProxyServerValidationError.RequiredField, "remote folder")
+    } else if (folder.split('/').any { it.isEmpty() || it == "." || it == ".." }) {
+        addIssue(ProxyServerValidationError.UnsupportedValue, folder)
+    }
+
+    val secrets = params.xdSecrets.toCsvValues()
+    if (secrets.size !in 2..3) {
+        addIssue(ProxyServerValidationError.ValueOutOfRange, 2, 3)
+    } else if (secrets.first().any { it == '/' || it.isWhitespace() }) {
+        addIssue(ProxyServerValidationError.UnsupportedValue, "AccessKeyID")
+    }
+}
+
+/** XMUX ranges are a number or a "from-to" string; absent, 0 and "0-0" mean "not set". */
+private fun JsonElement?.isNonZeroXmuxRange(): Boolean {
+    val text = (this as? JsonPrimitive)?.content?.trim().orEmpty()
+    if (text.isEmpty()) return false
+    return text.split('-').any { part -> part.trim().toIntOrNull()?.let { it != 0 } ?: true }
 }
 
 private fun MutableList<ProxyServerValidationIssue>.validateOptionalIntRange(

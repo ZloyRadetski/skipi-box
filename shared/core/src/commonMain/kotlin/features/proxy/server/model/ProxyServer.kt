@@ -25,6 +25,7 @@ object ProxyServerConstants {
     const val PROTOCOL_TROJAN = "trojan"
     const val PROTOCOL_HYSTERIA2 = "hysteria2"
     const val PROTOCOL_HY2 = "hy2"
+    const val PROTOCOL_MASQUE = "masque"
     const val PROTOCOL_WIREGUARD = "wireguard"
     const val PROTOCOL_AMNEZIA_WG = "amneziawg"
     const val PROTOCOL_AWG = "awg"
@@ -72,6 +73,7 @@ interface ProxyServer<T : ProxyServer<T>> {
                 ProxyServerConstants.PROTOCOL_VLESS -> VLESS().parse(url)
                 ProxyServerConstants.PROTOCOL_TROJAN -> Trojan().parse(url)
                 ProxyServerConstants.PROTOCOL_HY2, ProxyServerConstants.PROTOCOL_HYSTERIA2 -> Hysteria2().parse(url)
+                ProxyServerConstants.PROTOCOL_MASQUE -> Masque().parse(url)
                 ProxyServerConstants.PROTOCOL_WIREGUARD -> Wireguard().parse(url)
                 ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
                 ProxyServerConstants.PROTOCOL_AWG -> AmneziaWg().parse(url)
@@ -185,6 +187,9 @@ data class V2RayParameters(
     var mode: String? = null,
     var authority: String? = null,
     var extra: String? = null,
+    var xdService: String? = null,
+    var xdFolder: String? = null,
+    var xdSecrets: String? = null,
     var fm: String? = null,
     var fp: String? = null,
     var sni: String? = null,
@@ -242,6 +247,13 @@ data class V2RayParameters(
                 this.path = url.parameters["path"]
                 this.host = url.parameters["host"]
                 this.mode = url.parameters["mode"]
+                this.extra = url.parameters["extra"]
+            }
+
+            V2RayTransportXdrive -> {
+                this.xdService = url.parameters["service"]
+                this.xdFolder = url.parameters["folder"]
+                this.xdSecrets = url.parameters["secrets"]
                 this.extra = url.parameters["extra"]
             }
 
@@ -313,6 +325,13 @@ data class V2RayParameters(
                     appendIfNotBlank("extra", this@V2RayParameters.extra)
                 }
 
+                "xdrive" -> {
+                    appendIfNotBlank("service", this@V2RayParameters.xdService)
+                    appendIfNotBlank("folder", this@V2RayParameters.xdFolder)
+                    appendIfNotBlank("secrets", this@V2RayParameters.xdSecrets)
+                    appendIfNotBlank("extra", this@V2RayParameters.extra)
+                }
+
                 else -> throw ParseException("Unknown v2ray transport type: $type")
             }
             when (securityType) {
@@ -349,6 +368,9 @@ data class V2RayParameters(
             headers?.takeIf(String::isNotBlank)?.let { append("|hdr=").append(it) }
             serviceName?.takeIf(String::isNotBlank)?.let { append("|svc=").append(it) }
             mode?.takeIf(String::isNotBlank)?.let { append("|mode=").append(it) }
+            xdService?.takeIf(String::isNotBlank)?.let { append("|xds=").append(it) }
+            xdFolder?.takeIf(String::isNotBlank)?.let { append("|xdf=").append(it) }
+            xdSecrets?.takeIf(String::isNotBlank)?.let { append("|xdk=").append(it) }
             authority?.takeIf(String::isNotBlank)?.let { append("|auth=").append(it) }
             sni?.takeIf(String::isNotBlank)?.let { append("|sni=").append(it.lowercase()) }
             alpn?.takeIf(String::isNotBlank)?.let { append("|alpn=").append(it) }
@@ -388,6 +410,7 @@ fun V2RayParameters.getTransportDisplay(): String {
         V2RayTransportHttpUpgrade -> "HTTPUpgrade"
         V2RayTransportXhttp -> "xHTTP"
         V2RayTransportMkcp -> "mKCP"
+        V2RayTransportXdrive -> "XDRIVE"
         else -> "TCP"
     }
     return when {
@@ -417,6 +440,7 @@ fun ProxyServer<*>.getTransportDisplay(): String? {
             }
         }
         is Hysteria2 -> "QUIC"
+        is Masque -> "QUIC"
         is Wireguard -> "UDP"
         is AmneziaWg -> "UDP"
         is HTTP -> "TCP"

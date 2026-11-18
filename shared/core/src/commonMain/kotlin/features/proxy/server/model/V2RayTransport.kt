@@ -9,6 +9,7 @@ const val V2RayTransportWebSocket = "websocket"
 const val V2RayTransportHttpUpgrade = "httpupgrade"
 const val V2RayTransportXhttp = "xhttp"
 const val V2RayTransportGrpc = "grpc"
+const val V2RayTransportXdrive = "xdrive"
 
 data class V2RayTransportOption(
     val value: String,
@@ -23,7 +24,12 @@ val V2RayTransportOptions = listOf(
     V2RayTransportOption(V2RayTransportHttpUpgrade),
     V2RayTransportOption(V2RayTransportXhttp),
     V2RayTransportOption(V2RayTransportGrpc),
+    V2RayTransportOption(V2RayTransportXdrive),
 )
+
+/** XDRIVE works only with VLESS: the core's validateXDrive refuses it for every other protocol. */
+fun v2RayTransportOptionsFor(allowXdrive: Boolean): List<V2RayTransportOption> =
+    if (allowXdrive) V2RayTransportOptions else V2RayTransportOptions.filterNot { it.value == V2RayTransportXdrive }
 
 fun String?.toCanonicalV2RayTransportType(defaultType: String = V2RayTransportRaw): String {
     val normalized = this
@@ -38,6 +44,7 @@ fun String?.toCanonicalV2RayTransportType(defaultType: String = V2RayTransportRa
         V2RayTransportHttpUpgrade -> V2RayTransportHttpUpgrade
         "splithttp", V2RayTransportXhttp -> V2RayTransportXhttp
         V2RayTransportGrpc -> V2RayTransportGrpc
+        V2RayTransportXdrive -> V2RayTransportXdrive
         else -> normalized
     }
 }
@@ -51,8 +58,11 @@ fun String.toV2RayTransportUrlType(): String {
     }
 }
 
-fun v2RayTransportOptionIndex(type: String?): Int {
+fun v2RayTransportOptionIndex(
+    type: String?,
+    options: List<V2RayTransportOption> = V2RayTransportOptions,
+): Int {
     val canonicalType = type.toCanonicalV2RayTransportType()
-    val index = V2RayTransportOptions.indexOfFirst { option -> option.value == canonicalType }
+    val index = options.indexOfFirst { option -> option.value == canonicalType }
     return if (index >= 0) index else 0
 }

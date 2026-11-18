@@ -16,6 +16,8 @@ private val SensitiveKeys = setOf(
     "privatekey", "publickey", "shortid", "secretkey", "presharedkey", "psk",
     "address", "servername", "sni", "host", "obfspassword", "obfs-password",
     "email", "ip", "hosts",
+    // XDRIVE: account secrets, a template that may carry tokens, and the storage endpoint and bucket.
+    "secrets", "template", "endpoint", "bucket",
 )
 
 private val prettyJson = Json { prettyPrint = true }
@@ -33,7 +35,7 @@ fun redactXrayConfigForLog(configJson: String): String {
 
 private fun JsonElement.redacted(parentSensitive: Boolean): JsonElement = when (this) {
     is JsonObject -> JsonObject(
-        mapValues { (key, value) -> value.redacted(parentSensitive = key.lowercase() in SensitiveKeys) },
+        mapValues { (key, value) -> value.redacted(parentSensitive = parentSensitive || key.lowercase() in SensitiveKeys) },
     )
     is JsonArray -> JsonArray(map { it.redacted(parentSensitive) })
     is JsonPrimitive -> if (parentSensitive && isString) JsonPrimitive(Masked) else this

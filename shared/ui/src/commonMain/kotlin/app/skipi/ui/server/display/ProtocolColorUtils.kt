@@ -19,6 +19,7 @@ object ProtocolColorUtils {
     val DefaultStrategyLight = Color(0xFF2E7D32)    // Emerald Green
     val DefaultChainLight = Color(0xFF00838F)       // Cyan
     val DefaultJsonLight = Color(0xFF8E24AA)        // Magenta
+    val DefaultMasqueLight = Color(0xFF6D4C41)      // Brown
 
     // Default colors for dark theme
     val DefaultVlessDark = Color(0xFF7986CB)
@@ -33,6 +34,7 @@ object ProtocolColorUtils {
     val DefaultStrategyDark = Color(0xFF66BB6A)
     val DefaultChainDark = Color(0xFF4DD0E1)
     val DefaultJsonDark = Color(0xFFCE93D8)
+    val DefaultMasqueDark = Color(0xFFA1887F)
 
     fun resolveProtocolColor(
         protocol: String,
@@ -53,6 +55,7 @@ object ProtocolColorUtils {
                 customColors["hysteria2"]?.let { Color(it) }
                     ?: if (isDark) DefaultHysteria2Dark else DefaultHysteria2Light
             }
+            normalized.contains("masque") -> if (isDark) DefaultMasqueDark else DefaultMasqueLight
             normalized.contains("trojan") -> {
                 customColors["trojan"]?.let { Color(it) }
                     ?: if (isDark) DefaultTrojanDark else DefaultTrojanLight

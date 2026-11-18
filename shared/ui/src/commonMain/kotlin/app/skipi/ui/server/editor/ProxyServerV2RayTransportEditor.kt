@@ -26,20 +26,21 @@ import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.V2RayTransportGrpc
 import features.proxy.server.model.V2RayTransportHttpUpgrade
 import features.proxy.server.model.V2RayTransportMkcp
-import features.proxy.server.model.V2RayTransportOptions
 import features.proxy.server.model.V2RayTransportRaw
 import features.proxy.server.model.V2RayTransportWebSocket
+import features.proxy.server.model.V2RayTransportXdrive
 import features.proxy.server.model.V2RayTransportXhttp
 import features.proxy.server.model.v2RayTransportOptionIndex
+import features.proxy.server.model.v2RayTransportOptionsFor
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
 
-fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
+fun LazyListScope.v2rayServerTransport(params: V2RayParameters, allowXdrive: Boolean = false) {
     item(key = "transport") {
         val focusManager = LocalFocusManager.current
-        val typeOptions = remember {
-            V2RayTransportOptions
+        val typeOptions = remember(allowXdrive) {
+            v2RayTransportOptionsFor(allowXdrive)
         }
         val typeLabels = remember {
             typeOptions.map { option -> option.label }
@@ -48,7 +49,7 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
 
         val type = remember {
             mutableIntStateOf(
-                v2RayTransportOptionIndex(params.type)
+                v2RayTransportOptionIndex(params.type, typeOptions)
             )
         }
         val security = remember {
@@ -305,6 +306,65 @@ fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 )
                 TextField(
                     label = stringResource(Res.string.proxy_editor_xhttp_extra),
+                    state = rememberTextFieldState(initialText = params.extra ?: ""),
+                    lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),
+                    inputTransformation = InputTransformation {
+                        params.extra = asCharSequence().toString()
+                    },
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onKeyboardAction = { focusManager.clearFocus() },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
+            }
+        }
+        //xdrive
+        AnimatedVisibility(
+            visible = selectedTransportType == V2RayTransportXdrive,
+            enter = fadeIn() + expandVertically(),
+            exit = ExitTransition.None,
+        ) {
+            Column {
+                val serviceOptions = remember { listOf("google-drive", "s3", "template", "local") }
+                val service = remember {
+                    // The service is required by the core, so the value the dropdown shows must be stored.
+                    if (params.xdService.isNullOrBlank()) params.xdService = serviceOptions.first()
+                    mutableIntStateOf(serviceOptions.indexOf(params.xdService).coerceAtLeast(0))
+                }
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_xdrive))
+                SkipiDropdownPreference(
+                    title = stringResource(Res.string.proxy_editor_xdrive_service),
+                    items = serviceOptions,
+                    selectedIndex = service.intValue,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onSelectedIndexChange = { newService ->
+                        service.intValue = newService
+                        params.xdService = serviceOptions[newService]
+                    },
+                )
+                TextField(
+                    label = stringResource(Res.string.proxy_editor_xdrive_folder),
+                    state = rememberTextFieldState(initialText = params.xdFolder ?: ""),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    inputTransformation = InputTransformation {
+                        params.xdFolder = asCharSequence().toString()
+                    },
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onKeyboardAction = { focusManager.clearFocus() },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
+                TextField(
+                    label = stringResource(Res.string.proxy_editor_xdrive_secrets),
+                    state = rememberTextFieldState(initialText = params.xdSecrets ?: ""),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    inputTransformation = InputTransformation {
+                        params.xdSecrets = asCharSequence().toString()
+                    },
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onKeyboardAction = { focusManager.clearFocus() },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
+                TextField(
+                    label = stringResource(Res.string.proxy_editor_xdrive_extra),
                     state = rememberTextFieldState(initialText = params.extra ?: ""),
                     lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),
                     inputTransformation = InputTransformation {

@@ -17,6 +17,31 @@ class ProxyServerUrlImportTest {
     }
 
     @Test
+    fun aMasqueLineIsImported() {
+        val result = importProxyServersFromUrls("masque://alice:pw@masque.example.com:443?sni=masque.example.com#Edge")
+
+        assertEquals(listOf("Edge"), result.servers.map { it.getInfo().remarks })
+        assertEquals(listOf("MASQUE"), result.servers.map { it.getInfo().protocol })
+    }
+
+    @Test
+    fun aMasqueLinkInsideProseIsImported() {
+        val result = importProxyServersFromUrls("my server: masque://alice:pw@masque.example.com:443#Edge, thanks")
+
+        assertEquals(listOf("MASQUE"), result.servers.map { it.getInfo().protocol })
+    }
+
+    @Test
+    fun aMasqueLinkWithAnInvalidPortIsReportedAsAFailure() {
+        val failures = mutableListOf<ProxyServerUrlImportFailure>()
+
+        val result = importProxyServersFromUrls("masque://alice:pw@masque.example.com:70000#Bad", failures::add)
+
+        assertEquals(emptyList(), result.servers)
+        assertEquals(1, failures.size)
+    }
+
+    @Test
     fun rejectsUnsafeAmneziaWgUrlAndReportsTheIndividualFailure() {
         val link = "awg://aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=@198.51.100.2:51820?publickey=YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=&jc=129&jmin=40&jmax=70&s1=15&s2=30"
         val failures = mutableListOf<ProxyServerUrlImportFailure>()

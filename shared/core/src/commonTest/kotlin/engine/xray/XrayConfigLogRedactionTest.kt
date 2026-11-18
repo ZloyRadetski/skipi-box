@@ -21,6 +21,32 @@ class XrayConfigLogRedactionTest {
     """.trimIndent()
 
     @Test
+    fun xdriveAccountSecretsAndMasqueCredentialsAreMasked() {
+        val redacted = redactXrayConfigForLog(
+            """
+            {"outbounds": [
+              {"tag": "d", "protocol": "vless", "streamSettings": {"network": "xdrive", "xdriveSettings": {
+                "service": "google-drive", "secrets": ["drive-client-id", "drive-client-secret", "drive-refresh-token"],
+                "template": {"headers": {"Authorization": "Bearer template-token"}},
+                "s3": {"endpoint": "https://s3.private.example", "bucket": "private-bucket", "region": "eu"}}}},
+              {"tag": "m", "protocol": "masque", "streamSettings": {"network": "masque", "masqueSettings": {
+                "user": "masque-user", "pass": "masque-pass", "host": "masque-front.example",
+                "warp": {"privateKey": "WARPPRIV", "publicKey": "WARPPUB", "address": ["172.16.0.2/32"]}}}}
+            ]}
+            """.trimIndent(),
+        )
+
+        listOf(
+            "drive-client-id", "drive-client-secret", "drive-refresh-token", "template-token",
+            "s3.private.example", "private-bucket", "masque-user", "masque-pass", "masque-front.example",
+            "WARPPRIV", "WARPPUB", "172.16.0.2",
+        ).forEach { secret ->
+            assertFalse(redacted.contains(secret), "$secret leaked into the log")
+        }
+        assertTrue(redacted.contains("google-drive"), "the service name is not a secret and helps debugging")
+    }
+
+    @Test
     fun credentialsAndServerAddressesAreMasked() {
         val redacted = redactXrayConfigForLog(config)
 

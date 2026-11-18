@@ -205,6 +205,7 @@ enum class ProxyHomeServerKind {
     Shadowsocks,
     Socks,
     Hysteria2,
+    Masque,
     Wireguard,
     AmneziaWg,
     StrategyGroup,

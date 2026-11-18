@@ -432,6 +432,7 @@
     <string name="proxy_server_list_add_shadowsocks">添加 Shadowsocks</string>
     <string name="proxy_server_list_add_socks">添加 Socks</string>
     <string name="proxy_server_list_add_hysteria2">添加 Hysteria2</string>
+    <string name="proxy_server_list_add_masque">添加 MASQUE</string>
     <string name="proxy_server_list_add_wireguard">添加 WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">添加 AmneziaWG</string>
     <string name="proxy_server_list_restart_service">重启服务</string>
@@ -503,6 +504,13 @@
     <string name="proxy_editor_mport_hop_interval">端口跳跃间隔（秒）</string>
     <string name="proxy_editor_down_bandwidth">下载带宽（支持k/m/g/t）</string>
     <string name="proxy_editor_up_bandwidth">上传带宽（支持k/m/g/t）</string>
+    <string name="proxy_editor_masque_host">HTTP/3 主机（可选）</string>
+    <string name="proxy_editor_masque_path">路径（可选，支持 {target} 和 {ipproto}）</string>
+    <string name="proxy_editor_masque_remote_dns">远程 DNS 服务器（可选，IP 以逗号分隔）</string>
+    <string name="proxy_editor_masque_warp_title">Cloudflare WARP 身份（替代用户名和密码）</string>
+    <string name="proxy_editor_masque_warp_private_key">WARP 私钥（base64）</string>
+    <string name="proxy_editor_masque_warp_public_key">WARP 公钥（base64）</string>
+    <string name="proxy_editor_masque_warp_address">WARP 地址（IPv4/IPv6，以逗号分隔）</string>
     <string name="proxy_editor_certificate_fingerprint">证书指纹 (SHA-256)</string>
     <string name="proxy_editor_transport">传输</string>
     <string name="proxy_editor_transport_type">传输协议</string>
@@ -518,6 +526,11 @@
     <string name="proxy_editor_transport_xhttp">XHTTP 设置</string>
     <string name="proxy_editor_xhttp_mode">XHTTP 模式</string>
     <string name="proxy_editor_xhttp_extra">XHTTP 额外的原始 JSON，格式：{ XHTTPObject }</string>
+    <string name="proxy_editor_transport_xdrive">XDRIVE 设置</string>
+    <string name="proxy_editor_xdrive_service">存储服务</string>
+    <string name="proxy_editor_xdrive_folder">远程文件夹（可选）</string>
+    <string name="proxy_editor_xdrive_secrets">密钥，以逗号分隔（Google Drive：ClientID、ClientSecret、RefreshToken）</string>
+    <string name="proxy_editor_xdrive_extra">XDRIVE Extra 原始 JSON 对象：分段大小、间隔、s3、template、xmux</string>
     <string name="proxy_editor_transport_grpc">gRPC 设置</string>
     <string name="proxy_editor_grpc_mode">gRPC 传输模式</string>
     <string name="proxy_editor_final_mask">FinalMask 原始 JSON，格式：{ FinalMaskObject }</string>

@@ -173,6 +173,28 @@ fun buildXrayMuxConfig(
     put("xudpProxyUDP443", MuxUdp443Values.getOrElse(xudpProxyUdp443Mode) { MuxUdp443Values.first() })
 }
 
+/** An outbound on the xdrive transport, which the core only accepts with a mux of its own kind. */
+internal fun JsonObject.isXdriveOutbound(): Boolean =
+    objectValue("streamSettings")?.stringValue("network") == "xdrive"
+
+/**
+ * The core refuses xdrive without an enabled mux, with a negative `concurrency` or `xudpConcurrency`,
+ * and with `xudpProxyUDP443` "skip". The user's values are kept when they pass, and the defaults
+ * replace the ones that do not (or the whole mux when it is off).
+ */
+internal fun xdriveMuxConfig(mux: XrayMuxOutboundOptions?): JsonObject {
+    fun nonNegativeOrDefault(value: String?, default: String): String =
+        if (value?.trim()?.toIntOrNull()?.let { it >= 0 } == true) value.trim() else default
+
+    val udp443Mode = mux?.xudpProxyUdp443Mode?.takeIf { MuxUdp443Values.getOrNull(it)?.let { name -> name != "skip" } == true }
+        ?: DefaultMuxUdp443Mode
+    return buildXrayMuxConfig(
+        concurrency = nonNegativeOrDefault(mux?.concurrency, DefaultMuxConcurrency),
+        xudpConcurrency = nonNegativeOrDefault(mux?.xudpConcurrency, DefaultMuxXudpConcurrency),
+        xudpProxyUdp443Mode = udp443Mode,
+    )
+}
+
 fun xrayDirectOutboundDomainStrategy(
     enableIpv6: Boolean,
     enableIpv6Prefer: Boolean,

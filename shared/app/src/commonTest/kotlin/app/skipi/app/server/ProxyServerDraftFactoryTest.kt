@@ -10,6 +10,7 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.Masque
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -116,6 +117,7 @@ class ProxyServerDraftFactoryTest {
                 down = "",
                 security = "none",
             ),
+            ProxyHomeServerKind.Masque to Masque(port = ""),
             ProxyHomeServerKind.Wireguard to Wireguard(
                 remarks = "",
                 server = "",

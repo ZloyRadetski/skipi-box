@@ -36,6 +36,18 @@ data class OutboundObject(
     }
 }
 
+/**
+ * The core refuses an xdrive outbound without an enabled mux (and with a negative concurrency or
+ * xudpProxyUDP443 "skip"), so the model always carries one. The renderer replaces it with the
+ * user's mux values when those are valid for xdrive.
+ */
+internal val XdriveRequiredMux: JsonObject = buildJsonObject {
+    put("enabled", true)
+    put("concurrency", 8)
+    put("xudpConcurrency", 16)
+    put("xudpProxyUDP443", "reject")
+}
+
 internal fun String.toXrayPort(): Int {
     return toPortOrNull()
         ?: throw IllegalArgumentException("Port must be ${NetworkLimits.PORT_MIN}-${NetworkLimits.PORT_MAX}")
@@ -92,6 +104,7 @@ fun V2RayParameters.toXrayStreamSettings(): JsonObject {
             "grpc" -> putGrpcSettings(this@toXrayStreamSettings)
             "httpupgrade" -> putHttpUpgradeSettings(this@toXrayStreamSettings)
             "xhttp" -> putXhttpSettings(this@toXrayStreamSettings)
+            "xdrive" -> putXdriveSettings(this@toXrayStreamSettings)
             "kcp", "mkcp" -> putKcpSettings(this@toXrayStreamSettings)
         }
 
@@ -110,6 +123,7 @@ private fun String.toXrayNetwork(): String {
         V2RayTransportGrpc -> "grpc"
         V2RayTransportHttpUpgrade -> "httpupgrade"
         V2RayTransportXhttp -> "xhttp"
+        V2RayTransportXdrive -> "xdrive"
         "http", "h2", "h3" -> throw UnsupportedOperationException("Unsupported Xray transport type: $this")
         else -> throw UnsupportedOperationException("Unknown Xray transport type: $this")
     }
@@ -175,6 +189,23 @@ private fun JsonObjectBuilder.putXhttpSettings(params: V2RayParameters) {
         val extra = params.extra.toXrayJsonObjectOrNull("XHTTP Extra")
         if (extra != null) {
             put("extra", extra)
+        }
+    }
+}
+
+/**
+ * The core reads every XDRIVE tuning field (segmentBytes, intervals, template, s3, xmux...) from
+ * `xdriveSettings` itself, so [V2RayParameters.extra] is merged flat. The structured fields are
+ * written last and win over the same keys in extra.
+ */
+private fun JsonObjectBuilder.putXdriveSettings(params: V2RayParameters) {
+    putJsonObject("xdriveSettings") {
+        params.extra.toXrayJsonObjectOrNull("XDRIVE Extra")?.forEach { (key, value) -> put(key, value) }
+        putIfNotBlank("service", params.xdService?.trim())
+        putIfNotBlank("remoteFolder", params.xdFolder?.trim())
+        val secrets = params.xdSecrets.toCsvValues()
+        if (secrets.isNotEmpty()) {
+            putJsonArray("secrets") { secrets.forEach { add(it) } }
         }
     }
 }

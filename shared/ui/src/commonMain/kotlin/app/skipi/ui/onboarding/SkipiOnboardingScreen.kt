@@ -531,7 +531,7 @@ private fun ImportStep(state: SkipiOnboardingState, actions: SkipiOnboardingActi
 
 private fun isOnboardingImportCandidate(value: String): Boolean {
     val text = value.trim().lowercase()
-    return listOf("vless://", "vmess://", "ss://", "trojan://", "hysteria2://", "hy2://", "http://", "https://")
+    return listOf("vless://", "vmess://", "ss://", "trojan://", "hysteria2://", "hy2://", "masque://", "http://", "https://")
         .any(text::startsWith)
 }
 

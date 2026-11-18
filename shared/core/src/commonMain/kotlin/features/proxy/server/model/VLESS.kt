@@ -37,6 +37,7 @@ data class VLESS(
                 putIfNotBlank("flow", flow)
             },
             streamSettings = parms.toXrayStreamSettings(),
+            mux = if (parms.type.toCanonicalV2RayTransportType() == V2RayTransportXdrive) XdriveRequiredMux else null,
         )
     }
 
@@ -102,7 +103,16 @@ data class VLESS(
             }
         }
         validateAllowed(flow, "flow", setOf("xtls-rprx-vision", "xtls-rprx-vision-udp443"), allowBlank = true)
-        validateV2RayParameters(parms)
+        if (parms.type.toCanonicalV2RayTransportType() == V2RayTransportXdrive) {
+            // The core's validateXDrive: encryption must not be "none", and flow is not supported.
+            if (encryption.isBlank() || encryption == "none") {
+                addIssue(ProxyServerValidationError.RequiredField, "VLESS encryption")
+            }
+            if (flow.isNotBlank()) {
+                addIssue(ProxyServerValidationError.UnsupportedValue, "flow")
+            }
+        }
+        validateV2RayParameters(parms, allowXdrive = true)
     }
 
     override fun connectionFingerprint(): String {

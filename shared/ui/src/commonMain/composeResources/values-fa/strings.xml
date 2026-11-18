@@ -424,6 +424,7 @@
     <string name="proxy_server_list_add_shadowsocks">Shadowsocks را اضافه کنید</string>
     <string name="proxy_server_list_add_socks">Socks را اضافه کنید</string>
     <string name="proxy_server_list_add_hysteria2">Hysteria2 را اضافه کنید</string>
+    <string name="proxy_server_list_add_masque">MASQUE را اضافه کنید</string>
     <string name="proxy_server_list_add_wireguard">WireGuard را اضافه کنید</string>
     <string name="proxy_server_list_add_amnezia_wg">AmneziaWG را اضافه کنید</string>
     <string name="proxy_server_list_restart_service">سرویس را دوباره راه اندازی کنید</string>
@@ -495,6 +496,13 @@
     <string name="proxy_editor_mport_hop_interval">فاصله پرش پورت (ثانیه)</string>
     <string name="proxy_editor_down_bandwidth">پهنای باند دانلود (پشتیبانی از k/m/g/t)</string>
     <string name="proxy_editor_up_bandwidth">پهنای باند آپلود (پشتیبانی از k/m/g/t)</string>
+    <string name="proxy_editor_masque_host">هاست HTTP/3 (اختیاری)</string>
+    <string name="proxy_editor_masque_path">مسیر (اختیاری، پشتیبانی از {target} و {ipproto})</string>
+    <string name="proxy_editor_masque_remote_dns">سرورهای DNS راه دور (اختیاری، IPها با کاما جدا شوند)</string>
+    <string name="proxy_editor_masque_warp_title">هویت Cloudflare WARP (جایگزین نام کاربری و رمز عبور)</string>
+    <string name="proxy_editor_masque_warp_private_key">کلید خصوصی WARP (base64)</string>
+    <string name="proxy_editor_masque_warp_public_key">کلید عمومی WARP (base64)</string>
+    <string name="proxy_editor_masque_warp_address">آدرس‌های WARP (IPv4/IPv6، با کاما جدا شوند)</string>
     <string name="proxy_editor_certificate_fingerprint">اثر انگشت گواهی (SHA-256)</string>
     <string name="proxy_editor_transport">انتقال</string>
     <string name="proxy_editor_transport_type">پروتکل انتقال</string>
@@ -510,6 +518,11 @@
     <string name="proxy_editor_transport_xhttp">تنظیمات XHTTP</string>
     <string name="proxy_editor_xhttp_mode">حالت XHTTP</string>
     <string name="proxy_editor_xhttp_extra">JSON خام اضافی XHTTP، قالب: { XHTTPObject }</string>
+    <string name="proxy_editor_transport_xdrive">تنظیمات XDRIVE</string>
+    <string name="proxy_editor_xdrive_service">سرویس ذخیره‌سازی</string>
+    <string name="proxy_editor_xdrive_folder">پوشه راه دور (اختیاری)</string>
+    <string name="proxy_editor_xdrive_secrets">رازها با کاما جدا شوند (Google Drive: ClientID, ClientSecret, RefreshToken)</string>
+    <string name="proxy_editor_xdrive_extra">XDRIVE Extra با فرمت JSON: اندازه سگمنت، بازه‌ها، s3، template، xmux</string>
     <string name="proxy_editor_transport_grpc">تنظیمات gRPC</string>
     <string name="proxy_editor_grpc_mode">حالت انتقال gRPC</string>
     <string name="proxy_editor_final_mask">JSON خام FinalMask، قالب: { FinalMaskObject }</string>

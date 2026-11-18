@@ -8,6 +8,7 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.Masque
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -75,6 +76,23 @@ class ProxyServerEditorRegistryTest {
         assertNotSame(original, copy)
         copy.remarks = "Hy2 Changed"
         assertEquals("Hy2", original.remarks)
+    }
+
+    @Test
+    fun editableCopy_masque() {
+        val original = Masque().apply {
+            remarks = "Masque"
+            server = "masque.example.com"
+            port = "443"
+            user = "alice"
+            pass = "secret"
+        }
+
+        val copy = original.editableCopy() as Masque
+        assertNotSame(original, copy)
+        assertEquals(original, copy)
+        copy.remarks = "Masque Changed"
+        assertEquals("Masque", original.remarks)
     }
 
     @Test
