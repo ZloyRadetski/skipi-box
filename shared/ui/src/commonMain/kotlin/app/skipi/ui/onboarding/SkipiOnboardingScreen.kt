@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -265,6 +266,9 @@ private fun StepProgress(count: Int, current: Int) {
         }
     }
 }
+
+/** The logo plate of the welcome card is at most this wide (a phone is narrower, so it is unchanged there). */
+private val OnboardingLogoMaxWidth = 300.dp
 
 private val OnboardingLanguageNames = listOf(
     OnboardingLanguage.English to "English",
@@ -629,13 +633,16 @@ private fun Hero(title: String, subtitle: String, icon: ImageVector?, glow: Colo
         if (icon != null) {
             OnboardingIconTile(glow) { SkipiIcon(icon, null, tint = inkOn(glow), modifier = Modifier.size(28.dp)) }
         } else {
-            // The wide logo plate, as big as the card allows.
-            Image(
-                painter = painterResource(Res.drawable.ic_about_logo),
-                contentDescription = stringResource(Res.string.onboarding_logo_content_description),
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth().aspectRatio(2f),
-            )
+            // The wide logo plate, as big as the card allows on a phone; on a wide window it stops growing, or it
+            // would fill the page and push the language choice below the fold.
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_about_logo),
+                    contentDescription = stringResource(Res.string.onboarding_logo_content_description),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.widthIn(max = OnboardingLogoMaxWidth).fillMaxWidth().aspectRatio(2f),
+                )
+            }
         }
     }
 }
