@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.AmneziaWg
+import features.proxy.server.model.Masque
 import features.proxy.server.model.ProxyServer
 
 /** Whether a Mihomo proxy `type` can be represented by the shared server model. */
@@ -22,11 +23,13 @@ fun MihomoYamlMap.toMihomoProxyServer(): ProxyServer<*> {
         "vless" -> toMihomoVlessProxyServer()
         "trojan" -> toMihomoTrojanProxyServer()
         "hy2", "hysteria2" -> toMihomoHysteria2ProxyServer()
+        "masque" -> toMihomoMasqueProxyServer()
         "wg", "wireguard" -> toMihomoWireguardProxyServer()
         "amneziawg", "awg" -> toMihomoAmneziaWgProxyServer()
         else -> unsupported("unsupported proxy type")
     }.also { server ->
-        val issues = if (server is AmneziaWg) server.validateFull() else server.validateBasic()
+        // These two have keys and address lists the core refuses when malformed, so they get the full check.
+        val issues = if (server is AmneziaWg || server is Masque) server.validateFull() else server.validateBasic()
         if (issues.isNotEmpty()) {
             unsupported("proxy validation failed: ${issues.joinToString { it.error.name }}")
         }
@@ -44,6 +47,7 @@ private val SupportedMihomoProxyTypes = setOf(
     "trojan",
     "hy2",
     "hysteria2",
+    "masque",
     "wg",
     "wireguard",
     "amneziawg",
