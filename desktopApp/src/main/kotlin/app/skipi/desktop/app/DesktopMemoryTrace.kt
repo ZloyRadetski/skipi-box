@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 // ████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 internal const val DesktopMemoryTraceEnabled = true
 
-internal const val DesktopMemoryTraceIntervalMillis = 30_000L
+internal const val DesktopMemoryTraceIntervalMillis = 10_000L
 internal const val DesktopMemoryTraceMaxFileBytes = 20L * 1_024L * 1_024L
 
 /** Appends one block per [sample] to [file]; a section that throws is reported and does not stop the others. */
@@ -78,6 +78,7 @@ internal fun desktopMemoryTraceSections(readCoreMemory: () -> String): List<Pair
     "process" to ::processMemorySection,
     "jvm" to ::jvmMemorySection,
     "address-space" to ::addressSpaceSection,
+    "os-threads-and-heaps" to ::osThreadsAndHeapsSection,
     "native-memory-tracking" to ::nativeMemoryTrackingSection,
     "threads" to ::threadsSection,
     "go-core" to readCoreMemory,
@@ -175,6 +176,17 @@ internal fun summarizeMemoryRegions(regions: List<MemoryRegion>, topCount: Int =
         // PAGE_WRITECOMBINE (0x400) is how a GPU driver maps the memory it shares with the CPU.
         val writeCombined = committed.filter { it.protect and 0x400 != 0 }
         appendLine("write-combined committed=${mb(writeCombined.sumOf { it.size })} regions=${writeCombined.size}")
+        val kib = 1_024L
+        val buckets = listOf("<256 KB" to 0L, "256 KB-1 MB" to 256 * kib, "1-16 MB" to 1_024 * kib, ">=16 MB" to 16 * 1_024 * kib)
+        val privateRegions = committed.filter { it.kind == "private" }
+        append("private by size: ")
+        appendLine(
+            buckets.mapIndexed { index, (label, from) ->
+                val to = buckets.getOrNull(index + 1)?.second ?: Long.MAX_VALUE
+                val inBucket = privateRegions.filter { it.size >= from && it.size < to }
+                "$label: ${inBucket.size} regions ${mb(inBucket.sumOf { it.size })}"
+            }.joinToString(", "),
+        )
         appendLine("largest committed regions:")
         committed.sortedByDescending { it.size }.take(topCount).forEach {
             appendLine("  ${mb(it.size)} at 0x${java.lang.Long.toHexString(it.base)} ${it.kind} protect=0x${Integer.toHexString(it.protect)}")
@@ -216,4 +228,78 @@ private fun addressSpaceSection(): String {
         }
     }
     return summarizeMemoryRegions(regions)
+}
+
+/** OS threads of this process (the JVM only lists its own, Go and native libraries add more) and the Win32 heaps. */
+private fun osThreadsAndHeapsSection(): String {
+    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return "windows only"
+    val linker = Linker.nativeLinker()
+    val kernel32 = SymbolLookup.libraryLookup("kernel32", Arena.global())
+    val processId = ProcessHandle.current().pid().toInt()
+    return Arena.ofConfined().use { arena ->
+        buildString {
+            // Toolhelp: TH32CS_SNAPTHREAD = 4; THREADENTRY32 is 28 bytes (size, usage, threadId, ownerProcessId, ...).
+            val snapshot = linker.downcallHandle(
+                kernel32.findOrThrow("CreateToolhelp32Snapshot"),
+                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+            )
+            val first = linker.downcallHandle(
+                kernel32.findOrThrow("Thread32First"),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            )
+            val next = linker.downcallHandle(
+                kernel32.findOrThrow("Thread32Next"),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            )
+            val closeHandle = linker.downcallHandle(
+                kernel32.findOrThrow("CloseHandle"),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+            )
+            val handle = snapshot.invokeWithArguments(4, 0) as java.lang.foreign.MemorySegment
+            var threads = 0
+            try {
+                val entry = arena.allocate(28)
+                entry.set(ValueLayout.JAVA_INT, 0, 28)
+                var more = first.invokeWithArguments(handle, entry) as Int
+                while (more != 0) {
+                    if (entry.get(ValueLayout.JAVA_INT, 12) == processId) threads++
+                    more = next.invokeWithArguments(handle, entry) as Int
+                }
+            } finally {
+                closeHandle.invokeWithArguments(handle)
+            }
+            appendLine("os threads=$threads (jvm sees ${Thread.getAllStackTraces().size})")
+
+            // HEAP_SUMMARY: cb (4, padded to 8), then cbAllocated, cbCommitted, cbReserved, cbMaxReserve (SIZE_T each).
+            val getHeaps = linker.downcallHandle(
+                kernel32.findOrThrow("GetProcessHeaps"),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+            )
+            val summary = linker.downcallHandle(
+                kernel32.findOrThrow("HeapSummary"),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+            )
+            val handles = arena.allocate(8L * 256)
+            val count = minOf(getHeaps.invokeWithArguments(256, handles) as Int, 256)
+            var allocated = 0L
+            var committed = 0L
+            val perHeap = ArrayList<Pair<Long, Long>>()
+            for (index in 0 until count) {
+                val heap = handles.get(ValueLayout.ADDRESS, index * 8L)
+                val data = arena.allocate(40)
+                data.set(ValueLayout.JAVA_INT, 0, 40)
+                if (summary.invokeWithArguments(heap, 0, data) as Int != 0) {
+                    val heapAllocated = data.get(ValueLayout.JAVA_LONG, 8)
+                    val heapCommitted = data.get(ValueLayout.JAVA_LONG, 16)
+                    allocated += heapAllocated
+                    committed += heapCommitted
+                    perHeap += heapAllocated to heapCommitted
+                }
+            }
+            appendLine("win32 heaps=$count allocated=${mb(allocated)} committed=${mb(committed)}")
+            perHeap.sortedByDescending { it.second }.take(5).forEach {
+                appendLine("  heap allocated=${mb(it.first)} committed=${mb(it.second)}")
+            }
+        }
+    }
 }

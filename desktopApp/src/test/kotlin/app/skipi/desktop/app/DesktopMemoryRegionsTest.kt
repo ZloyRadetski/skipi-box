@@ -50,4 +50,22 @@ class DesktopMemoryRegionsTest {
 
         assertTrue(text.contains("write-combined committed=64.0 MB regions=2"), text)
     }
+
+    @Test
+    fun privateRegionsAreCountedBySizeBucketsToSeeManySmallBlocksApartFromFewBigOnes() {
+        val kib = 1_024L
+        val regions = listOf(
+            MemoryRegion(0x1000, 64 * kib, committed = true, kind = "private", protect = 0x04),
+            MemoryRegion(0x2000, 128 * kib, committed = true, kind = "private", protect = 0x04),
+            MemoryRegion(0x3000, 2 * mib, committed = true, kind = "private", protect = 0x04),
+            MemoryRegion(0x4000, 40 * mib, committed = true, kind = "private", protect = 0x04),
+            MemoryRegion(0x5000, 700 * mib, committed = true, kind = "image", protect = 0x20),
+        )
+
+        val text = summarizeMemoryRegions(regions)
+
+        assertTrue(text.contains("private by size: <256 KB: 2 regions 0.2 MB"), text)
+        assertTrue(text.contains("1-16 MB: 1 regions 2.0 MB"), text)
+        assertTrue(text.contains(">=16 MB: 1 regions 40.0 MB"), text)
+    }
 }
