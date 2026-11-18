@@ -77,6 +77,7 @@ internal fun desktopMemoryTraceFile(): File {
 internal fun desktopMemoryTraceSections(readCoreMemory: () -> String): List<Pair<String, () -> String>> = listOf(
     "process" to ::processMemorySection,
     "jvm" to ::jvmMemorySection,
+    "address-space" to ::addressSpaceSection,
     "native-memory-tracking" to ::nativeMemoryTrackingSection,
     "threads" to ::threadsSection,
     "go-core" to readCoreMemory,
@@ -104,13 +105,18 @@ private fun jvmMemorySection(): String = buildString {
 }
 
 /** The JVM's own native memory by category; needs -XX:NativeMemoryTracking=summary and the jdk.management module. */
-private fun nativeMemoryTrackingSection(): String =
-    ManagementFactory.getPlatformMBeanServer().invoke(
-        ObjectName("com.sun.management:type=DiagnosticCommand"),
-        "vmNativeMemory",
-        arrayOf<Any>(arrayOf("summary")),
-        arrayOf("[Ljava.lang.String;"),
-    ) as String
+private fun nativeMemoryTrackingSection(): String {
+    val server = ManagementFactory.getPlatformMBeanServer()
+    val name = ObjectName("com.sun.management:type=DiagnosticCommand")
+    return try {
+        server.invoke(name, "vmNativeMemory", arrayOf<Any>(arrayOf("summary")), arrayOf("[Ljava.lang.String;")) as String
+    } catch (error: Throwable) {
+        // The bare exception has no message; show its causes and what the MBean offers, so the reason is visible.
+        val causes = generateSequence(error) { it.cause }.joinToString(" <- ") { "${it::class.simpleName}: ${it.message}" }
+        val operations = runCatching { server.getMBeanInfo(name).operations.joinToString { it.name } }.getOrElse { "no MBean: ${it.message}" }
+        "failed: $causes\noperations: $operations"
+    }
+}
 
 private fun threadsSection(): String {
     val groups = Thread.getAllStackTraces().keys
@@ -149,4 +155,62 @@ private fun processMemorySection(): String {
         return "working set=${mb(counter(16))} peak working set=${mb(counter(8))} " +
             "private=${mb(counter(64))} pagefile=${mb(counter(48))} page faults=${counters.get(ValueLayout.JAVA_INT, 4)}"
     }
+}
+
+internal data class MemoryRegion(
+    val base: Long,
+    val size: Long,
+    val committed: Boolean,
+    /** "private", "mapped" or "image". */
+    val kind: String,
+    val protect: Int,
+)
+
+internal fun summarizeMemoryRegions(regions: List<MemoryRegion>, topCount: Int = 12): String {
+    val committed = regions.filter { it.committed }
+    return buildString {
+        committed.groupBy { it.kind }.entries.sortedByDescending { entry -> entry.value.sumOf { it.size } }.forEach { (kind, list) ->
+            appendLine("$kind committed=${mb(list.sumOf { it.size })} regions=${list.size}")
+        }
+        appendLine("largest committed regions:")
+        committed.sortedByDescending { it.size }.take(topCount).forEach {
+            appendLine("  ${mb(it.size)} at 0x${java.lang.Long.toHexString(it.base)} ${it.kind} protect=0x${Integer.toHexString(it.protect)}")
+        }
+    }
+}
+
+/** Walks the whole address space with VirtualQuery: shows whether the private bytes are one huge block or many small ones. */
+private fun addressSpaceSection(): String {
+    if (!System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)) return "windows only"
+    val regions = ArrayList<MemoryRegion>()
+    Arena.ofConfined().use { arena ->
+        val linker = Linker.nativeLinker()
+        val kernel32 = SymbolLookup.libraryLookup("kernel32", Arena.global())
+        val query = linker.downcallHandle(
+            kernel32.findOrThrow("VirtualQuery"),
+            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+        )
+        // MEMORY_BASIC_INFORMATION on x64: RegionSize at 24, State at 32, Protect at 36, Type at 40 (48 bytes).
+        val info = arena.allocate(48)
+        var address = 0L
+        while (address >= 0) {
+            val written = query.invokeWithArguments(address, info, 48L) as Long
+            if (written == 0L) break
+            val size = info.get(ValueLayout.JAVA_LONG, 24)
+            val state = info.get(ValueLayout.JAVA_INT, 32)
+            val type = info.get(ValueLayout.JAVA_INT, 40)
+            if (state == 0x1000) {
+                val kind = when (type) {
+                    0x20000 -> "private"
+                    0x40000 -> "mapped"
+                    0x1000000 -> "image"
+                    else -> "other"
+                }
+                regions += MemoryRegion(address, size, committed = true, kind = kind, protect = info.get(ValueLayout.JAVA_INT, 36))
+            }
+            if (size <= 0L) break
+            address += size
+        }
+    }
+    return summarizeMemoryRegions(regions)
 }
