@@ -230,10 +230,16 @@ compose.desktop {
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
         )
+        // ████████████████████████████████████████████████████████████████████████████████████████████████████████
+        // ██  DEBUG ONLY - REMOVE BEFORE A RELEASE: the next line turns on the JVM native memory tracking that  ██
+        // ██  the memory trace reads (DesktopMemoryTrace.kt, DesktopMemoryTraceEnabled). It costs CPU and RAM.  ██
+        // ████████████████████████████████████████████████████████████████████████████████████████████████████████
+        jvmArgs += "-XX:NativeMemoryTracking=summary"
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
-            modules("java.net.http", "jdk.net", "jdk.security.auth")
+            // DEBUG ONLY: "jdk.management" is for the memory trace (see the banner above); drop it with the trace.
+            modules("java.net.http", "jdk.net", "jdk.security.auth", "jdk.management")
             // Installers: MSI on Windows, deb and rpm on Linux (the AppImage is made from the app image by
             // packaging/linux/build-appimage.sh), dmg on macOS. The portable images come from createDistributable.
             targetFormats(

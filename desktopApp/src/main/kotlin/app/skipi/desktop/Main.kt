@@ -273,6 +273,18 @@ private fun runDesktopApplication(
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
     LaunchedEffect(Unit) { runDesktopHeapTrim() }
     val coreController = remember { DesktopCoreController() }
+    // DEBUG ONLY: see the banner in DesktopMemoryTrace.kt; DesktopMemoryTraceEnabled must be false in a release.
+    if (DesktopMemoryTraceEnabled) {
+        LaunchedEffect(coreController) {
+            runDesktopMemoryTrace(
+                DesktopMemoryTrace(
+                    desktopMemoryTraceFile(),
+                    desktopMemoryTraceSections { coreController.readMemoryStats().getOrThrow() },
+                    now = { java.time.LocalDateTime.now().toString() },
+                ),
+            )
+        }
+    }
     // Load the Core library while the window opens instead of during the first Connect.
     LaunchedEffect(coreController) {
         withContext(Dispatchers.IO) {
