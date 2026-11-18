@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 // ██   working set and private bytes, the core's heap) into %LOCALAPPDATA%\SKIPI.                               ██
 // ██                                                                                                            ██
 // ████████████████████████████████████████████████████████████████████████████████████████████████████████████████
-internal const val DesktopMemoryTraceEnabled = true
+internal const val DesktopMemoryTraceEnabled = false
 
 internal const val DesktopMemoryTraceIntervalMillis = 10_000L
 internal const val DesktopMemoryTraceMaxFileBytes = 20L * 1_024L * 1_024L
