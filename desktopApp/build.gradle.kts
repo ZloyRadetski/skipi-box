@@ -230,6 +230,12 @@ compose.desktop {
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
         )
+        // Windows draws the window with Skiko's software renderer and without Java2D's own Direct3D pipeline. Both
+        // kept the graphics driver's write-combined memory (blocks of 32 MB) that grew with every resize and was not
+        // given back. Measured on a fast window resize (private bytes, idle / peak / 8 s later): Direct3D 492 / 683 /
+        // 573 MB; software renderer with Java2D Direct3D off 321 / 635 / 358 MB. The Skiko renderer alone was not
+        // enough (485 / 873 / 596), Java2D's pipeline kept its blocks.
+        if (isWindowsHost) jvmArgs += listOf("-Dskiko.renderApi=SOFTWARE_FAST", "-Dsun.java2d.d3d=false")
         // ████████████████████████████████████████████████████████████████████████████████████████████████████████
         // ██  DEBUG ONLY - REMOVE BEFORE A RELEASE: the next line turns on the JVM native memory tracking that  ██
         // ██  the memory trace reads (DesktopMemoryTrace.kt, DesktopMemoryTraceEnabled). It costs CPU and RAM.  ██
