@@ -97,7 +97,7 @@ open class InMemoryCoreLogRepository(
                     id = nextId++,
                     time = checkNotNull(line.time),
                     level = line.level,
-                    message = line.message,
+                    message = line.message.shortenedForDisplay(),
                 )
             }
             if (end + additions.size > buffer.size) {
@@ -186,6 +186,10 @@ private class EntriesWindow(
         return checkNotNull(array[from + index])
     }
 }
+
+/** The in-memory list only shows a line; the full text still goes to [InMemoryCoreLogRepository.onAppended]. */
+private fun String.shortenedForDisplay(): String =
+    if (length <= CoreLogMaxMessageChars) this else take(CoreLogMaxMessageChars) + "…"
 
 private fun String.normalizedLogLevel(): String {
     return when (lowercase()) {
