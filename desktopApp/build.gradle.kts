@@ -229,6 +229,11 @@ compose.desktop {
             "-XX:-ShrinkHeapInSteps",
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
+            // Skia surfaces, bitmaps and text layouts are native memory that is only freed after the Java wrapper has
+            // been collected. With the default young generation (~170 MB at the start) a few hundred MB of them piled up
+            // while the window was being resized (traced: Win32 heap 143 -> 551 MB, 745 MB kept committed afterwards).
+            // A small young generation collects often, so they are released while the window is still being dragged.
+            "-Xmn32m",
         )
         // ████████████████████████████████████████████████████████████████████████████████████████████████████████
         // ██  DEBUG ONLY - REMOVE BEFORE A RELEASE: the next line turns on the JVM native memory tracking that  ██
