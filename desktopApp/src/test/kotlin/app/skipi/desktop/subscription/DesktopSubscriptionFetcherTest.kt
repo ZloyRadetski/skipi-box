@@ -258,6 +258,30 @@ class DesktopSubscriptionFetcherTest {
     }
 
     @Test
+    fun a_manual_fetch_stops_at_the_android_body_limit_instead_of_reading_without_end() {
+        withSubscriptionServer { server ->
+            val total = 32L * 1024 * 1024 + 1
+            server.createContext("/endless") { exchange ->
+                exchange.sendResponseHeaders(200, 0)
+                exchange.responseBody.use { out ->
+                    val chunk = ByteArray(64 * 1024) { 'x'.code.toByte() }
+                    var written = 0L
+                    runCatching {
+                        while (written < total + chunk.size) {
+                            out.write(chunk)
+                            written += chunk.size
+                        }
+                    }
+                }
+            }
+
+            assertFailsWith<DesktopSubscriptionResponseTooLargeException> {
+                DesktopSubscriptionFetcher().fetch("http://127.0.0.1:${server.address.port}/endless")
+            }
+        }
+    }
+
+    @Test
     fun direct_fetch_uses_connection_timeouts_clamped_to_the_android_range() {
         withSubscriptionServer { server ->
             server.createContext("/timeout") { exchange ->

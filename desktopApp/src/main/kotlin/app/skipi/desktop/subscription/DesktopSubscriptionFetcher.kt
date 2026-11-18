@@ -274,7 +274,7 @@ class DesktopSubscriptionFetcher(
         } else {
             SubscriptionFetchPolicy.maxRedirects
         }
-        val maxBodyBytes = if (automaticResource) maxResponseBytes else null
+        val maxBodyBytes = if (automaticResource) maxResponseBytes else MaxDesktopManualSubscriptionResponseBytes
         return if (automaticResource && proxy == null) {
             fetchViaHttpClient(
                 url = url,
@@ -716,6 +716,8 @@ data class DesktopResolvedEmbeddedConfig(
 private val DefaultConnectTimeout: Duration = Duration.ofSeconds(10)
 private val DefaultRequestTimeout: Duration = Duration.ofSeconds(SubscriptionFetchPolicy.defaultTimeoutSeconds.toLong())
 const val MaxDesktopSubscriptionResponseBytes = 8 * 1024 * 1024
+/** Same ceiling as the Android manual fetch (AndroidSubscriptionFetcher.MaxSubscriptionBodyBytes). */
+const val MaxDesktopManualSubscriptionResponseBytes = 32 * 1024 * 1024
 private const val MaxAutomaticResourceRedirects = 5
 private val HttpRedirectStatusCodes = setOf(301, 302, 303, 307, 308)
 private val KnownMetadataHosts = setOf(
