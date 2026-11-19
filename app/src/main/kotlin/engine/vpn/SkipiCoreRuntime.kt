@@ -86,6 +86,15 @@ internal object SkipiCoreRuntime {
         coreController = null
     }
 
+    /**
+     * The one place where the newer SKIPI Core API is wired once it is in the
+     * AAR: call CoreController.forceStop() on the controller whose stopLoop()
+     * hung, and Skipicore.abandonedInstances() to learn what is still alive.
+     * Not in the current AAR, so this is intentionally empty. Runs only on the
+     * emergency path, right before the process is killed.
+     */
+    fun forceStopAbandonedCoreInstances() = Unit
+
     /** Connections routed since [afterSeq], as the JSON Core returns; a failure is a failed read. */
     fun readConnectionLog(afterSeq: Long): Result<String> = runCatching {
         checkNotNull(coreController) { "SKIPI Core is not running" }.readConnectionLog(afterSeq)

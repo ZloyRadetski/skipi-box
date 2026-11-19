@@ -106,10 +106,32 @@ class SkipiVpnService : VpnService() {
     private var networkHandoverCallback: ConnectivityManager.NetworkCallback? = null
     private var pendingNetworkHandover: PendingNetworkHandover? = null
     private val physicalNetworkHandoverTracker = PhysicalNetworkHandoverTracker<Network>()
+    @Volatile
     private var ownsForegroundNotification = false
+    private val nativeHealth = NativeRuntimeHealth.Process
+    private val boundedSteps = BoundedNativeSteps(nativeHealth) { message, error ->
+        AppLog.warn(LogTag, message, error)
+    }
+    private val emergencyMarker by lazy { EmergencyStopMarkers.of(applicationContext) }
+
+    /**
+     * A normal stop that is still running after the timeout gets an
+     * "Emergency stop" button on the VPN notification; it disappears with the
+     * notification when the stop completes.
+     */
+    private val stopWatchdog = StopWatchdog(
+        onHung = { showStopStuckNotification() },
+        onCleared = {
+            if (!ownsForegroundNotification) notificationManager.cancel(VpnForegroundNotification.NotificationId)
+        },
+    )
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
+        if (action == SkipiVpnServiceIntents.ACTION_EMERGENCY_STOP) {
+            handleEmergencyStop()
+            return Service.START_NOT_STICKY
+        }
         val operationId = intent?.vpnServiceOperationId()
         if (operationId == null) {
             if (isSystemManagedVpnStart(action)) {
@@ -214,6 +236,11 @@ class SkipiVpnService : VpnService() {
      * of treating that system request as invalid.
      */
     private fun startSystemManagedVpn(startId: Int) {
+        if (emergencyMarker.suppressSystemManagedStart()) {
+            AppLog.info(LogTag, "Ignoring a system-managed VPN start right after an emergency stop")
+            stopSelfOnMain(startId)
+            return
+        }
         serviceScope.launch {
             var failed = false
             operationMutex.withLock {
@@ -319,6 +346,11 @@ class SkipiVpnService : VpnService() {
             LogTag,
             "Starting VPN tunnel (session=${config.sessionName}, mtu=${config.mtu}, hevTun=${config.hevSocks5TunnelConfig != null}). Xray config:\n${redactXrayConfigForLog(config.xrayConfigJson)}",
         )
+        if (decideVpnStart(nativeHealth) == VpnStartDecision.RefusedNativeRuntimeDirty) {
+            // Never touch the native runtimes again in this process: they may still hold sockets or threads.
+            showEmergencyRestartPrompt()
+            throw IllegalStateException(getString(R.string.error_vpn_native_runtime_dirty))
+        }
         val startedAt = android.os.SystemClock.elapsedRealtime()
         stopVpn(ForegroundNotificationDisposition.Keep)
         val stoppedAt = android.os.SystemClock.elapsedRealtime()
@@ -520,30 +552,45 @@ class SkipiVpnService : VpnService() {
     private fun stopVpn(
         notificationDisposition: ForegroundNotificationDisposition = ForegroundNotificationDisposition.Remove,
     ) {
+        stopWatchdog.guard { stopVpnBounded(notificationDisposition) }
+        // The bounded stop returns even when a native step stayed stuck; tell the user now
+        // instead of letting the next connect be the first sign that the app must restart.
+        if (nativeHealth.isDirty) showEmergencyRestartPrompt()
+    }
+
+    /**
+     * Native stops are bounded; order stays hev, Core, log tailers, and only
+     * then the TUN fd. [finalStop] is false for a network handover, where the
+     * tailers and the socket protector must survive the restart.
+     */
+    private fun stopNativeRuntimes(reason: String, finalStop: Boolean) {
+        if (nativeHealth.isDirty) {
+            // An earlier stop is still stuck in native code; calling into it again would just hang again.
+            AppLog.warn(LogTag, "Skipping native stops ($reason): the native runtime is already dirty")
+        } else {
+            boundedSteps.run("hev", NativeStopStepDeadlineMillis) { hevTunRuntime?.stop() }
+            boundedSteps.run("core", NativeStopStepDeadlineMillis) {
+                SkipiCoreRuntime.stop()
+                // The native side keeps the protector in a process-wide singleton; drop the reference to this service.
+                if (finalStop) SkipiCoreRuntime.clearSocketProtector()
+            }
+        }
+        if (finalStop) {
+            val tailers = coreLogTailers
+            boundedSteps.run("tailers", NativeStopStepDeadlineMillis) { tailers.stopCoreLogTailers() }
+            coreLogTailers = emptyList()
+        }
+    }
+
+    private fun stopVpnBounded(notificationDisposition: ForegroundNotificationDisposition) {
         unregisterNetworkHandoverCallback()
         NetworkHandoverRecoveryGate.clear()
         releaseWakeLock()
         connectionAccessLogJob?.cancel()
         connectionAccessLogJob = null
         currentConfig = null
-        runCatching {
-            hevTunRuntime?.stop()
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to stop Hev TUN while stopping VPN Service", error)
-        }
-        runCatching {
-            SkipiCoreRuntime.stop()
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
-        }
-        // The native side keeps the protector in a process-wide singleton; drop the reference to this service.
-        SkipiCoreRuntime.clearSocketProtector()
-        runCatching {
-            coreLogTailers.stopCoreLogTailers()
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to stop Xray log tailers while stopping VPN Service", error)
-        }
-        coreLogTailers = emptyList()
+        stopNativeRuntimes("stopping VPN Service", finalStop = true)
+        // On a timeout the TUN is closed anyway: the emergency stop kills the process next.
         runCatching {
             tunFileDescriptor?.close()
         }.onFailure { error ->
@@ -559,6 +606,145 @@ class SkipiVpnService : VpnService() {
         if (notificationDisposition != ForegroundNotificationDisposition.Keep) {
             ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = false)
             triggerHapticFeedback { vpnDisconnected() }
+        }
+    }
+
+    /**
+     * Last resort for a hung stop. It must not take [operationMutex] (the hung
+     * operation holds it) nor run on [serviceScope], so it uses its own thread.
+     * Explicit user action: the tunnel is torn down and traffic is no longer
+     * protected unless system Always-on VPN with "Block connections without
+     * VPN" is on; the in-app kill switch (HoldBlackhole) cannot survive it.
+     */
+    private fun handleEmergencyStop() {
+        AppLog.warn(LogTag, "Emergency stop requested")
+        EmergencyStopCoordinator(
+            health = nativeHealth,
+            steps = boundedSteps,
+            actions = EmergencyActions(),
+            killer = AndroidProcessKiller,
+        ).runOnDedicatedThread()
+    }
+
+    private inner class EmergencyActions : EmergencyStopActions {
+        override fun markStoppedAndPersistIntent() {
+            invalidateCurrentOperation()
+            running = false
+            // proxyRunning is not persisted; the marker is what stops auto-connect on the next app open
+            // and a sticky or Always-on restart from bringing the tunnel straight back.
+            runCatching { emergencyMarker.record() }
+            runCatching {
+                stateStore.update(persist = false) { state ->
+                    state.copy(proxyRunning = false, unappliedRoutingRules = emptyList())
+                }
+            }
+            runCatching { unregisterNetworkHandoverCallback() }
+            NetworkHandoverRecoveryGate.clear()
+            runCatching { releaseWakeLock() }
+            connectionAccessLogJob?.cancel()
+            connectionAccessLogJob = null
+            currentConfig = null
+            runCatching { notificationManager.cancel(EmergencyPromptNotificationId) }
+        }
+
+        override fun stopHev() {
+            hevTunRuntime?.stop()
+        }
+
+        override fun stopCore() {
+            SkipiCoreRuntime.stop()
+            SkipiCoreRuntime.clearSocketProtector()
+        }
+
+        override fun stopTailers() {
+            val tailers = coreLogTailers
+            coreLogTailers = emptyList()
+            tailers.stopCoreLogTailers()
+        }
+
+        override fun closeTun() {
+            tunFileDescriptor?.close()
+            tunFileDescriptor = null
+            LocalProxyRuntime.clear()
+        }
+
+        override fun stopService() {
+            applyForegroundNotificationDisposition(ForegroundNotificationDisposition.Remove)
+            runCatching { notificationManager.cancel(VpnForegroundNotification.NotificationId) }
+            runCatching {
+                ProxyTrafficStatsRuntimeStore.clear(applicationContext)
+                ProxyTrafficStatsService.reconcile(applicationContext, null)
+            }
+            stopSelfOnMain()
+        }
+
+        override fun notifyStateChanged() {
+            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = false)
+            runCatching {
+                kotlinx.coroutines.runBlocking {
+                    kotlinx.coroutines.withTimeoutOrNull(1_000) {
+                        features.widgets.SkipiWidgetRenderer.renderAll(applicationContext)
+                    }
+                }
+            }
+        }
+
+        override fun prepareRelaunch() {
+            // Wiring point for the newer Core (forceStop / abandonedInstances).
+            SkipiCoreRuntime.forceStopAbandonedCoreInstances()
+            EmergencyRelaunch.schedule(applicationContext, notificationManager, contentIntent)
+        }
+    }
+
+    private fun emergencyStopPendingIntent(): PendingIntent = PendingIntent.getService(
+        this,
+        0,
+        SkipiVpnServiceIntents.emergencyStopIntent(this),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    /** Posted over the VPN notification only while a normal stop is hung. */
+    private fun showStopStuckNotification() {
+        VpnForegroundNotification.ensureChannel(this, notificationManager)
+        notificationManager.notify(
+            VpnForegroundNotification.NotificationId,
+            VpnForegroundNotification.newBuilder(this)
+                .setSmallIcon(R.drawable.ic_qs_proxy)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.vpn_stop_stuck_text))
+                .setContentIntent(contentIntent)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setLocalOnly(true)
+                .setShowWhen(false)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .addAction(
+                    Notification.Action.Builder(null, getString(R.string.vpn_emergency_stop_action), emergencyStopPendingIntent())
+                        .build(),
+                )
+                .build(),
+        )
+    }
+
+    /** Shown when a start is refused because a native runtime is stuck, so the user can restart the app. */
+    private fun showEmergencyRestartPrompt() {
+        runCatching {
+            VpnForegroundNotification.ensureChannel(this, notificationManager)
+            notificationManager.notify(
+                EmergencyPromptNotificationId,
+                VpnForegroundNotification.newBuilder(this)
+                    .setSmallIcon(R.drawable.ic_qs_proxy)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setContentText(getString(R.string.error_vpn_native_runtime_dirty))
+                    .setStyle(Notification.BigTextStyle().bigText(getString(R.string.error_vpn_native_runtime_dirty)))
+                    .setContentIntent(contentIntent)
+                    .setAutoCancel(true)
+                    .addAction(
+                        Notification.Action.Builder(null, getString(R.string.vpn_emergency_stop_action), emergencyStopPendingIntent())
+                            .build(),
+                    )
+                    .build(),
+            )
         }
     }
 
@@ -833,10 +1019,11 @@ class SkipiVpnService : VpnService() {
     ) {
         AppLog.info(LogTag, "Physical network changed to $network; recreating TUN and proxy runtime")
         runCatchingCancellable {
-            runCatching { hevTunRuntime?.stop() }
-                .onFailure { error -> AppLog.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
-            runCatching { SkipiCoreRuntime.stop() }
-                .onFailure { error -> AppLog.warn(LogTag, "Failed to stop SKIPI Core for network handover", error) }
+            stopNativeRuntimes("network handover", finalStop = false)
+            // A stuck native runtime must not be restarted over; fail the recovery (kill switch semantics apply).
+            check(decideVpnStart(nativeHealth) == VpnStartDecision.Allowed) {
+                getString(R.string.error_vpn_native_runtime_dirty)
+            }
             // The old TUN stays open until its replacement is established, so
             // packets are blackholed instead of leaking through the physical
             // network while the core restarts.
@@ -896,6 +1083,7 @@ class SkipiVpnService : VpnService() {
         private const val NetworkHandoverDebounceMillis = 750L
         private const val NetworkHandoverWithAutomationDebounceMillis = 1_500L
         private const val ExternalVpnOperationRetryMillis = 500L
+        private const val EmergencyPromptNotificationId = 3002
 
         private val mutableRunning = MutableStateFlow(false)
         internal val runningState: StateFlow<Boolean> = mutableRunning.asStateFlow()
@@ -1076,5 +1264,6 @@ class SkipiVpnService : VpnService() {
 /** A system-started Always-on service has no private SKIPI operation marker. */
 internal fun isSystemManagedVpnStart(action: String?): Boolean {
     return action != SkipiVpnServiceIntents.ACTION_START &&
-        action != SkipiVpnServiceIntents.ACTION_STOP
+        action != SkipiVpnServiceIntents.ACTION_STOP &&
+        action != SkipiVpnServiceIntents.ACTION_EMERGENCY_STOP
 }

@@ -30,6 +30,11 @@
     <string name="proxy_traffic_stats_notification_resume">恢复</string>
     <string name="quick_settings_tile_label">SKIPI</string>
     <string name="quick_settings_tile_running">代理正在运行</string>
+    <string name="vpn_emergency_stop_action">紧急停止</string>
+    <string name="error_vpn_native_runtime_dirty">VPN 引擎未能停止并已卡住。请点按通知中的“紧急停止”以重启应用，然后重新连接。</string>
+    <string name="vpn_stop_stuck_text">停止耗时过长</string>
+    <string name="vpn_emergency_restart_title">SKIPI 在紧急停止后已重启</string>
+    <string name="vpn_emergency_restart_text">VPN 已关闭。点按以打开应用。</string>
     <string name="quick_settings_tile_stopped">代理已停止</string>
     <string name="quick_settings_tile_processing">处理中…</string>
     <string name="quick_settings_tile_vpn_permission_required">授予 VPN 权限，然后再次点击即可开始</string>

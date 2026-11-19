@@ -55,5 +55,6 @@ class VpnKillSwitchTest {
         assertTrue(isSystemManagedVpnStart("android.net.VpnService"))
         assertFalse(isSystemManagedVpnStart(SkipiVpnServiceIntents.ACTION_START))
         assertFalse(isSystemManagedVpnStart(SkipiVpnServiceIntents.ACTION_STOP))
+        assertFalse(isSystemManagedVpnStart(SkipiVpnServiceIntents.ACTION_EMERGENCY_STOP))
     }
 }

@@ -31,6 +31,11 @@
     <string name="proxy_traffic_stats_notification_resume">Возобновить</string>
     <string name="quick_settings_tile_label">SKIPI</string>
     <string name="quick_settings_tile_running">Прокси работает</string>
+    <string name="vpn_emergency_stop_action">Аварийная остановка</string>
+    <string name="error_vpn_native_runtime_dirty">Движок VPN не остановился и завис. Нажмите «Аварийная остановка» в уведомлении, чтобы перезапустить приложение, и подключитесь снова.</string>
+    <string name="vpn_stop_stuck_text">Остановка занимает слишком много времени</string>
+    <string name="vpn_emergency_restart_title">SKIPI перезапущен после аварийной остановки</string>
+    <string name="vpn_emergency_restart_text">VPN выключен. Нажмите, чтобы открыть приложение.</string>
     <string name="quick_settings_tile_stopped">Прокси остановлен</string>
     <string name="quick_settings_tile_processing">Обработка…</string>
     <string name="quick_settings_tile_vpn_permission_required">Предоставьте разрешение на VPN, затем нажмите снова для запуска</string>

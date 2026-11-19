@@ -30,6 +30,11 @@
     <string name="proxy_traffic_stats_notification_resume">Resume</string>
     <string name="quick_settings_tile_label">SKIPI</string>
     <string name="quick_settings_tile_running">Proxy running</string>
+    <string name="vpn_emergency_stop_action">Emergency stop</string>
+    <string name="error_vpn_native_runtime_dirty">The VPN engine did not stop and is stuck. Tap Emergency stop in the notification to restart the app, then connect again.</string>
+    <string name="vpn_stop_stuck_text">Stopping is taking too long</string>
+    <string name="vpn_emergency_restart_title">SKIPI was restarted after an emergency stop</string>
+    <string name="vpn_emergency_restart_text">The VPN is off. Tap to open the app.</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>
     <string name="quick_settings_tile_processing">Processing…</string>
     <string name="quick_settings_tile_vpn_permission_required">Grant VPN permission, then tap again to start</string>

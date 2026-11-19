@@ -34,6 +34,16 @@ internal object SkipiVpnServiceIntents {
     const val ACTION_START = "app.action.START_VPN"
     const val ACTION_STOP = "app.action.STOP_VPN"
 
+    /**
+     * User-initiated last resort when a normal stop hangs. Deliberately has no
+     * operation id: it must not wait for, or be ordered behind, the operation
+     * that is stuck.
+     */
+    const val ACTION_EMERGENCY_STOP = "app.action.EMERGENCY_STOP_VPN"
+
+    fun emergencyStopIntent(context: Context): Intent =
+        Intent(context, SkipiVpnService::class.java).apply { action = ACTION_EMERGENCY_STOP }
+
     fun startIntent(
         context: Context,
         config: VpnServiceStartConfig,

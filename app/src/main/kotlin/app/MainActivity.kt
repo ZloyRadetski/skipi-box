@@ -268,6 +268,8 @@ class MainActivity : ComponentActivity() {
         val application = application as SkipiApplication
         val settings = application.stateStore.state.value
         if (!settings.autoConnectOnAppOpen || settings.proxyRunning) return
+        // The user just ran an emergency stop; do not reconnect on the relaunch that follows it.
+        if (engine.vpn.EmergencyStopMarkers.of(applicationContext).consumeSuppressAutoConnect()) return
         application.appScope.launch(Dispatchers.IO) {
             // Only the settings are available right away; the server list loads in the background.
             application.stateStore.awaitReady()

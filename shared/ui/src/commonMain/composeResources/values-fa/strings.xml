@@ -30,6 +30,11 @@
     <string name="proxy_traffic_stats_notification_resume">ادامه</string>
     <string name="quick_settings_tile_label">SKIPI</string>
     <string name="quick_settings_tile_running">پروکسی در حال اجرا است</string>
+    <string name="vpn_emergency_stop_action">توقف اضطراری</string>
+    <string name="error_vpn_native_runtime_dirty">موتور VPN متوقف نشد و گیر کرده است. در اعلان روی «توقف اضطراری» بزنید تا برنامه دوباره راه‌اندازی شود و سپس دوباره متصل شوید.</string>
+    <string name="vpn_stop_stuck_text">توقف بیش از حد طول می‌کشد</string>
+    <string name="vpn_emergency_restart_title">SKIPI پس از توقف اضطراری دوباره راه‌اندازی شد</string>
+    <string name="vpn_emergency_restart_text">VPN خاموش است. برای باز کردن برنامه ضربه بزنید.</string>
     <string name="quick_settings_tile_stopped">پروکسی متوقف شد</string>
     <string name="quick_settings_tile_processing">در حال پردازش…</string>
     <string name="quick_settings_tile_vpn_permission_required">اجازه VPN اعطا کنید، سپس برای شروع دوباره ضربه بزنید</string>

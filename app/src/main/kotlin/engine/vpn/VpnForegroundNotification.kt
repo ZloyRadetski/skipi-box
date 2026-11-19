@@ -3,6 +3,7 @@
 
 package engine.vpn
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -16,6 +17,14 @@ import app.R
 internal object VpnForegroundNotification {
     const val ChannelId = "proxy_traffic_stats"
     const val NotificationId = 3001
+
+    fun newBuilder(context: Context): Notification.Builder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(context, ChannelId)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(context)
+        }
 
     fun ensureChannel(
         context: Context,
