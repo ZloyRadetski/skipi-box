@@ -569,17 +569,23 @@ class SkipiVpnService : VpnService() {
             AppLog.warn(LogTag, "Skipping native stops ($reason): the native runtime is already dirty")
         } else {
             boundedSteps.run("hev", NativeStopStepDeadlineMillis) { hevTunRuntime?.stop() }
-            boundedSteps.run("core", NativeStopStepDeadlineMillis) {
+            val coreOutcome = boundedSteps.run("core", NativeStopStepDeadlineMillis) {
                 SkipiCoreRuntime.stop()
                 // The native side keeps the protector in a process-wide singleton; drop the reference to this service.
                 if (finalStop) SkipiCoreRuntime.clearSocketProtector()
             }
+            // Core detaches a hung close and returns in time, but the leaked instance still holds sockets.
+            if (coreOutcome == StepOutcome.Completed) markDirtyIfCoreAbandoned()
         }
         if (finalStop) {
             val tailers = coreLogTailers
             boundedSteps.run("tailers", NativeStopStepDeadlineMillis) { tailers.stopCoreLogTailers() }
             coreLogTailers = emptyList()
         }
+    }
+
+    private fun markDirtyIfCoreAbandoned() {
+        SkipiCoreRuntime.abandonedInstancesDirtyReason()?.let { nativeHealth.markDirty(it) }
     }
 
     private fun stopVpnBounded(notificationDisposition: ForegroundNotificationDisposition) {
@@ -652,8 +658,9 @@ class SkipiVpnService : VpnService() {
         }
 
         override fun stopCore() {
-            SkipiCoreRuntime.stop()
+            SkipiCoreRuntime.forceStopCore()
             SkipiCoreRuntime.clearSocketProtector()
+            markDirtyIfCoreAbandoned()
         }
 
         override fun stopTailers() {
@@ -690,7 +697,6 @@ class SkipiVpnService : VpnService() {
         }
 
         override fun prepareRelaunch() {
-            // Wiring point for the newer Core (forceStop / abandonedInstances).
             SkipiCoreRuntime.forceStopAbandonedCoreInstances()
             EmergencyRelaunch.schedule(applicationContext, notificationManager, contentIntent)
         }

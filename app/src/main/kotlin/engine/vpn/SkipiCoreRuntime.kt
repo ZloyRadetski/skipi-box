@@ -10,6 +10,8 @@ import engine.xray.initializeAndroidXrayCoreEnvironment
 import app.skipi.core.skipicore.CoreCallbackHandler
 import app.skipi.core.skipicore.CoreController
 import app.skipi.core.skipicore.Skipicore
+import app.skipi.core.skipicore.SocketProtector
+import app.skipi.core.skipicore.StateListener
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -18,6 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import platform.CoreTrafficSnapshot
 import platform.parseCoreTrafficSnapshot
 
+// Used by the standalone AmneziaWG latency probe; the VPN start path waits inside Core.
 internal const val NativeBridgeReadinessTimeoutMillis = 8_000L
 private const val NativeBridgeReadinessPollIntervalMillis = 200L
 private const val NativeBridgeSocksConnectTimeoutMillis = 300
@@ -40,32 +43,28 @@ internal object SkipiCoreRuntime {
             context.getString(R.string.error_skipi_core_data_dir_missing)
         }
         context.initializeAndroidXrayCoreEnvironment(config.dataDir)
-        try {
-            if (!config.amneziaWgConfigJson.isNullOrBlank() && config.amneziaWgSocksPort > 0) {
-                startAmneziaWg(config.amneziaWgConfigJson, config.amneziaWgSocksPort)
-                check(awaitAmneziaWgReady(config.amneziaWgSocksPort)) {
-                    "AmneziaWG local SOCKS listener did not become ready within ${NativeBridgeReadinessTimeoutMillis}ms"
-                }
-            }
-        } catch (error: Throwable) {
-            stopNativeBridges()
-            if (error is CancellationException) throw error
-            throw IllegalStateException(
-                context.getString(R.string.error_skipi_core_start_failed, error.readableMessage()),
-                error,
-            )
-        }
+        val plan = buildCoreSessionPlanJson(
+            xrayConfigJson = config.xrayConfigJson,
+            amneziaWgConfigJson = config.amneziaWgConfigJson,
+            amneziaWgSocksPort = config.amneziaWgSocksPort,
+            connectionLog = config.enableAccessLog,
+        )
+        val hasAmneziaWg = !config.amneziaWgConfigJson.isNullOrBlank() && config.amneziaWgSocksPort > 0
         val controller = Skipicore.newCoreController(SkipiCoreCallbackHandler())
         runCatching {
-            // Applies to this and later sessions; off keeps Core from recording anything.
-            controller.setConnectionLogEnabled(config.enableAccessLog)
-            controller.startLoop(config.xrayConfigJson, tunFd.toLong())
+            check(!hasAmneziaWg || amneziaWgSocketProtectorConfigured) {
+                "The AmneziaWG socket protector is not configured; refusing to create a VPN routing loop"
+            }
+            controller.setStateListener(SkipiCoreStateListener())
+            // Core starts AmneziaWG, waits for its SOCKS listener, then Xray, and rolls back on failure.
+            controller.startSession(plan, tunFd.toLong())
         }.onFailure { error ->
-            stopNativeBridges()
-            runCatching { controller.stopLoop() }
+            activeAmneziaWgBridge = null
+            runCatching { controller.stopLoopWithTimeout(CoreStopTimeoutMillis) }
                 .onFailure { stopError ->
                     AppLog.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
                 }
+            if (error is CancellationException) throw error
             throw IllegalStateException(
                 context.getString(R.string.error_skipi_core_start_failed, error.readableMessage()),
                 error,
@@ -75,25 +74,48 @@ internal object SkipiCoreRuntime {
         activeAmneziaWgBridge = config.activeAmneziaWgBridge
     }
 
+    /** Stops the session; Core stops AmneziaWG too and detaches a hung close after [CoreStopTimeoutMillis]. */
     fun stop() {
-        stopNativeBridges()
+        activeAmneziaWgBridge = null
         val controller = coreController ?: return
         runCatching {
-            controller.stopLoop()
+            controller.stopLoopWithTimeout(CoreStopTimeoutMillis)
         }.onFailure { error ->
             AppLog.error(LogTag, "Failed to stop SKIPI Core", error)
         }
         coreController = null
     }
 
+    /** Emergency core step: ForceStop works in every state, including a hung start or stop. */
+    fun forceStopCore() {
+        activeAmneziaWgBridge = null
+        val controller = coreController ?: return
+        runCatching { controller.forceStop() }
+            .onFailure { error -> AppLog.error(LogTag, "Failed to force-stop SKIPI Core", error) }
+        coreController = null
+    }
+
+    /** Why leaked Core instances make the runtime dirty, or null when none leaked. */
+    fun abandonedInstancesDirtyReason(): String? =
+        runCatching { coreAbandonedDirtyReason(Skipicore.abandonedInstances()) }.getOrNull()
+
     /**
-     * The one place where the newer SKIPI Core API is wired once it is in the
-     * AAR: call CoreController.forceStop() on the controller whose stopLoop()
-     * hung, and Skipicore.abandonedInstances() to learn what is still alive.
-     * Not in the current AAR, so this is intentionally empty. Runs only on the
-     * emergency path, right before the process is killed.
+     * Emergency path, right before the process is killed: ForceStop the
+     * controller, bounded to about a second on its own daemon thread so a stuck
+     * native call cannot hold up the kill.
      */
-    fun forceStopAbandonedCoreInstances() = Unit
+    fun forceStopAbandonedCoreInstances() {
+        val worker = Thread({ forceStopCore() }, "skipi-core-force-stop").apply { isDaemon = true }
+        worker.start()
+        try {
+            worker.join(EmergencyStopStepDeadlineMillis)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+        if (worker.isAlive) {
+            AppLog.warn(LogTag, "Core force stop did not finish within ${EmergencyStopStepDeadlineMillis}ms")
+        }
+    }
 
     /** Connections routed since [afterSeq], as the JSON Core returns; a failure is a failed read. */
     fun readConnectionLog(afterSeq: Long): Result<String> = runCatching {
@@ -102,13 +124,9 @@ internal object SkipiCoreRuntime {
 
     fun setSocketProtector(protector: (Int) -> Boolean) {
         runCatching {
-            val proxyInstance = createSocketProtector(protector)
-            amneziaWgSocketProtectorConfigured = installSocketProtector("setAmneziaWgSocketProtector", proxyInstance)
-            if (amneziaWgSocketProtectorConfigured) {
-                AppLog.info(LogTag, "Configured the AmneziaWG socket protector")
-            } else {
-                AppLog.warn(LogTag, "AmneziaWG socket-protector API is unavailable in the current SkipiCore build")
-            }
+            Skipicore.setAmneziaWgSocketProtector(SocketProtector { fd -> protector(fd.toInt()) })
+            amneziaWgSocketProtectorConfigured = true
+            AppLog.info(LogTag, "Configured the AmneziaWG socket protector")
         }.onFailure { error ->
             amneziaWgSocketProtectorConfigured = false
             AppLog.warn(LogTag, "Failed to set socket protector on Skipicore", error)
@@ -117,59 +135,25 @@ internal object SkipiCoreRuntime {
 
     /** Replaces the service-bound protector with a no-op so the native singleton no longer references the service. */
     fun clearSocketProtector() {
-        runCatching {
-            installSocketProtector("setAmneziaWgSocketProtector", createSocketProtector { true })
-        }
+        runCatching { Skipicore.setAmneziaWgSocketProtector(SocketProtector { true }) }
         amneziaWgSocketProtectorConfigured = false
     }
 
-    private fun createSocketProtector(protector: (Int) -> Boolean): Any {
-        val protectorClass = Class.forName("app.skipi.core.skipicore.SocketProtector")
-        return java.lang.reflect.Proxy.newProxyInstance(
-            protectorClass.classLoader,
-            arrayOf(protectorClass),
-        ) { _, method, args ->
-            if (method.name == "protect" && args != null && args.isNotEmpty()) {
-                protector((args[0] as Number).toInt())
-            } else {
-                false
-            }
-        }
-    }
-
-    private fun installSocketProtector(methodName: String, proxyInstance: Any): Boolean {
-        val method = Skipicore::class.java.methods.firstOrNull { it.name == methodName } ?: return false
-        return runCatching {
-            method.invoke(null, proxyInstance)
-            true
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to invoke $methodName", error)
-        }.getOrDefault(false)
-    }
-
-    /** Starts the native AWG runner and its private local SOCKS listener. */
+    /** Starts the native AWG runner and its private local SOCKS listener (standalone use, e.g. latency probes). */
     fun startAmneziaWg(
         configJson: String,
         socksPort: Int,
         requireSocketProtector: Boolean = true,
     ) {
         check(!requireSocketProtector || amneziaWgSocketProtectorConfigured) {
-            "The loaded SkipiCore does not support AmneziaWG socket protection; refusing to create a VPN routing loop"
+            "The AmneziaWG socket protector is not configured; refusing to create a VPN routing loop"
         }
         if (!requireSocketProtector) {
-            check(installSocketProtector("setAmneziaWgSocketProtector", createSocketProtector { true })) {
-                "The loaded SkipiCore does not support AmneziaWG socket protection"
-            }
+            Skipicore.setAmneziaWgSocketProtector(SocketProtector { true })
         }
-        val method = Skipicore::class.java.methods.firstOrNull { it.name == "startAmneziaWg" }
-            ?: error("startAmneziaWg is not available in the loaded SkipiCore library")
         try {
-            invokeStartWithPort(method, configJson, socksPort)
+            Skipicore.startAmneziaWg(configJson, socksPort.toLong())
             AppLog.info(LogTag, "AmneziaWG started on socks port $socksPort")
-        } catch (error: java.lang.reflect.InvocationTargetException) {
-            val cause = error.targetException ?: error
-            AppLog.error(LogTag, "Failed to start AmneziaWG", cause)
-            throw cause
         } catch (error: Throwable) {
             AppLog.error(LogTag, "Failed to start AmneziaWG", error)
             throw error
@@ -178,35 +162,11 @@ internal object SkipiCoreRuntime {
 
     fun stopAmneziaWg() {
         runCatching {
-            val method = Skipicore::class.java.methods.firstOrNull { it.name == "stopAmneziaWg" }
-            if (method != null) {
-                method.invoke(null)
-                AppLog.info(LogTag, "AmneziaWG stopped")
-            }
+            Skipicore.stopAmneziaWg()
+            AppLog.info(LogTag, "AmneziaWG stopped")
         }.onFailure { error ->
             AppLog.warn(LogTag, "Failed to stop AmneziaWG", error)
         }
-    }
-
-    private fun invokeStartWithPort(method: java.lang.reflect.Method, config: String, socksPort: Int) {
-        if (method.parameterTypes.size == 2) {
-            val portArg: Any = if (
-                method.parameterTypes[1] == Long::class.javaPrimitiveType ||
-                method.parameterTypes[1] == Long::class.javaObjectType
-            ) {
-                socksPort.toLong()
-            } else {
-                socksPort
-            }
-            method.invoke(null, config, portArg)
-        } else {
-            method.invoke(null, config)
-        }
-    }
-
-    private fun stopNativeBridges() {
-        stopAmneziaWg()
-        activeAmneziaWgBridge = null
     }
 
     internal suspend fun awaitAmneziaWgReady(
@@ -250,10 +210,7 @@ internal object SkipiCoreRuntime {
     }
 
     fun readMemoryStats(): String {
-        return runCatching {
-            val method = Skipicore::class.java.getMethod("readMemoryStats")
-            method.invoke(null) as? String
-        }.getOrNull().orEmpty()
+        return runCatching { Skipicore.readMemoryStats() }.getOrNull().orEmpty()
     }
 
     /** Returns Xray traffic counters without creating an Xray API socket. */
@@ -263,10 +220,7 @@ internal object SkipiCoreRuntime {
     }
 
     fun forceFreeMemory() {
-        runCatching {
-            val method = Skipicore::class.java.getMethod("forceFreeMemory")
-            method.invoke(null)
-        }
+        runCatching { Skipicore.forceFreeMemory() }
     }
 
     fun fastSelectBestOutbound(
@@ -276,14 +230,7 @@ internal object SkipiCoreRuntime {
         timeoutMs: Long = 1200L,
     ): String {
         return runCatching {
-            val method = Skipicore::class.java.getMethod(
-                "fastSelectBestOutbound",
-                String::class.java,
-                String::class.java,
-                String::class.java,
-                Long::class.javaPrimitiveType,
-            )
-            method.invoke(null, configJson, candidateTags, probeUrl, timeoutMs) as? String
+            Skipicore.fastSelectBestOutbound(configJson, candidateTags, probeUrl, timeoutMs)
         }.getOrNull().orEmpty()
     }
 
@@ -291,10 +238,8 @@ internal object SkipiCoreRuntime {
 }
 
 /**
- * Waits for a native bridge's local SOCKS listener with one bounded, cancellable deadline.
- *
- * Xray only needs the local listener, so the application owns a single cooperative
- * readiness check rather than a blocking call into the core that could outlive the VPN caller timeout.
+ * Waits for a native bridge's local SOCKS listener with one bounded, cancellable deadline
+ * (standalone AmneziaWG latency probe; the VPN session start waits inside Core).
  */
 internal suspend fun awaitNativeBridgeReadiness(
     timeoutMs: Long,
@@ -326,6 +271,12 @@ private class SkipiCoreCallbackHandler : CoreCallbackHandler {
         val text = message.orEmpty().ifBlank { "status code: $code" }
         AppLog.info("SkipiCore", text)
         return 0
+    }
+}
+
+private class SkipiCoreStateListener : StateListener {
+    override fun onStateChanged(state: Long, detail: String?) {
+        AppLog.info("SkipiCore", "Session state $state ${detail.orEmpty()}".trim())
     }
 }
 
