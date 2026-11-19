@@ -155,3 +155,11 @@ object AppearanceSettingValues {
  */
 fun AppearanceSettingsState.withColorMode(mode: Int): AppearanceSettingsState =
     copy(colorMode = mode, enableCustomColors = false)
+
+/**
+ * Whether the accent row is offered. A named theme (Aurora, Sakura, Forest, Sunset) shows its own accent unless
+ * "Custom colors" is on, so the row appears there only with the switch on; dynamic colors do nothing on a named
+ * theme. On any other theme the row is hidden while dynamic colors bring the system accent.
+ */
+fun AppearanceSettingsState.showsAccentPicker(): Boolean =
+    if (AppearanceSettingValues.isNamedColorTheme(colorMode)) enableCustomColors else !enableMaterialYou

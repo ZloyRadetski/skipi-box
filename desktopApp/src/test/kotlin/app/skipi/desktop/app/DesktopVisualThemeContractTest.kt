@@ -95,6 +95,17 @@ class DesktopVisualThemeContractTest {
     }
 
     @Test
+    fun everyNamedDesktopThemeShowsItsOwnAccentOverOnePickedEarlier() {
+        val pickedEarlier = AppearanceSettings(dynamicColors = true, customColorsEnabled = false, customAccentColor = 0xFF919293L)
+        listOf(DesktopThemeMode.Aurora, DesktopThemeMode.Sakura, DesktopThemeMode.Forest, DesktopThemeMode.Sunset).forEach { mode ->
+            val palette = assertNotNull(app.skipi.ui.theme.namedThemePaletteFor(mode.name))
+            assertEquals(palette.accent, desktopAppearanceColors(mode, pickedEarlier, systemAccent = Color.Red).accent, mode.name)
+        }
+        // The picked accent still paints the plain themes.
+        assertEquals(Color(0xFF919293), desktopAppearanceColors(DesktopThemeMode.Dark, pickedEarlier.copy(dynamicColors = false)).accent)
+    }
+
+    @Test
     fun desktopThemeAppliesTheSharedAndroidCustomPalettePolicy() {
         val appearance = AppearanceSettings(
             dynamicColors = false,

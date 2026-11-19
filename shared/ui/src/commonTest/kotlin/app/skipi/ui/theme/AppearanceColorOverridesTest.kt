@@ -8,6 +8,7 @@ import app.skipi.app.model.ThemeMode
 import androidx.compose.ui.graphics.Color
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class AppearanceColorOverridesTest {
     @Test
@@ -75,31 +76,59 @@ class AppearanceColorOverridesTest {
     }
 
     @Test
-    fun aPickedAccentWinsOverANamedThemeAccentWithoutCustomColors() {
-        val base = AppColors(
-            background = Color(0xFF081427),
-            onBackground = Color(0xFFE7F1FF),
-            accent = Color(0xFF3B82F6),
-            onAccent = Color.White,
-            surface = Color(0xFF102443),
-            onSurface = Color(0xFFE7F1FF),
-            surfaceVariant = Color(0xFF18345E),
-            onSurfaceVariant = Color(0xFFB2C8EA),
-            isDark = true,
+    fun aNamedThemeShowsItsOwnAccentOverAPickedOneWithoutCustomColors() {
+        // The accent row is hidden on a named theme, so an accent picked earlier for another theme must not
+        // paint Aurora, Sakura, Forest or Sunset: choosing one of them shows its own accent.
+        listOf("aurora", "sakura", "forest", "sunset").forEach { variant ->
+            val palette = assertNotNull(namedThemePaletteFor(variant))
+            val base = resolveBaseAppearanceColors(isDark = true, namedPalette = palette)
+
+            val actual = applyAppearanceSettings(
+                base,
+                AppearanceSettings(
+                    themeMode = ThemeMode.Named,
+                    themeVariant = variant,
+                    dynamicColors = false,
+                    customColorsEnabled = false,
+                    customAccentColor = 0xFF919293L,
+                ),
+            )
+
+            assertEquals(palette.accent, actual.accent, variant)
+            assertEquals(base, actual, variant)
+        }
+    }
+
+    @Test
+    fun aNamedThemeKeepsItsAccentWhenDynamicColorsWereLeftOn() {
+        val palette = assertNotNull(namedThemePaletteFor("aurora"))
+        val base = resolveBaseAppearanceColors(isDark = true, namedPalette = palette)
+
+        val actual = applyAppearanceSettings(
+            base,
+            AppearanceSettings(themeMode = ThemeMode.Named, themeVariant = "aurora", dynamicColors = true, customAccentColor = 0xFF919293L),
         )
+
+        assertEquals(palette.accent, actual.accent)
+    }
+
+    @Test
+    fun aPickedAccentPaintsANamedThemeWhileCustomColorsAreOn() {
+        val palette = assertNotNull(namedThemePaletteFor("sunset"))
+        val base = resolveBaseAppearanceColors(isDark = true, namedPalette = palette)
 
         val actual = applyAppearanceSettings(
             base,
             AppearanceSettings(
                 themeMode = ThemeMode.Named,
-                themeVariant = "aurora",
+                themeVariant = "sunset",
                 dynamicColors = false,
-                customColorsEnabled = false,
+                customColorsEnabled = true,
                 customAccentColor = 0xFF919293L,
             ),
         )
 
-        assertEquals(base.copy(accent = Color(0xFF919293)), actual)
+        assertEquals(Color(0xFF919293), actual.accent)
     }
 
     @Test

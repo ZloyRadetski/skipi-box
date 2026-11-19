@@ -276,7 +276,7 @@ internal fun AppearanceCustomColorsSection(
                     },
                 )
             }
-            SkipiSettingsReveal(visible = !appState.enableMaterialYou && !isNamedThemeSelected) {
+            SkipiSettingsReveal(visible = appState.showsAccentPicker()) {
                 SettingsColorItem(
                     title = stringResource(Res.string.settings_color_accent),
                     summary = stringResource(Res.string.settings_color_accent_summary),
