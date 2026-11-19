@@ -253,4 +253,117 @@ class DesktopTunRuntimeTest {
         tunnelAlive = false
         assertFalse(runtime.isRunning())
     }
+
+    // Linux and Windows: Core runs HEV TUN, so the runtime only opens the device, describes hev and attaches.
+    private var coreSessionAlive = true
+
+    private fun coreRuntime(executable: java.nio.file.Path? = null) =
+        DesktopTunRuntime(device, tunnel = null, hevExecutable = executable, coreSessionRunning = { coreSessionAlive })
+
+    @Test
+    fun aCoreHostedRuntimeOpensTheDeviceAndNeverTouchesAnInAppHev() {
+        val runtime = coreRuntime()
+
+        assertTrue(runtime.coreHostsHev)
+        assertEquals(41, runtime.openForCore(request.plan).getOrThrow())
+
+        assertEquals(listOf("open"), events)
+        assertEquals(
+            """{"name":"skipi0","mtu":1400,"addresses":["172.19.0.1/30"],"routes":["0.0.0.0/1","128.0.0.0/1"]}""",
+            openedPlan,
+        )
+        assertFalse(DesktopTunRuntime(device, tunnel).coreHostsHev)
+    }
+
+    @Test
+    fun aFailedOpenForCoreIsReported() {
+        deviceOpenResult = Result.failure(IllegalStateException("NetworkManager refused"))
+
+        assertEquals("NetworkManager refused", coreRuntime().openForCore(request.plan).exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun theCoreHevPlanCarriesTheYamlTheDescriptorAndNoExecutableOnLinux() {
+        val plan = coreRuntime().coreHevPlan(request.copy(socksUsername = "u", socksPassword = "p"), tunFd = 41)
+
+        assertEquals(41, plan.tunFd)
+        assertEquals(null, plan.executable)
+        assertTrue("  port: 10808" in plan.configYaml)
+        assertTrue("  address: '127.0.0.1'" in plan.configYaml)
+        assertTrue("  username: 'u'" in plan.configYaml)
+        assertTrue("  ipv4: '172.19.0.1'" in plan.configYaml)
+        assertTrue("  tcp-fastopen: true" in plan.configYaml)
+        assertFalse("ipv6" in plan.configYaml)
+    }
+
+    @Test
+    fun theCoreHevPlanCarriesTheShippedExecutableOnWindows() {
+        val exe = java.nio.file.Path.of("hev", "hev-socks5-tunnel.exe")
+
+        val plan = coreRuntime(exe).coreHevPlan(request, tunFd = -1)
+
+        assertEquals(exe.toString(), plan.executable)
+        assertEquals(-1, plan.tunFd)
+    }
+
+    @Test
+    fun attachForCoreRunsAfterTheSessionAndReportsTheRuntimeStarted() {
+        val runtime = coreRuntime()
+        runtime.openForCore(request.plan)
+        events.clear()
+
+        runtime.attachForCore(request.plan).getOrThrow()
+
+        assertEquals(listOf("attach"), events)
+        assertEquals(request.plan, attachedPlan)
+        assertTrue(runtime.isRunning())
+    }
+
+    @Test
+    fun aFailedAttachForCoreLeavesTheRuntimeNotRunningAndTheDeviceForRelease() {
+        attachResult = Result.failure(IllegalStateException("routes failed"))
+        val runtime = coreRuntime()
+        runtime.openForCore(request.plan)
+        events.clear()
+
+        assertEquals("routes failed", runtime.attachForCore(request.plan).exceptionOrNull()?.message)
+        assertFalse(runtime.isRunning())
+        runtime.release()
+
+        assertEquals(listOf("attach", "close"), events)
+    }
+
+    @Test
+    fun aCoreHostedRuntimeFollowsTheCoreSessionNotAnInAppHev() {
+        val runtime = coreRuntime()
+        runtime.openForCore(request.plan)
+        runtime.attachForCore(request.plan)
+
+        assertTrue(runtime.isRunning())
+        coreSessionAlive = false
+        assertFalse(runtime.isRunning())
+    }
+
+    @Test
+    fun stoppingACoreHostedRuntimeOnlyClosesTheDevice() {
+        val runtime = coreRuntime()
+        runtime.openForCore(request.plan)
+        runtime.attachForCore(request.plan)
+        events.clear()
+
+        assertTrue(runtime.stop().isSuccess)
+
+        assertEquals(listOf("close"), events)
+        assertFalse(runtime.isRunning())
+    }
+
+    @Test
+    fun stoppingACoreHostedRuntimeThatNeverAttachedDoesNothing() {
+        val runtime = coreRuntime()
+        runtime.openForCore(request.plan)
+        events.clear()
+
+        assertTrue(runtime.stop().isSuccess)
+        assertTrue(events.isEmpty())
+    }
 }

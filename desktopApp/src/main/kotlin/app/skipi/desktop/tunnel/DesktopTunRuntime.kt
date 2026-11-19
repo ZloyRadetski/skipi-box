@@ -24,7 +24,7 @@ internal interface DesktopTunDevice {
     fun close(): Result<Unit>
 }
 
-/** Runs hev-socks5-tunnel on an already attached tun descriptor. */
+/** Runs hev-socks5-tunnel on an already attached tun descriptor; only macOS still runs hev outside Core. */
 internal interface DesktopHevTunnel {
     /** Returns once the tunnel is running, or the reason it could not start. */
     fun start(configYaml: String, tunFd: Int): Result<Unit>
@@ -47,12 +47,42 @@ internal data class DesktopTunStartRequest(
 /**
  * Desktop TUN session: the interface exists only while hev runs on it. Mirrors Android, where the
  * VpnService interface is handed to hev and torn down with it.
+ *
+ * Two shapes. With a [tunnel] (macOS) the runtime starts hev itself. Without one (Linux, Windows) SKIPI Core runs
+ * HEV TUN inside its session: the runtime opens the device before Core starts, describes hev for the session plan
+ * ([coreHevPlan]), and attaches the routes once the session runs ([attachForCore]). Core stops hev with the session,
+ * so [stop] then only closes the device.
  */
 internal class DesktopTunRuntime(
     private val device: DesktopTunDevice,
-    private val tunnel: DesktopHevTunnel,
+    private val tunnel: DesktopHevTunnel? = null,
+    /** The shipped hev program Core supervises on Windows. */
+    private val hevExecutable: java.nio.file.Path? = null,
+    /** Whether Core's session, which carries hev, is running. */
+    private val coreSessionRunning: () -> Boolean = { false },
 ) {
     private var started = false
+
+    val coreHostsHev: Boolean get() = tunnel == null
+
+    /** Brings the device up and returns the descriptor for Core's session plan (-1 where hev creates the interface). */
+    @Synchronized
+    fun openForCore(plan: TunInterfacePlan): Result<Int> = device.open(plan.toDevicePlanJson())
+
+    /** The hev block of Core's session plan: its configuration, the descriptor and, on Windows, the executable. */
+    fun coreHevPlan(request: DesktopTunStartRequest, tunFd: Int): DesktopCoreHevPlan = DesktopCoreHevPlan(
+        configYaml = request.toHevYaml(),
+        tunFd = tunFd,
+        executable = hevExecutable?.toString(),
+    )
+
+    /** Finishes the setup once Core's session runs on the interface (routes on Windows). */
+    @Synchronized
+    fun attachForCore(plan: TunInterfacePlan): Result<Unit> {
+        val attached = device.attach(plan)
+        if (attached.isSuccess) started = true
+        return attached
+    }
 
     /** Puts the socket binding in place before Core starts, so none of its connections escape it. */
     fun prepare(plan: TunInterfacePlan): Result<Unit> = device.prepare(plan.name)
@@ -63,15 +93,16 @@ internal class DesktopTunRuntime(
     @Synchronized
     fun start(request: DesktopTunStartRequest): Result<Unit> {
         if (started) return Result.failure(IllegalStateException("TUN is already running"))
+        val hev = checkNotNull(tunnel) { "Core runs HEV TUN here; start it through the session" }
         val fd = device.open(request.plan.toDevicePlanJson()).getOrElse { return Result.failure(it) }
-        val result = tunnel.start(request.toHevYaml(), fd)
+        val result = hev.start(request.toHevYaml(), fd)
         if (result.isFailure) {
             device.close()
             return result
         }
         val attached = device.attach(request.plan)
         if (attached.isFailure) {
-            tunnel.stop()
+            hev.stop()
             device.close()
             return attached
         }
@@ -83,12 +114,12 @@ internal class DesktopTunRuntime(
     fun stop(): Result<Unit> {
         if (!started) return Result.success(Unit)
         started = false
-        val tunnelResult = tunnel.stop()
+        val tunnelResult = tunnel?.stop() ?: Result.success(Unit)
         val deviceResult = device.close()
         return tunnelResult.takeIf { it.isFailure } ?: deviceResult
     }
 
-    fun isRunning(): Boolean = started && tunnel.isRunning()
+    fun isRunning(): Boolean = started && (tunnel?.isRunning() ?: coreSessionRunning())
 }
 
 @Serializable

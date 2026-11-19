@@ -40,6 +40,20 @@ internal fun createDesktopTunnelController(
         }
     }
 
+    // The system resolves through the tunnel only if the running config answers it.
+    fun tunInterfacePlan(): engine.vpn.TunInterfacePlan {
+        val settings = settings()
+        val configs = configs()
+        val coreAnswersDns = desktopAnswersTunDns(settings, configs) && servers().coreAnswersTunDns()
+        return desktopTunInterfacePlan(settings, configs, coreAnswersDns)
+    }
+
+    fun tunStartRequestFor(options: LocalProxyXrayConfigOptions): DesktopTunStartRequest = desktopTunStartRequest(
+        plan = tunInterfacePlan(),
+        options = options,
+        logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
+    )
+
     return DesktopTunnelController(
         configForProfile = {
             val settingsSnapshot = settings()
@@ -91,9 +105,21 @@ internal fun createDesktopTunnelController(
             // Like Android: truncate the previous run's files, then follow the new ones.
             coreLogs.clear()
             coreLogs.startTailers(settings())
-            localProxyRuntime.onCoreStarted(
-                coreController.start(request.configuration, request.assetsDirectory, request.amneziaWg),
-            )
+            // With a descriptor (or -1) Core runs HEV TUN in the same session call, pointed at this attempt's inbound.
+            val hevResult = runCatching {
+                request.tunFd?.let { fd ->
+                    val options = localProxyRuntime.pendingOptions() ?: error("The local proxy options are not prepared")
+                    tunHost.tunRuntime().coreHevPlan(tunStartRequestFor(options), fd)
+                }
+            }
+            val hevFailure = hevResult.exceptionOrNull()
+            if (hevFailure != null) {
+                Result.failure(hevFailure)
+            } else {
+                localProxyRuntime.onCoreStarted(
+                    coreController.start(request.configuration, request.assetsDirectory, request.amneziaWg, hevResult.getOrNull()),
+                )
+            }
         },
         stopCore = {
             localProxyRuntime.onCoreStopped(coreController.stop()).also {
@@ -189,22 +215,26 @@ internal fun createDesktopTunnelController(
             }
         },
         releaseTun = { runCatching { tunHost.tunRuntime().release().getOrThrow() } },
+        openTunForCore = {
+            timedTunStage("open") {
+                runCatching {
+                    val runtime = tunHost.tunRuntime()
+                    if (runtime.coreHostsHev) runtime.openForCore(tunInterfacePlan()).getOrThrow() else null
+                }
+            }
+        },
+        attachTun = {
+            timedTunStage("attach") {
+                runCatching { tunHost.tunRuntime().attachForCore(tunInterfacePlan()).getOrThrow() }
+            }
+        },
         startTun = {
             timedTunStage("start") {
                 runCatching {
                     tunHost.unavailableReason()?.let { reason -> error(reason) }
                     val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
                         ?: error("SKIPI Core is not running")
-                    val settings = settings()
-                    val configs = configs()
-                    // The system resolves through the tunnel only if the running config answers it.
-                    val coreAnswersDns = desktopAnswersTunDns(settings, configs) && servers().coreAnswersTunDns()
-                    val request = desktopTunStartRequest(
-                        plan = desktopTunInterfacePlan(settings, configs, coreAnswersDns),
-                        options = options,
-                        logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
-                    )
-                    tunHost.tunRuntime().start(request).getOrThrow()
+                    tunHost.tunRuntime().start(tunStartRequestFor(options)).getOrThrow()
                 }
             }
         },

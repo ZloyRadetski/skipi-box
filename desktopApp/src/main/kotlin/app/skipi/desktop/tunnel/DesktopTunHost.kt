@@ -19,6 +19,8 @@ internal class DesktopTunHost(
     private val isWindows: Boolean = false,
     private val isElevated: () -> Boolean = ::isWindowsElevated,
     private val isMac: Boolean = false,
+    /** Whether Core's session, which carries hev on Linux and Windows, is running. */
+    private val coreSessionRunning: () -> Boolean = { false },
 ) {
     private var tunRuntime: DesktopTunRuntime? = null
 
@@ -42,9 +44,8 @@ internal class DesktopTunHost(
                 ?.let { name -> return "$name is missing from the application" }
         } else if (isMac) {
             if (files.hevExecutable == null) return "hev-socks5-tunnel is missing from the application"
-        } else if (files.hevLibrary == null) {
-            return "libhev-socks5-tunnel.so is missing from the application"
         }
+        // Linux has nothing to check here: hev is linked into libskipicore.so.
         return coreProbe()
     }
 
@@ -52,14 +53,23 @@ internal class DesktopTunHost(
     fun tunRuntime(): DesktopTunRuntime {
         tunRuntime?.let { return it }
         val files = runtime().getOrThrow()
-        val hevPath = if (isWindows) {
-            files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application")
-        } else if (isMac) {
-            files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application")
-        } else {
-            files.hevLibrary ?: error("libhev-socks5-tunnel.so is missing from the application")
+        val created = when {
+            // Core supervises the shipped hev program and the interface is made by hev itself.
+            isWindows -> DesktopTunRuntime(
+                device(),
+                tunnel = null,
+                hevExecutable = files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application"),
+                coreSessionRunning = coreSessionRunning,
+            )
+            // The privileged supervisor stays in the application.
+            isMac -> DesktopTunRuntime(
+                device(),
+                hev(files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application")),
+            )
+            // hev is linked into Core and runs on the descriptor Core's device opens.
+            else -> DesktopTunRuntime(device(), tunnel = null, coreSessionRunning = coreSessionRunning)
         }
-        return DesktopTunRuntime(device(), hev(hevPath)).also { tunRuntime = it }
+        return created.also { tunRuntime = it }
     }
 
     companion object {
@@ -107,16 +117,13 @@ internal class DesktopTunHost(
                 }
             },
             hev = { path ->
-                when {
-                    windows -> DesktopHevProcessTunnel(path)
-                    mac -> DesktopMacHevTunnel(
-                        hevExecutable = path,
-                        directory = macTunRunDirectory(),
-                        planJson = { checkNotNull(macPlan.planJson) { "The TUN interface plan is not ready" } },
-                    )
-                    else -> DesktopHevFfmTunnel(path)
-                }
+                DesktopMacHevTunnel(
+                    hevExecutable = path,
+                    directory = macTunRunDirectory(),
+                    planJson = { checkNotNull(macPlan.planJson) { "The TUN interface plan is not ready" } },
+                )
             },
+            coreSessionRunning = coreController::sessionRunning,
         )
     }
 }

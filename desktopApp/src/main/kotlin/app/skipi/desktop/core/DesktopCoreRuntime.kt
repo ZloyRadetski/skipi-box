@@ -12,9 +12,10 @@ data class DesktopCoreRuntime(
     val library: Path,
     val geoIp: Path,
     val geoSite: Path,
-    /** Present on Linux builds that ship the TUN mode. */
-    val hevLibrary: Path? = null,
-    /** Present on Windows and macOS builds that ship the TUN mode: hev-socks5-tunnel, run as its own process. */
+    /**
+     * Present on Windows and macOS builds that ship the TUN mode: hev-socks5-tunnel. Windows hands the path to Core,
+     * which supervises the process; macOS runs it under its own root supervisor. Linux ships none: hev is in Core.
+     */
     val hevExecutable: Path? = null,
 )
 
@@ -44,13 +45,12 @@ object DesktopCoreRuntimes {
         require(missing.isEmpty()) {
             "Incomplete SKIPI Core desktop runtime: ${missing.joinToString { it.fileName.toString() }}"
         }
-        val hev = runtimeDirectory.resolve("libhev-socks5-tunnel.so").takeIf(::isNonEmptyRegularFile)
         val hevExecutable = if (osName.contains("mac", ignoreCase = true)) {
             macHevExecutable(runtimeDirectory)
         } else {
             windowsHevExecutable(runtimeDirectory)
         }
-        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev, hevExecutable)
+        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hevExecutable)
     }
 
     private fun candidateDirectories(): List<Path> = buildList {

@@ -80,6 +80,31 @@ internal interface DesktopCoreNative : AutoCloseable {
 
     /** Stops the AmneziaWG runner; stopping a stopped runner is not an error. */
     fun stopAmneziaWg() = Unit
+
+    /**
+     * Starts the whole session from one plan JSON: AmneziaWG, Xray and, when the plan has it, HEV TUN, in that
+     * order; a failure stops what was started. [tunFd] is for Xray's own tun and stays 0 here.
+     */
+    fun startSession(handle: Long, planJson: String, tunFd: Long = 0) {
+        error("This SKIPI Core library cannot start a session")
+    }
+
+    /** Core's session state: 0 idle, 1 starting, 2 running, 3 stopping. Never waits on a slow start or stop. */
+    fun sessionState(handle: Long): Int {
+        error("This SKIPI Core library has no session state")
+    }
+
+    /** Stops HEV TUN, Xray and AmneziaWG in turn, each bounded; the handle is released even on a timeout. */
+    fun stopWithTimeout(handle: Long, timeoutMillis: Long) = stop(handle)
+
+    /** The emergency stop: never waits on a hung start or stop, and works in every state. */
+    fun forceStop(handle: Long) = stop(handle)
+
+    /** How many instances had their stop given up on and are not closed yet; non-zero asks for a restart. */
+    fun abandonedInstances(): Long = 0
+
+    /** HEV TUN's packet and byte counters as JSON; zeros when none runs (always on Windows). */
+    fun queryTunnelStats(handle: Long): String = "{}"
 }
 
 /**
@@ -198,6 +223,32 @@ internal class DesktopCoreFfmNative(
     }
     private val stopAmneziaWgFunction by lazy {
         downcall("SkipiCoreDesktopStopAmneziaWg", FunctionDescriptor.of(ValueLayout.ADDRESS))
+    }
+
+    // The session exports came with Core 1.0.35; looked up on first use so an older library still loads.
+    private val startSessionFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopStartSession",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+        )
+    }
+    private val sessionStateFunction by lazy {
+        downcall("SkipiCoreDesktopSessionState", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG))
+    }
+    private val stopWithTimeoutFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopStopWithTimeout",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+        )
+    }
+    private val forceStopFunction by lazy {
+        downcall("SkipiCoreDesktopForceStop", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG))
+    }
+    private val abandonedInstancesFunction by lazy {
+        downcall("SkipiCoreDesktopAbandonedInstances", FunctionDescriptor.of(ValueLayout.JAVA_LONG))
+    }
+    private val tunnelStatsFunction by lazy {
+        downcall("SkipiCoreDesktopQueryTunnelStats", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG))
     }
 
     private val tunProbeFunction by lazy {
@@ -331,6 +382,37 @@ internal class DesktopCoreFfmNative(
     override fun stopAmneziaWg() {
         errorResult("stop AmneziaWG") { invokePointer(stopAmneziaWgFunction) }
     }
+
+    override fun startSession(handle: Long, planJson: String, tunFd: Long) {
+        withUtf8(planJson) { plan ->
+            errorResult("start the session") { invokePointer(startSessionFunction, handle, plan, tunFd) }
+        }
+    }
+
+    override fun sessionState(handle: Long): Int {
+        checkOpen()
+        val state = invoke(sessionStateFunction, handle) as? Int
+            ?: error("SKIPI Core returned an invalid session state result")
+        if (state < 0) throw failure("read the session state")
+        return state
+    }
+
+    override fun stopWithTimeout(handle: Long, timeoutMillis: Long) {
+        errorResult("stop the session") { invokePointer(stopWithTimeoutFunction, handle, timeoutMillis) }
+    }
+
+    override fun forceStop(handle: Long) {
+        errorResult("force stop the session") { invokePointer(forceStopFunction, handle) }
+    }
+
+    override fun abandonedInstances(): Long {
+        checkOpen()
+        return invoke(abandonedInstancesFunction) as? Long
+            ?: error("SKIPI Core returned an invalid abandoned-instances result")
+    }
+
+    override fun queryTunnelStats(handle: Long): String =
+        nullableOwnedString("query tunnel statistics") { invokePointer(tunnelStatsFunction, handle) }
 
     /** Null when a TUN session can be opened here, otherwise why it cannot. */
     fun tunUnavailableReason(): String? = runCatching {

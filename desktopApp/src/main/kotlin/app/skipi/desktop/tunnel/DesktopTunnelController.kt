@@ -23,6 +23,11 @@ data class DesktopCoreStartRequest(
     val assetsDirectory: Path? = null,
     /** The AmneziaWG runner the configuration reaches through a loopback SOCKS outbound, started before Core. */
     val amneziaWg: DesktopAmneziaWgBridge? = null,
+    /**
+     * Set in TUN mode where Core runs HEV TUN itself (Linux, Windows): the descriptor the opened device handed over,
+     * or -1 where hev creates the interface. Null keeps the separate start.
+     */
+    val tunFd: Int? = null,
 )
 
 /** Immutable profile-start snapshot whose rebuild excludes failed dynamic listener ports. */
@@ -75,6 +80,14 @@ class DesktopTunnelController(
     private val prepareTun: () -> Result<Unit> = { Result.success(Unit) },
     /** Undoes [prepareTun] when Core or the tunnel could not be started. */
     private val releaseTun: () -> Result<Unit> = { Result.success(Unit) },
+    /**
+     * Runs once after [prepareTun], before Core: brings the device up where Core runs HEV TUN itself and returns the
+     * descriptor for the session (-1 where hev makes the interface). Null means this platform starts the tunnel with
+     * [startTun] after Core.
+     */
+    private val openTunForCore: () -> Result<Int?> = { Result.success(null) },
+    /** Core-hosted TUN: runs once the session is up, to finish the setup (the routes on Windows). */
+    private val attachTun: () -> Result<Unit> = { Result.success(Unit) },
     private val startTun: () -> Result<Unit> = { Result.failure(IllegalStateException("TUN is not available")) },
     private val stopTun: () -> Result<Unit> = { Result.success(Unit) },
     private val tunRunning: () -> Boolean = { false },
@@ -82,6 +95,7 @@ class DesktopTunnelController(
 ) : TunnelController {
     private var latestSnapshot = TunnelSnapshot()
     private var tunActive = false
+    private var tunInCore = false
 
     override suspend fun connect(request: TunnelConnectRequest): Result<Unit> = synchronized(this) {
         when (val decision = TunnelLifecyclePolicy.beginConnect(latestSnapshot, request.profileId)) {
@@ -101,11 +115,13 @@ class DesktopTunnelController(
             DesktopLogger.warn("Tunnel", "The system proxy could not be reconciled before the start", error)
         }
         var tunPrepared = false
+        var coreTunFd: Int? = null
         val result = runCatching {
             if (useTun) {
                 operationStage = TunnelOperationStage.Start
                 prepareTun().getOrThrow()
                 tunPrepared = true
+                coreTunFd = openTunForCore().getOrThrow()
                 operationStage = TunnelOperationStage.PrepareConfiguration
             }
             var startPlan = if (request.configuration == null) {
@@ -126,6 +142,7 @@ class DesktopTunnelController(
                         configuration = config,
                         assetsDirectory = startPlan?.assetsDirectory,
                         amneziaWg = startPlan?.amneziaWg,
+                        tunFd = coreTunFd,
                     ),
                 )
                 completedAttempts += 1
@@ -151,7 +168,9 @@ class DesktopTunnelController(
                 if (useTun) {
                     operationStage = TunnelOperationStage.Start
                     verifyTunEndpoint().getOrThrow()
-                    startTun().getOrThrow()
+                    // Core already runs hev in its session; the app only finishes the interface (Windows routes).
+                    if (coreTunFd != null) attachTun().getOrThrow() else startTun().getOrThrow()
+                    tunInCore = coreTunFd != null
                     tunActive = true
                 } else {
                     operationStage = TunnelOperationStage.AcquireSystemProxy
@@ -179,11 +198,21 @@ class DesktopTunnelController(
         // system proxy, so that cleanup failing must not keep the tunnel and Core alive.
         val proxyRelease = releaseSystemProxy().let { release -> if (tunActive) Result.success(Unit) else release }
         val result = proxyRelease.mapCatching {
-            if (tunActive) {
-                stopTun().getOrThrow()
+            if (tunActive && tunInCore) {
+                // Core stops hev first, then Xray; only then the routes and the interface go. A failed Core stop
+                // still closes the device, and its error is the one reported.
+                val coreFailure = if (coreState().isRunning) stopCore().exceptionOrNull() else null
+                val deviceFailure = stopTun().exceptionOrNull()
+                coreFailure?.let { failure -> deviceFailure?.let(failure::addSuppressed) }
+                (coreFailure ?: deviceFailure)?.let { throw it }
                 tunActive = false
+            } else {
+                if (tunActive) {
+                    stopTun().getOrThrow()
+                    tunActive = false
+                }
+                if (coreState().isRunning) stopCore().getOrThrow()
             }
-            if (coreState().isRunning) stopCore().getOrThrow()
             Unit
         }
         latestSnapshot = result.fold(

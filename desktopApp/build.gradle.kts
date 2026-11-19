@@ -75,20 +75,6 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
 
 val desktopHevSourceDirectory = rootProject.layout.projectDirectory.dir("hevtun/src/main/jni/hev-socks5-tunnel")
 
-// The Linux TUN mode loads hev-socks5-tunnel in-process next to Core; Windows will ship wintun instead.
-val buildDesktopHev = tasks.register<BuildDesktopHevTask>("buildDesktopHev") {
-    sourceDirectory.set(desktopHevSourceDirectory)
-    sources.from(
-        fileTree(desktopHevSourceDirectory) {
-            exclude(".git", "bin/**", "build/**", "third-part/*/bin/**", "third-part/*/build/**")
-        },
-    )
-    cCompiler.set(providers.gradleProperty("skipiCoreDesktopCc").orElse("gcc"))
-    workDirectory.set(layout.buildDirectory.dir("native/hev-socks5-tunnel-src"))
-    outputLibrary.set(layout.buildDirectory.file("native/hev-socks5-tunnel/libhev-socks5-tunnel.so"))
-    onlyIf { !isWindowsHost && !isMacHost }
-}
-
 // macOS TUN: hev-socks5-tunnel runs as a root process of its own, started by the app after the user
 // has granted administrator rights; it creates the utun interface itself.
 val buildDesktopHevMac = tasks.register<BuildDesktopHevMacTask>("buildDesktopHevMac") {
@@ -297,7 +283,6 @@ tasks.matching { it.name == "prepareAppResources" }.configureEach {
     dependsOn(
         buildDesktopCore,
         prepareDesktopCoreRuntime,
-        prepareDesktopHevRuntime,
         prepareDesktopHevWindowsRuntime,
         prepareDesktopHevMacRuntime,
     )
@@ -307,12 +292,6 @@ prepareDesktopCoreRuntime.configure {
     dependsOn(buildDesktopCore)
 }
 
-val prepareDesktopHevRuntime = tasks.register<Copy>("prepareDesktopHevRuntime") {
-    from(buildDesktopHev.flatMap { task -> task.outputLibrary })
-    into(desktopCoreRuntime)
-    onlyIf { !isWindowsHost && !isMacHost }
-}
-
 val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRuntime") {
     from(buildDesktopHevMac.flatMap { task -> task.outputExecutable })
     into(desktopCoreRuntime.map { root -> root.dir("hev") })
@@ -320,7 +299,8 @@ val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRunt
     onlyIf { isMacHost }
 }
 
-// Windows TUN: hev-socks5-tunnel runs as its own process next to the Wintun driver library.
+// Windows TUN: Core supervises the shipped hev-socks5-tunnel process, which needs the Wintun driver library beside it.
+// Linux ships no hev file: it is linked into libskipicore.so.
 val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRuntimeTask>("prepareDesktopHevWindowsRuntime") {
     hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     expectedArchiveSha256.set("a9209ad121a3f636f814b0bb899b6464d3ec201eabbb3a82f2aa486e32879ba7")

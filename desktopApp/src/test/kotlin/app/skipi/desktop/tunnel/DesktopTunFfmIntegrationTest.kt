@@ -6,8 +6,6 @@ package app.skipi.desktop
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -21,29 +19,21 @@ class DesktopTunFfmIntegrationTest {
         ?.let { DesktopCoreRuntimes.fromDirectory(Path.of(it)).getOrThrow() }
 
     @Test
-    fun theBundledRuntimeIncludesTheHevLibrary() {
+    fun theCoreLibraryExportsTheSessionEntryPoints() {
         val runtime = runtimeOrNull() ?: return
+        val controller = DesktopCoreController(runtimeProvider = { Result.success(runtime) })
+        val native = controller.nativeForTun().getOrThrow()
 
-        assertNotNull(runtime.hevLibrary, "libhev-socks5-tunnel.so is not in the runtime directory")
-    }
-
-    @Test
-    fun hevLoadsThroughFfmAndIsIdleUntilStarted() {
-        val hev = runtimeOrNull()?.hevLibrary ?: return
-
-        val tunnel = DesktopHevFfmTunnel(hev)
-
-        assertFalse(tunnel.isRunning())
-        assertTrue(tunnel.stop().isSuccess)
-    }
-
-    @Test
-    fun hevRejectsAnInvalidDescriptorInsteadOfStartingSilently() {
-        val hev = runtimeOrNull()?.hevLibrary ?: return
-
-        val result = DesktopHevFfmTunnel(hev).start("not: [valid", tunFd = -1)
-
-        assertTrue(result.isFailure)
+        // Every new export must resolve in the packaged library; a fresh handle is idle and has no abandoned work.
+        assertEquals(0L, native.abandonedInstances())
+        val handle = native.createController()
+        try {
+            assertEquals(0, native.sessionState(handle))
+            assertEquals("{", native.queryTunnelStats(handle).take(1))
+            native.forceStop(handle)
+        } finally {
+            native.destroyController(handle)
+        }
     }
 
     @Test

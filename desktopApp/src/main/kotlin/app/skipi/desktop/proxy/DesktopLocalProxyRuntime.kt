@@ -213,6 +213,9 @@ internal class DesktopLocalProxyRuntime {
         return result
     }
 
+    /** The options prepared for the start in flight, which a session's HEV TUN must point at before Core runs. */
+    fun pendingOptions(): LocalProxyXrayConfigOptions? = synchronized(lock) { pendingStartOptions }
+
     /** Reads only the last successful running snapshot; persisted settings are not runtime truth. */
     fun activeOptions(coreRunning: Boolean): LocalProxyXrayConfigOptions? = synchronized(lock) {
         runningOptions.takeIf { coreRunning }

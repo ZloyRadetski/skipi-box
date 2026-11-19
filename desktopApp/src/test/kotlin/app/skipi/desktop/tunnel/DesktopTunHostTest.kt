@@ -11,12 +11,17 @@ import kotlin.test.assertTrue
 
 class DesktopTunHostTest {
     private val directory = Path.of("/opt/skipi/resources")
-    private fun runtime(hev: Boolean = true) = DesktopCoreRuntime(
+    private val stubDevice = object : DesktopTunDevice {
+        override fun prepare(interfaceName: String) = Result.success(Unit)
+        override fun open(planJson: String) = Result.success(5)
+        override fun close() = Result.success(Unit)
+    }
+    // Linux: hev is linked into libskipicore.so, so the runtime ships no separate hev file.
+    private fun runtime() = DesktopCoreRuntime(
         directory = directory,
         library = directory.resolve("libskipicore.so"),
         geoIp = directory.resolve("geoip.dat"),
         geoSite = directory.resolve("geosite.dat"),
-        hevLibrary = directory.resolve("libhev-socks5-tunnel.so").takeIf { hev },
     )
 
     private val hevDirectory: Path by lazy {
@@ -43,7 +48,7 @@ class DesktopTunHostTest {
         isWindows = true,
         runtime = { runtime },
         coreProbe = probe,
-        device = { error("not used") },
+        device = { stubDevice },
         hev = { error("not used") },
         isElevated = { elevated },
     )
@@ -64,7 +69,7 @@ class DesktopTunHostTest {
         isMac = true,
         runtime = { runtime },
         coreProbe = probe,
-        device = { error("not used") },
+        device = { stubDevice },
         hev = { error("not used") },
     )
 
@@ -76,7 +81,7 @@ class DesktopTunHostTest {
         isLinux = linux,
         runtime = { runtime },
         coreProbe = probe,
-        device = { error("not used") },
+        device = { stubDevice },
         hev = { error("not used") },
     )
 
@@ -98,11 +103,91 @@ class DesktopTunHostTest {
     }
 
     @Test
-    fun aRuntimeWithoutHevIsReported() {
-        val reason = host(runtime = Result.success(runtime(hev = false))).unavailableReason()
-
-        assertTrue("libhev-socks5-tunnel" in reason.orEmpty())
+    fun linuxNeedsNoSeparateHevFileBecauseCoreCarriesIt() {
+        assertNull(host(runtime = Result.success(runtime())).unavailableReason())
     }
+
+    @Test
+    fun linuxRunsHevInsideCoreAndWindowsHandsCoreTheExecutable() {
+        val linux = host().tunRuntime()
+        assertTrue(linux.coreHostsHev)
+        assertNull(linux.coreHevPlan(sampleRequest(), tunFd = 7).executable)
+
+        val windows = windowsHostWithDevice().tunRuntime()
+        assertTrue(windows.coreHostsHev)
+        assertEquals(
+            hevDirectory.resolve("hev-socks5-tunnel.exe").toString(),
+            windows.coreHevPlan(sampleRequest(), tunFd = -1).executable,
+        )
+    }
+
+    @Test
+    fun macKeepsItsSeparateHevSupervisor() {
+        val mac = DesktopTunHost(
+            isLinux = false,
+            isMac = true,
+            runtime = { Result.success(macRuntime()) },
+            coreProbe = { null },
+            device = { object : DesktopTunDevice {
+                override fun prepare(interfaceName: String) = Result.success(Unit)
+                override fun open(planJson: String) = Result.success(-1)
+                override fun close() = Result.success(Unit)
+            } },
+            hev = { object : DesktopHevTunnel {
+                override fun start(configYaml: String, tunFd: Int) = Result.success(Unit)
+                override fun stop() = Result.success(Unit)
+                override fun isRunning() = true
+            } },
+        ).tunRuntime()
+
+        assertEquals(false, mac.coreHostsHev)
+    }
+
+    @Test
+    fun theCoreHostedRuntimeReadsTheCoreSessionState() {
+        var sessionRunning = true
+        val runtime = DesktopTunHost(
+            isLinux = true,
+            runtime = { Result.success(runtime()) },
+            coreProbe = { null },
+            device = { object : DesktopTunDevice {
+                override fun prepare(interfaceName: String) = Result.success(Unit)
+                override fun open(planJson: String) = Result.success(5)
+                override fun close() = Result.success(Unit)
+            } },
+            hev = { error("not used") },
+            coreSessionRunning = { sessionRunning },
+        ).tunRuntime()
+        runtime.attachForCore(sampleRequest().plan).getOrThrow()
+
+        assertTrue(runtime.isRunning())
+        sessionRunning = false
+        assertEquals(false, runtime.isRunning())
+    }
+
+    private fun sampleRequest() = DesktopTunStartRequest(
+        plan = engine.vpn.TunInterfacePlan(
+            name = "skipi0",
+            mtu = 1400,
+            addresses = listOf(engine.network.NetworkCidrAddress("172.19.0.1", 30)),
+            routes = listOf(engine.network.NetworkCidrAddress("0.0.0.0", 1)),
+        ),
+        socksAddress = "127.0.0.1",
+        socksPort = 10808,
+        socksUsername = "",
+        socksPassword = "",
+        logPath = "",
+    )
+
+    private fun windowsHostWithDevice() = DesktopTunHost(
+        isLinux = false,
+        isWindows = true,
+        runtime = { Result.success(windowsRuntime()) },
+        coreProbe = { null },
+        device = { stubDevice },
+        hev = { error("not used") },
+        isElevated = { true },
+    )
 
     @Test
     fun theCoreProbeReasonIsPassedThrough() {
@@ -129,7 +214,7 @@ class DesktopTunHostTest {
     fun theCoreIsNotProbedWhenAnEarlierCheckFails() {
         var probed = false
         host(linux = false, probe = { probed = true; null }).unavailableReason()
-        host(runtime = Result.success(runtime(hev = false)), probe = { probed = true; null }).unavailableReason()
+        host(runtime = Result.failure(IllegalStateException("no runtime")), probe = { probed = true; null }).unavailableReason()
 
         assertEquals(false, probed)
     }

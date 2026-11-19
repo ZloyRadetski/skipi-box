@@ -788,7 +788,7 @@ jobs:
 
           image="desktopApp/build/compose/binaries/main/app/SKIPI"
           test -d "$image" || { echo "::error::The application image $image was not produced."; exit 1; }
-          for required in libskipicore.so libhev-socks5-tunnel.so geoip.dat geosite.dat; do
+          for required in libskipicore.so geoip.dat geosite.dat; do
             if [ -z "$(find "$image" -name "$required" -type f -print -quit)" ]; then
               echo "::error::The portable image is missing $required."
               exit 1
