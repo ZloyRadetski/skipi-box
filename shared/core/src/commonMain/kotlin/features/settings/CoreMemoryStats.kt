@@ -29,6 +29,15 @@ fun parseCoreMemoryStats(raw: String): CoreMemoryStats? {
     return runCatching { memoryJson.decodeFromString<CoreMemoryStats>(raw) }.getOrNull()
 }
 
-/** The core's own memory as the home tile shows it: its live Go heap, or null when the core gave no figure. */
-fun coreMemoryKilobytes(raw: String): Long? =
-    parseCoreMemoryStats(raw)?.allocBytes?.takeIf { it > 0L }?.div(1_024L)
+/**
+ * The core's own memory as the home tile shows it: what the Go runtime holds from the OS (everything it
+ * mapped minus the heap it gave back), or null when the core gave no figure. Live objects alone leave out
+ * free heap not yet returned, goroutine stacks and runtime metadata, and jump with every GC. A core that
+ * reports no usable total falls back to its live heap.
+ */
+fun coreMemoryKilobytes(raw: String): Long? {
+    val stats = parseCoreMemoryStats(raw) ?: return null
+    val held = stats.sysBytes - stats.heapReleased
+    val bytes = if (held > stats.allocBytes) held else stats.allocBytes
+    return bytes.takeIf { it > 0L }?.div(1_024L)
+}

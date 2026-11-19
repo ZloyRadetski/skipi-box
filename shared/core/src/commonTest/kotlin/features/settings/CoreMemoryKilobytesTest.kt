@@ -9,7 +9,9 @@ import kotlin.test.assertNull
 
 class CoreMemoryKilobytesTest {
     @Test
-    fun showsTheGoHeapTheCoreReports() {
+    fun showsWhatTheGoRuntimeHoldsFromTheSystem() {
+        // Live objects alone (allocBytes) leave out free heap not yet returned, goroutine stacks and
+        // runtime metadata, so the figure is what the runtime took from the OS minus what it gave back.
         val raw = """
             {
                 "allocBytes": 17825792,
@@ -25,7 +27,13 @@ class CoreMemoryKilobytesTest {
             }
         """.trimIndent()
 
-        assertEquals(17_408L, coreMemoryKilobytes(raw))
+        assertEquals(20_480L, coreMemoryKilobytes(raw))
+    }
+
+    @Test
+    fun fallsBackToTheLiveHeapWhenTheRuntimeTotalIsMissing() {
+        assertEquals(17_408L, coreMemoryKilobytes("""{"allocBytes": 17825792}"""))
+        assertEquals(17_408L, coreMemoryKilobytes("""{"allocBytes": 17825792, "sysBytes": 1048576, "heapReleased": 1048576}"""))
     }
 
     @Test
@@ -34,6 +42,7 @@ class CoreMemoryKilobytesTest {
         assertNull(coreMemoryKilobytes("   "))
         assertNull(coreMemoryKilobytes("{}"))
         assertNull(coreMemoryKilobytes("""{"allocBytes": 0}"""))
+        assertNull(coreMemoryKilobytes("""{"allocBytes": 0, "sysBytes": 0}"""))
         assertNull(coreMemoryKilobytes("not json"))
     }
 }

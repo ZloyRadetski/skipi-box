@@ -8,10 +8,12 @@ import kotlin.test.assertEquals
 
 class DesktopTunnelMemoryTest {
     @Test
-    fun countsOnlyTheCoreHeapNotTheWholeApp() {
-        val kb = readDesktopTunnelMemoryKb { Result.success("""{"allocBytes": 17825792, "sysBytes": 33554432}""") }
+    fun countsWhatTheCoreRuntimeHoldsNotTheWholeApp() {
+        val kb = readDesktopTunnelMemoryKb {
+            Result.success("""{"allocBytes": 17825792, "sysBytes": 33554432, "heapReleased": 12582912}""")
+        }
 
-        assertEquals(17_408L, kb)
+        assertEquals(20_480L, kb)
     }
 
     @Test
