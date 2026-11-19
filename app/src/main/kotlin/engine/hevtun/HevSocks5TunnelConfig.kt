@@ -8,7 +8,6 @@ import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyOptions
 import engine.xray.XrayCoreLogPaths
 import engine.xray.logDirectoryPath
-import features.resources.runtime.writeAtomically
 import java.io.File
 
 internal data class HevSocks5TunnelConfig(
@@ -31,13 +30,13 @@ internal data class HevSocks5TunnelConfig(
     val logLevel: String = DefaultHevSocks5TunnelLogLevel,
 )
 
-internal fun HevSocks5TunnelConfig.writeConfigFile() {
-    File(configPath).parentFile?.mkdirs()
+/** The YAML Core hands to the in-process hev-socks5-tunnel; the log path stays inside it. */
+internal fun HevSocks5TunnelConfig.toConfigYaml(): String = buildHevSocks5TunnelConfigYaml()
+
+/** hev opens its log file itself and does not create the directory. */
+internal fun HevSocks5TunnelConfig.ensureLogDirectory() {
     if (logPath.isNotBlank()) {
         File(logPath).parentFile?.mkdirs()
-    }
-    writeAtomically(File(configPath)) { output ->
-        output.write(buildHevSocks5TunnelConfigYaml().toByteArray(Charsets.UTF_8))
     }
 }
 

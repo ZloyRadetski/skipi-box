@@ -107,12 +107,6 @@ jobs:
             echo "ANDROID_NDK_ROOT=$ndk_dir" >> "$GITHUB_ENV"
           fi
 
-      - name: Cache HevTun native binaries
-        uses: actions/cache@v4
-        with:
-          path: hevtun/build/generated/jniLibs
-          key: hevtun-binaries-${{ hashFiles('buildSrc/src/main/kotlin/BuildConfig.kt', 'hevtun/**', 'buildSrc/src/main/kotlin/BuildHevTunTask.kt') }}
-
       - name: Assemble debug APK
         run: ./gradlew --build-cache :app:assembleDebug
 
@@ -203,7 +197,7 @@ jobs:
         run: >-
           ./gradlew --build-cache :app:testDebugUnitTest :shared:app:allTests
           :shared:core:allTests :shared:ui:allTests
-          -x :hevtun:buildHevTun -x :updateResourceFileAssets
+          -x :updateResourceFileAssets
           -PskipiAndroidTestJavaHome='${{ steps.test-jdk.outputs.path }}'
 
       - name: Run desktop packaging checks

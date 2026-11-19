@@ -199,12 +199,6 @@ jobs:
             echo "ANDROID_NDK_ROOT=$ndk_dir" >> "$GITHUB_ENV"
           fi
 
-      - name: Cache HevTun native binaries
-        uses: actions/cache@v4
-        with:
-          path: hevtun/build/generated/jniLibs
-          key: hevtun-binaries-${{ hashFiles('buildSrc/src/main/kotlin/BuildConfig.kt', 'hevtun/**', 'buildSrc/src/main/kotlin/BuildHevTunTask.kt') }}
-
       - name: Build release APKs
         run: ./gradlew --build-cache :app:assembleRelease
 

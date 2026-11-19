@@ -3,6 +3,7 @@
 
 package engine.vpn
 
+import engine.vpn.hevtun.readHevTunDiagnostics
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -13,13 +14,16 @@ internal const val CoreStopTimeoutMillis = NativeStopStepDeadlineMillis - 500L
 
 /**
  * The one-call start plan for CoreController.startSession: Core starts
- * AmneziaWG (when present), waits for its SOCKS listener, then Xray.
+ * AmneziaWG (when present), waits for its SOCKS listener, then Xray, then hev-socks5-tunnel
+ * on the TUN fd (when present) and waits for its readiness.
  */
 internal fun buildCoreSessionPlanJson(
     xrayConfigJson: String,
     amneziaWgConfigJson: String?,
     amneziaWgSocksPort: Int,
     connectionLog: Boolean,
+    hevConfigYaml: String? = null,
+    hevTunFd: Int = 0,
 ): String {
     val plan: JsonObject = buildJsonObject {
         put("xrayConfig", JsonPrimitive(xrayConfigJson))
@@ -27,6 +31,12 @@ internal fun buildCoreSessionPlanJson(
             put("amneziaWg", buildJsonObject {
                 put("config", JsonPrimitive(amneziaWgConfigJson))
                 put("socksPort", JsonPrimitive(amneziaWgSocksPort))
+            })
+        }
+        if (!hevConfigYaml.isNullOrBlank()) {
+            put("hev", buildJsonObject {
+                put("configYaml", JsonPrimitive(hevConfigYaml))
+                put("tunFd", JsonPrimitive(hevTunFd))
             })
         }
         put("connectionLog", JsonPrimitive(connectionLog))
@@ -37,3 +47,10 @@ internal fun buildCoreSessionPlanJson(
 /** Core instances whose close never returned still hold sockets; a non-null reason means the runtime is dirty. */
 internal fun coreAbandonedDirtyReason(abandonedInstances: Long): String? =
     if (abandonedInstances > 0) "SKIPI Core abandoned $abandonedInstances instance(s) whose close never returned" else null
+
+/** A failed session start that names HEV TUN gets the tail of the hev log, so the user sees why. */
+internal fun withHevDiagnostics(message: String, hevLogPath: String): String {
+    if (!message.contains("HEV", ignoreCase = true)) return message
+    val diagnostics = readHevTunDiagnostics(hevLogPath)
+    return if (diagnostics.isBlank()) message else "$message: $diagnostics"
+}

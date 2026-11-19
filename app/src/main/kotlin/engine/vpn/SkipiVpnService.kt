@@ -45,7 +45,6 @@ import engine.proxy.withResolvedDynamicLocalProxyPort
 import engine.stats.ProxyTrafficStatsRuntimeStore
 import engine.stats.ProxyTrafficStatsService
 import features.quicksettings.ProxyQuickSettingsTileService
-import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
 import engine.xray.stopCoreLogTailers
@@ -80,7 +79,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @SuppressLint("VpnServicePolicy")
 class SkipiVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
-    private var hevTunRuntime: HevTunRuntime? = null
     private var coreLogTailers: List<CoreLogFileTailer> = emptyList()
     private var connectionAccessLogJob: Job? = null
     private val serviceJob = SupervisorJob()
@@ -369,53 +367,25 @@ class SkipiVpnService : VpnService() {
             this@SkipiVpnService.protect(fd)
         }
 
-        if (config.hevSocks5TunnelConfig != null) {
-            val tunDeferred = async(Dispatchers.IO) { establishTun(config) }
-            val coreDeferred = async(Dispatchers.IO) {
-                SkipiCoreRuntime.start(
-                    context = this@SkipiVpnService,
-                    config = config,
-                    tunFd = 0,
-                )
-            }
-            val pfd = tunDeferred.await()
-            tunFileDescriptor = pfd
-            val tunReadyAt = android.os.SystemClock.elapsedRealtime()
-            coreDeferred.await()
-            val coreReadyAt = android.os.SystemClock.elapsedRealtime()
-            val tunFd = pfd.fd
-            val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-            runtime.start(config.hevSocks5TunnelConfig, tunFd)
-            val hevReadyAt = android.os.SystemClock.elapsedRealtime()
-            LocalProxyRuntime.update(config.localProxyOptions)
-            running = true
-            promoteVpnForeground(config, connecting = false)
-            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
-            triggerHapticFeedback { vpnConnected() }
-            AppLog.info(
-                LogTag,
-                "VPN start timing (parallel): stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
-            )
-        } else {
-            tunFileDescriptor = establishTun(config)
-            val tunReadyAt = android.os.SystemClock.elapsedRealtime()
-            val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
-            SkipiCoreRuntime.start(
-                context = this@SkipiVpnService,
-                config = config,
-                tunFd = tunFd,
-            )
-            val coreReadyAt = android.os.SystemClock.elapsedRealtime()
-            LocalProxyRuntime.update(config.localProxyOptions)
-            running = true
-            promoteVpnForeground(config, connecting = false)
-            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
-            triggerHapticFeedback { vpnConnected() }
-            AppLog.info(
-                LogTag,
-                "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
-            )
-        }
+        // Core starts hev on the TUN fd, so the TUN is established before the session starts.
+        tunFileDescriptor = establishTun(config)
+        val tunReadyAt = android.os.SystemClock.elapsedRealtime()
+        val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
+        SkipiCoreRuntime.start(
+            context = this@SkipiVpnService,
+            config = config,
+            tunFd = tunFd,
+        )
+        val coreReadyAt = android.os.SystemClock.elapsedRealtime()
+        LocalProxyRuntime.update(config.localProxyOptions)
+        running = true
+        promoteVpnForeground(config, connecting = false)
+        ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
+        triggerHapticFeedback { vpnConnected() }
+        AppLog.info(
+            LogTag,
+            "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+        )
         registerNetworkHandoverCallback(config)
         startConnectionAccessLog(config)
     }
@@ -559,7 +529,7 @@ class SkipiVpnService : VpnService() {
     }
 
     /**
-     * Native stops are bounded; order stays hev, Core, log tailers, and only
+     * Native stops are bounded; Core stops hev, Xray and AmneziaWG itself, then the log tailers, and only
      * then the TUN fd. [finalStop] is false for a network handover, where the
      * tailers and the socket protector must survive the restart.
      */
@@ -568,7 +538,6 @@ class SkipiVpnService : VpnService() {
             // An earlier stop is still stuck in native code; calling into it again would just hang again.
             AppLog.warn(LogTag, "Skipping native stops ($reason): the native runtime is already dirty")
         } else {
-            boundedSteps.run("hev", NativeStopStepDeadlineMillis) { hevTunRuntime?.stop() }
             val coreOutcome = boundedSteps.run("core", NativeStopStepDeadlineMillis) {
                 SkipiCoreRuntime.stop()
                 // The native side keeps the protector in a process-wide singleton; drop the reference to this service.
@@ -651,10 +620,6 @@ class SkipiVpnService : VpnService() {
             connectionAccessLogJob = null
             currentConfig = null
             runCatching { notificationManager.cancel(EmergencyPromptNotificationId) }
-        }
-
-        override fun stopHev() {
-            hevTunRuntime?.stop()
         }
 
         override fun stopCore() {
@@ -1045,12 +1010,8 @@ class SkipiVpnService : VpnService() {
             SkipiCoreRuntime.start(
                 context = this@SkipiVpnService,
                 config = config,
-                tunFd = config.xrayTunFd(newTun.fd),
+                tunFd = newTun.fd,
             )
-            config.hevSocks5TunnelConfig?.let { hevConfig ->
-                val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-                runtime.start(hevConfig, newTun.fd)
-            }
         }.onSuccess {
             AppLog.info(LogTag, "Recovered VPN runtime after physical network handover")
         }.onFailure { error ->

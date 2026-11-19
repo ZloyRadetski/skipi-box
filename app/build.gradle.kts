@@ -159,7 +159,6 @@ dependencies {
     implementation(libs.coil.compose)
     //noinspection UseTomlInstead
     implementation("app.skipi.core:skipicore:${ProjectConfig.SKIPI_CORE_VERSION}@aar")
-    implementation(dependencies.project(":hevtun"))
     implementation(libs.ktor.http)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.miuix.ui)

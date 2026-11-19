@@ -5,6 +5,8 @@ package engine.vpn
 
 import android.content.Context
 import app.R
+import engine.hevtun.ensureLogDirectory
+import engine.hevtun.toConfigYaml
 import features.logs.AppLog
 import engine.xray.initializeAndroidXrayCoreEnvironment
 import app.skipi.core.skipicore.CoreCallbackHandler
@@ -43,11 +45,17 @@ internal object SkipiCoreRuntime {
             context.getString(R.string.error_skipi_core_data_dir_missing)
         }
         context.initializeAndroidXrayCoreEnvironment(config.dataDir)
+        val hevConfig = config.hevSocks5TunnelConfig
+        hevConfig?.ensureLogDirectory()
+        // Core owns hev now: it needs the real TUN fd, while Xray gets 0 whenever hev is used.
+        val hevTunFd = if (hevConfig != null) tunFd else 0
         val plan = buildCoreSessionPlanJson(
             xrayConfigJson = config.xrayConfigJson,
             amneziaWgConfigJson = config.amneziaWgConfigJson,
             amneziaWgSocksPort = config.amneziaWgSocksPort,
             connectionLog = config.enableAccessLog,
+            hevConfigYaml = hevConfig?.toConfigYaml(),
+            hevTunFd = hevTunFd,
         )
         val hasAmneziaWg = !config.amneziaWgConfigJson.isNullOrBlank() && config.amneziaWgSocksPort > 0
         val controller = Skipicore.newCoreController(SkipiCoreCallbackHandler())
@@ -57,7 +65,7 @@ internal object SkipiCoreRuntime {
             }
             controller.setStateListener(SkipiCoreStateListener())
             // Core starts AmneziaWG, waits for its SOCKS listener, then Xray, and rolls back on failure.
-            controller.startSession(plan, tunFd.toLong())
+            controller.startSession(plan, config.xrayTunFd(tunFd).toLong())
         }.onFailure { error ->
             activeAmneziaWgBridge = null
             runCatching { controller.stopLoopWithTimeout(CoreStopTimeoutMillis) }
@@ -65,8 +73,9 @@ internal object SkipiCoreRuntime {
                     AppLog.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
                 }
             if (error is CancellationException) throw error
+            val reason = withHevDiagnostics(error.readableMessage(), hevConfig?.logPath.orEmpty())
             throw IllegalStateException(
-                context.getString(R.string.error_skipi_core_start_failed, error.readableMessage()),
+                context.getString(R.string.error_skipi_core_start_failed, reason),
                 error,
             )
         }
@@ -217,6 +226,12 @@ internal object SkipiCoreRuntime {
     fun queryTrafficStats(): CoreTrafficSnapshot? {
         val controller = coreController ?: return null
         return parseCoreTrafficSnapshot(controller.queryTrafficStats())
+    }
+
+    /** Packets and bytes through the TUN as hev counts them; null when Core is not running or cannot answer. */
+    fun queryTunnelStats(): TunnelStats? {
+        val controller = coreController ?: return null
+        return runCatching { parseTunnelStats(controller.queryTunnelStats()) }.getOrNull()
     }
 
     fun forceFreeMemory() {

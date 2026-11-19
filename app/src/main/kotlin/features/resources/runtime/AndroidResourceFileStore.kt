@@ -161,7 +161,6 @@ internal class AndroidResourceFileStore(
         return XrayResourceFilePaths(
             dataDir = dataDir.absolutePath,
             xrayCorePath = file(ResourceFileKind.XrayCore).absolutePath,
-            hevSocks5TunnelPath = File(appContext.applicationInfo.nativeLibraryDir, HevSocks5TunnelLibraryName).absolutePath,
             directCidrIpv4Path = file(ResourceFileKind.DirectCidrIpv4).absolutePath,
             directCidrIpv6Path = file(ResourceFileKind.DirectCidrIpv6).absolutePath,
         )
@@ -189,7 +188,6 @@ private fun File.shouldRestoreBundled(
 internal data class XrayResourceFilePaths(
     val dataDir: String,
     val xrayCorePath: String,
-    val hevSocks5TunnelPath: String,
     val directCidrIpv4Path: String,
     val directCidrIpv6Path: String,
 )
@@ -241,7 +239,6 @@ private fun Context.packageUpdatedAtMillis(): Long {
 
 private const val Arm64Abi = "arm64-v8a"
 private const val XrayCoreLibraryName = "libxray.so"
-private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
 private const val XrayExecutableMode = 493
 
 private val SupportedAndroidAbis = setOf(Arm64Abi, "armeabi-v7a", "x86", "x86_64")

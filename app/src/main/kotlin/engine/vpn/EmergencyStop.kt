@@ -22,7 +22,6 @@ internal object AndroidProcessKiller : ProcessKiller {
 internal interface EmergencyStopActions {
     /** Marks the tunnel stopped and persists "not connected" so nothing reconnects by itself. */
     fun markStoppedAndPersistIntent()
-    fun stopHev()
     fun stopCore()
     fun stopTailers()
     fun closeTun()
@@ -56,15 +55,14 @@ internal class EmergencyStopCoordinator(
 ) {
     fun run() {
         actions.markStoppedAndPersistIntent()
-        // An earlier stop is still stuck in hev or Core: a second native stop racing it can crash
+        // An earlier stop is still stuck in Core: a second native stop racing it can crash
         // the process instead of letting it be killed cleanly, so only the kill is left.
         if (!health.isDirty) {
-            steps.run("hev", stepDeadlineMillis, actions::stopHev)
             steps.run("core", stepDeadlineMillis, actions::stopCore)
         }
         steps.run("tailers", stepDeadlineMillis, actions::stopTailers)
         // The process is about to die if anything hung, so closing the TUN
-        // before a still-running hev is acceptable here.
+        // before a still-running Core is acceptable here.
         runCatching { actions.closeTun() }
         runCatching { actions.stopService() }
         runCatching { actions.notifyStateChanged() }

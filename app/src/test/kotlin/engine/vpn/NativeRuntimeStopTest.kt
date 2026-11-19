@@ -85,7 +85,6 @@ class EmergencyStopCoordinatorTest {
             if (hang) forever.await()
         }
         override fun markStoppedAndPersistIntent() { log += "persist" }
-        override fun stopHev() { log += "hev"; maybeHang() }
         override fun stopCore() { log += "core"; maybeHang() }
         override fun stopTailers() { log += "tailers"; maybeHang() }
         override fun closeTun() { log += "tun" }
@@ -114,7 +113,7 @@ class EmergencyStopCoordinatorTest {
 
         assertTrue("took $elapsedMillis ms", elapsedMillis < 3_000)
         assertEquals(
-            listOf("persist", "hev", "core", "tailers", "tun", "service", "notify", "relaunch"),
+            listOf("persist", "core", "tailers", "tun", "service", "notify", "relaunch"),
             actions.log.toList(),
         )
         assertEquals(1, killer.kills.get())
