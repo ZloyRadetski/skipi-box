@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.window.FrameWindowScope
 import java.awt.Dimension
 import java.lang.foreign.Arena
@@ -38,6 +39,15 @@ internal fun readableTitleTextColor(background: Color): Color =
 internal fun FrameWindowScope.DesktopWindowChrome(background: Color, isDark: Boolean) {
     LaunchedEffect(window) {
         window.minimumSize = Dimension(DesktopMinimumWindowWidth, DesktopMinimumWindowHeight)
+    }
+    // Color for every AWT layer: with Skiko's background erase on, a strip a drag has not painted yet takes it.
+    LaunchedEffect(window, background) {
+        val awtColor = java.awt.Color(background.toArgb())
+        fun paint(component: java.awt.Component) {
+            component.background = awtColor
+            if (component is java.awt.Container) component.components.forEach(::paint)
+        }
+        paint(window)
     }
     LaunchedEffect(window, background, isDark) {
         if (isWindowsHost()) {

@@ -230,12 +230,11 @@ compose.desktop {
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
         )
-        // Windows draws the window with Skiko's software renderer and without Java2D's own Direct3D pipeline. Both
-        // kept the graphics driver's write-combined memory (blocks of 32 MB) that grew with every resize and was not
-        // given back. Measured on a fast window resize (private bytes, idle / peak / 8 s later): Direct3D 492 / 683 /
-        // 573 MB; software renderer with Java2D Direct3D off 321 / 635 / 358 MB. The Skiko renderer alone was not
-        // enough (485 / 873 / 596), Java2D's pipeline kept its blocks.
-        if (isWindowsHost) jvmArgs += listOf("-Dskiko.renderApi=SOFTWARE_FAST", "-Dsun.java2d.d3d=false")
+        // Windows draws with Skiko's software renderer and without Java2D's own Direct3D pipeline: Direct3D held the
+        // graphics driver's memory (1.3 GB on a large window after resizing). Skiko's background erase is on, so a strip
+        // a drag has not painted yet is filled with the interface color (DesktopWindowChrome sets it) instead of black
+        // or white. With the direct software renderer this showed no black strip and no flash in a fast-drag test.
+        if (isWindowsHost) jvmArgs += listOf("-Dskiko.renderApi=SOFTWARE_FAST", "-Dskiko.rendering.noerasebackground=false", "-Dsun.java2d.d3d=false")
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
