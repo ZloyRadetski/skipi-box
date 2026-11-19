@@ -39,9 +39,14 @@ fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
 /** Protocols that used to exist; servers stored with one of them are dropped instead of failing a load. */
 val RemovedProxyProtocols: Set<String> = setOf("olcrtc")
 
-fun String.isRemovedPersistedProxyServer(): Boolean = runCatching {
-    ProxyServer.json.decodeFromString<PersistedProxyServer>(this).protocol.lowercase() in RemovedProxyProtocols
-}.getOrDefault(false)
+fun String.isRemovedPersistedProxyServer(): Boolean {
+    // Every load and save of a library asks this for each server; a server whose text never names a removed
+    // protocol cannot be one, so only those that do are parsed (a library of custom JSON servers is ~1 MB).
+    if (RemovedProxyProtocols.none { protocol -> contains(protocol, ignoreCase = true) }) return false
+    return runCatching {
+        ProxyServer.json.decodeFromString<PersistedProxyServer>(this).protocol.lowercase() in RemovedProxyProtocols
+    }.getOrDefault(false)
+}
 
 fun String.decodePersistedProxyServer(): ProxyServer<*> {
     val persistedServer = ProxyServer.json.decodeFromString<PersistedProxyServer>(this)

@@ -41,6 +41,19 @@ class DesktopUpdateInstallerTest {
     }
 
     @Test
+    fun noArgumentCarriesADoubleQuoteThatTheCommandLineWouldStrip() {
+        // Java does not escape a double quote inside an argument on Windows, so PowerShell's command line parsing
+        // dropped the quotes around the MSI path: under C:\Users\John Smith msiexec got "/i C:\Users\John" and the
+        // update silently failed. msiexec's quotes are built inside the script instead.
+        val spaced = Path.of("C:/Users/John Smith/AppData/Roaming/SKIPI/updates/0.6.0/SKIPI.msi")
+
+        val command = afterExit(desktopUpdateInstallPlan(DesktopUpdatePackage.WindowsMsi, spaced, location))
+
+        assertTrue(command.none { '"' in it }, command.last())
+        assertTrue("[char]34 + ${"'"}$spaced${"'"} + [char]34" in command.last(), command.last())
+    }
+
+    @Test
     fun aDeclinedPromptStillBringsTheAppBack() {
         val text = script(desktopUpdateInstallPlan(DesktopUpdatePackage.WindowsMsi, file, location))
 

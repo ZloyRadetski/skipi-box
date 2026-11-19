@@ -36,6 +36,7 @@ import app.skipi.ui.resources.desktop_reason_last_tunnel_action
 import app.skipi.ui.resources.error_skipi_core_start_failed
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -110,24 +111,44 @@ internal class DesktopTunnelSession(
             return
         }
         systemProxyRecoveryInProgress = true
-        withContext(Dispatchers.IO) { systemProxyManager.recover() }
-            .onSuccess { recovery ->
-                if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
-                    coreMessage = recovery.message
+        try {
+            withContext(Dispatchers.IO) { systemProxyManager.recover() }
+                .onSuccess { recovery ->
+                    if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
+                        coreMessage = recovery.message
+                    }
                 }
-            }
-            .onFailure { error ->
-                coreMessage = desktopText(Res.string.desktop_core_proxy_restore_failed, error.message.orEmpty())
-            }
-        systemProxyRecoveryInProgress = false
+                .onFailure { error ->
+                    coreMessage = desktopText(Res.string.desktop_core_proxy_restore_failed, error.message.orEmpty())
+                }
+        } finally {
+            // A cancelled recovery must not leave every later operation (and the exit) waiting for it forever.
+            systemProxyRecoveryInProgress = false
+        }
     }
 
     /** Mirrors Core's own state, which can change without a user action (e.g. a crash). */
     suspend fun observeCore() {
+        var tick = 0
         while (true) {
             delay(750)
             val previous = coreState
             val current = coreController.state()
+            // The TUN tunnel (hev) can die while Core keeps running; nothing else would notice, and the system would
+            // stay routed into an interface that carries nothing. Checked every few seconds while nothing else runs.
+            if (current.isRunning && previous.isRunning && !operationInProgress && ++tick % TunnelHealthCheckTicks == 0) {
+                val failure = withContext(Dispatchers.IO) {
+                    checkDesktopTunnelHealth(snapshot = { tunnel.snapshot() }, disconnect = { tunnel.disconnect() })
+                }
+                if (failure != null) {
+                    coreState = coreController.state()
+                    desiredRunning = false
+                    intentVersion += 1
+                    cancelPendingReconnect()
+                    coreMessage = desktopText(Res.string.desktop_core_stopped, failure)
+                    continue
+                }
+            }
             if (current != previous) {
                 coreState = current
                 if (previous.isRunning && !current.isRunning) {
@@ -274,12 +295,24 @@ internal class DesktopTunnelSession(
 
     /** Stops the tunnel ahead of a backup restore. */
     suspend fun stopForBackup(): Result<Unit> {
-        if (!coreController.state().isRunning) return Result.success(Unit)
+        // The intent is recorded first and a connect still in flight is waited for: Core is not running yet while it
+        // starts, and returning at once let the tunnel come up while a restore or reset replaced its settings.
         desiredRunning = false
         intentVersion += 1
-        val result = withContext(Dispatchers.IO) { tunnel.disconnect() }
-        coreState = coreController.state()
-        return result.map { }
+        cancelPendingReconnect()
+        waitUntilIdle()
+        if (!coreController.state().isRunning) {
+            coreState = coreController.state()
+            return Result.success(Unit)
+        }
+        operationInProgress = true
+        try {
+            val result = withContext(Dispatchers.IO) { tunnel.disconnect() }
+            coreState = coreController.state()
+            return result.map { }
+        } finally {
+            operationInProgress = false
+        }
     }
 
     /**
@@ -356,7 +389,8 @@ internal class DesktopTunnelSession(
             } else {
                 desktopText(Res.string.desktop_core_disconnect_queued)
             }
-        } else scope.launch {
+        } else scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            // Undispatched, so the flag is set before toggle returns: a double click no longer starts two operations.
             operationInProgress = true
             try {
                 if (desiredRunning) {
@@ -426,4 +460,22 @@ internal class DesktopTunnelSession(
             requestReconnect(desktopText(Res.string.desktop_reason_last_tunnel_action))
         }
     }
+}
+
+/** observeCore ticks every 750 ms; the tunnel's health is read every fourth one (3 s). */
+private const val TunnelHealthCheckTicks = 4
+
+/**
+ * Reads the tunnel's snapshot while Core runs. A snapshot that failed (the TUN tunnel died under a live Core: the
+ * snapshot already released the interface) also stops Core, which would otherwise keep serving nothing. Returns the
+ * failure's message, or null for a healthy tunnel.
+ */
+internal suspend fun checkDesktopTunnelHealth(
+    snapshot: suspend () -> platform.TunnelSnapshot,
+    disconnect: suspend () -> Result<Unit>,
+): String? {
+    val current = snapshot()
+    if (current.phase != platform.TunnelPhase.Failed) return null
+    disconnect()
+    return current.failure?.message.orEmpty()
 }

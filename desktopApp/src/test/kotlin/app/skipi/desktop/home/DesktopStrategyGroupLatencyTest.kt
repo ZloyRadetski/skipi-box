@@ -70,6 +70,30 @@ class DesktopStrategyGroupLatencyTest {
     }
 
     @Test
+    fun aServerSharedByGroupsIsProbedOncePerRun() = runBlocking {
+        // Every probe boots a Core instance and makes a network round trip; groups that share members, and a member
+        // also pinged on its own, reuse the one answer of this run.
+        val probes = java.util.concurrent.atomic.AtomicInteger()
+        val members = (1..6).map { server("member$it") }
+        val tester = DesktopStrategyGroupAwareTester(
+            members = { members },
+            concurrency = 2,
+            single = {
+                probes.incrementAndGet()
+                kotlinx.coroutines.delay(10)
+                DesktopServerLatencyResult.Success(40)
+            },
+        )
+
+        val groups = (1..5).map { id -> async(kotlinx.coroutines.Dispatchers.Default) { tester.test(id, group) } }
+        val lone = async(kotlinx.coroutines.Dispatchers.Default) { tester.test(10, members.first()) }
+        groups.awaitAll()
+
+        assertEquals(DesktopServerLatencyResult.Success(40), lone.await())
+        assertEquals(6, probes.get())
+    }
+
+    @Test
     fun severalGroupsPingedAtOnceNeverRunMoreProbesThanTheConcurrencyLimit() = runBlocking {
         val running = java.util.concurrent.atomic.AtomicInteger()
         val peak = java.util.concurrent.atomic.AtomicInteger()

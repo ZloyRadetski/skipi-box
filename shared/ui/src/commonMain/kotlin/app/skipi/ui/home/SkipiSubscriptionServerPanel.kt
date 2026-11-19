@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -50,7 +50,11 @@ internal fun SkipiSubscriptionServerPanelSegment(
             .fillMaxWidth()
             .clip(shape)
             .background(surfaceColor)
-            .drawBehind {
+            // One Path per row, reused on every draw: a new one each frame was a native Skia object left to the
+            // cleaner, for every visible subscription row.
+            .drawWithCache {
+                val outline = Path()
+                onDrawBehind {
                 val borderWidth = 1.dp.toPx()
                 val edge = borderWidth / 2f
                 val left = edge
@@ -58,7 +62,7 @@ internal fun SkipiSubscriptionServerPanelSegment(
                 val right = size.width - edge
                 val bottom = size.height - edge
                 val radius = 18.dp.toPx()
-                val outline = Path()
+                outline.reset()
 
                 when (segment) {
                     SkipiSubscriptionPanelSegment.CollapsedHeader -> {
@@ -115,6 +119,7 @@ internal fun SkipiSubscriptionServerPanelSegment(
                         outline.lineTo(right, 0f)
                         drawPath(outline, borderColor, style = Stroke(borderWidth))
                     }
+                }
                 }
             },
         content = content,

@@ -84,6 +84,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeCopyFormat
+import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeImportSource
@@ -362,14 +363,13 @@ internal fun DesktopProxyHome(
     }
 
     val groupWithoutMembersText = stringResource(Res.string.proxy_server_list_strategy_group_no_members)
-    val homeProjection = remember(
+    // The library's projection is made once per library change; latencies and running tests are laid over it, so a
+    // bulk ping's batches (every ~150 ms) touch only the rows they changed.
+    val baseProjection = remember(
         groupCatalog,
         decodedServers,
         subscriptionLibrary,
         serverLibrary.selectedServerId,
-        latencyByServerId,
-        testingServerIds,
-        connectionTestingServerIds,
         presentationFormatter,
         presentationNodes,
         refreshingSubscriptionIds,
@@ -381,8 +381,8 @@ internal fun DesktopProxyHome(
             decodedServers = decodedServers,
             subscriptionLibrary = subscriptionLibrary,
             selectedServerId = serverLibrary.selectedServerId,
-            latencyByServerId = latencyByServerId,
-            testingServerIds = testingServerIds + connectionTestingServerIds,
+            latencyByServerId = emptyMap(),
+            testingServerIds = emptySet(),
             presentationFormatter = presentationFormatter,
             presentationNodes = presentationNodes,
             refreshingSubscriptionIds = refreshingSubscriptionIds,
@@ -390,8 +390,22 @@ internal fun DesktopProxyHome(
             groupWithoutMembersText = groupWithoutMembersText,
         )
     }
-    val proxyGroups = homeProjection.groups
-    val allProxyServers = homeProjection.servers
+    val serverById = remember(decodedServers) {
+        decodedServers.mapNotNull { (stored, server) -> server?.let { stored.id to it } }.toMap()
+    }
+    val previousOverlay = remember { arrayOfNulls<List<ProxyServerSummary>>(1) }
+    val overlaidServers = remember(baseProjection, serverById, latencyByServerId, testingServerIds, connectionTestingServerIds) {
+        overlayDesktopProxyHomeLatency(
+            servers = baseProjection.servers,
+            serverById = serverById,
+            latencyByServerId = latencyByServerId,
+            testingServerIds = testingServerIds + connectionTestingServerIds,
+            groupWithoutMembersText = groupWithoutMembersText,
+            previous = previousOverlay[0],
+        ).also { previousOverlay[0] = it }
+    }
+    val proxyGroups = baseProjection.groups
+    val allProxyServers = overlaidServers
 
     val desktopCapabilities = desktopProxyHomeActionCapabilities(
         subscriptions = subscriptionLibrary.subscriptions,
@@ -593,6 +607,7 @@ internal fun DesktopProxyHome(
             addDialogVisible = true
         },
         onCreateServerDraft = { kind ->
+            localMessage = ""
             editingServerModel = createProxyServerEditorDraft(
                 kind = kind,
                 defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
@@ -604,6 +619,7 @@ internal fun DesktopProxyHome(
         onEditServer = { id ->
             decodedServers.firstOrNull { it.first.id == id }?.let { (stored, server) ->
                 if (server != null) {
+                    localMessage = ""
                     editingServerModel = ProxyServerEditResult(
                         serverId = stored.id,
                         server = server,
@@ -886,8 +902,13 @@ internal fun DesktopProxyHome(
                     }
                 }
             },
-            onDismiss = { editingServerModel = null },
+            onDismiss = {
+                editingServerModel = null
+                localMessage = ""
+            },
             onMessage = { localMessage = it },
+            // Home itself no longer shows notices, so the editor shows its own (copied, invalid JSON, clipboard errors).
+            statusMessage = localMessage.takeIf(String::isNotBlank),
             exportFullJson = exportFullJson,
         )
     }

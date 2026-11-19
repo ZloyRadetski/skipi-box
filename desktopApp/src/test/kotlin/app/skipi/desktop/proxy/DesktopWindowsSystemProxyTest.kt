@@ -98,6 +98,22 @@ class DesktopWindowsSystemProxyTest {
     }
 
     @Test
+    fun force_clear_reports_a_failed_write_instead_of_success() {
+        // The "Clear system proxy" button said it was done while ProxyEnable stayed 1.
+        val fixture = ProxyFixture()
+        fixture.manager.acquire(DesktopWindowsHttpProxyEndpoint(port = 11_809)).getOrThrow()
+        fixture.commandRunner.failNextRegistryWrite(InternetSettingsKey, ProxyEnable)
+
+        val result = fixture.manager.forceClear()
+
+        assertTrue(result.isFailure)
+        // The other steps still ran: what can be cleaned is cleaned.
+        assertEquals(null, fixture.registry.marker())
+        assertFalse(Files.exists(fixture.leasePath))
+        fixture.close()
+    }
+
+    @Test
     fun stale_file_without_skipi_marker_is_discarded_without_changing_windows_proxy() {
         val fixture = ProxyFixture()
         fixture.registry.put(ProxyEnable, DesktopWindowsRegistryValue.dword(1))

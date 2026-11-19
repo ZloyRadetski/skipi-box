@@ -84,6 +84,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -158,6 +159,7 @@ import features.config.TrafficConfigState
 import features.config.withSkipiSettingsInRawConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Toolkit
@@ -1102,7 +1104,13 @@ private fun DesktopConfigEditor(
     var sourceUrl by remember(draft.id) { mutableStateOf(draft.sourceUrl) }
     var updateLocked by remember(draft.id) { mutableStateOf(draft.updateLocked) }
     var content by remember(draft.id) { mutableStateOf(draft.content) }
-    val analysis = remember(content) { content.analyzeShadowrocketConfig() }
+    // The counts and diagnostics follow the text a moment after typing stops, parsed off the UI thread: a parse per
+    // keystroke lagged on a long config and pushed the saved profiles out of the analysis cache.
+    var analysis by remember(draft.id) { mutableStateOf(draft.content.analyzeShadowrocketConfig()) }
+    LaunchedEffect(content) {
+        delay(ConfigEditorAnalysisDebounceMillis)
+        analysis = withContext(Dispatchers.Default) { content.analyzeShadowrocketConfig() }
+    }
     SkipiTrafficConfigRawEditor(
         state = SkipiTrafficConfigRawEditorState(
             configId = draft.id,
@@ -1143,3 +1151,6 @@ private fun DesktopConfigEditor(
         },
     )
 }
+
+/** How long the raw config editor waits after the last keystroke before it parses the text again. */
+private const val ConfigEditorAnalysisDebounceMillis = 250L

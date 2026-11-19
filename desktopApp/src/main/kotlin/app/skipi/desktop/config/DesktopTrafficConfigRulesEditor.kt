@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -43,6 +44,9 @@ import app.skipi.ui.subscription.SubscriptionGroupUiState
 import app.skipi.ui.subscription.toSubscriptionGroupUiState
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
+import features.routing.usecase.GeoSuggestionItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 
 /** Narrower windows keep the cards: the table needs room for its columns and the editor beneath it. */
@@ -165,14 +169,15 @@ internal fun DesktopTrafficConfigRulesEditor(
                 val suggestionsProvider = remember(resourceFiles) {
                     DesktopRoutingSuggestionsProvider(resourceFiles)
                 }
-                val geoSiteSuggestions = remember(profile, suggestionsProvider) {
-                    suggestionsProvider.resolveGeoSiteSuggestions(profile)
+                // The tags are read from the profile's geo files (geosite can be ~90 MB), so off the UI thread.
+                val geoSiteSuggestions by produceState<List<GeoSuggestionItem>>(emptyList(), profile, suggestionsProvider) {
+                    value = withContext(Dispatchers.IO) { suggestionsProvider.resolveGeoSiteSuggestions(profile) }
                 }
-                val geoIpSuggestions = remember(profile, suggestionsProvider) {
-                    suggestionsProvider.resolveGeoIpSuggestions(profile, forShadowrocket = true)
+                val geoIpSuggestions by produceState<List<GeoSuggestionItem>>(emptyList(), profile, suggestionsProvider) {
+                    value = withContext(Dispatchers.IO) { suggestionsProvider.resolveGeoIpSuggestions(profile, forShadowrocket = true) }
                 }
-                val ruleSetSuggestions = remember(profile, suggestionsProvider) {
-                    suggestionsProvider.resolveRuleSetSuggestions(profile)
+                val ruleSetSuggestions by produceState<List<GeoSuggestionItem>>(emptyList(), profile, suggestionsProvider) {
+                    value = withContext(Dispatchers.IO) { suggestionsProvider.resolveRuleSetSuggestions(profile) }
                 }
                 val editorState = rememberSkipiTrafficConfigRuleEditorState(
                     editorIdentity = editorIdentity,

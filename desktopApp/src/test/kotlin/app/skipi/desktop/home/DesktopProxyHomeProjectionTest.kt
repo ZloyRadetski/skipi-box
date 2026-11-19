@@ -264,6 +264,59 @@ class DesktopProxyHomeProjectionTest {
         )
     }
 
+    @Test
+    fun latencyLaidOverTheBaseProjectionMatchesAFullProjectionAndKeepsUnchangedRows() {
+        // A bulk ping publishes latencies every ~150 ms; projecting every server again for each batch made thousands of
+        // new rows, so the store's equality check missed and sorted and filtered the whole list again.
+        val serverLibrary = DesktopServerLibrary(
+            servers = listOf(
+                storedServer(1, "One"),
+                storedServer(2, "Two"),
+                storedStrategy(3, StrategyGroup(remarks = "Empty group")),
+            ),
+        )
+        val subscriptionLibrary = DesktopSubscriptionLibrary(subscriptions = emptyList())
+        val groupCatalog = DesktopProxyGroups.create(
+            serverLibrary = serverLibrary,
+            subscriptionLibrary = subscriptionLibrary,
+            options = DesktopProxyGroupOptions(enableAllProxyGroup = true),
+        )
+        val decodedServers = serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
+        val presentationNodes = decodedServers.mapNotNull { (stored, server) ->
+            server?.let { ProxyServerPresentationNode(id = stored.id, groupId = stored.subscriptionId, server = it) }
+        }
+        val formatter = ProxyServerPresentationFormatter(groupNames = emptyMap(), labels = projectionTestPresentationLabels())
+        fun project(latency: Map<Int, DesktopServerLatencyResult>, testing: Set<Int>) = projectDesktopProxyHomeProjection(
+            groupCatalog = groupCatalog,
+            decodedServers = decodedServers,
+            subscriptionLibrary = subscriptionLibrary,
+            selectedServerId = 1,
+            latencyByServerId = latency,
+            testingServerIds = testing,
+            presentationFormatter = formatter,
+            presentationNodes = presentationNodes,
+            refreshingSubscriptionIds = emptySet(),
+            pingingSubscriptionIds = emptySet(),
+            groupWithoutMembersText = "No servers",
+        ).servers
+        val base = project(emptyMap(), emptySet())
+        val serverById = decodedServers.mapNotNull { (stored, server) -> server?.let { stored.id to it } }.toMap()
+        val firstLatency = mapOf(
+            1 to DesktopServerLatencyResult.Success(40),
+            3 to DesktopServerLatencyResult.Error("No member of the group answered"),
+        )
+
+        val first = overlayDesktopProxyHomeLatency(base, serverById, firstLatency, setOf(2), "No servers", previous = null)
+        assertEquals(project(firstLatency, setOf(2)), first)
+
+        val secondLatency = firstLatency + (2 to DesktopServerLatencyResult.Success(90))
+        val second = overlayDesktopProxyHomeLatency(base, serverById, secondLatency, emptySet(), "No servers", previous = first)
+        assertEquals(project(secondLatency, emptySet()), second)
+        assertTrue(second[0] === first[0], "a row whose latency did not change is the same object")
+        assertTrue(second[2] === first[2])
+        assertTrue(second[1] !== first[1])
+    }
+
     private fun storedServer(
         id: Int,
         remarks: String,

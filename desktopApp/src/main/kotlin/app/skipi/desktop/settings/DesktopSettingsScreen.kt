@@ -129,6 +129,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -184,6 +185,7 @@ import app.skipi.ui.settings.SubscriptionSettingsCapabilities
 import app.skipi.ui.settings.SubscriptionSettingsLabels
 import app.skipi.ui.theme.SkipiTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -730,6 +732,33 @@ private fun DesktopLocalProxySettings(
         httpPortText.toInt() == settings.localProxyPort -> httpPortConflict
         else -> null
     }
+    // A port is saved a moment after typing stops: every valid prefix of "1080" (1, 10, 108) was saved and asked a
+    // running tunnel to reconnect on it.
+    val latestSettings by rememberUpdatedState(settings)
+    val latestPersist by rememberUpdatedState(onPersist)
+    LaunchedEffect(portText) {
+        delay(LocalProxyPortCommitDelayMillis)
+        latestSettings.withLocalProxyPort(portText)
+            ?.takeIf { next -> next != latestSettings }
+            ?.let { next -> latestPersist(next, saved) }
+    }
+    LaunchedEffect(httpPortText) {
+        delay(LocalProxyPortCommitDelayMillis)
+        latestSettings.withLocalHttpProxyPort(httpPortText)
+            ?.takeIf { next -> next != latestSettings }
+            ?.let { next -> latestPersist(next, saved) }
+    }
+    // Leaving the page before the delay ran still saves what was typed.
+    val latestPortText by rememberUpdatedState(portText)
+    val latestHttpPortText by rememberUpdatedState(httpPortText)
+    DisposableEffect(Unit) {
+        onDispose {
+            var next = latestSettings
+            next.withLocalProxyPort(latestPortText)?.let { next = it }
+            next.withLocalHttpProxyPort(latestHttpPortText)?.let { next = it }
+            if (next != latestSettings) latestPersist(next, saved)
+        }
+    }
     val displayIp = lanAddress ?: settings.localProxyListenAddress
     val sharedState = settings.toLocalProxySettingsState().copy(
         port = portText,
@@ -748,15 +777,9 @@ private fun DesktopLocalProxySettings(
         isWideScreen = true,
         onBack = onBack,
         onDynamicPortChange = { enabled -> onPersist(settings.copy(enableDynamicLocalProxyPort = enabled), saved) },
-        onPortChange = { text ->
-            portText = text
-            settings.withLocalProxyPort(text)?.let { next -> onPersist(next, saved) }
-        },
+        onPortChange = { text -> portText = text },
         onHttpEnabledChange = { enabled -> onPersist(settings.withHttpInbound(enabled), saved) },
-        onHttpPortChange = { text ->
-            httpPortText = text
-            settings.withLocalHttpProxyPort(text)?.let { next -> onPersist(next, saved) }
-        },
+        onHttpPortChange = { text -> httpPortText = text },
         onListenAllInterfacesChange = { allow -> onPersist(settings.withListenAllInterfaces(allow), saved) },
         onSocksAuthModeChange = { mode -> onPersist(settings.withSocksAuthMode(mode), saved) },
         onHttpAuthModeChange = { mode -> onPersist(settings.withHttpAuthMode(mode), saved) },
@@ -1194,3 +1217,6 @@ private fun openDirectory(path: java.nio.file.Path): Result<Unit> = runCatching 
 internal fun copyToClipboard(value: String): Result<Unit> = runCatching {
     Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(value), null)
 }
+
+/** How long a local proxy port field waits after the last keystroke before the port is saved. */
+private const val LocalProxyPortCommitDelayMillis = 700L

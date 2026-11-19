@@ -44,15 +44,21 @@ internal class DesktopProxyImportRunner(
         val importTimeout = Duration.ofSeconds(
             settings.subscriptionFetchTimeoutSeconds.toLong(),
         )
+        // The libraries are read here (their state belongs to the UI thread); parsing what was pasted or picked (up
+        // to 8 MB) and fingerprinting every stored server run off it, so a large import does not freeze the window.
+        val serversSnapshot = readServers()
+        val subscriptionsSnapshot = readSubscriptions()
+        val configsSnapshot = readConfigs()
         val plan = try {
+            withContext(Dispatchers.Default) {
             DesktopProxyImportPlanner.planWithProviderFetcher(
                 input = input,
                 existing = DesktopProxyImportExisting(
-                    serverFingerprints = readServers().servers.mapNotNull { stored ->
+                    serverFingerprints = serversSnapshot.servers.mapNotNull { stored ->
                         stored.decode().getOrNull()?.connectionFingerprint()
                     }.toSet(),
-                    subscriptionUrls = readSubscriptions().subscriptions.mapTo(mutableSetOf()) { it.url },
-                    configContents = readConfigs().configs.mapTo(mutableSetOf()) { it.content },
+                    subscriptionUrls = subscriptionsSnapshot.subscriptions.mapTo(mutableSetOf()) { it.url },
+                    configContents = configsSnapshot.configs.mapTo(mutableSetOf()) { it.content },
                     serverDuplicatePolicy = DesktopProxyImportDuplicatePolicy.KeepExistingAndRepeated,
                     subscriptionDuplicatePolicy =
                         DesktopProxyImportDuplicatePolicy.KeepExistingDeduplicateRepeated,
@@ -69,6 +75,7 @@ internal class DesktopProxyImportRunner(
                     }
                 },
             )
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
@@ -82,11 +89,15 @@ internal class DesktopProxyImportRunner(
                 IllegalArgumentException(errors.joinToString(" ") { it.message }),
             )
         }
-        val committed = DesktopProxyImportCommitter.commit(
-            plan = plan,
-            subscriptionLibrary = readSubscriptions(),
-            configLibrary = readConfigs(),
-        )
+        val subscriptionsBeforeCommit = readSubscriptions()
+        val configsBeforeCommit = readConfigs()
+        val committed = withContext(Dispatchers.Default) {
+            DesktopProxyImportCommitter.commit(
+                plan = plan,
+                subscriptionLibrary = subscriptionsBeforeCommit,
+                configLibrary = configsBeforeCommit,
+            )
+        }
         val savedSections = mutableListOf<String>()
         var importedServerSelectionChanged = false
         try {
@@ -107,13 +118,13 @@ internal class DesktopProxyImportRunner(
                     readServers().selectedServerId != selectedServerBefore
             }
             if (committed.subscriptionLibrary != readSubscriptions()) {
-                DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary).getOrThrow()
+                withContext(Dispatchers.IO) { DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary) }.getOrThrow()
                 publishSubscriptions(committed.subscriptionLibrary)
                 savedSections += desktopText(Res.string.desktop_import_section_subscriptions)
             }
             if (committed.configLibrary != readConfigs()) {
                 val activeBefore = readConfigs().selectedConfigId
-                DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
+                withContext(Dispatchers.IO) { DesktopConfigLibraries.saveDefault(committed.configLibrary) }.getOrThrow()
                 publishConfigs(committed.configLibrary)
                 savedSections += desktopText(Res.string.desktop_import_section_configs)
                 if (isTunnelRunning() && activeBefore != committed.configLibrary.selectedConfigId) {

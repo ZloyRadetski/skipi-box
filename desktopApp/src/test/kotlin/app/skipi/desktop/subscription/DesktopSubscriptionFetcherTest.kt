@@ -26,6 +26,13 @@ import java.net.InetSocketAddress
 
 class DesktopSubscriptionFetcherTest {
     @Test
+    fun aFetcherBuildsItsHttpClientOnlyWhenItFetches() {
+        // A client starts a selector thread and loads the TLS stack: the app makes its fetcher at start, long before
+        // the first fetch.
+        DesktopSubscriptionFetcher(client = lazy { error("the client must not be built by the constructor") })
+    }
+
+    @Test
     fun fetches_subscription_body_headers_and_user_agent() {
         withSubscriptionServer { server ->
             var receivedAgent = ""

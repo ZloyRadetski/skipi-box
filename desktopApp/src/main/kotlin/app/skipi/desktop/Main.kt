@@ -167,6 +167,9 @@ import features.config.parseSkipiDeepLinkOrNull
 import features.config.toCustomThemes
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -285,21 +288,22 @@ private fun runDesktopApplication(
             )
         }
     }
-    // Load the Core library while the window opens instead of during the first Connect.
+    val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
+    val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
+    var desktopSettings by remember {
+        mutableStateOf(
+            (initialSettings ?: DesktopSettingsLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopSettingsLibraries.defaultPath()) { DesktopAppSettings() })
+                .also { loaded -> applyDesktopStartupLanguage(loaded) },
+        )
+    }
+    // Load the Core library while the window opens instead of during the first Connect, when that connect comes by itself.
     LaunchedEffect(coreController) {
+        if (!shouldPreloadCoreAtStart(desktopSettings)) return@LaunchedEffect
         withContext(Dispatchers.IO) {
             coreController.preload().onFailure { error ->
                 DesktopLogger.info("CoreController", "Core preload skipped: ${error.message}")
             }
         }
-    }
-    val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
-    val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
-    var desktopSettings by remember {
-        mutableStateOf(
-            (initialSettings ?: DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
-                .also { loaded -> applyDesktopStartupLanguage(loaded) },
-        )
     }
     val tunnel = remember {
         DesktopTunnelSession(
@@ -367,11 +371,11 @@ private fun runDesktopApplication(
                 val subscriptionPayloadParsers = remember {
                     listOf(DesktopMihomoPayloadImporter.subscriptionPayloadParser())
                 }
-                var configLibrary by remember { mutableStateOf(DesktopConfigLibraries.loadDefault().getOrElse { DesktopConfigLibrary() }) }
+                var configLibrary by remember { mutableStateOf(DesktopConfigLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopConfigLibraries.defaultPath()) { DesktopConfigLibrary() }) }
                 var serverLink by remember { mutableStateOf("") }
                 val subscriptionUi = remember { DesktopSubscriptionUiState() }
                 var subscriptionLibrary by remember {
-                    mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
+                    mutableStateOf(DesktopSubscriptionLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopSubscriptionLibraries.defaultPath()) { DesktopSubscriptionLibrary() })
                 }
                 var currentSection by remember { mutableStateOf(SkipiMainDestination.Proxy) }
                 // A tap on the item of the section that is already open: the page goes to its top or its start.
@@ -407,7 +411,7 @@ private fun runDesktopApplication(
                     }
                 }
                 var serverLibrary by remember {
-                    mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
+                    mutableStateOf(DesktopServerLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopServerLibraries.defaultPath()) { DesktopServerLibrary() })
                 }
                 val proxyServerRepository = remember {
                     DesktopProxyServerRepository(
@@ -438,12 +442,17 @@ private fun runDesktopApplication(
                     )
                 }
                 val latencyStore = remember { DesktopLatencyStore(DesktopSettingsLibraries.defaultPath().parent) }
-                var latencyByServerId by remember { mutableStateOf(latencyStore.load()) }
-                // Written a moment after the last change, so a mass ping is one write, not one per server.
-                LaunchedEffect(latencyByServerId) {
-                    delay(1_500)
-                    val snapshot = latencyByServerId
-                    withContext(Dispatchers.IO) { latencyStore.save(snapshot) }
+                // A bulk ping publishes a new map every ~150 ms. It is read through this State by the pages that show it,
+                // never in this function's body: a read here recomposed the whole app (all three pages) on every batch.
+                val latencyByServerIdState = remember { mutableStateOf(latencyStore.load()) }
+                var latencyByServerId by latencyByServerIdState
+                // Written a moment after the last change, so a mass ping is one write, not one per server; the map just
+                // loaded is not written back at start.
+                LaunchedEffect(latencyStore) {
+                    snapshotFlow { latencyByServerIdState.value }.drop(1).collectLatest { snapshot ->
+                        delay(1_500)
+                        withContext(Dispatchers.IO) { latencyStore.save(snapshot) }
+                    }
                 }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var connectionTestingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -491,9 +500,10 @@ private fun runDesktopApplication(
                 }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
                 // The core's own heap, not the whole process: the JVM and the UI share it.
-                val tunnelMemoryKb by produceState(0L, tunnel.coreState.isRunning, desktopSettings.showTunnelMemory) {
+                val tunnelMemoryShown = tunnel.coreState.isRunning && desktopSettings.showTunnelMemory && windowShown && !windowState.isMinimized
+                val tunnelMemoryKb by produceState(0L, tunnelMemoryShown) {
                     value = 0L
-                    if (!tunnel.coreState.isRunning || !desktopSettings.showTunnelMemory) return@produceState
+                    if (!tunnelMemoryShown) return@produceState
                     while (true) {
                         value = withContext(Dispatchers.IO) { readDesktopTunnelMemoryKb(coreController::readMemoryStats) }
                         delay(3_000)
@@ -724,7 +734,6 @@ private fun runDesktopApplication(
                     configLibrary,
                     subscriptionLibrary,
                     tunnel.coreState,
-                    latencyByServerId,
                     testingServerIds,
                     subscriptionUi.updateInProgress,
                     subscriptionUi.refreshingId,
@@ -735,6 +744,12 @@ private fun runDesktopApplication(
                     desktopSharedApplication.runtime.refresh()
                 }
 
+                LaunchedEffect(desktopSharedApplication) {
+                    snapshotFlow { latencyByServerIdState.value }.drop(1).collect {
+                        desktopSharedApplication.runtime.refresh()
+                    }
+                }
+
                 LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
                 val desktopConnectionLog = remember(coreController) {
                     DesktopConnectionLog(coreController::readConnectionLog, DesktopAppLogFeed::after)
@@ -743,13 +758,21 @@ private fun runDesktopApplication(
                 LaunchedEffect(desktopSettings.showConnectionLog) {
                     coreController.setConnectionLogEnabled(desktopSettings.showConnectionLog)
                 }
-                DisposableEffect(desktopSettings.showConnectionLog) {
-                    // The Home log is a visible viewer of what the tailers read.
-                    val viewerLease = if (desktopSettings.showConnectionLog) CoreLogTailerPollingPolicy.acquireViewer() else null
+                // The Home log can be seen only while the window is shown and not minimized.
+                val connectionLogVisible = desktopSettings.showConnectionLog && windowShown && !windowState.isMinimized
+                DisposableEffect(connectionLogVisible) {
+                    // The Home log is a visible viewer of what the tailers read; hidden, they go back to their slow pace.
+                    val viewerLease = if (connectionLogVisible) CoreLogTailerPollingPolicy.acquireViewer() else null
                     onDispose { viewerLease?.close() }
                 }
                 LaunchedEffect(desktopSettings.showConnectionLog, tunnel.coreState.sessionId) {
-                    desktopConnectionLog.follow(desktopSettings.showConnectionLog)
+                    desktopConnectionLog.follow(
+                        enabled = desktopSettings.showConnectionLog,
+                        coreRunning = { tunnel.coreState.isRunning },
+                        intervalMillis = {
+                            if (windowShown && !windowState.isMinimized) ConnectionLogPollMillis else ConnectionLogHiddenPollMillis
+                        },
+                    )
                 }
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()
@@ -758,31 +781,44 @@ private fun runDesktopApplication(
                 val trafficConfigContentById = remember(configLibrary) {
                     configLibrary.configs.associate { config -> config.id to config.content }
                 }
-                val selectedServerConfig = remember(
+                // Only whether it builds is read here (the tunnel builds its own at connect). Latency only orders a
+                // balancer's members, so it is not a key: a bulk ping published new latencies ~6 times a second and
+                // each rebuilt the whole config. It is built off the UI thread (a custom server's JSON can be tens of
+                // KB, a profile plans every server), keeping the previous answer until the new one is ready.
+                val selectedServerConfig by produceState<Result<*>?>(
+                    null,
                     serverLibrary,
                     configLibrary,
                     localProxyOptions,
                     routingSnapshot,
                     trafficConfigContentById,
                     desktopSettings.subscriptionPingUrl,
-                    latencyByServerId,
                 ) {
-                    buildDesktopSelectedServerConfig(
-                        serverLibrary = serverLibrary,
-                        configLibrary = configLibrary,
-                        routing = routingSnapshot,
-                        options = localProxyOptions,
-                        trafficConfigContentById = trafficConfigContentById,
-                        subscriptionPingUrl = desktopSettings.subscriptionPingUrl,
-                        latencyByServerId = latencyByServerId,
-                    )
+                    val serverLibrarySnapshot = serverLibrary
+                    val configLibrarySnapshot = configLibrary
+                    val routing = routingSnapshot
+                    val options = localProxyOptions
+                    val contentById = trafficConfigContentById
+                    val pingUrl = desktopSettings.subscriptionPingUrl
+                    val latencySnapshot = latencyByServerIdState.value
+                    value = withContext(Dispatchers.Default) {
+                        buildDesktopSelectedServerConfig(
+                            serverLibrary = serverLibrarySnapshot,
+                            configLibrary = configLibrarySnapshot,
+                            routing = routing,
+                            options = options,
+                            trafficConfigContentById = contentById,
+                            subscriptionPingUrl = pingUrl,
+                            latencyByServerId = latencySnapshot,
+                        )
+                    }
                 }
                 val activeProfileName = configLibrary.activeProfile?.name
                 val exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String = { editResult ->
                     val serverLibrarySnapshot = serverLibrary
                     val settingsSnapshot = desktopSettings
                     val trafficConfigContentSnapshot = trafficConfigContentById
-                    val latencySnapshot = latencyByServerId.toMap()
+                    val latencySnapshot = latencyByServerIdState.value.toMap()
                     withContext(Dispatchers.IO) {
                         val copyTarget = editResult.toProxyServerCopyTarget(
                             defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
@@ -795,11 +831,9 @@ private fun runDesktopApplication(
                         ).getOrThrow()
                     }
                 }
-                val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
                 val latestServerLibrary by rememberUpdatedState(serverLibrary)
                 val latestConfigLibrary by rememberUpdatedState(configLibrary)
-                val latestLatencyByServerId by rememberUpdatedState(latencyByServerId)
                 val latestResourceUpdatingTemplate by rememberUpdatedState(resourceUpdatingTemplate)
                 val latestResourceUpdatedMessage by rememberUpdatedState(resourceUpdatedMessage)
                 val latestResourceCancelledMessage by rememberUpdatedState(resourceCancelledMessage)
@@ -1052,7 +1086,7 @@ private fun runDesktopApplication(
                         readSettings = { latestDesktopSettings },
                         readServers = { latestServerLibrary },
                         readConfigs = { latestConfigLibrary },
-                        readLatency = { latestLatencyByServerId },
+                        readLatency = { latencyByServerIdState.value },
                         tunHost = desktopTunHost,
                     ).also(tunnel::attach)
                 }

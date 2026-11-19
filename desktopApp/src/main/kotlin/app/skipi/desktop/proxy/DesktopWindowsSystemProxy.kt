@@ -405,10 +405,18 @@ class DesktopWindowsSystemProxyLeaseManager(
     override fun isSupportedHost(): Boolean = isDesktopWindowsSystemProxySupported()
 
     override fun forceClear(): Result<Unit> = withExclusiveLeaseLock {
-        registry.write(InternetSettingsKey, ProxyEnableValue, DesktopWindowsRegistryValue.dword(0)).getOrNull()
-        refresher.refresh().getOrNull()
-        registry.delete(MarkerRegistryKey, MarkerRegistryValue).getOrNull()
-        DesktopWindowsSystemProxyLeaseStore.clear(leasePath).getOrNull()
+        // Every step runs whatever the others did, and the first failure is reported: the button said "done" while
+        // ProxyEnable stayed 1.
+        val failures = listOfNotNull(
+            registry.write(InternetSettingsKey, ProxyEnableValue, DesktopWindowsRegistryValue.dword(0)).exceptionOrNull(),
+            refresher.refresh().exceptionOrNull(),
+            registry.delete(MarkerRegistryKey, MarkerRegistryValue).exceptionOrNull(),
+            DesktopWindowsSystemProxyLeaseStore.clear(leasePath).exceptionOrNull(),
+        )
+        failures.firstOrNull()?.let { first ->
+            failures.drop(1).forEach(first::addSuppressed)
+            throw first
+        }
     }.map { }
 
     private fun readSnapshot(): Result<DesktopWindowsSystemProxySnapshot> = runCatching {

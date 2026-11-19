@@ -84,9 +84,9 @@ internal class DesktopConnectionLog(
     var logLevel: String = "error"
 
     @Synchronized
-    fun poll() {
+    fun poll(readCore: Boolean = true) {
         // Both sources are read either way, so a level raised later does not replay old lines.
-        val connections = newConnections()
+        val connections = if (readCore) newConnections() else emptyList()
         val messages = newMessages()
         val threshold = connectionLogThreshold(logLevel)
         if (threshold == null) {
@@ -129,19 +129,31 @@ internal class DesktopConnectionLog(
     }
 }
 
-/** How often the Home log asks for new lines. */
+/** How often the Home log asks for new lines while it can be seen. */
 internal const val ConnectionLogPollMillis = 250L
 
-/** Runs for one session or the lack of one, until cancelled; a log switched off forgets its rows. */
-internal suspend fun DesktopConnectionLog.follow(enabled: Boolean) {
+/** How often it asks while the window is hidden or minimized: the rows are kept, nobody is looking at them. */
+internal const val ConnectionLogHiddenPollMillis = 2_000L
+
+/**
+ * Runs for one session or the lack of one, until cancelled; a log switched off forgets its rows. Core is asked only
+ * while [coreRunning] (a stopped Core has no connections, and asking it built an exception four times a second); the
+ * app's own lines are read either way. [intervalMillis] is asked before every wait, so hiding the window slows it down.
+ */
+internal suspend fun DesktopConnectionLog.follow(
+    enabled: Boolean,
+    coreRunning: () -> Boolean = { true },
+    intervalMillis: () -> Long = { ConnectionLogPollMillis },
+) {
     if (!enabled) {
         clear()
         return
     }
     startSession()
     while (true) {
-        withContext(Dispatchers.IO) { poll() }
-        delay(ConnectionLogPollMillis)
+        val readCore = coreRunning()
+        withContext(Dispatchers.IO) { poll(readCore) }
+        delay(intervalMillis())
     }
 }
 

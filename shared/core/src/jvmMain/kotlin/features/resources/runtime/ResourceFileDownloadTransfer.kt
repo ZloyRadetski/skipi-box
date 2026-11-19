@@ -119,6 +119,11 @@ private fun InputStream.copyToWithProgress(
         downloadedBytes += bytesRead
         onProgress(downloadedBytes, totalBytes)
     }
+    // A connection that ended early reads as a normal end of the stream: a short file must not replace a good one.
+    // An IOException, so the attempt is retried like any other broken transfer.
+    if (totalBytes >= 0 && downloadedBytes != totalBytes) {
+        throw IOException("Download ended after $downloadedBytes of $totalBytes bytes")
+    }
 }
 
 private const val MaxRedirects = 5

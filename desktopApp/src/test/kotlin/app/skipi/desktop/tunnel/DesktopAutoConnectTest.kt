@@ -22,6 +22,15 @@ class DesktopAutoConnectTest {
     }
 
     @Test
+    fun coreIsLoadedAtStartOnlyWhenTheAppWillConnectByItself() {
+        // The Go runtime of the Core library costs ~60 MB and ~20 threads once loaded and cannot be unloaded, so an app
+        // that is only opened (and maybe never connects) loads it on the first connect or ping instead.
+        assertTrue(shouldPreloadCoreAtStart(enabled))
+        assertFalse(shouldPreloadCoreAtStart(enabled.copy(autoConnectOnAppOpen = false)))
+        assertFalse(shouldPreloadCoreAtStart(enabled.copy(onboardingCompleted = false)))
+    }
+
+    @Test
     fun staysOffWithoutASelectedServerOrProfile() {
         assertFalse(shouldAutoConnectOnOpen(enabled, hasSelection = false, tunnelRunning = false))
     }

@@ -35,10 +35,8 @@ internal fun isTrustedReleaseHost(uri: URI): Boolean {
 internal class DesktopUpdateDownloader(
     private val isTrusted: (URI) -> Boolean = ::isTrustedReleaseHost,
     private val requireHttps: Boolean = true,
-    private val client: HttpClient = HttpClient.newBuilder()
-        .followRedirects(HttpClient.Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(15))
-        .build(),
+    /** Built on the first download: the app makes its downloader at start, long before any update. */
+    private val client: Lazy<HttpClient> = DesktopReleaseHttpClient,
 ) {
     /** [onProgress] gets the bytes written so far and the expected total (0 when unknown). */
     suspend fun download(
@@ -82,7 +80,7 @@ internal class DesktopUpdateDownloader(
                 .header("User-Agent", "SKIPI-App")
                 .GET()
                 .build()
-            val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
+            val response = client.value.send(request, HttpResponse.BodyHandlers.ofInputStream())
             response.body().use { input ->
                 if (response.statusCode() != 200) throw IOException("HTTP ${response.statusCode()}")
                 check(isTrusted(response.uri())) { "The update was redirected away from GitHub" }

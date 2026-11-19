@@ -57,8 +57,18 @@ internal class DesktopAppUpdateChecker(
     }
 }
 
+/** One client per kind for every check (a new one each time left a selector thread behind until a full collection). */
+private val DesktopGitHubApiHttpClient: Lazy<HttpClient> = lazy {
+    HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
+}
+
+/** Follows GitHub's redirects to the release files; shared with the update downloader, built on first use. */
+internal val DesktopReleaseHttpClient: Lazy<HttpClient> = lazy {
+    HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build()
+}
+
 private suspend fun fetchReleasesFromGitHub(channel: AppUpdateChannel): String = withContext(Dispatchers.IO) {
-    val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
+    val client = DesktopGitHubApiHttpClient.value
     val request = HttpRequest.newBuilder(URI(channel.releasesUrl))
         .timeout(Duration.ofSeconds(20))
         .header("Accept", "application/vnd.github.v3+json")
@@ -71,7 +81,7 @@ private suspend fun fetchReleasesFromGitHub(channel: AppUpdateChannel): String =
 }
 
 private suspend fun fetchManifestFromGitHub(channel: AppUpdateChannel): String? = withContext(Dispatchers.IO) {
-    val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build()
+    val client = DesktopReleaseHttpClient.value
     val request = HttpRequest.newBuilder(URI(channel.manifestUrl))
         .timeout(Duration.ofSeconds(20))
         .header("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")

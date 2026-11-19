@@ -69,6 +69,32 @@ class DesktopServerLibraryTest {
     }
 
     @Test
+    fun refreshingOneSubscriptionLeavesEveryOtherStoredServerAsItWas() {
+        // Each refresh re-encoded every server of the library (K subscriptions x N servers per bulk refresh); servers
+        // outside the refreshed subscription keep their stored text exactly.
+        val otherJson = " " + HTTP(remarks = "Other", server = "other.example").encodePersistedProxyServer() + " "
+        val manualJson = " " + HTTP(remarks = "Manual", server = "manual.example").encodePersistedProxyServer() + " "
+        val library = DesktopServerLibrary(
+            servers = listOf(
+                DesktopStoredProxyServer(1, manualJson),
+                DesktopStoredProxyServer(2, otherJson, subscriptionId = 20),
+                DesktopStoredProxyServer(3, HTTP(server = "old.example").encodePersistedProxyServer(), subscriptionId = 10),
+            ),
+            nextServerId = 4,
+        )
+
+        val refreshed = DesktopServerLibraries.replaceSubscriptionServers(
+            library,
+            subscriptionId = 10,
+            servers = listOf(HTTP(remarks = "New", server = "new.example")),
+        )
+
+        assertEquals(manualJson, refreshed.servers.single { it.id == 1 }.serverJson)
+        assertEquals(otherJson, refreshed.servers.single { it.id == 2 }.serverJson)
+        assertEquals("New", DesktopServerLibraries.serversForSubscription(refreshed, 10).single().decode().getOrThrow().getInfo().remarks)
+    }
+
+    @Test
     fun removingSubscriptionServersDeletesOpaqueTargetsAndPrunesCompositeReferences() {
         val linked = HTTP(server = "linked.example")
         val other = HTTP(server = "other.example")

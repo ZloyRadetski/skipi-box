@@ -135,12 +135,15 @@ internal class DesktopCoreController(
 
     @Synchronized
     fun stop(): Result<DesktopCoreState> = runCatching {
-        val handle = activeHandle ?: return@runCatching inactiveState()
-        // The session is over for the caller whatever the native side does next.
-        synchronized(stateLock) {
-            activeHandle = null
-            activeCoreVersion = null
-        }
+        // The session is over for the caller whatever the native side does next. The handle is taken under the state
+        // lock in one step: state() polled from the UI may find the session dead at the same moment and release it,
+        // and only one of the two may destroy it.
+        val handle = synchronized(stateLock) {
+            activeHandle?.also {
+                activeHandle = null
+                activeCoreVersion = null
+            }
+        } ?: return@runCatching inactiveState()
         val core = checkNotNull(native) { "SKIPI Core native library is unavailable" }
 
         var failure: Throwable? = null

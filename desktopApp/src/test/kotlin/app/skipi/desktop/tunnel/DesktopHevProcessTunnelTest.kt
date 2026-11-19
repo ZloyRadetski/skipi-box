@@ -19,6 +19,7 @@ class DesktopHevProcessTunnelTest {
         private var alive: Boolean = true,
         private val exit: Int = 0,
         output: String = "",
+        var dies: Boolean = true,
     ) : Process() {
         var destroyed = false
         private val stream = ByteArrayInputStream(output.toByteArray())
@@ -29,8 +30,8 @@ class DesktopHevProcessTunnelTest {
         override fun waitFor(timeout: Long, unit: TimeUnit): Boolean = !alive
         override fun exitValue(): Int = if (alive) throw IllegalThreadStateException() else exit
         override fun isAlive(): Boolean = alive
-        override fun destroy() { destroyed = true; alive = false }
-        override fun destroyForcibly(): Process { destroyed = true; alive = false; return this }
+        override fun destroy() { destroyed = true; if (dies) alive = false }
+        override fun destroyForcibly(): Process { destroyed = true; if (dies) alive = false; return this }
     }
 
     private val exe = Path.of("C:/skipi/resources/hev/hev-socks5-tunnel.exe")
@@ -89,6 +90,21 @@ class DesktopHevProcessTunnelTest {
 
         assertTrue(process.destroyed)
         assertTrue(tunnel.stop().isSuccess)
+    }
+
+    @Test
+    fun aProcessThatDidNotStopIsKeptSoALaterStopCanEndIt() {
+        // Forgetting a hev that refused to die left it (and its Wintun adapter) running with no handle to stop it.
+        val process = FakeProcess(dies = false)
+        val tunnel = tunnel(process)
+        tunnel.start("x", -1).getOrThrow()
+
+        assertTrue(tunnel.stop().isFailure)
+        assertTrue(tunnel.isRunning())
+
+        process.dies = true
+        assertTrue(tunnel.stop().isSuccess)
+        assertFalse(tunnel.isRunning())
     }
 
     @Test

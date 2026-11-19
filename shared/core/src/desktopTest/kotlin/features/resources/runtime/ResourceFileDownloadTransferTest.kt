@@ -273,6 +273,30 @@ class ResourceFileDownloadTransferTest {
     }
 
     @Test
+    fun aBodyShorterThanItsLengthIsRetriedAndNeverReplacesTheFile() {
+        // A connection that ended early (or a proxy that cut it) read as a normal end of the stream, and the short
+        // file was published over a good geosite.dat.
+        val target = AtomicMemoryTarget("short.dat", "previous")
+        val delays = mutableListOf<Long>()
+        val attempts = RecordingAttemptFactory {
+            FakeOpener {
+                FakeConnection(
+                    responseCodeValue = 200,
+                    contentLength = 100L,
+                    body = ByteArrayInputStream("only part".encodeToByteArray()),
+                )
+            }
+        }
+
+        assertFailsWith<IOException> {
+            transfer(attempts, target, delays = delays).download("https://resources.example.test/short") { _, _ -> }
+        }
+
+        assertEquals(3, attempts.beginCount)
+        assertEquals("previous", target.publishedBytes.decodeToString())
+    }
+
+    @Test
     fun cancellationDuringCopyMapsToSharedExceptionAndDoesNotPublish() {
         val target = AtomicMemoryTarget("cancelled.dat", "previous")
         val connection = FakeConnection(

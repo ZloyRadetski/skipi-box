@@ -28,8 +28,8 @@ internal class DesktopHevProcessTunnel(
     override fun start(configYaml: String, tunFd: Int): Result<Unit> = runCatching {
         check(process?.isAlive != true) { "hev-socks5-tunnel is already running" }
         val config = Files.createTempFile("skipi-hev-", ".yml")
-        Files.writeString(config, configYaml)
         val started = try {
+            Files.writeString(config, configYaml)
             startProcess(listOf(executable.toString(), config.toString()), executable.parent)
         } catch (error: Throwable) {
             Files.deleteIfExists(config)
@@ -53,19 +53,18 @@ internal class DesktopHevProcessTunnel(
     @Synchronized
     override fun stop(): Result<Unit> = runCatching {
         val running = process ?: return@runCatching
-        try {
-            if (running.isAlive) {
-                running.destroy()
-                if (!running.waitFor(stopTimeoutMillis, TimeUnit.MILLISECONDS)) {
-                    running.destroyForcibly()
-                    check(running.waitFor(stopTimeoutMillis, TimeUnit.MILLISECONDS) || !running.isAlive) {
-                        "hev-socks5-tunnel did not stop in time"
-                    }
+        if (running.isAlive) {
+            running.destroy()
+            if (!running.waitFor(stopTimeoutMillis, TimeUnit.MILLISECONDS)) {
+                running.destroyForcibly()
+                // A process that is still alive stays known, so the next stop can end it; forgetting it left hev and
+                // its adapter running with nothing able to stop them.
+                check(running.waitFor(stopTimeoutMillis, TimeUnit.MILLISECONDS) || !running.isAlive) {
+                    "hev-socks5-tunnel did not stop in time"
                 }
             }
-        } finally {
-            cleanUp()
         }
+        cleanUp()
     }
 
     @Synchronized

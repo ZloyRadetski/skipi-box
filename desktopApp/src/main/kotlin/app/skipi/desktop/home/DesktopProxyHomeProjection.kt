@@ -144,3 +144,36 @@ internal fun projectDesktopProxyHomeProjection(
     }
     return DesktopProxyHomeProjection(groups = groups, servers = servers)
 }
+
+/**
+ * Lays latencies and the servers being tested over a projection made without them. A bulk ping publishes new
+ * latencies every ~150 ms; projecting every server again for each batch made thousands of new rows on the UI thread,
+ * so the store's equality check always missed and the list was sorted and filtered again. A row whose latency did not
+ * change stays the same object as in [previous].
+ */
+internal fun overlayDesktopProxyHomeLatency(
+    servers: List<ProxyServerSummary>,
+    serverById: Map<Int, ProxyServer<*>>,
+    latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+    testingServerIds: Set<Int>,
+    groupWithoutMembersText: String,
+    previous: List<ProxyServerSummary>?,
+): List<ProxyServerSummary> {
+    val previousById = previous?.associateBy(ProxyServerSummary::id).orEmpty()
+    return servers.map { base ->
+        val id = base.id.toInt()
+        val latencyResult = latencyByServerId[id]
+        val testing = id in testingServerIds
+        val row = if (latencyResult == null && !testing) {
+            base
+        } else {
+            base.copy(
+                latencyMs = (latencyResult as? DesktopServerLatencyResult.Success)?.milliseconds,
+                latencyTesting = testing,
+                latencyError = latencyResult is DesktopServerLatencyResult.Error || latencyResult is DesktopServerLatencyResult.Timeout,
+                latencyErrorText = serverById[id]?.let { server -> desktopLatencyErrorText(server, latencyResult, groupWithoutMembersText) },
+            )
+        }
+        previousById[base.id]?.takeIf { it == row } ?: row
+    }
+}

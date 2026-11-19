@@ -69,6 +69,9 @@ import app.skipi.ui.text.formatTemplate
 import app.skipi.ui.theme.SkipiTheme
 import features.logs.CoreLogEntry
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -112,9 +115,17 @@ fun SkipiLogViewerScreen(
     var query by remember { mutableStateOf("") }
     val search = remember(query) { LogSearch.parse(query) }
     // Oldest first, like a terminal: the newest line is at the bottom, where the log opens.
-    val displayed = remember(entries, search, showMetadata) {
-        if (search.isEmpty) entries else entries.filter { search.matches(it, it.exportText(showMetadata)) }
+    // A search goes over up to several thousand lines, building each one's text: it runs off the UI thread, a little
+    // after the last keystroke, and the list keeps showing the previous result meanwhile.
+    var filtered by remember { mutableStateOf(entries) }
+    LaunchedEffect(entries, search, showMetadata) {
+        if (search.isEmpty) return@LaunchedEffect
+        delay(LogSearchDebounceMillis)
+        filtered = withContext(Dispatchers.Default) {
+            entries.filter { search.matches(it, it.exportText(showMetadata)) }
+        }
     }
+    val displayed = if (search.isEmpty) entries else filtered
     val copiedMessage = stringResource(Res.string.logs_copied_to_clipboard)
     val hapticFeedback = LocalHapticFeedback.current
 
@@ -326,3 +337,6 @@ private fun LogSearchField(query: String, onQueryChange: (String) -> Unit) {
         )
     }
 }
+
+/** How long a search waits after the last keystroke before it filters the lines. */
+private const val LogSearchDebounceMillis = 150L

@@ -239,6 +239,47 @@ class DesktopConnectionLogTest {
     }
 
     @Test
+    fun withCoreStoppedTheLogShowsTheAppLinesWithoutAskingCore() = runBlocking {
+        val feed = DesktopLogFeed()
+        var coreReads = 0
+        val log = DesktopConnectionLog(
+            read = {
+                coreReads++
+                Result.failure(IllegalStateException("SKIPI Core is not running"))
+            },
+            readMessages = feed::after,
+        )
+        feed.add(appError("Tunnel: Connection failed"))
+
+        val follower = launch { log.follow(enabled = true, coreRunning = { false }, intervalMillis = { 10L }) }
+        withTimeout(3_000) { log.state.first { it.rows.size == 1 } }
+        kotlinx.coroutines.delay(100)
+        follower.cancelAndJoin()
+
+        assertEquals(0, coreReads, "a stopped Core is not asked (and no exception is built) on every poll")
+        assertEquals(listOf("Tunnel: Connection failed"), log.state.value.messages.map { it.title })
+    }
+
+    @Test
+    fun theWaitBetweenPollsIsAskedEachTimeSoAHiddenWindowCanSlowItDown() = runBlocking {
+        var reads = 0
+        val log = DesktopConnectionLog(read = {
+            reads++
+            Result.success(snapshot(0))
+        })
+        var interval = 10L
+        val follower = launch { log.follow(enabled = true, intervalMillis = { interval }) }
+        withTimeout(3_000) { while (reads < 3) kotlinx.coroutines.delay(5) }
+        interval = 60_000L
+        kotlinx.coroutines.delay(50)
+        val readsWhenSlowed = reads
+        kotlinx.coroutines.delay(200)
+        follower.cancelAndJoin()
+
+        assertEquals(readsWhenSlowed, reads, "no read runs inside the longer wait")
+    }
+
+    @Test
     fun switchingTheLogOffForgetsItsRowsAndStopsReading() = runBlocking {
         var reads = 0
         val log = DesktopConnectionLog(read = {

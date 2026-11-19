@@ -74,7 +74,8 @@ internal suspend fun DesktopSubscriptionFetcher.fetchSubscriptionRefreshResponse
 
 /** Desktop HTTP adapter for subscriptions. Parsing and validation stay in the shared core. */
 class DesktopSubscriptionFetcher(
-    private val client: HttpClient = createDesktopSubscriptionHttpClient(),
+    /** Built on the first fetch: a client starts a selector thread and loads the TLS stack. */
+    private val client: Lazy<HttpClient> = DesktopSubscriptionHttpClient,
     private val maxResponseBytes: Int = MaxDesktopSubscriptionResponseBytes,
     /**
      * Optional test seam for opening HTTP connections, e.g. through a local SOCKS proxy.
@@ -334,7 +335,7 @@ class DesktopSubscriptionFetcher(
                 }
             }
             val request = requestBuilder.GET().build()
-            val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
+            val response = client.value.send(request, HttpResponse.BodyHandlers.ofInputStream())
 
             // A caller may inject an HttpClient configured to follow redirects.
             // Re-check its final URI even though the production client disables it.
@@ -531,6 +532,9 @@ private fun defaultUrlConnectionFactory(url: URL, proxy: Proxy?): HttpURLConnect
     val connection = if (proxy != null) url.openConnection(proxy) else url.openConnection()
     return connection as HttpURLConnection
 }
+
+/** The one direct client of the default desktop subscription path, shared by every fetcher and built on first use. */
+internal val DesktopSubscriptionHttpClient: Lazy<HttpClient> = lazy { createDesktopSubscriptionHttpClient() }
 
 /** Builds the direct client used for the default desktop subscription path. */
 internal fun createDesktopSubscriptionHttpClient(): HttpClient {

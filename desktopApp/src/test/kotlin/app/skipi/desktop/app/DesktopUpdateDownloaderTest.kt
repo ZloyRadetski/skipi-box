@@ -67,6 +67,11 @@ class DesktopUpdateDownloaderTest {
         DesktopUpdateDownloader(isTrusted = allowed, requireHttps = false)
 
     @Test
+    fun aDownloaderBuildsItsHttpClientOnlyWhenItDownloads() {
+        DesktopUpdateDownloader(client = lazy { error("the client must not be built by the constructor") })
+    }
+
+    @Test
     fun theFileIsDownloadedCheckedAndKeptUnderItsName() = runBlocking {
         val server = serving(payload)
         val progress = mutableListOf<Long>()

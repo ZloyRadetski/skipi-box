@@ -70,7 +70,9 @@ private fun sh(value: Any): String = value.toString().shellQuote()
  */
 private fun windowsMsiScript(msi: Path, location: DesktopInstallLocation): String = listOf(
     "Wait-Process -Id ${location.processId} -Timeout 60 -ErrorAction SilentlyContinue",
-    "try { Start-Process -FilePath msiexec.exe -ArgumentList ${ps("/i \"$msi\" /passive /norestart")} -Verb RunAs -Wait } catch { }",
+    // msiexec needs the path in double quotes, but a double quote inside a -Command argument is dropped on its way
+    // through the Windows command line (a path with a space then broke the install), so the script builds them.
+    "try { Start-Process -FilePath msiexec.exe -ArgumentList ('/i ' + [char]34 + ${ps(msi)} + [char]34 + ' /passive /norestart') -Verb RunAs -Wait } catch { }",
     "Start-Process -FilePath ${ps(location.launcher)}",
 ).joinToString("; ")
 

@@ -149,22 +149,31 @@ object DesktopServerLibraries {
         servers: List<ProxyServer<*>>,
     ): DesktopServerLibrary {
         val nextServerId = library.effectiveNextServerId
+        val existingRecords = library.servers.map { stored ->
+            SubscriptionServerRecord(
+                id = stored.id,
+                subscriptionId = stored.subscriptionId,
+                server = stored.decode().getOrNull(),
+            )
+        }
         val portable = replaceSubscriptionServerGroup(
             library = SubscriptionServerLibrary(
                 selectedServerId = library.selectedServerId,
-                servers = library.servers.map { stored ->
-                    SubscriptionServerRecord(
-                        id = stored.id,
-                        subscriptionId = stored.subscriptionId,
-                        server = stored.decode().getOrNull(),
-                    )
-                },
+                servers = existingRecords,
             ),
             subscriptionId = subscriptionId,
             incoming = servers,
             firstNewServerId = nextServerId,
         )
+        // A record the replacement passed through untouched (the same decoded object, same subscription) keeps its
+        // stored text: only the refreshed subscription's servers are encoded again, not the whole library.
+        val storedById = library.servers.associateBy(DesktopStoredProxyServer::id)
+        val existingById = existingRecords.associateBy(SubscriptionServerRecord::id)
         val updatedServers = portable.servers.map { record ->
+            val existing = existingById[record.id]
+            if (existing != null && existing.server === record.server && existing.subscriptionId == record.subscriptionId) {
+                return@map storedById.getValue(record.id)
+            }
             val stored = record.server?.let { server ->
                 DesktopStoredProxyServer(
                     id = record.id,
@@ -172,7 +181,7 @@ object DesktopServerLibraries {
                     subscriptionId = record.subscriptionId,
                 )
             }
-            stored ?: library.servers.first { it.id == record.id }
+            stored ?: storedById.getValue(record.id)
         }
         return library.copy(
             selectedServerId = portable.selectedServerId,

@@ -7,6 +7,8 @@ import app.skipi.app.home.strategyGroupLatency
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.hasMemberSource
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
@@ -28,8 +30,23 @@ internal class DesktopStrategyGroupAwareTester(
     // a thread until it answers or times out) multiplied to concurrency squared.
     private val probePlaces = Semaphore(concurrency.coerceAtLeast(1))
 
-    private suspend fun limited(server: ProxyServer<*>): DesktopServerLatencyResult =
-        probePlaces.withPermit { single(server) }
+    // A run's answers by server: groups that share members, and a member also pinged on its own, reuse one probe
+    // (each boots a Core instance and makes a network round trip). A tester lives for one ping run.
+    private val answers = ConcurrentHashMap<ProxyServer<*>, CompletableDeferred<DesktopServerLatencyResult>>()
+
+    private suspend fun limited(server: ProxyServer<*>): DesktopServerLatencyResult {
+        val mine = CompletableDeferred<DesktopServerLatencyResult>()
+        val earlier = answers.putIfAbsent(server, mine)
+        if (earlier != null) return earlier.await()
+        try {
+            return probePlaces.withPermit { single(server) }.also(mine::complete)
+        } catch (error: Throwable) {
+            // A probe that did not finish is not an answer: the next asker measures again.
+            answers.remove(server, mine)
+            mine.completeExceptionally(error)
+            throw error
+        }
+    }
 
     override suspend fun test(serverId: Int, server: ProxyServer<*>): DesktopServerLatencyResult {
         if (server !is StrategyGroup) return limited(server)

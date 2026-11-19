@@ -59,6 +59,16 @@ class ProxyServerPresentationFormatter(
     private val groupNames: Map<Int, String>,
     private val labels: ProxyServerPresentationLabels,
 ) {
+    // A projection formats every server against the same list: its index is built once per list, not once per
+    // group or chain (that was groups x servers on every latency update). The pair is replaced whole, so a reader
+    // on another thread sees either the old or the new index, never a mix.
+    private var indexed: Pair<List<ProxyServerPresentationNode>, Map<Int, ProxyServerPresentationNode>>? = null
+
+    private fun List<ProxyServerPresentationNode>.byId(): Map<Int, ProxyServerPresentationNode> {
+        indexed?.takeIf { it.first === this }?.let { return it.second }
+        return associateBy(ProxyServerPresentationNode::id).also { indexed = this to it }
+    }
+
     fun displayOf(
         serverNode: ProxyServerPresentationNode,
         servers: List<ProxyServerPresentationNode>,
@@ -82,7 +92,7 @@ class ProxyServerPresentationFormatter(
     }
 
     private fun ChainProxy.chainProxySummary(servers: List<ProxyServerPresentationNode>): String {
-        val serverById = servers.associateBy(ProxyServerPresentationNode::id)
+        val serverById = servers.byId()
         val memberNames = proxyServerIds.mapNotNull { memberId ->
             serverById[memberId]?.server?.getInfo()?.let { info ->
                 info.remarks.ifBlank { info.protocol }
@@ -96,7 +106,7 @@ class ProxyServerPresentationFormatter(
 
     private fun StrategyGroup.strategyGroupSummary(servers: List<ProxyServerPresentationNode>): String {
         if (strategy == StrategyGroupConstants.TYPE_SELECT) {
-            val serverById = servers.associateBy(ProxyServerPresentationNode::id)
+            val serverById = servers.byId()
             // A configured member is not necessarily the member currently selected at runtime.
             // Only display a member label when the model carries an actual selection.
             val activeMember = selectedMemberId?.let(serverById::get)

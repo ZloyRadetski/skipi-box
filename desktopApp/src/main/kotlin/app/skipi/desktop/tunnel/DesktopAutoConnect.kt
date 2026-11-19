@@ -13,6 +13,13 @@ internal fun shouldAutoConnectOnOpen(
     tunnelRunning: Boolean,
 ): Boolean = settings.autoConnectOnAppOpen && settings.onboardingCompleted && hasSelection && !tunnelRunning
 
+/**
+ * The Core library is loaded while the window opens only when the app is about to connect by itself. Its Go runtime
+ * costs ~60 MB and ~20 threads once loaded and cannot be unloaded; otherwise the first connect or ping loads it.
+ */
+internal fun shouldPreloadCoreAtStart(settings: DesktopAppSettings): Boolean =
+    settings.autoConnectOnAppOpen && settings.onboardingCompleted
+
 /** Pauses between automatic attempts; the network or NetworkManager may not be up yet at login. */
 internal val AutoConnectRetryDelaysMillis = listOf(3_000L, 5_000L, 10_000L, 20_000L, 30_000L, 60_000L)
 
