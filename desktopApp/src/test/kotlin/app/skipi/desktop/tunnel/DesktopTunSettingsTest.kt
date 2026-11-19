@@ -294,7 +294,6 @@ class DesktopTunSettingsTest {
         val settings = DesktopAppSettings(tunMtu = "1280", tunIpv4Cidr = "10.20.30.1/24")
         val plan = desktopTunInterfacePlan(settings, DesktopConfigLibrary())
         var openedPlan = ""
-        var hevYaml = ""
         val device = object : DesktopTunDevice {
             override fun prepare(interfaceName: String): Result<Unit> = Result.success(Unit)
             override fun open(planJson: String): Result<Int> {
@@ -304,19 +303,13 @@ class DesktopTunSettingsTest {
 
             override fun close(): Result<Unit> = Result.success(Unit)
         }
-        val tunnel = object : DesktopHevTunnel {
-            override fun start(configYaml: String, tunFd: Int): Result<Unit> {
-                hevYaml = configYaml
-                return Result.success(Unit)
-            }
+        val runtime = DesktopTunRuntime(device)
 
-            override fun stop(): Result<Unit> = Result.success(Unit)
-            override fun isRunning(): Boolean = true
-        }
-
-        DesktopTunRuntime(device, tunnel).start(
+        runtime.openForCore(plan).getOrThrow()
+        val hevYaml = runtime.coreHevPlan(
             desktopTunStartRequest(plan, LocalProxyXrayConfigOptions(socksPort = 1080), logPath = ""),
-        ).getOrThrow()
+            tunFd = 7,
+        ).configYaml
 
         assertEquals(1280, plan.mtu)
         assertTrue("\"mtu\":1280" in openedPlan.replace(" ", ""), openedPlan)

@@ -49,7 +49,6 @@ class DesktopTunHostTest {
         runtime = { runtime },
         coreProbe = probe,
         device = { stubDevice },
-        hev = { error("not used") },
         isElevated = { elevated },
     )
 
@@ -70,7 +69,6 @@ class DesktopTunHostTest {
         runtime = { runtime },
         coreProbe = probe,
         device = { stubDevice },
-        hev = { error("not used") },
     )
 
     private fun host(
@@ -82,7 +80,6 @@ class DesktopTunHostTest {
         runtime = { runtime },
         coreProbe = probe,
         device = { stubDevice },
-        hev = { error("not used") },
     )
 
     @Test
@@ -110,11 +107,9 @@ class DesktopTunHostTest {
     @Test
     fun linuxRunsHevInsideCoreAndWindowsHandsCoreTheExecutable() {
         val linux = host().tunRuntime()
-        assertTrue(linux.coreHostsHev)
         assertNull(linux.coreHevPlan(sampleRequest(), tunFd = 7).executable)
 
         val windows = windowsHostWithDevice().tunRuntime()
-        assertTrue(windows.coreHostsHev)
         assertEquals(
             hevDirectory.resolve("hev-socks5-tunnel.exe").toString(),
             windows.coreHevPlan(sampleRequest(), tunFd = -1).executable,
@@ -122,25 +117,24 @@ class DesktopTunHostTest {
     }
 
     @Test
-    fun macKeepsItsSeparateHevSupervisor() {
+    fun macHandsCoreTheExecutableTheRunDirectoryAndTheInterfacePlan() {
+        val runDirectory = directory.resolve("run")
         val mac = DesktopTunHost(
             isLinux = false,
             isMac = true,
             runtime = { Result.success(macRuntime()) },
             coreProbe = { null },
-            device = { object : DesktopTunDevice {
-                override fun prepare(interfaceName: String) = Result.success(Unit)
-                override fun open(planJson: String) = Result.success(-1)
-                override fun close() = Result.success(Unit)
-            } },
-            hev = { object : DesktopHevTunnel {
-                override fun start(configYaml: String, tunFd: Int) = Result.success(Unit)
-                override fun stop() = Result.success(Unit)
-                override fun isRunning() = true
-            } },
+            device = { stubDevice },
+            macRunDirectory = { runDirectory },
         ).tunRuntime()
 
-        assertEquals(false, mac.coreHostsHev)
+        val plan = mac.coreHevPlan(sampleRequest(), tunFd = -1)
+
+        assertEquals(null, plan.tunFd)
+        assertEquals(directory.resolve("hev").resolve("hev-socks5-tunnel").toString(), plan.executable)
+        assertEquals(runDirectory.toString(), plan.runDirectory)
+        assertEquals("skipi0", plan.macInterface?.name)
+        assertEquals(listOf("172.19.0.1/30"), plan.macInterface?.addresses)
     }
 
     @Test
@@ -155,8 +149,7 @@ class DesktopTunHostTest {
                 override fun open(planJson: String) = Result.success(5)
                 override fun close() = Result.success(Unit)
             } },
-            hev = { error("not used") },
-            coreSessionRunning = { sessionRunning },
+                coreSessionRunning = { sessionRunning },
         ).tunRuntime()
         runtime.attachForCore(sampleRequest().plan).getOrThrow()
 
@@ -185,7 +178,6 @@ class DesktopTunHostTest {
         runtime = { Result.success(windowsRuntime()) },
         coreProbe = { null },
         device = { stubDevice },
-        hev = { error("not used") },
         isElevated = { true },
     )
 

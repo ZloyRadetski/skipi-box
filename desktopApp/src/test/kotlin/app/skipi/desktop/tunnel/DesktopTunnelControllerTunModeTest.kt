@@ -19,7 +19,7 @@ class DesktopTunnelControllerTunModeTest {
     private var coreRunning = false
     private var tunMode = true
     private var tunRunning = false
-    private var startTunResult: Result<Unit> = Result.success(Unit)
+    private var attachTunResult: Result<Unit> = Result.success(Unit)
     private var stopTunResult: Result<Unit> = Result.success(Unit)
     private var prepareTunResult: Result<Unit> = Result.success(Unit)
     private var releaseProxyResult: Result<Unit> = Result.success(Unit)
@@ -63,10 +63,14 @@ class DesktopTunnelControllerTunModeTest {
             events += "tun-release"
             Result.success(Unit)
         },
-        startTun = {
-            events += "tun-start"
-            tunRunning = startTunResult.isSuccess
-            startTunResult
+        openTunForCore = {
+            events += "tun-open"
+            Result.success(-1)
+        },
+        attachTun = {
+            events += "tun-attach"
+            tunRunning = attachTunResult.isSuccess
+            attachTunResult
         },
         stopTun = {
             events += "tun-stop"
@@ -78,38 +82,38 @@ class DesktopTunnelControllerTunModeTest {
     )
 
     @Test
-    fun tunModeStartsTheTunAfterCoreAndSkipsTheSystemProxy() = runBlocking {
+    fun tunModeOpensTheDeviceThenStartsCoreThenAttachesAndSkipsTheSystemProxy() = runBlocking {
         val controller = controller()
 
         assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
 
-        assertEquals(listOf("tun-prepare", "core-start", "tun-start"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-attach"), events)
         assertEquals(TunnelPhase.Connected, controller.snapshot().phase)
         assertTrue(controller.supports(TunnelCapability.Tun))
     }
 
     @Test
-    fun tunModeDisconnectStopsTheTunBeforeCore() = runBlocking {
+    fun tunModeDisconnectStopsCoreBeforeClosingTheDevice() = runBlocking {
         val controller = controller()
         controller.connect(TunnelConnectRequest("p"))
         events.clear()
 
         assertTrue(controller.disconnect().isSuccess)
 
-        assertEquals(listOf("proxy-release", "tun-stop", "core-stop"), events)
+        assertEquals(listOf("proxy-release", "core-stop", "tun-stop"), events)
         assertEquals(TunnelPhase.Disconnected, controller.snapshot().phase)
     }
 
     @Test
-    fun failedTunStartStopsCoreAndFails() = runBlocking {
-        startTunResult = Result.failure(IllegalStateException("NetworkManager refused"))
+    fun failedTunAttachStopsCoreAndFails() = runBlocking {
+        attachTunResult = Result.failure(IllegalStateException("NetworkManager refused"))
         val controller = controller()
 
         val error = controller.connect(TunnelConnectRequest("p")).exceptionOrNull() as TunnelOperationException
 
         assertEquals(TunnelOperationStage.Start, error.failure.stage)
         assertTrue("NetworkManager refused" in error.failure.message)
-        assertEquals(listOf("tun-prepare", "core-start", "tun-start", "core-stop", "tun-release"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-attach", "core-stop", "tun-release"), events)
         assertEquals(TunnelPhase.Failed, controller.snapshot().phase)
     }
 
@@ -121,7 +125,7 @@ class DesktopTunnelControllerTunModeTest {
         val result = controller.connect(TunnelConnectRequest("p"))
 
         assertTrue(result.isFailure)
-        assertEquals(listOf("tun-prepare", "core-start", "tun-release"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-release"), events)
     }
 
     @Test
@@ -149,7 +153,7 @@ class DesktopTunnelControllerTunModeTest {
     }
 
     @Test
-    fun failedTunStopKeepsCoreRunningAndReportsFailure() = runBlocking {
+    fun failedDeviceCloseStillStopsCoreAndReportsFailure() = runBlocking {
         val controller = controller()
         controller.connect(TunnelConnectRequest("p"))
         events.clear()
@@ -158,7 +162,7 @@ class DesktopTunnelControllerTunModeTest {
         val result = controller.disconnect()
 
         assertTrue(result.isFailure)
-        assertFalse("core-stop" in events)
+        assertEquals(listOf("proxy-release", "core-stop", "tun-stop"), events)
         assertEquals(TunnelPhase.Failed, controller.snapshot().phase)
     }
 
@@ -202,7 +206,7 @@ class DesktopTunnelControllerTunModeTest {
         val result = controller.connect(TunnelConnectRequest("p"))
 
         assertTrue(result.isSuccess, "reconnect failed: ${result.exceptionOrNull()}")
-        assertEquals(listOf("tun-prepare", "core-start", "tun-start"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-attach"), events)
     }
 
     @Test
@@ -216,7 +220,7 @@ class DesktopTunnelControllerTunModeTest {
         val result = controller.disconnect()
 
         assertTrue(result.isSuccess, "disconnect failed: ${result.exceptionOrNull()}")
-        assertEquals(listOf("proxy-release", "tun-stop", "core-stop"), events)
+        assertEquals(listOf("proxy-release", "core-stop", "tun-stop"), events)
         assertEquals(TunnelPhase.Disconnected, controller.snapshot().phase)
     }
 
@@ -253,7 +257,7 @@ class DesktopTunnelControllerTunModeTest {
 
         assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
 
-        assertEquals(listOf("proxy-reconcile", "tun-prepare", "core-start", "tun-start"), events)
+        assertEquals(listOf("proxy-reconcile", "tun-prepare", "tun-open", "core-start", "tun-attach"), events)
     }
 
     @Test
@@ -296,7 +300,7 @@ class DesktopTunnelControllerTunModeTest {
 
         assertTrue(controller.connect(TunnelConnectRequest("p")).isSuccess)
 
-        assertEquals(listOf("tun-prepare", "core-start", "tun-verify", "tun-start"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-verify", "tun-attach"), events)
     }
 
     @Test
@@ -308,7 +312,7 @@ class DesktopTunnelControllerTunModeTest {
         val error = controller.connect(TunnelConnectRequest("p")).exceptionOrNull() as TunnelOperationException
 
         assertTrue("11741" in error.failure.message)
-        assertEquals(listOf("tun-prepare", "core-start", "tun-verify", "core-stop", "tun-release"), events)
+        assertEquals(listOf("tun-prepare", "tun-open", "core-start", "tun-verify", "core-stop", "tun-release"), events)
         assertEquals(TunnelPhase.Failed, controller.snapshot().phase)
     }
 

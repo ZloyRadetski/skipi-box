@@ -15,11 +15,12 @@ internal class DesktopTunHost(
     private val runtime: () -> Result<DesktopCoreRuntime>,
     private val coreProbe: () -> String?,
     private val device: () -> DesktopTunDevice,
-    private val hev: (Path) -> DesktopHevTunnel,
     private val isWindows: Boolean = false,
     private val isElevated: () -> Boolean = ::isWindowsElevated,
     private val isMac: Boolean = false,
-    /** Whether Core's session, which carries hev on Linux and Windows, is running. */
+    /** Where Core's macOS supervisor keeps its marker files and the generated hev configuration. */
+    private val macRunDirectory: () -> Path = ::macTunRunDirectory,
+    /** Whether Core's session, which carries hev, is running. */
     private val coreSessionRunning: () -> Boolean = { false },
 ) {
     private var tunRuntime: DesktopTunRuntime? = null
@@ -57,17 +58,18 @@ internal class DesktopTunHost(
             // Core supervises the shipped hev program and the interface is made by hev itself.
             isWindows -> DesktopTunRuntime(
                 device(),
-                tunnel = null,
                 hevExecutable = files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application"),
                 coreSessionRunning = coreSessionRunning,
             )
-            // The privileged supervisor stays in the application.
+            // Core's privileged supervisor runs the shipped hev program and shows the administrator prompt.
             isMac -> DesktopTunRuntime(
                 device(),
-                hev(files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application")),
+                hevExecutable = files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application"),
+                macRunDirectory = macRunDirectory(),
+                coreSessionRunning = coreSessionRunning,
             )
             // hev is linked into Core and runs on the descriptor Core's device opens.
-            else -> DesktopTunRuntime(device(), tunnel = null, coreSessionRunning = coreSessionRunning)
+            else -> DesktopTunRuntime(device(), coreSessionRunning = coreSessionRunning)
         }
         return created.also { tunRuntime = it }
     }
@@ -96,7 +98,6 @@ internal class DesktopTunHost(
             linux: Boolean,
             windows: Boolean,
             mac: Boolean = false,
-            macPlan: MacTunPlanHolder = MacTunPlanHolder(),
         ): DesktopTunHost = DesktopTunHost(
             isLinux = linux,
             isWindows = windows,
@@ -112,16 +113,9 @@ internal class DesktopTunHost(
                 val core = coreController.nativeForTun().getOrThrow()
                 when {
                     windows -> DesktopWindowsTunDevice(core)
-                    mac -> DesktopMacTunDevice(core, macPlan)
+                    mac -> DesktopMacTunDevice(core)
                     else -> DesktopCoreTunDevice(core)
                 }
-            },
-            hev = { path ->
-                DesktopMacHevTunnel(
-                    hevExecutable = path,
-                    directory = macTunRunDirectory(),
-                    planJson = { checkNotNull(macPlan.planJson) { "The TUN interface plan is not ready" } },
-                )
             },
             coreSessionRunning = coreController::sessionRunning,
         )

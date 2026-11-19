@@ -9,6 +9,8 @@ import platform.TunnelTraffic
 import platform.aggregateCoreInboundTraffic
 import platform.parseCoreTrafficSnapshot
 import platform.toTunnelTraffic
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -27,13 +29,29 @@ data class DesktopAmneziaWgBridge(
 
 /**
  * HEV TUN as Core runs it inside a session. [tunFd] is the descriptor Core's TUN device opened (Linux, in process) or
- * -1 where hev creates the interface itself; [executable] is the shipped hev program Core supervises (Windows).
+ * -1 where hev creates the interface itself (Windows); it is null on macOS, where Core's privileged supervisor makes
+ * the interface and [macInterface], [runDirectory] and [executable] describe that supervisor's work.
+ * [executable] is the shipped hev program Core supervises (Windows, macOS).
  */
 data class DesktopCoreHevPlan(
     val configYaml: String,
-    val tunFd: Int,
+    val tunFd: Int?,
     val executable: String? = null,
+    val runDirectory: String? = null,
+    val macInterface: DesktopCoreMacInterface? = null,
 )
+
+/** The interface plan the macOS supervisor in Core configures: the same plan the mac device receives. */
+@Serializable
+data class DesktopCoreMacInterface(
+    val name: String,
+    val mtu: Int,
+    val addresses: List<String>,
+    val routes: List<String>,
+    val dns: List<String> = emptyList(),
+)
+
+private val SessionPlanJson = Json { encodeDefaults = true }
 
 /** Deadline for each step of a session stop (HEV TUN, Xray, AmneziaWG). */
 internal const val DesktopCoreSessionStopTimeoutMillis = 5_000L
@@ -59,8 +77,10 @@ private fun sessionPlanJson(
         "hev",
         buildJsonObject {
             put("configYaml", hev.configYaml)
-            put("tunFd", hev.tunFd)
+            hev.tunFd?.let { put("tunFd", it) }
             hev.executable?.let { put("executable", it) }
+            hev.runDirectory?.let { put("runDirectory", it) }
+            hev.macInterface?.let { put("macInterface", SessionPlanJson.encodeToJsonElement(DesktopCoreMacInterface.serializer(), it)) }
         },
     )
 }.toString()

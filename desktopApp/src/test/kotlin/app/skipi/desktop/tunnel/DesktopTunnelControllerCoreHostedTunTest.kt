@@ -17,7 +17,7 @@ class DesktopTunnelControllerCoreHostedTunTest {
     private val events = mutableListOf<String>()
     private var coreRunning = false
     private var tunnelAlive = true
-    private var openResult: Result<Int?> = Result.success(41)
+    private var openResult: Result<Int> = Result.success(41)
     private var coreStartResult: Result<DesktopCoreState> = Result.success(DesktopCoreState(isRunning = true))
     private var attachResult: Result<Unit> = Result.success(Unit)
     private var coreStopResult: Result<DesktopCoreState> = Result.success(DesktopCoreState(isRunning = false))
@@ -44,9 +44,8 @@ class DesktopTunnelControllerCoreHostedTunTest {
         tunMode = { tunMode },
         prepareTun = { events += "tun-prepare"; Result.success(Unit) },
         releaseTun = { events += "tun-release"; Result.success(Unit) },
-        openTunForCore = { events += "tun-open"; if (tunMode) openResult else Result.success(null) },
+        openTunForCore = { events += "tun-open"; openResult },
         attachTun = { events += "tun-attach"; attachResult },
-        startTun = { events += "tun-start"; Result.success(Unit) },
         stopTun = { events += "tun-stop"; stopTunResult },
         tunRunning = { tunnelAlive },
         tunSupported = { true },
@@ -62,7 +61,6 @@ class DesktopTunnelControllerCoreHostedTunTest {
             listOf("tun-prepare", "tun-open", "core-start:41", "tun-verify", "tun-attach"),
             events,
         )
-        assertFalse("tun-start" in events)
         assertEquals(TunnelPhase.Connected, controller.snapshot().phase)
     }
 
@@ -73,17 +71,6 @@ class DesktopTunnelControllerCoreHostedTunTest {
         assertTrue(controller().connect(TunnelConnectRequest("p")).isSuccess)
 
         assertEquals(-1, startRequests.single().tunFd)
-        assertFalse("tun-start" in events)
-    }
-
-    @Test
-    fun aPlatformWithoutCoreHostedHevKeepsTheSeparateTunStart() = runBlocking {
-        openResult = Result.success(null)
-
-        assertTrue(controller().connect(TunnelConnectRequest("p")).isSuccess)
-
-        assertEquals(listOf("tun-prepare", "tun-open", "core-start:null", "tun-verify", "tun-start"), events)
-        assertFalse("tun-attach" in events)
     }
 
     @Test

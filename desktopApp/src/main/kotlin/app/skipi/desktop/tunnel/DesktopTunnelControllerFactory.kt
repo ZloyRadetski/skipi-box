@@ -219,23 +219,13 @@ internal fun createDesktopTunnelController(
             timedTunStage("open") {
                 runCatching {
                     val runtime = tunHost.tunRuntime()
-                    if (runtime.coreHostsHev) runtime.openForCore(tunInterfacePlan()).getOrThrow() else null
+                    runtime.openForCore(tunInterfacePlan()).getOrThrow()
                 }
             }
         },
         attachTun = {
             timedTunStage("attach") {
                 runCatching { tunHost.tunRuntime().attachForCore(tunInterfacePlan()).getOrThrow() }
-            }
-        },
-        startTun = {
-            timedTunStage("start") {
-                runCatching {
-                    tunHost.unavailableReason()?.let { reason -> error(reason) }
-                    val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
-                        ?: error("SKIPI Core is not running")
-                    tunHost.tunRuntime().start(tunStartRequestFor(options)).getOrThrow()
-                }
             }
         },
         stopTun = { runCatching { tunHost.tunRuntime().stop().getOrThrow() } },

@@ -24,8 +24,8 @@ data class DesktopCoreStartRequest(
     /** The AmneziaWG runner the configuration reaches through a loopback SOCKS outbound, started before Core. */
     val amneziaWg: DesktopAmneziaWgBridge? = null,
     /**
-     * Set in TUN mode where Core runs HEV TUN itself (Linux, Windows): the descriptor the opened device handed over,
-     * or -1 where hev creates the interface. Null keeps the separate start.
+     * Set in TUN mode, where Core runs HEV TUN itself: the descriptor the opened device handed over, or -1 where hev
+     * creates the interface (Windows, macOS). Null in proxy mode.
      */
     val tunFd: Int? = null,
 )
@@ -81,21 +81,18 @@ class DesktopTunnelController(
     /** Undoes [prepareTun] when Core or the tunnel could not be started. */
     private val releaseTun: () -> Result<Unit> = { Result.success(Unit) },
     /**
-     * Runs once after [prepareTun], before Core: brings the device up where Core runs HEV TUN itself and returns the
-     * descriptor for the session (-1 where hev makes the interface). Null means this platform starts the tunnel with
-     * [startTun] after Core.
+     * Runs once after [prepareTun], before Core: brings the device up and returns the descriptor for the session
+     * (-1 where hev makes the interface). Core runs HEV TUN in the same session call.
      */
-    private val openTunForCore: () -> Result<Int?> = { Result.success(null) },
-    /** Core-hosted TUN: runs once the session is up, to finish the setup (the routes on Windows). */
+    private val openTunForCore: () -> Result<Int> = { Result.failure(IllegalStateException("TUN is not available")) },
+    /** Runs once the session is up, to finish the setup (the routes on Windows; nothing on Linux and macOS). */
     private val attachTun: () -> Result<Unit> = { Result.success(Unit) },
-    private val startTun: () -> Result<Unit> = { Result.failure(IllegalStateException("TUN is not available")) },
     private val stopTun: () -> Result<Unit> = { Result.success(Unit) },
     private val tunRunning: () -> Boolean = { false },
     private val tunSupported: () -> Boolean = { false },
 ) : TunnelController {
     private var latestSnapshot = TunnelSnapshot()
     private var tunActive = false
-    private var tunInCore = false
 
     override suspend fun connect(request: TunnelConnectRequest): Result<Unit> = synchronized(this) {
         when (val decision = TunnelLifecyclePolicy.beginConnect(latestSnapshot, request.profileId)) {
@@ -169,8 +166,7 @@ class DesktopTunnelController(
                     operationStage = TunnelOperationStage.Start
                     verifyTunEndpoint().getOrThrow()
                     // Core already runs hev in its session; the app only finishes the interface (Windows routes).
-                    if (coreTunFd != null) attachTun().getOrThrow() else startTun().getOrThrow()
-                    tunInCore = coreTunFd != null
+                    attachTun().getOrThrow()
                     tunActive = true
                 } else {
                     operationStage = TunnelOperationStage.AcquireSystemProxy
@@ -198,7 +194,7 @@ class DesktopTunnelController(
         // system proxy, so that cleanup failing must not keep the tunnel and Core alive.
         val proxyRelease = releaseSystemProxy().let { release -> if (tunActive) Result.success(Unit) else release }
         val result = proxyRelease.mapCatching {
-            if (tunActive && tunInCore) {
+            if (tunActive) {
                 // Core stops hev first, then Xray; only then the routes and the interface go. A failed Core stop
                 // still closes the device, and its error is the one reported.
                 val coreFailure = if (coreState().isRunning) stopCore().exceptionOrNull() else null
@@ -206,12 +202,8 @@ class DesktopTunnelController(
                 coreFailure?.let { failure -> deviceFailure?.let(failure::addSuppressed) }
                 (coreFailure ?: deviceFailure)?.let { throw it }
                 tunActive = false
-            } else {
-                if (tunActive) {
-                    stopTun().getOrThrow()
-                    tunActive = false
-                }
-                if (coreState().isRunning) stopCore().getOrThrow()
+            } else if (coreState().isRunning) {
+                stopCore().getOrThrow()
             }
             Unit
         }

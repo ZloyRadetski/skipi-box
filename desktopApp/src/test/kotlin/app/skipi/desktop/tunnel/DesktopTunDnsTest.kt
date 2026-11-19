@@ -225,20 +225,13 @@ class DesktopTunDnsTest {
 
                 override fun close(): Result<Unit> = Result.success(Unit)
             }
-            val tunnel = object : DesktopHevTunnel {
-                override fun start(configYaml: String, tunFd: Int): Result<Unit> = Result.success(Unit)
-                override fun stop(): Result<Unit> = Result.success(Unit)
-                override fun isRunning(): Boolean = true
-            }
             val plan = desktopTunInterfacePlan(
                 DesktopAppSettings(tunVpnDns = "1.1.1.1"),
                 DesktopConfigLibrary(),
                 coreAnswersDns = coreAnswersDns,
                 macInterfaces = null,
             )
-            DesktopTunRuntime(device, tunnel).start(
-                desktopTunStartRequest(plan, DesktopAppSettings().toLocalProxyXrayConfigOptions(), logPath = ""),
-            ).getOrThrow()
+            DesktopTunRuntime(device).openForCore(plan).getOrThrow()
             return opened
         }
 

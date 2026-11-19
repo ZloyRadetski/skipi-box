@@ -49,23 +49,6 @@ class DesktopTunRuntimeTest {
             return deviceCloseResult
         }
     }
-    private val tunnel = object : DesktopHevTunnel {
-        override fun start(configYaml: String, tunFd: Int): Result<Unit> {
-            events += "start"
-            startedYaml = configYaml
-            startedFd = tunFd
-            tunnelAlive = tunnelStartResult.isSuccess
-            return tunnelStartResult
-        }
-
-        override fun stop(): Result<Unit> {
-            events += "stop"
-            tunnelAlive = false
-            return tunnelStopResult
-        }
-
-        override fun isRunning(): Boolean = tunnelAlive
-    }
     private val request = DesktopTunStartRequest(
         plan = TunInterfacePlan(
             name = "skipi0",
@@ -80,7 +63,9 @@ class DesktopTunRuntimeTest {
         logPath = "/tmp/hev.log",
     )
 
-    private fun runtime() = DesktopTunRuntime(device, tunnel)
+    private var coreSessionAlive = true
+
+    private fun runtime() = DesktopTunRuntime(device, coreSessionRunning = { coreSessionAlive })
 
     @Test
     fun prepareBindsCoreSocketsToThePlannedInterfaceBeforeAnythingElse() {
@@ -90,29 +75,6 @@ class DesktopTunRuntimeTest {
 
         assertEquals(listOf("prepare"), events)
         assertEquals("skipi0", preparedName)
-    }
-
-    @Test
-    fun attachesTheDeviceToTheRunningTunnelBeforeReportingItStarted() {
-        val runtime = runtime()
-
-        runtime.start(request).getOrThrow()
-
-        assertEquals(listOf("open", "start", "attach"), events)
-        assertEquals(request.plan, attachedPlan)
-        assertTrue(runtime.isRunning())
-    }
-
-    @Test
-    fun aFailedAttachStopsHevAndClosesTheDevice() {
-        attachResult = Result.failure(IllegalStateException("routes failed"))
-        val runtime = runtime()
-
-        val result = runtime.start(request)
-
-        assertEquals("routes failed", result.exceptionOrNull()?.message)
-        assertEquals(listOf("open", "start", "attach", "stop", "close"), events)
-        assertFalse(runtime.isRunning())
     }
 
     @Test
@@ -133,138 +95,14 @@ class DesktopTunRuntimeTest {
         assertEquals(listOf("close"), events)
     }
 
-    @Test
-    fun opensTheDeviceThenRunsHevOnItsDescriptor() {
-        val result = runtime().start(request)
-
-        assertTrue(result.isSuccess)
-        assertEquals(listOf("open", "start", "attach"), events)
-        assertEquals(41, startedFd)
-    }
-
-    @Test
-    fun sendsThePlanToTheDeviceAsJson() {
-        runtime().start(request)
-
-        assertEquals(
-            """{"name":"skipi0","mtu":1400,"addresses":["172.19.0.1/30"],"routes":["0.0.0.0/1","128.0.0.0/1"]}""",
-            openedPlan,
-        )
-    }
-
-    @Test
-    fun hevConfigurationPointsAtTheLocalSocksInboundLikeAndroid() {
-        runtime().start(request.copy(socksUsername = "u", socksPassword = "p"))
-
-        val yaml = checkNotNull(startedYaml)
-        assertTrue("  ipv4: '172.19.0.1'" in yaml)
-        assertTrue("  mtu: 1400" in yaml)
-        assertTrue("  port: 10808" in yaml)
-        assertTrue("  address: '127.0.0.1'" in yaml)
-        assertTrue("  username: 'u'" in yaml)
-        assertTrue("  tcp-fastopen: true" in yaml)
-        assertTrue("  log-file: '/tmp/hev.log'" in yaml)
-        assertFalse("ipv6" in yaml)
-    }
-
-    @Test
-    fun anIpv6AddressInThePlanIsPassedToHev() {
-        val withIpv6 = request.copy(
-            plan = request.plan.copy(
-                addresses = request.plan.addresses + NetworkCidrAddress("fdfe:dcba:9876::1", 126),
-            ),
-        )
-
-        runtime().start(withIpv6)
-
-        assertTrue("  ipv6: 'fdfe:dcba:9876::1'" in checkNotNull(startedYaml))
-    }
-
-    @Test
-    fun failedDeviceOpenNeverStartsHev() {
-        deviceOpenResult = Result.failure(IllegalStateException("NetworkManager refused"))
-
-        val result = runtime().start(request)
-
-        assertEquals("NetworkManager refused", result.exceptionOrNull()?.message)
-        assertEquals(listOf("open"), events)
-    }
-
-    @Test
-    fun failedHevStartClosesTheDevice() {
-        tunnelStartResult = Result.failure(IllegalStateException("hev exited"))
-
-        val result = runtime().start(request)
-
-        assertEquals("hev exited", result.exceptionOrNull()?.message)
-        assertEquals(listOf("open", "start", "close"), events)
-    }
-
-    @Test
-    fun stopsHevBeforeClosingTheDevice() {
-        val runtime = runtime()
-        runtime.start(request)
-        events.clear()
-
-        assertTrue(runtime.stop().isSuccess)
-
-        assertEquals(listOf("stop", "close"), events)
-        assertFalse(runtime.isRunning())
-    }
-
-    @Test
-    fun stopStillClosesTheDeviceWhenHevFailsToStopAndReportsTheFirstError() {
-        val runtime = runtime()
-        runtime.start(request)
-        events.clear()
-        tunnelStopResult = Result.failure(IllegalStateException("hev stuck"))
-        deviceCloseResult = Result.failure(IllegalStateException("close failed"))
-
-        val result = runtime.stop()
-
-        assertEquals(listOf("stop", "close"), events)
-        assertEquals("hev stuck", result.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun secondStartWhileRunningIsRejected() {
-        val runtime = runtime()
-        runtime.start(request)
-        events.clear()
-
-        val result = runtime.start(request)
-
-        assertTrue(result.isFailure)
-        assertTrue(events.isEmpty())
-    }
-
-    @Test
-    fun stopWithoutStartDoesNothing() {
-        assertTrue(runtime().stop().isSuccess)
-        assertTrue(events.isEmpty())
-    }
-
-    @Test
-    fun isRunningFollowsHev() {
-        val runtime = runtime()
-        assertFalse(runtime.isRunning())
-        runtime.start(request)
-        assertTrue(runtime.isRunning())
-        tunnelAlive = false
-        assertFalse(runtime.isRunning())
-    }
-
-    // Linux and Windows: Core runs HEV TUN, so the runtime only opens the device, describes hev and attaches.
-    private var coreSessionAlive = true
-
+    // Core runs HEV TUN, so the runtime only opens the device, describes hev and attaches.
     private fun coreRuntime(executable: java.nio.file.Path? = null) =
-        DesktopTunRuntime(device, tunnel = null, hevExecutable = executable, coreSessionRunning = { coreSessionAlive })
+        DesktopTunRuntime(device, hevExecutable = executable, coreSessionRunning = { coreSessionAlive })
 
     @Test
-    fun aCoreHostedRuntimeOpensTheDeviceAndNeverTouchesAnInAppHev() {
+    fun aRuntimeOpensTheDeviceAndSendsItThePlanAsJson() {
         val runtime = coreRuntime()
 
-        assertTrue(runtime.coreHostsHev)
         assertEquals(41, runtime.openForCore(request.plan).getOrThrow())
 
         assertEquals(listOf("open"), events)
@@ -272,7 +110,6 @@ class DesktopTunRuntimeTest {
             """{"name":"skipi0","mtu":1400,"addresses":["172.19.0.1/30"],"routes":["0.0.0.0/1","128.0.0.0/1"]}""",
             openedPlan,
         )
-        assertFalse(DesktopTunRuntime(device, tunnel).coreHostsHev)
     }
 
     @Test
@@ -297,12 +134,64 @@ class DesktopTunRuntimeTest {
     }
 
     @Test
+    fun theCoreHevPlanCarriesTheIpv6AddressWhenThePlanHasOne() {
+        val withIpv6 = request.copy(
+            plan = request.plan.copy(addresses = request.plan.addresses + NetworkCidrAddress("fdfe:dcba:9876::1", 126)),
+        )
+
+        val plan = coreRuntime().coreHevPlan(withIpv6, tunFd = 41)
+
+        assertTrue("  ipv6: 'fdfe:dcba:9876::1'" in plan.configYaml)
+    }
+
+    @Test
+    fun theCoreHevPlanPointsAtTheMtuAndLogOfTheRequest() {
+        val plan = coreRuntime().coreHevPlan(request, tunFd = 41)
+
+        assertTrue("  mtu: 1400" in plan.configYaml)
+        assertTrue("  log-file: '/tmp/hev.log'" in plan.configYaml)
+    }
+
+    @Test
     fun theCoreHevPlanCarriesTheShippedExecutableOnWindows() {
         val exe = java.nio.file.Path.of("hev", "hev-socks5-tunnel.exe")
 
         val plan = coreRuntime(exe).coreHevPlan(request, tunFd = -1)
 
         assertEquals(exe.toString(), plan.executable)
+        assertEquals(-1, plan.tunFd)
+    }
+
+    @Test
+    fun theMacCoreHevPlanCarriesTheInterfacePlanTheRunDirectoryAndNoDescriptor() {
+        val exe = java.nio.file.Path.of("hev", "hev-socks5-tunnel")
+        val runDirectory = java.nio.file.Path.of("home", "SKIPI", "run")
+        val runtime = DesktopTunRuntime(device, hevExecutable = exe, macRunDirectory = runDirectory)
+
+        val plan = runtime.coreHevPlan(request.copy(plan = request.plan.copy(dnsServers = listOf("1.1.1.1"))), tunFd = -1)
+
+        assertEquals(null, plan.tunFd)
+        assertEquals(exe.toString(), plan.executable)
+        assertEquals(runDirectory.toString(), plan.runDirectory)
+        assertEquals(
+            DesktopCoreMacInterface(
+                name = "skipi0",
+                mtu = 1400,
+                addresses = listOf("172.19.0.1/30"),
+                routes = listOf("0.0.0.0/1", "128.0.0.0/1"),
+                dns = listOf("1.1.1.1"),
+            ),
+            plan.macInterface,
+        )
+        assertTrue("  port: 10808" in plan.configYaml)
+    }
+
+    @Test
+    fun theLinuxAndWindowsCoreHevPlansHaveNoMacFields() {
+        val plan = coreRuntime(java.nio.file.Path.of("hev.exe")).coreHevPlan(request, tunFd = -1)
+
+        assertEquals(null, plan.runDirectory)
+        assertEquals(null, plan.macInterface)
         assertEquals(-1, plan.tunFd)
     }
 

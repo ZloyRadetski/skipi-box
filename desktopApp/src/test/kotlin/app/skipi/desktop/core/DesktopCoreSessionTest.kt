@@ -70,6 +70,45 @@ class DesktopCoreSessionTest {
     }
 
     @Test
+    fun linuxAndWindowsHevBlocksCarryNeitherRunDirectoryNorMacInterface() {
+        val native = SessionNative()
+
+        controller(native).start("{}", hev = hev.copy(tunFd = -1, executable = "hev.exe")).getOrThrow()
+
+        assertEquals(setOf("configYaml", "tunFd", "executable"), plan(native).getValue("hev").jsonObject.keys)
+    }
+
+    @Test
+    fun theMacHevBlockCarriesTheExecutableTheRunDirectoryAndTheInterfaceButNoDescriptor() {
+        val native = SessionNative()
+        val mac = DesktopCoreHevPlan(
+            configYaml = "tunnel:\n  mtu: 1500\n",
+            tunFd = null,
+            executable = "/Applications/SKIPI.app/Contents/app/hev/hev-socks5-tunnel",
+            runDirectory = "/Users/u/SKIPI/run",
+            macInterface = DesktopCoreMacInterface(
+                name = "utun9",
+                mtu = 1500,
+                addresses = listOf("172.19.0.1/30"),
+                routes = listOf("0.0.0.0/1", "128.0.0.0/1"),
+                dns = listOf("1.1.1.1"),
+            ),
+        )
+
+        controller(native).start("{}", hev = mac).getOrThrow()
+
+        val hevBlock = plan(native).getValue("hev").jsonObject
+        assertEquals(setOf("configYaml", "executable", "runDirectory", "macInterface"), hevBlock.keys)
+        assertEquals("/Users/u/SKIPI/run", hevBlock.getValue("runDirectory").jsonPrimitive.content)
+        assertEquals(
+            Json.parseToJsonElement(
+                """{"name":"utun9","mtu":1500,"addresses":["172.19.0.1/30"],"routes":["0.0.0.0/1","128.0.0.0/1"],"dns":["1.1.1.1"]}""",
+            ),
+            hevBlock.getValue("macInterface"),
+        )
+    }
+
+    @Test
     fun theConnectionLogSwitchIsPartOfThePlan() {
         val native = SessionNative()
         val controller = controller(native)
