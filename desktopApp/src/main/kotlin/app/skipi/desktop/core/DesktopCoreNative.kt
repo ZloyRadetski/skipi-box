@@ -116,7 +116,7 @@ internal interface DesktopCoreNative : AutoCloseable {
  */
 internal class DesktopCoreFfmNative(
     libraryPath: Path,
-) : DesktopCoreNative {
+) : DesktopCoreNative, DesktopTunCore {
     private val linker = Linker.nativeLinker()
     // A Go c-shared library owns runtime threads and TLS for the lifetime of
     // the host process. Unloading it after Stop can crash the JVM, so retain
@@ -191,6 +191,9 @@ internal class DesktopCoreFfmNative(
     )
 
     // Looked up on first use so an older library without these exports still loads.
+    private val tunAttachFunction by lazy {
+        downcall("SkipiCoreDesktopTunAttach", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+    }
     private val systemProxyFunction by lazy {
         downcall(
             "SkipiCoreDesktopSystemProxy",
@@ -427,7 +430,7 @@ internal class DesktopCoreFfmNative(
     }.getOrElse { error -> error.message ?: "TUN is not supported by this SKIPI Core library" }
 
     /** Binds Core's own outbound sockets to the physical interface, before Core starts. */
-    fun prepareTun(interfaceName: String) {
+    override fun prepareTun(interfaceName: String) {
         withUtf8(interfaceName) { name ->
             errorResult("prepare the TUN interface") { invokePointer(tunPrepareFunction, name) }
         }
@@ -460,7 +463,14 @@ internal class DesktopCoreFfmNative(
         }
     }
 
-    fun closeTun() {
+    /** Finishes the TUN setup once the session runs on the interface (the routes on Windows). */
+    override fun attachTun(planJson: String) {
+        withUtf8(planJson) { plan ->
+            errorResult("set up the TUN network") { invokePointer(tunAttachFunction, plan) }
+        }
+    }
+
+    override fun closeTun() {
         errorResult("close the TUN interface") { invokePointer(tunCloseFunction) }
     }
 

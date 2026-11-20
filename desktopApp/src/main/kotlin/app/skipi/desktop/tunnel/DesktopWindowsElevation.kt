@@ -82,3 +82,14 @@ internal fun isWindowsElevated(): Boolean = runCatching {
     )
     (isUserAnAdmin.invokeWithArguments() as Int) != 0
 }.getOrDefault(false)
+
+/** Runs one system command without a console window; a non-zero exit is a failure with its output. */
+internal fun runWindowsCommand(command: List<String>): Result<Unit> =
+    runProcessWithTimeout(command, kotlin.time.Duration.parse("30s"))
+        .map { }
+        .recoverCatching { error ->
+            if (error is DesktopProcessFailure) {
+                throw IllegalStateException("${command.take(4).joinToString(" ")} failed: ${error.output}", error)
+            }
+            throw error
+        }
