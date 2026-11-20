@@ -30,13 +30,12 @@ data class DesktopAmneziaWgBridge(
 /**
  * HEV TUN as Core runs it inside a session. [tunFd] is the descriptor Core's TUN device opened (Linux, in process) or
  * -1 where hev creates the interface itself (Windows); it is null on macOS, where Core's privileged supervisor makes
- * the interface and [macInterface], [runDirectory] and [executable] describe that supervisor's work.
- * [executable] is the shipped hev program Core supervises (Windows, macOS).
+ * the interface and [macInterface] and [runDirectory] describe that supervisor's work. The hev program itself is
+ * carried by the Core library, so the plan names no executable.
  */
 data class DesktopCoreHevPlan(
     val configYaml: String,
     val tunFd: Int?,
-    val executable: String? = null,
     val runDirectory: String? = null,
     val macInterface: DesktopCoreMacInterface? = null,
 )
@@ -78,7 +77,6 @@ private fun sessionPlanJson(
         buildJsonObject {
             put("configYaml", hev.configYaml)
             hev.tunFd?.let { put("tunFd", it) }
-            hev.executable?.let { put("executable", it) }
             hev.runDirectory?.let { put("runDirectory", it) }
             hev.macInterface?.let { put("macInterface", SessionPlanJson.encodeToJsonElement(DesktopCoreMacInterface.serializer(), it)) }
         },

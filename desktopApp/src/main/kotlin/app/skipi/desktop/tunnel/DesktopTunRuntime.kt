@@ -44,8 +44,6 @@ internal data class DesktopTunStartRequest(
  */
 internal class DesktopTunRuntime(
     private val device: DesktopTunDevice,
-    /** The shipped hev program Core supervises (Windows, macOS). */
-    private val hevExecutable: java.nio.file.Path? = null,
     /** Set on macOS: Core's privileged supervisor runs hev there and keeps its marker files in this directory. */
     private val macRunDirectory: java.nio.file.Path? = null,
     /** Whether Core's session, which carries hev, is running. */
@@ -58,15 +56,14 @@ internal class DesktopTunRuntime(
     fun openForCore(plan: TunInterfacePlan): Result<Int> = device.open(plan.toDevicePlan().encode())
 
     /**
-     * The hev block of Core's session plan: its configuration plus the descriptor (Linux), the executable (Windows)
-     * or the executable, run directory and interface plan for Core's macOS supervisor.
+     * The hev block of Core's session plan: its configuration plus the descriptor (Linux, -1 on Windows) or the run
+     * directory and interface plan for Core's macOS supervisor. Core carries the hev program itself.
      */
     fun coreHevPlan(request: DesktopTunStartRequest, tunFd: Int): DesktopCoreHevPlan {
         val runDirectory = macRunDirectory
         return DesktopCoreHevPlan(
             configYaml = request.toHevYaml(),
             tunFd = if (runDirectory == null) tunFd else null,
-            executable = hevExecutable?.toString(),
             runDirectory = runDirectory?.toString(),
             macInterface = if (runDirectory == null) null else request.plan.toDevicePlan().toCoreMacInterface(),
         )

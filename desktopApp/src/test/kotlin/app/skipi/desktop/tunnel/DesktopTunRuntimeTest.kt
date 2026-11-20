@@ -96,8 +96,7 @@ class DesktopTunRuntimeTest {
     }
 
     // Core runs HEV TUN, so the runtime only opens the device, describes hev and attaches.
-    private fun coreRuntime(executable: java.nio.file.Path? = null) =
-        DesktopTunRuntime(device, hevExecutable = executable, coreSessionRunning = { coreSessionAlive })
+    private fun coreRuntime() = DesktopTunRuntime(device, coreSessionRunning = { coreSessionAlive })
 
     @Test
     fun aRuntimeOpensTheDeviceAndSendsItThePlanAsJson() {
@@ -120,11 +119,10 @@ class DesktopTunRuntimeTest {
     }
 
     @Test
-    fun theCoreHevPlanCarriesTheYamlTheDescriptorAndNoExecutableOnLinux() {
+    fun theCoreHevPlanCarriesTheYamlAndTheDescriptor() {
         val plan = coreRuntime().coreHevPlan(request.copy(socksUsername = "u", socksPassword = "p"), tunFd = 41)
 
         assertEquals(41, plan.tunFd)
-        assertEquals(null, plan.executable)
         assertTrue("  port: 10808" in plan.configYaml)
         assertTrue("  address: '127.0.0.1'" in plan.configYaml)
         assertTrue("  username: 'u'" in plan.configYaml)
@@ -153,25 +151,20 @@ class DesktopTunRuntimeTest {
     }
 
     @Test
-    fun theCoreHevPlanCarriesTheShippedExecutableOnWindows() {
-        val exe = java.nio.file.Path.of("hev", "hev-socks5-tunnel.exe")
+    fun theCoreHevPlanOnWindowsCarriesNoDescriptorOfItsOwn() {
+        val plan = coreRuntime().coreHevPlan(request, tunFd = -1)
 
-        val plan = coreRuntime(exe).coreHevPlan(request, tunFd = -1)
-
-        assertEquals(exe.toString(), plan.executable)
         assertEquals(-1, plan.tunFd)
     }
 
     @Test
     fun theMacCoreHevPlanCarriesTheInterfacePlanTheRunDirectoryAndNoDescriptor() {
-        val exe = java.nio.file.Path.of("hev", "hev-socks5-tunnel")
         val runDirectory = java.nio.file.Path.of("home", "SKIPI", "run")
-        val runtime = DesktopTunRuntime(device, hevExecutable = exe, macRunDirectory = runDirectory)
+        val runtime = DesktopTunRuntime(device, macRunDirectory = runDirectory)
 
         val plan = runtime.coreHevPlan(request.copy(plan = request.plan.copy(dnsServers = listOf("1.1.1.1"))), tunFd = -1)
 
         assertEquals(null, plan.tunFd)
-        assertEquals(exe.toString(), plan.executable)
         assertEquals(runDirectory.toString(), plan.runDirectory)
         assertEquals(
             DesktopCoreMacInterface(
@@ -188,7 +181,7 @@ class DesktopTunRuntimeTest {
 
     @Test
     fun theLinuxAndWindowsCoreHevPlansHaveNoMacFields() {
-        val plan = coreRuntime(java.nio.file.Path.of("hev.exe")).coreHevPlan(request, tunFd = -1)
+        val plan = coreRuntime().coreHevPlan(request, tunFd = -1)
 
         assertEquals(null, plan.runDirectory)
         assertEquals(null, plan.macInterface)

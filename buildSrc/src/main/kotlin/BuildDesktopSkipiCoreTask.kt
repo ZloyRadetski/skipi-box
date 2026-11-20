@@ -52,6 +52,8 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         val destination = outputLibrary.get().asFile
         destination.parentFile.mkdirs()
 
+        stageHevRuntime(sourceDirectory)
+
         val cc = resolveCompiler(cCompiler.get())
         require(cc.isFile) {
             "A GCC-compatible C compiler is required for Desktop SKIPI Core: ${cc.path}. " +
@@ -91,6 +93,29 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
 
         require(destination.isFile && destination.length() > 0) {
             "SKIPI Core build completed without producing ${destination.path}."
+        }
+    }
+
+    /**
+     * On Windows and macOS the Core library carries the hev runtime (go:embed), staged by the Core's own script
+     * before the build. Without bash and its tools the library is still built, but a started tunnel reports that
+     * this build carries no HEV TUN runtime. Release libraries come from the Core release, which has it staged.
+     */
+    private fun stageHevRuntime(sourceDirectory: File) {
+        val platform = when {
+            isWindows() -> "windows"
+            System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true) -> "macos"
+            else -> return
+        }
+        val script = File(sourceDirectory, "scripts/stage-hev-payload.sh")
+        if (!script.isFile) return
+        try {
+            execOperations.exec {
+                workingDir = sourceDirectory
+                commandLine("bash", "scripts/stage-hev-payload.sh", platform)
+            }.rethrowFailure().assertNormalExitValue()
+        } catch (error: Exception) {
+            logger.warn("The HEV TUN runtime could not be staged into the SKIPI Core build ($platform): ${error.message}")
         }
     }
 

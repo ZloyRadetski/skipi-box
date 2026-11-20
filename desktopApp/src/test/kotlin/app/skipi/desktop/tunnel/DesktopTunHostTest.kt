@@ -24,19 +24,11 @@ class DesktopTunHostTest {
         geoSite = directory.resolve("geosite.dat"),
     )
 
-    private val hevDirectory: Path by lazy {
-        java.nio.file.Files.createTempDirectory("skipi-hev-test").also { dir ->
-            listOf("hev-socks5-tunnel.exe", "msys-2.0.dll", "msys-gcc_s-seh-1.dll", "wintun.dll")
-                .forEach { name -> java.nio.file.Files.writeString(dir.resolve(name), "x") }
-        }
-    }
-
-    private fun windowsRuntime(hev: Boolean = true) = DesktopCoreRuntime(
+    private fun windowsRuntime() = DesktopCoreRuntime(
         directory = directory,
         library = directory.resolve("skipicore.dll"),
         geoIp = directory.resolve("geoip.dat"),
         geoSite = directory.resolve("geosite.dat"),
-        hevExecutable = hevDirectory.resolve("hev-socks5-tunnel.exe").takeIf { hev },
     )
 
     private fun windowsHost(
@@ -52,12 +44,11 @@ class DesktopTunHostTest {
         isElevated = { elevated },
     )
 
-    private fun macRuntime(hev: Boolean = true) = DesktopCoreRuntime(
+    private fun macRuntime() = DesktopCoreRuntime(
         directory = directory,
         library = directory.resolve("libskipicore.dylib"),
         geoIp = directory.resolve("geoip.dat"),
         geoSite = directory.resolve("geosite.dat"),
-        hevExecutable = directory.resolve("hev").resolve("hev-socks5-tunnel").takeIf { hev },
     )
 
     private fun macHost(
@@ -105,19 +96,16 @@ class DesktopTunHostTest {
     }
 
     @Test
-    fun linuxRunsHevInsideCoreAndWindowsHandsCoreTheExecutable() {
+    fun linuxHandsCoreTheDescriptorAndWindowsNone() {
         val linux = host().tunRuntime()
-        assertNull(linux.coreHevPlan(sampleRequest(), tunFd = 7).executable)
+        assertEquals(7, linux.coreHevPlan(sampleRequest(), tunFd = 7).tunFd)
 
         val windows = windowsHostWithDevice().tunRuntime()
-        assertEquals(
-            hevDirectory.resolve("hev-socks5-tunnel.exe").toString(),
-            windows.coreHevPlan(sampleRequest(), tunFd = -1).executable,
-        )
+        assertEquals(-1, windows.coreHevPlan(sampleRequest(), tunFd = -1).tunFd)
     }
 
     @Test
-    fun macHandsCoreTheExecutableTheRunDirectoryAndTheInterfacePlan() {
+    fun macHandsCoreTheRunDirectoryAndTheInterfacePlan() {
         val runDirectory = directory.resolve("run")
         val mac = DesktopTunHost(
             isLinux = false,
@@ -131,7 +119,6 @@ class DesktopTunHostTest {
         val plan = mac.coreHevPlan(sampleRequest(), tunFd = -1)
 
         assertEquals(null, plan.tunFd)
-        assertEquals(directory.resolve("hev").resolve("hev-socks5-tunnel").toString(), plan.executable)
         assertEquals(runDirectory.toString(), plan.runDirectory)
         assertEquals("skipi0", plan.macInterface?.name)
         assertEquals(listOf("172.19.0.1/30"), plan.macInterface?.addresses)
@@ -220,25 +207,6 @@ class DesktopTunHostTest {
     }
 
     @Test
-    fun windowsWithoutTheHevExecutableReportsIt() {
-        val reason = windowsHost(runtime = Result.success(windowsRuntime(hev = false))).unavailableReason()
-
-        assertTrue("hev-socks5-tunnel.exe" in reason.orEmpty(), reason)
-    }
-
-    @Test
-    fun windowsWithoutAHevRuntimeLibraryReportsIt() {
-        val dir = java.nio.file.Files.createTempDirectory("skipi-hev-missing")
-        java.nio.file.Files.writeString(dir.resolve("hev-socks5-tunnel.exe"), "x")
-        listOf("msys-2.0.dll", "wintun.dll").forEach { java.nio.file.Files.writeString(dir.resolve(it), "x") }
-        val runtime = windowsRuntime().copy(hevExecutable = dir.resolve("hev-socks5-tunnel.exe"))
-
-        val reason = windowsHost(runtime = Result.success(runtime)).unavailableReason()
-
-        assertTrue("msys-gcc_s-seh-1.dll" in reason.orEmpty(), reason)
-    }
-
-    @Test
     fun windowsPassesTheCoreProbeReasonThrough() {
         assertEquals("needs administrator", windowsHost(probe = { "needs administrator" }).unavailableReason())
     }
@@ -262,13 +230,6 @@ class DesktopTunHostTest {
     fun macAsksForAdministratorRightsWhenTheTunnelStartsNotUpFront() {
         // The password prompt belongs to the moment TUN is switched on; the app itself is never elevated.
         assertEquals(false, macHost().needsElevation())
-    }
-
-    @Test
-    fun macWithoutTheHevExecutableReportsIt() {
-        val reason = macHost(runtime = Result.success(macRuntime(hev = false))).unavailableReason()
-
-        assertTrue("hev-socks5-tunnel" in reason.orEmpty(), reason)
     }
 
     @Test

@@ -266,37 +266,11 @@ tasks.matching { it.name == "prepareAppResources" }.configureEach {
     dependsOn(
         buildDesktopCore,
         prepareDesktopCoreRuntime,
-        prepareDesktopHevRuntime,
     )
 }
 
 prepareDesktopCoreRuntime.configure {
     dependsOn(buildDesktopCore)
-}
-
-// hev-socks5-tunnel runs as a process of its own on Windows and macOS (Linux links it into
-// libskipicore.so). SKIPI Core builds it and publishes it with every release; the app downloads the
-// asset of the pinned Core version and verifies it against the release's checksums.
-val desktopHevAsset: String? = when {
-    isWindowsHost -> "hev-windows-x64.zip"
-    isMacHost -> {
-        val arch = System.getProperty("os.arch").orEmpty().lowercase()
-        val suffix = if (arch == "aarch64" || arch == "arm64") "arm64" else "x86_64"
-        "hev-macos-$suffix.tar.gz"
-    }
-    else -> null
-}
-val desktopHevRequiredFiles = if (isWindowsHost) {
-    listOf("hev-socks5-tunnel.exe", "wintun.dll", "msys-2.0.dll", "msys-gcc_s-seh-1.dll")
-} else {
-    listOf("hev-socks5-tunnel")
-}
-val prepareDesktopHevRuntime = tasks.register<PrepareDesktopHevRuntimeTask>("prepareDesktopHevRuntime") {
-    coreVersion.set(ProjectConfig.SKIPI_CORE_VERSION)
-    assetName.set(desktopHevAsset ?: "none")
-    requiredFiles.set(desktopHevRequiredFiles)
-    outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
-    onlyIf { desktopHevAsset != null }
 }
 
 tasks.withType<Test>().configureEach {

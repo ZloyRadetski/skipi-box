@@ -658,7 +658,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $image = 'desktopApp/build/compose/binaries/main/app/SKIPI'
-          foreach ($required in 'SKIPI.exe', 'app/resources/skipicore.dll', 'app/resources/geoip.dat', 'app/resources/geosite.dat', 'app/resources/hev/hev-socks5-tunnel.exe', 'app/resources/hev/wintun.dll') {
+          foreach ($required in 'SKIPI.exe', 'app/resources/skipicore.dll', 'app/resources/geoip.dat', 'app/resources/geosite.dat') {
             if (-not (Test-Path (Join-Path $image $required))) { throw "The portable image is missing $required" }
           }
           Compress-Archive -Path $image -DestinationPath SKIPI-windows-x64-portable.zip -CompressionLevel Optimal
@@ -872,9 +872,9 @@ jobs:
           go-version: "1.27"
           check-latest: true
 
-      # No macOS library is published with the Core releases, so the build compiles it from the
-      # Core sources of the pinned version, which must sit next to this project.
-      - name: Check out SKIPI Core of the pinned version
+      # The Core release carries the macOS library, with the hev runtime embedded. The Core sources
+      # of the pinned version sit next to this project only because the build copies its licence.
+      - name: Fetch SKIPI Core of the pinned version
         shell: bash
         run: |
           set -euo pipefail
@@ -884,11 +884,25 @@ jobs:
             echo "::error::Unable to read ProjectConfig.SKIPI_CORE_VERSION from buildSrc/src/main/kotlin/BuildConfig.kt."
             exit 1
           fi
-          echo "Building SKIPI Core $core_version from source"
+          base="https://github.com/ZloyRadetski/skipi-core/releases/download/${core_version}"
+          asset="libskipicore-macos-arm64.dylib"
+          mkdir -p core-lib
+          curl -fsSL --retry 3 -o "core-lib/$asset" "$base/$asset"
+          curl -fsSL --retry 3 -o core-lib/sha256sums-desktop.txt "$base/sha256sums-desktop.txt"
+
+          expected="$(grep -E "[[:space:]]\*?${asset}\$" core-lib/sha256sums-desktop.txt | cut -d' ' -f1)"
+          actual="$(shasum -a 256 "core-lib/$asset" | cut -d' ' -f1)"
+          if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::$asset of $core_version does not match its published checksum (expected '$expected', got '$actual')."
+            exit 1
+          fi
+          echo "SKIPI Core $core_version: $asset checksum $actual"
+          echo "SKIPI_CORE_LIB=$PWD/core-lib/$asset" >> "$GITHUB_ENV"
+
           git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
       - name: Build the disk image
-        run: ./gradlew --no-daemon :desktopApp:packageDmg
+        run: ./gradlew --no-daemon :desktopApp:packageDmg "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
 
       - name: Check the application and collect the disk image
         shell: bash
@@ -897,19 +911,13 @@ jobs:
 
           app="desktopApp/build/compose/binaries/main/app/SKIPI.app"
           test -d "$app" || { echo "::error::The application bundle $app was not produced."; exit 1; }
-          for required in libskipicore.dylib geoip.dat geosite.dat hev-socks5-tunnel; do
+          for required in libskipicore.dylib geoip.dat geosite.dat; do
             if [ -z "$(find "$app" -name "$required" -type f -print -quit)" ]; then
               echo "::error::The macOS application is missing $required."
               exit 1
             fi
           done
-          hev="$(find "$app" -name hev-socks5-tunnel -type f -print -quit)"
-          ls -l "$hev"
-          if [ ! -x "$hev" ]; then
-            echo "::warning::$hev has no executable bit in the bundle; the TUN supervisor restores it at run time."
-          fi
           lipo -info "$(find "$app" -name libskipicore.dylib -type f -print -quit)"
-          lipo -info "$hev"
 
           dmg="$(find desktopApp/build/compose/binaries/main/dmg -name '*.dmg' -type f -print -quit)"
           test -n "$dmg" || { echo "::error::No .dmg was produced."; exit 1; }

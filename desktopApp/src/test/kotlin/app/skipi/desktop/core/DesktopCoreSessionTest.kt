@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 /** Core owns HEV TUN: the tunnel starts with one session call and stops with one bounded call. */
 class DesktopCoreSessionTest {
     private val bridge = DesktopAmneziaWgBridge(configJson = """{"awg":true}""", socksPort = 10_809)
-    private val hev = DesktopCoreHevPlan(configYaml = "tunnel:\n  mtu: 1400\n", tunFd = 41, executable = null)
+    private val hev = DesktopCoreHevPlan(configYaml = "tunnel:\n  mtu: 1400\n", tunFd = 41)
 
     private fun controller(native: SessionNative) = DesktopCoreController(
         runtimeProvider = {
@@ -57,15 +57,16 @@ class DesktopCoreSessionTest {
         assertFalse(plan.getValue("connectionLog").jsonPrimitive.boolean)
     }
 
+    // Core carries the hev runtime itself, so the plan names no executable on any platform.
     @Test
-    fun theWindowsHevExecutableTravelsInThePlan() {
+    fun theWindowsHevBlockHasNoExecutable() {
         val native = SessionNative()
 
-        controller(native).start("{}", hev = hev.copy(tunFd = -1, executable = "C:\\Skipi\\hev\\hev-socks5-tunnel.exe"))
-            .getOrThrow()
+        controller(native).start("{}", hev = hev.copy(tunFd = -1)).getOrThrow()
 
         val hevBlock = plan(native).getValue("hev").jsonObject
-        assertEquals("C:\\Skipi\\hev\\hev-socks5-tunnel.exe", hevBlock.getValue("executable").jsonPrimitive.content)
+        assertFalse("executable" in hevBlock)
+        assertEquals(-1, hevBlock.getValue("tunFd").jsonPrimitive.int)
         assertTrue("amneziaWg" !in plan(native))
     }
 
@@ -73,18 +74,17 @@ class DesktopCoreSessionTest {
     fun linuxAndWindowsHevBlocksCarryNeitherRunDirectoryNorMacInterface() {
         val native = SessionNative()
 
-        controller(native).start("{}", hev = hev.copy(tunFd = -1, executable = "hev.exe")).getOrThrow()
+        controller(native).start("{}", hev = hev.copy(tunFd = -1)).getOrThrow()
 
-        assertEquals(setOf("configYaml", "tunFd", "executable"), plan(native).getValue("hev").jsonObject.keys)
+        assertEquals(setOf("configYaml", "tunFd"), plan(native).getValue("hev").jsonObject.keys)
     }
 
     @Test
-    fun theMacHevBlockCarriesTheExecutableTheRunDirectoryAndTheInterfaceButNoDescriptor() {
+    fun theMacHevBlockCarriesTheRunDirectoryAndTheInterfaceButNoDescriptorAndNoExecutable() {
         val native = SessionNative()
         val mac = DesktopCoreHevPlan(
             configYaml = "tunnel:\n  mtu: 1500\n",
             tunFd = null,
-            executable = "/Applications/SKIPI.app/Contents/app/hev/hev-socks5-tunnel",
             runDirectory = "/Users/u/SKIPI/run",
             macInterface = DesktopCoreMacInterface(
                 name = "utun9",
@@ -98,7 +98,7 @@ class DesktopCoreSessionTest {
         controller(native).start("{}", hev = mac).getOrThrow()
 
         val hevBlock = plan(native).getValue("hev").jsonObject
-        assertEquals(setOf("configYaml", "executable", "runDirectory", "macInterface"), hevBlock.keys)
+        assertEquals(setOf("configYaml", "runDirectory", "macInterface"), hevBlock.keys)
         assertEquals("/Users/u/SKIPI/run", hevBlock.getValue("runDirectory").jsonPrimitive.content)
         assertEquals(
             Json.parseToJsonElement(

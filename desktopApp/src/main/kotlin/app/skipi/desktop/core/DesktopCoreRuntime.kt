@@ -12,11 +12,6 @@ data class DesktopCoreRuntime(
     val library: Path,
     val geoIp: Path,
     val geoSite: Path,
-    /**
-     * Present on Windows and macOS builds that ship the TUN mode: hev-socks5-tunnel. Windows hands the path to Core,
-     * which supervises the process; macOS runs it under its own root supervisor. Linux ships none: hev is in Core.
-     */
-    val hevExecutable: Path? = null,
 )
 
 /** Locates only a shared SKIPI Core library and its Xray geo resources. */
@@ -45,12 +40,8 @@ object DesktopCoreRuntimes {
         require(missing.isEmpty()) {
             "Incomplete SKIPI Core desktop runtime: ${missing.joinToString { it.fileName.toString() }}"
         }
-        val hevExecutable = if (osName.contains("mac", ignoreCase = true)) {
-            macHevExecutable(runtimeDirectory)
-        } else {
-            windowsHevExecutable(runtimeDirectory)
-        }
-        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hevExecutable)
+        // hev is not a file of the application: the Core library carries it on every platform.
+        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite)
     }
 
     private fun candidateDirectories(): List<Path> = buildList {
@@ -70,19 +61,6 @@ object DesktopCoreRuntimes {
             Path.of("/usr/share/skipi-core").let(::add)
         }
     }.distinct()
-
-    /** hev needs Wintun and the MSYS runtime in its own directory, so all three must be there. */
-    private fun windowsHevExecutable(runtimeDirectory: Path): Path? {
-        val directory = runtimeDirectory.resolve("hev")
-        val executable = directory.resolve("hev-socks5-tunnel.exe")
-        val complete = listOf(executable, directory.resolve("wintun.dll"), directory.resolve("msys-2.0.dll"))
-            .all(::isNonEmptyRegularFile)
-        return executable.takeIf { complete }
-    }
-
-    /** macOS runs hev as a root process of its own, so the bare executable is enough. */
-    private fun macHevExecutable(runtimeDirectory: Path): Path? =
-        runtimeDirectory.resolve("hev").resolve("hev-socks5-tunnel").takeIf(::isNonEmptyRegularFile)
 
     private fun libraryFileName(osName: String = System.getProperty("os.name").orEmpty()): String = when {
         osName.contains("windows", ignoreCase = true) -> "skipicore.dll"

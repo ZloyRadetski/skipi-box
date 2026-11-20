@@ -37,46 +37,30 @@ internal class DesktopTunHost(
     /** Null when TUN mode can be started on this machine right now. */
     fun unavailableReason(): String? {
         if (!hostSupported) return "TUN mode is available only on Linux, Windows and macOS so far"
-        val files = runtime().getOrElse { return it.message ?: "SKIPI Core runtime is unavailable" }
-        if (isWindows) {
-            val exe = files.hevExecutable ?: return "hev-socks5-tunnel.exe is missing from the application"
-            // hev loads these at process start; a missing one kills it with 0xC0000135 and no message.
-            WindowsHevRuntimeLibraries.firstOrNull { name -> !exe.resolveSibling(name).toFile().isFile }
-                ?.let { name -> return "$name is missing from the application" }
-        } else if (isMac) {
-            if (files.hevExecutable == null) return "hev-socks5-tunnel is missing from the application"
-        }
-        // Linux has nothing to check here: hev is linked into libskipicore.so.
+        runtime().getOrElse { return it.message ?: "SKIPI Core runtime is unavailable" }
+        // hev is part of the Core library on every platform; Core reports at the start if a build lacks it.
         return coreProbe()
     }
 
     @Synchronized
     fun tunRuntime(): DesktopTunRuntime {
         tunRuntime?.let { return it }
-        val files = runtime().getOrThrow()
+        runtime().getOrThrow()
         val created = when {
-            // Core supervises the shipped hev program and the interface is made by hev itself.
-            isWindows -> DesktopTunRuntime(
-                device(),
-                hevExecutable = files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application"),
-                coreSessionRunning = coreSessionRunning,
-            )
-            // Core's privileged supervisor runs the shipped hev program and shows the administrator prompt.
+            // Core's privileged supervisor runs the hev Core carries and shows the administrator prompt.
             isMac -> DesktopTunRuntime(
                 device(),
-                hevExecutable = files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application"),
                 macRunDirectory = macRunDirectory(),
                 coreSessionRunning = coreSessionRunning,
             )
-            // hev is linked into Core and runs on the descriptor Core's device opens.
+            // Windows: Core supervises the hev it carries, which makes the interface itself. Linux: hev is
+            // linked into Core and runs on the descriptor Core's device opens.
             else -> DesktopTunRuntime(device(), coreSessionRunning = coreSessionRunning)
         }
         return created.also { tunRuntime = it }
     }
 
     companion object {
-        private val WindowsHevRuntimeLibraries = listOf("msys-2.0.dll", "msys-gcc_s-seh-1.dll", "wintun.dll")
-
         fun forCore(
             coreController: DesktopCoreController,
             runtime: () -> Result<DesktopCoreRuntime> = DesktopCoreRuntimes::discover,
