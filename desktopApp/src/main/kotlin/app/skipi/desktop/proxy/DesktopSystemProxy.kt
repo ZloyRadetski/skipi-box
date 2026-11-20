@@ -64,21 +64,16 @@ internal fun isDesktopSystemProxySupported(
     osName.startsWith("Mac", ignoreCase = true)
 
 object DesktopSystemProxyManagers {
-    fun create(
+    /** The system proxy belongs to SKIPI Core on every desktop; [core] is how the host reaches it. */
+    internal fun create(
+        core: () -> Result<DesktopSystemProxyCore>,
         osName: String = System.getProperty("os.name"),
-    ): DesktopSystemProxyManager = when {
-        osName.startsWith("Windows", ignoreCase = true) -> DesktopWindowsSystemProxyLeaseManager(
-            // In-process Win32 calls: the reg.exe and PowerShell processes they replace cost ~0.9 s of every connect.
-            registry = NativeDesktopWindowsRegistry(),
-            refresher = FallbackWinInetSettingsRefresher(
-                NativeWinInetSettingsRefresher(),
-                PowerShellWinInetSettingsRefresher(ProcessDesktopWindowsCommandRunner),
-            ),
-        )
-        osName.startsWith("Linux", ignoreCase = true) -> DesktopLinuxSystemProxyLeaseManager()
-        osName.startsWith("Mac", ignoreCase = true) -> DesktopMacSystemProxyLeaseManager()
-        else -> NoOpDesktopSystemProxyManager
-    }
+    ): DesktopSystemProxyManager =
+        if (isDesktopSystemProxySupported(osName)) DesktopCoreSystemProxyManager(core = core, osName = osName)
+        else NoOpDesktopSystemProxyManager
+
+    internal fun create(coreController: DesktopCoreController): DesktopSystemProxyManager =
+        create(core = { coreController.nativeForTun().map { native -> DesktopSystemProxyCore(native::systemProxy) } })
 }
 
 object NoOpDesktopSystemProxyManager : DesktopSystemProxyManager {

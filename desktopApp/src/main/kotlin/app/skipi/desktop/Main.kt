@@ -289,7 +289,7 @@ private fun runDesktopApplication(
         }
     }
     val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
-    val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
+    val systemProxyManager = remember(coreController) { DesktopSystemProxyManagers.create(coreController) }
     var desktopSettings by remember {
         mutableStateOf(
             (initialSettings ?: DesktopSettingsLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopSettingsLibraries.defaultPath()) { DesktopAppSettings() })

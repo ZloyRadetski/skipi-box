@@ -191,6 +191,12 @@ internal class DesktopCoreFfmNative(
     )
 
     // Looked up on first use so an older library without these exports still loads.
+    private val systemProxyFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopSystemProxy",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+        )
+    }
     private val measureOutboundDelayFunction by lazy {
         downcall(
             "SkipiCoreDesktopMeasureOutboundDelay",
@@ -432,6 +438,17 @@ internal class DesktopCoreFfmNative(
         checkOpen()
         val fd = invoke(tunOpenFunction, plan) as? Long ?: error("SKIPI Core returned an invalid TUN result")
         if (fd >= 0) fd.toInt() else throw failure("open the TUN interface")
+    }
+
+    /** One operation of Core's system proxy; [arguments] and the result are JSON (see skipi-core's desktopbridge). */
+    fun systemProxy(operation: String, arguments: String?): String = withUtf8(operation) { op ->
+        ownedString("run the system proxy operation $operation") {
+            if (arguments == null) {
+                invokePointer(systemProxyFunction, op, MemorySegment.NULL)
+            } else {
+                withUtf8(arguments) { args -> invokePointer(systemProxyFunction, op, args) }
+            }
+        }
     }
 
     /** Shows a desktop notification through the session's notification service. */

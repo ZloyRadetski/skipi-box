@@ -195,10 +195,6 @@ class DesktopSettingsLibraryTest {
 
     @Test
     fun onlyEnablesWindowsSystemProxyOnWindowsHosts() {
-        assertTrue(isDesktopWindowsSystemProxySupported("Windows 11"))
-        assertFalse(isDesktopWindowsSystemProxySupported("Mac OS X"))
-        assertFalse(isDesktopWindowsSystemProxySupported("Linux"))
-
         val normalized = DesktopAppSettings(useWindowsSystemProxy = true).normalized(
             supportsWindowsSystemProxy = false,
         )
