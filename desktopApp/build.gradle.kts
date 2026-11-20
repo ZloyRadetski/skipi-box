@@ -73,24 +73,6 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 
-// hev-socks5-tunnel lives only in SKIPI Core; the macOS executable is built from its checkout.
-val desktopHevSourceDirectory = skipiCoreSourceDirectory.resolve("third_party/hev-socks5-tunnel")
-
-// macOS TUN: hev-socks5-tunnel runs as a root process of its own, started by the app after the user
-// has granted administrator rights; it creates the utun interface itself.
-val buildDesktopHevMac = tasks.register<BuildDesktopHevMacTask>("buildDesktopHevMac") {
-    sourceDirectory.set(desktopHevSourceDirectory)
-    sources.from(
-        fileTree(desktopHevSourceDirectory) {
-            exclude(".git", "bin/**", "build/**", "third-part/*/bin/**", "third-part/*/build/**")
-        },
-    )
-    cCompiler.set(providers.gradleProperty("skipiCoreDesktopCc").orElse("cc"))
-    workDirectory.set(layout.buildDirectory.dir("native/hev-socks5-tunnel-mac-src"))
-    outputExecutable.set(layout.buildDirectory.file("native/hev-socks5-tunnel-mac/hev-socks5-tunnel"))
-    onlyIf { isMacHost }
-}
-
 // Compose packages app resources from <root>/common and platform-specific
 // subdirectories. Keep the Core runtime in common so the same task layout can
 // stage both the Windows DLL and the Linux shared library.
@@ -284,8 +266,7 @@ tasks.matching { it.name == "prepareAppResources" }.configureEach {
     dependsOn(
         buildDesktopCore,
         prepareDesktopCoreRuntime,
-        prepareDesktopHevWindowsRuntime,
-        prepareDesktopHevMacRuntime,
+        prepareDesktopHevRuntime,
     )
 }
 
@@ -293,23 +274,29 @@ prepareDesktopCoreRuntime.configure {
     dependsOn(buildDesktopCore)
 }
 
-val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRuntime") {
-    from(buildDesktopHevMac.flatMap { task -> task.outputExecutable })
-    into(desktopCoreRuntime.map { root -> root.dir("hev") })
-    filePermissions { unix("rwxr-xr-x") }
-    onlyIf { isMacHost }
+// hev-socks5-tunnel runs as a process of its own on Windows and macOS (Linux links it into
+// libskipicore.so). SKIPI Core builds it and publishes it with every release; the app downloads the
+// asset of the pinned Core version and verifies it against the release's checksums.
+val desktopHevAsset: String? = when {
+    isWindowsHost -> "hev-windows-x64.zip"
+    isMacHost -> {
+        val arch = System.getProperty("os.arch").orEmpty().lowercase()
+        val suffix = if (arch == "aarch64" || arch == "arm64") "arm64" else "x86_64"
+        "hev-macos-$suffix.tar.gz"
+    }
+    else -> null
 }
-
-// Windows TUN: Core supervises the shipped hev-socks5-tunnel process, which needs the Wintun driver library beside it.
-// Linux ships no hev file: it is linked into libskipicore.so.
-val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRuntimeTask>("prepareDesktopHevWindowsRuntime") {
-    hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
-    expectedArchiveSha256.set("a9209ad121a3f636f814b0bb899b6464d3ec201eabbb3a82f2aa486e32879ba7")
-    wintunLicense.set(layout.file(provider { desktopHevSourceDirectory.resolve("third-part/wintun/LICENSE.txt") }))
-    gccRuntime.set(layout.projectDirectory.file("packaging/windows/msys-gcc_s-seh-1.dll"))
-    expectedGccRuntimeSha256.set("a9cfd10e2a4bf74f60530fc2f4f8fbe4055b50ff7ccd61b9440ef2fbe9c85aef")
+val desktopHevRequiredFiles = if (isWindowsHost) {
+    listOf("hev-socks5-tunnel.exe", "wintun.dll", "msys-2.0.dll", "msys-gcc_s-seh-1.dll")
+} else {
+    listOf("hev-socks5-tunnel")
+}
+val prepareDesktopHevRuntime = tasks.register<PrepareDesktopHevRuntimeTask>("prepareDesktopHevRuntime") {
+    coreVersion.set(ProjectConfig.SKIPI_CORE_VERSION)
+    assetName.set(desktopHevAsset ?: "none")
+    requiredFiles.set(desktopHevRequiredFiles)
     outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
-    onlyIf { isWindowsHost }
+    onlyIf { desktopHevAsset != null }
 }
 
 tasks.withType<Test>().configureEach {

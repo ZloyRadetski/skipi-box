@@ -634,7 +634,7 @@ jobs:
           echo "SKIPI_CORE_DLL=$(cygpath -m "$PWD/core-lib/skipicore.dll")" >> "$GITHUB_ENV"
 
           # The build copies the Core's GPL license from the sibling checkout, so it must exist.
-          git clone --depth 1 --recurse-submodules --shallow-submodules --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
       # jpackage builds the MSI with WiX. The runner image does not carry a version jpackage accepts,
       # so the pinned WiX 5 and the two extensions jpackage asks for are installed as dotnet tools.
@@ -750,7 +750,7 @@ jobs:
           echo "SKIPI_CORE_LIB=$PWD/core-lib/libskipicore.so" >> "$GITHUB_ENV"
 
           # The build copies the Core's GPL license from the sibling checkout, so it must exist.
-          git clone --depth 1 --recurse-submodules --shallow-submodules --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
       # jpackage needs rpmbuild for the rpm; dpkg for the deb is already on the runner.
       - name: Install the rpm tooling
@@ -885,8 +885,7 @@ jobs:
             exit 1
           fi
           echo "Building SKIPI Core $core_version from source"
-          # Recursive: hev-socks5-tunnel, which the macOS build compiles, is a submodule of the Core.
-          git clone --depth 1 --recurse-submodules --shallow-submodules --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
       - name: Build the disk image
         run: ./gradlew --no-daemon :desktopApp:packageDmg
