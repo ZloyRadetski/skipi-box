@@ -73,7 +73,8 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 
-val desktopHevSourceDirectory = rootProject.layout.projectDirectory.dir("hevtun/src/main/jni/hev-socks5-tunnel")
+// hev-socks5-tunnel lives only in SKIPI Core; the macOS executable is built from its checkout.
+val desktopHevSourceDirectory = skipiCoreSourceDirectory.resolve("third_party/hev-socks5-tunnel")
 
 // macOS TUN: hev-socks5-tunnel runs as a root process of its own, started by the app after the user
 // has granted administrator rights; it creates the utun interface itself.
@@ -304,7 +305,7 @@ val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRunt
 val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRuntimeTask>("prepareDesktopHevWindowsRuntime") {
     hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     expectedArchiveSha256.set("a9209ad121a3f636f814b0bb899b6464d3ec201eabbb3a82f2aa486e32879ba7")
-    wintunLicense.set(desktopHevSourceDirectory.file("third-part/wintun/LICENSE.txt"))
+    wintunLicense.set(layout.file(provider { desktopHevSourceDirectory.resolve("third-part/wintun/LICENSE.txt") }))
     gccRuntime.set(layout.projectDirectory.file("packaging/windows/msys-gcc_s-seh-1.dll"))
     expectedGccRuntimeSha256.set("a9cfd10e2a4bf74f60530fc2f4f8fbe4055b50ff7ccd61b9440ef2fbe9c85aef")
     outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
