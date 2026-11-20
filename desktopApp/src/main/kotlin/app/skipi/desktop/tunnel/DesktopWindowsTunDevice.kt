@@ -16,14 +16,15 @@ import engine.vpn.TunInterfacePlan
 internal class DesktopWindowsTunDevice(
     private val core: DesktopCoreFfmNative,
     private val routes: DesktopWindowsTunRoutes = DesktopWindowsTunRoutes(),
-    private val removeStaleAdapters: (String) -> Unit = ::removeStaleWintunAdapters,
+    private val removeStaleAdapters: (String) -> Unit = { name -> removeStaleWintunAdapters(name) },
 ) : DesktopTunDevice {
     private var interfaceName: String? = null
     private var cleanup: java.util.concurrent.Future<*>? = null
 
     /**
-     * The PowerShell clean-up of stale adapters takes a few hundred milliseconds; it only has to be
-     * done before hev creates its adapter, so it runs beside Core's start and is awaited in [open].
+     * The clean-up of stale adapters starts here and is awaited in [open], before Core's session starts
+     * hev: hev must not create its adapter while a leftover holds the name. It is only a quick listing
+     * when nothing is left (see [removeStaleWintunAdapters]).
      */
     override fun prepare(interfaceName: String): Result<Unit> = runCatching {
         this.interfaceName = interfaceName
@@ -58,11 +59,43 @@ internal class DesktopWindowsTunDevice(
 }
 
 /**
+ * Whether the output of `netsh interface show interface` lists an adapter named like [name] ("skipi0",
+ * "skipi0 1", ...). The interface name is the last column, whatever the language of the headings; columns
+ * are separated by runs of spaces, a name itself may hold single ones.
+ */
+internal fun windowsStaleAdapterPresent(netshOutput: String, name: String): Boolean {
+    val numbered = Regex(Regex.escape(name) + """ \d+""")
+    return netshOutput.lineSequence().any { line ->
+        val columns = line.trim().split(Regex("""\s{2,}"""))
+        val interfaceName = columns.takeIf { it.size >= 2 }?.last()
+        interfaceName != null && (interfaceName == name || numbered.matches(interfaceName))
+    }
+}
+
+/**
  * Removes Wintun adapters named like [name] ("skipi0", "skipi0 1", ...). Best effort: a failure
  * only means a stale adapter stays in the network connections list.
+ *
+ * The removal is a PowerShell start and a pnputil call, most of a second, and it holds Core's start
+ * back (hev must not create its adapter before the leftovers are gone). A quick `netsh` listing
+ * (about a tenth of that) says whether there is anything to remove, so the usual connect, after the
+ * previous disconnect cleaned up behind itself, skips it. An unreadable listing runs the cleanup.
  */
-internal fun removeStaleWintunAdapters(name: String) {
+internal fun removeStaleWintunAdapters(
+    name: String,
+    listInterfaces: () -> Result<String> = ::listWindowsInterfaces,
+    remove: (String) -> Unit = ::removeWintunAdaptersWithPowerShell,
+) {
     require(Regex("[A-Za-z][A-Za-z0-9_-]{0,14}").matches(name)) { "invalid adapter name" }
+    val listing = listInterfaces().getOrNull()
+    if (listing != null && !windowsStaleAdapterPresent(listing, name)) return
+    remove(name)
+}
+
+private fun listWindowsInterfaces(): Result<String> =
+    runProcessWithTimeout(listOf("netsh", "interface", "show", "interface"), kotlin.time.Duration.parse("10s"))
+
+private fun removeWintunAdaptersWithPowerShell(name: String) {
     val script = "Get-NetAdapter -ErrorAction SilentlyContinue | " +
         "Where-Object { \$_.InterfaceDescription -like 'Wintun*' -and (\$_.Name -eq '$name' -or \$_.Name -like '$name *') } | " +
         "ForEach-Object { pnputil /remove-device \$_.PnPDeviceID | Out-Null }"
