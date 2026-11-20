@@ -14,9 +14,9 @@ object ProjectConfig {
     const val VERSION_NAME = "0.5.0"
     const val PACKAGE_NAME = "com.radetski.skipi"
     const val XRAY_CORE_VERSION = "v26.11.9"
-    const val SKIPI_CORE_VERSION = "v1.2.0"
+    const val SKIPI_CORE_VERSION = "v1.2.1"
     // Shown in About; the hev SKIPI Core ships (its scripts/package-hev-windows.sh pins the same version).
-    const val HEV_SOCKS5_TUNNEL_VERSION = "2.19.3"
+    const val HEV_SOCKS5_TUNNEL_VERSION = "2.20.0"
     const val TARGET_SDK = 37
     const val MIN_SDK = 24
     val SUPPORTED_ANDROID_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
