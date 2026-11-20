@@ -13,18 +13,41 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.security.SecureRandom
 
 /**
  * The process-wide AmneziaWG runner a route needs: its private loopback SOCKS port and the
  * runtime config for the native core. Android's VpnService and the Desktop in-process Core
  * run the same plan.
+ *
+ * The loopback listener is the exit of the tunnel for anything on the device that can reach
+ * loopback, so it asks for [socksUser] and [socksPass] (they are in [configJson]); Xray reaches
+ * it through [loopbackOutbound], which carries them.
  */
 data class AmneziaWgBridgePlan(
     val socksPort: Int,
     val configJson: String,
     /** The server as configured; a hostname endpoint is resolved only inside [configJson]. */
     val server: AmneziaWg,
-)
+    val socksUser: String = "",
+    val socksPass: String = "",
+) {
+    /** The Xray outbound tagged [tag] that reaches this runner. */
+    fun loopbackOutbound(tag: String): JsonObject =
+        buildLoopbackSocksOutbound(tag = tag, port = socksPort, user = socksUser, pass = socksPass)
+}
+
+/** Random credentials for one runner's loopback SOCKS listener. */
+data class AmneziaWgBridgeCredentials(val user: String, val pass: String) {
+    companion object {
+        private val random = SecureRandom()
+
+        private fun hex(bytes: Int): String =
+            ByteArray(bytes).also(random::nextBytes).joinToString("") { "%02x".format(it) }
+
+        fun random(): AmneziaWgBridgeCredentials = AmneziaWgBridgeCredentials(user = "skipi-" + hex(4), pass = hex(16))
+    }
+}
 
 /**
  * Plans the single native AmneziaWG runtime for [servers]; null when there is none. Fails clearly if
@@ -43,11 +66,19 @@ fun planAmneziaWgBridge(
     val port = findAvailableLocalPort(preferredPort = 10809, reservedPorts = reservedPorts)
     // Pass precisely this AWG outbound to skipi-core. Its generic JSON rewriter would also
     // rewrite ordinary WireGuard outbounds, which is unsafe in mixed profiles.
+    val credentials = AmneziaWgBridgeCredentials.random()
     val configJson = resolveEndpoint(server).toNativeRunnerConfigJson(
         tag = "skipi_awg_runtime",
         dnsServers = dnsServers,
+        credentials = credentials,
     )
-    return AmneziaWgBridgePlan(socksPort = port, configJson = configJson, server = server)
+    return AmneziaWgBridgePlan(
+        socksPort = port,
+        configJson = configJson,
+        server = server,
+        socksUser = credentials.user,
+        socksPass = credentials.pass,
+    )
 }
 
 /** Points every outbound of the bridged tunnel at the runner's loopback SOCKS listener. */
@@ -55,7 +86,7 @@ fun XrayOutboundPlan.withAmneziaWgBridge(bridge: AmneziaWgBridgePlan): XrayOutbo
     proxyOutbounds = proxyOutbounds.map { item ->
         val awg = item.server as? AmneziaWg
         if (awg != null && awg.matchesRuntimeConfig(bridge.server)) {
-            item.copy(customOutbound = buildLoopbackSocksOutbound(tag = item.tag, port = bridge.socksPort))
+            item.copy(customOutbound = bridge.loopbackOutbound(item.tag))
         } else {
             item
         }
@@ -70,6 +101,8 @@ fun XrayOutboundPlan.withAmneziaWgBridge(bridge: AmneziaWgBridgePlan): XrayOutbo
 fun AmneziaWg.toNativeRunnerConfigJson(
     tag: String,
     dnsServers: List<String>,
+    /** When set, the runner's loopback SOCKS listener asks every client for these. */
+    credentials: AmneziaWgBridgeCredentials? = null,
 ): String {
     requireNativeRunnerCompatibility()
     val outbound = toXrayOutbound(tag).toJsonObject()
@@ -86,6 +119,10 @@ fun AmneziaWg.toNativeRunnerConfigJson(
                 put("dnsServers", buildJsonArray {
                     dnsServers.forEach { server -> add(server) }
                 })
+                if (credentials != null) {
+                    put("socksUser", credentials.user)
+                    put("socksPass", credentials.pass)
+                }
             },
         )
     }.toString()

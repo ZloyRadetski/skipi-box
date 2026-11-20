@@ -23,7 +23,6 @@ import engine.xray.buildXrayFragmentOutbound
 import engine.xray.withXrayMuxAndFragmentOverlay
 import engine.xray.XrayProtocols
 import engine.vpn.VpnDefaults
-import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.planAmneziaWgBridge
 import engine.xray.TrafficProfileServerRecord
 import features.proxy.server.model.AmneziaWg
@@ -111,10 +110,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             plan.proxyOutbounds.mapIndexed { index, outbound ->
                 val server = plan.proxyServers[index]
                 if (server is AmneziaWg && server.matchesRuntimeConfig(amneziaWgPlan.server)) {
-                    buildLoopbackSocksOutbound(
-                        tag = outbound.getValue("tag").jsonPrimitive.content,
-                        port = amneziaWgPlan.socksPort,
-                    )
+                    amneziaWgPlan.loopbackOutbound(outbound.getValue("tag").jsonPrimitive.content)
                 } else {
                     outbound
                 }

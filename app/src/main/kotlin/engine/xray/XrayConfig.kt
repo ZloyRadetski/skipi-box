@@ -8,7 +8,6 @@ import app.ProxyServerState
 import features.logs.AppLog
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
-import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.withStrictFullTunnelApplied
 import kotlinx.serialization.json.JsonObject
@@ -101,12 +100,7 @@ internal object XraySpeedTestConfigFactory {
                     item.customOutbound == null &&
                     awg.matchesRuntimeConfig(activeAmneziaWgBridge.server)
                 ) {
-                    item.copy(
-                        customOutbound = buildLoopbackSocksOutbound(
-                            tag = item.tag,
-                            port = activeAmneziaWgBridge.socksPort,
-                        ),
-                    )
+                    item.copy(customOutbound = activeAmneziaWgBridge.loopbackOutbound(item.tag))
                 } else {
                     item
                 }

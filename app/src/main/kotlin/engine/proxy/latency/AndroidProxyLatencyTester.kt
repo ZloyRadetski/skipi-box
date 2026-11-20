@@ -37,6 +37,7 @@ import features.proxy.server.model.connectionEndpointOrNull
 import engine.vpn.NativeBridgeReadinessTimeoutMillis
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.SkipiVpnService
+import engine.vpn.AmneziaWgBridgeCredentials
 import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.findAvailableLocalPort
 import engine.vpn.toNativeRunnerConfigJson
@@ -530,9 +531,12 @@ internal class AndroidProxyLatencyTester(
             return FailedDelayMillis
         }
         val tempPort = findAvailableLocalPort(preferredPort = 10809, reservedPorts = emptySet())
+        // The runner's loopback listener is open to every app on the device while it runs.
+        val credentials = AmneziaWgBridgeCredentials.random()
         val runnerConfigJson = amneziaWgServer.withNativeRunnerEndpointResolved().toNativeRunnerConfigJson(
             tag = "skipi_awg_latency",
             dnsServers = appState.toTunOptions().dnsServers,
+            credentials = credentials,
         )
 
         try {
@@ -558,7 +562,14 @@ internal class AndroidProxyLatencyTester(
                 proxyOutbounds = basePlan.proxyOutbounds.map { item ->
                     val candidate = item.server as? AmneziaWg
                     if (candidate != null && candidate.matchesRuntimeConfig(amneziaWgServer)) {
-                        item.copy(customOutbound = buildLoopbackSocksOutbound(tag = item.tag, port = tempPort))
+                        item.copy(
+                            customOutbound = buildLoopbackSocksOutbound(
+                                tag = item.tag,
+                                port = tempPort,
+                                user = credentials.user,
+                                pass = credentials.pass,
+                            ),
+                        )
                     } else {
                         item
                     }

@@ -7,6 +7,7 @@ import engine.xray.XrayOutboundPlan
 import engine.xray.XrayProxyOutboundServer
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.VLESS
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -120,5 +121,47 @@ class AmneziaWgBridgePlanTest {
         assertEquals("127.0.0.1", server.getValue("address").jsonPrimitive.content)
         assertEquals(plan.socksPort, server.getValue("port").jsonPrimitive.content.toInt())
         assertNull(rewritten.proxyOutbounds.first { it.tag == "vless" }.customOutbound)
+    }
+
+    /**
+     * The runner's loopback SOCKS listener is the exit of the tunnel for anything on the device that
+     * can reach loopback, so every bridge has its own random credentials: the runner asks for them and
+     * the loopback outbound carries them.
+     */
+    @Test
+    fun theRunnerAndItsLoopbackOutboundShareRandomCredentials() {
+        val plan = assertNotNull(planAmneziaWgBridge(listOf(awg()), listOf("1.1.1.1"), emptySet()))
+        val other = assertNotNull(planAmneziaWgBridge(listOf(awg()), listOf("1.1.1.1"), emptySet()))
+
+        assertTrue(plan.socksUser.length >= 8 && plan.socksPass.length >= 16)
+        assertTrue(plan.socksPass != other.socksPass, "each bridge gets its own password")
+        val runnerSettings = Json.parseToJsonElement(plan.configJson).jsonObject.getValue("settings").jsonObject
+        assertEquals(plan.socksUser, runnerSettings.getValue("socksUser").jsonPrimitive.content)
+        assertEquals(plan.socksPass, runnerSettings.getValue("socksPass").jsonPrimitive.content)
+
+        val outbound = plan.loopbackOutbound(tag = "awg")
+        val server = outbound.getValue("settings").jsonObject.getValue("servers").jsonArray.single().jsonObject
+        val user = server.getValue("users").jsonArray.single().jsonObject
+        assertEquals("awg", outbound.getValue("tag").jsonPrimitive.content)
+        assertEquals(plan.socksPort, server.getValue("port").jsonPrimitive.content.toInt())
+        assertEquals(plan.socksUser, user.getValue("user").jsonPrimitive.content)
+        assertEquals(plan.socksPass, user.getValue("pass").jsonPrimitive.content)
+    }
+
+    @Test
+    fun theRewrittenOutboundCarriesTheBridgeCredentials() {
+        val awgServer = awg()
+        val outbounds = XrayOutboundPlan(
+            proxyOutbounds = listOf(XrayProxyOutboundServer(tag = "awg", server = awgServer)),
+            balancers = emptyList(),
+            observatorySelectors = emptyList(),
+            routeTargets = emptyMap(),
+            dnsHostServers = emptyList(),
+        )
+        val plan = assertNotNull(planAmneziaWgBridge(listOf(awgServer), listOf("1.1.1.1"), emptySet()))
+
+        val outbound = assertNotNull(outbounds.withAmneziaWgBridge(plan).proxyOutbounds.single().customOutbound)
+
+        assertEquals(plan.loopbackOutbound(tag = "awg"), outbound)
     }
 }

@@ -38,7 +38,14 @@ import kotlinx.serialization.json.JsonObject
 internal data class ActiveAmneziaWgBridge(
     val socksPort: Int,
     val server: AmneziaWg,
-)
+    /** The runner's loopback SOCKS listener asks for these; see AmneziaWgBridgePlan. */
+    val socksUser: String = "",
+    val socksPass: String = "",
+) {
+    /** The Xray outbound tagged [tag] that reaches the running runner. */
+    fun loopbackOutbound(tag: String): JsonObject =
+        buildLoopbackSocksOutbound(tag = tag, port = socksPort, user = socksUser, pass = socksPass)
+}
 
 internal data class NativeBridgePlanResult(
     val outboundPlan: XrayOutboundPlan,
@@ -193,7 +200,12 @@ internal fun buildNativeBridgePlan(
         outboundPlan = rawOutboundPlan.withAmneziaWgBridge(bridge),
         amneziaWgConfigJson = bridge.configJson,
         amneziaWgSocksPort = bridge.socksPort,
-        activeAmneziaWgBridge = ActiveAmneziaWgBridge(socksPort = bridge.socksPort, server = bridge.server),
+        activeAmneziaWgBridge = ActiveAmneziaWgBridge(
+            socksPort = bridge.socksPort,
+            server = bridge.server,
+            socksUser = bridge.socksUser,
+            socksPass = bridge.socksPass,
+        ),
     )
 }
 

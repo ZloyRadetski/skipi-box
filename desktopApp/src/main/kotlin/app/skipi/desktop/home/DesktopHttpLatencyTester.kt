@@ -4,7 +4,6 @@
 package app.skipi.desktop
 
 import engine.vpn.VpnDefaults
-import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.planAmneziaWgBridge
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
@@ -64,7 +63,7 @@ internal fun buildDesktopLatencyProbe(
         planAmneziaWgBridge(servers = listOf(awg), dnsServers = amneziaWgDnsServers, reservedPorts = emptySet())
     }
     val outbound: JsonObject = if (amneziaWgPlan != null) {
-        buildLoopbackSocksOutbound(tag = ProbeOutboundTag, port = amneziaWgPlan.socksPort)
+        amneziaWgPlan.loopbackOutbound(ProbeOutboundTag)
     } else {
         server.toXrayOutbound(ProbeOutboundTag).toJsonObject()
     }
