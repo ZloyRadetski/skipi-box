@@ -180,6 +180,8 @@
     <string name="settings_close_to_background_summary">Closing the window frees its memory, the connection stays on. Start SKIPI again or open skipi://open to bring it back; skipi://close quits</string>
     <string name="settings_graphics_acceleration">Graphics acceleration</string>
     <string name="settings_graphics_acceleration_summary">Draws the window with the graphics card instead of the processor. Takes effect after SKIPI restarts</string>
+    <string name="settings_external_control">External control</string>
+    <string name="settings_external_control_summary">Let skipi:// links connect, disconnect and close SKIPI. Any web page can send such a link, so keep this off unless a shortcut needs it</string>
     <string name="settings_subscription_fetch_timeout">Subscription timeout</string>
     <string name="settings_subscription_fetch_timeout_summary">Maximum wait time for server response during subscription update</string>
     <string name="unit_seconds_short">s</string>
@@ -1593,6 +1595,7 @@
     <string name="desktop_settings_launcher_unknown">The application launcher is unknown</string>
     <string name="desktop_settings_general_saved">General settings saved.</string>
     <string name="desktop_settings_graphics_saved">Graphics setting saved. Restart SKIPI to apply it.</string>
+    <string name="desktop_external_control_blocked">A skipi:// link was ignored: external control is off in Settings > General</string>
     <string name="desktop_settings_appearance_saved">Appearance settings saved.</string>
     <string name="desktop_settings_local_proxy_saved">Local proxy settings saved.</string>
     <string name="desktop_settings_socks_port_conflict">The SOCKS5 port must differ from the HTTP proxy port.</string>

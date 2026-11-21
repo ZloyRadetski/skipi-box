@@ -34,6 +34,7 @@ class GeneralSettingsCapabilitiesTest {
                 GeneralSettingsControl.BackupAndReset,
                 GeneralSettingsControl.CloseToBackground,
                 GeneralSettingsControl.GraphicsAcceleration,
+                GeneralSettingsControl.ExternalControl,
             ),
             GeneralSettingsCapabilities.Desktop.visibleControls,
         )

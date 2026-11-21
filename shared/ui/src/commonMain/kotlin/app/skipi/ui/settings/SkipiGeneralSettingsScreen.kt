@@ -84,6 +84,8 @@ data class GeneralSettingsState(
     val closeToBackground: Boolean = false,
     /** Draw with the graphics card (desktop only); applied on the next start. */
     val graphicsAcceleration: Boolean = true,
+    /** Let skipi:// links connect, disconnect and close the app (desktop only). */
+    val enableExternalControl: Boolean = false,
 )
 
 object GeneralSettingsValues {
@@ -116,6 +118,7 @@ enum class GeneralSettingsControl {
     BackupAndReset,
     CloseToBackground,
     GraphicsAcceleration,
+    ExternalControl,
 }
 
 /** Host operations that are available alongside the portable general settings. */
@@ -132,6 +135,8 @@ data class GeneralSettingsCapabilities(
     val closeToBackground: Boolean = false,
     /** A renderer the user can switch between the graphics card and the processor; Android has none to switch. */
     val graphicsAcceleration: Boolean = false,
+    /** skipi:// links that control the tunnel, behind a switch; Android has its own broadcast control. */
+    val externalControl: Boolean = false,
 ) {
     val visibleControls: Set<GeneralSettingsControl>
         get() = buildSet {
@@ -145,6 +150,7 @@ data class GeneralSettingsCapabilities(
             if (backupAndReset) add(GeneralSettingsControl.BackupAndReset)
             if (closeToBackground) add(GeneralSettingsControl.CloseToBackground)
             if (graphicsAcceleration) add(GeneralSettingsControl.GraphicsAcceleration)
+            if (externalControl) add(GeneralSettingsControl.ExternalControl)
         }
 
     companion object {
@@ -156,6 +162,7 @@ data class GeneralSettingsCapabilities(
             broadcastControl = false,
             closeToBackground = true,
             graphicsAcceleration = true,
+            externalControl = true,
         )
     }
 }
@@ -314,7 +321,8 @@ fun SkipiGeneralSettingsScreen(
                     GeneralSettingsControl.UrlSchemes in visibleControls ||
                     GeneralSettingsControl.BroadcastControl in visibleControls ||
                     GeneralSettingsControl.CloseToBackground in visibleControls ||
-                    GeneralSettingsControl.GraphicsAcceleration in visibleControls
+                    GeneralSettingsControl.GraphicsAcceleration in visibleControls ||
+                    GeneralSettingsControl.ExternalControl in visibleControls
                 ) {
                     item(key = "general_integration") {
                         SmallTitle(text = stringResource(Res.string.settings_category_integration))
@@ -335,6 +343,17 @@ fun SkipiGeneralSettingsScreen(
                                     checked = state.enableBroadcastControl,
                                     onCheckedChange = { enabled ->
                                         onSettingsChange { it.copy(enableBroadcastControl = enabled) }
+                                    },
+                                )
+                            }
+                            if (GeneralSettingsControl.ExternalControl in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_external_control),
+                                    startAction = settingIcon(Icons.Rounded.SettingsRemote),
+                                    summary = stringResource(Res.string.settings_external_control_summary),
+                                    checked = state.enableExternalControl,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(enableExternalControl = enabled) }
                                     },
                                 )
                             }

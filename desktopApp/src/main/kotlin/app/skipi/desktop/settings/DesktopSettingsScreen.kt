@@ -617,6 +617,7 @@ private fun DesktopGeneralSettings(
         enableBroadcastControl = false,
         closeToBackground = settings.closeToBackground,
         graphicsAcceleration = graphicsAcceleration,
+        enableExternalControl = settings.allowExternalControl,
     )
     SkipiGeneralSettingsScreen(
         state = state,
@@ -632,6 +633,7 @@ private fun DesktopGeneralSettings(
                 hapticsEnabled = updated.enableHaptics,
                 confirmDeletion = updated.enableDeletionConfirmation,
                 closeToBackground = updated.closeToBackground,
+                allowExternalControl = updated.enableExternalControl,
             )
             var saved = desktopText(Res.string.desktop_settings_general_saved)
             if (updated.graphicsAcceleration != graphicsAcceleration) {
@@ -662,6 +664,7 @@ private fun DesktopAppSettings.toGeneralSettingsState(graphicsAcceleration: Bool
     enableBroadcastControl = false,
     closeToBackground = closeToBackground,
     graphicsAcceleration = graphicsAcceleration,
+    enableExternalControl = allowExternalControl,
 )
 
 @Composable

@@ -250,6 +250,7 @@ class SettingsFieldInventoryTest {
 
     /** Desktop window, autostart and system-proxy settings, and the library-backed state. */
     private val desktopOnly = setOf(
+        "allowExternalControl",
         "appUpdateChannelId",
         "closeToBackground",
         "defaultRouteOutboundTag",

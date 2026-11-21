@@ -162,6 +162,7 @@ import org.jetbrains.compose.resources.getString
 import app.skipi.ui.resources.notification_vpn_disconnect_failed
 import app.skipi.ui.resources.notification_vpn_connect_failed
 import app.skipi.ui.resources.notification_vpn_disconnected
+import app.skipi.ui.resources.desktop_external_control_blocked
 import app.skipi.ui.resources.notification_vpn_connected
 import features.config.parseSkipiDeepLinkOrNull
 import features.config.toCustomThemes
@@ -1388,7 +1389,16 @@ private fun runDesktopApplication(
                 // skipi:// links from the command line and from later starts (see main).
                 LaunchedEffect(desktopTunnelController) {
                     for (raw in incomingLinks) {
-                        when (val link = parseSkipiDeepLinkOrNull(raw)) {
+                        val parsed = parseSkipiDeepLinkOrNull(raw)
+                        if (parsed != null && !desktopLinkAllowed(parsed, desktopSettings.allowExternalControl)) {
+                            DesktopLogger.info("Links", "Ignored $raw: external control is off")
+                            val blocked = getString(Res.string.desktop_external_control_blocked)
+                            withContext(Dispatchers.IO) {
+                                coreController.nativeForTun().mapCatching { native -> native.notify("SKIPI", blocked) }
+                            }
+                            continue
+                        }
+                        when (val link = parsed) {
                             null -> DesktopLogger.info("Links", "Ignored unknown link $raw")
                             SkipiDeepLink.Open -> {
                                 windowShown = true

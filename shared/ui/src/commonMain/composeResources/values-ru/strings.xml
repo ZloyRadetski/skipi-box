@@ -743,6 +743,8 @@
     <string name="settings_close_to_background_summary">Закрытие окна освобождает его память, подключение остаётся. Окно вернётся при повторном запуске SKIPI или по skipi://open; skipi://close завершает работу</string>
     <string name="settings_graphics_acceleration">Графическое ускорение</string>
     <string name="settings_graphics_acceleration_summary">Окно рисуется видеокартой, а не процессором. Применится после перезапуска SKIPI</string>
+    <string name="settings_external_control">Внешнее управление</string>
+    <string name="settings_external_control_summary">Разрешить ссылкам skipi:// подключать, отключать и закрывать SKIPI. Такую ссылку может прислать любая веб-страница, поэтому включайте только если она нужна для горячей клавиши</string>
     <string name="settings_subscription_fetch_timeout">Таймаут ожидания подписки</string>
     <string name="settings_subscription_fetch_timeout_summary">Максимальное время ожидания ответа сервера при обновлении подписки</string>
     <string name="unit_seconds_short">сек</string>
@@ -1582,6 +1584,7 @@
     <string name="desktop_settings_launcher_unknown">Запускающий файл приложения неизвестен</string>
     <string name="desktop_settings_general_saved">Общие настройки сохранены.</string>
     <string name="desktop_settings_graphics_saved">Настройка графики сохранена. Перезапустите SKIPI, чтобы применить.</string>
+    <string name="desktop_external_control_blocked">Ссылка skipi:// проигнорирована: внешнее управление выключено в Настройки > Общие</string>
     <string name="desktop_settings_appearance_saved">Настройки оформления сохранены.</string>
     <string name="desktop_settings_local_proxy_saved">Параметры локального прокси сохранены.</string>
     <string name="desktop_settings_socks_port_conflict">Порт SOCKS5 должен отличаться от порта HTTP-прокси.</string>

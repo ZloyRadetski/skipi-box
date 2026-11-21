@@ -96,4 +96,18 @@ class DesktopLaunchRequestTest {
     fun aRelaunchReplacesAnEarlierWaitForPid() {
         assertEquals(listOf("--hidden"), listOf("--wait-for-pid", "1", "--hidden").withoutWaitForPid())
     }
+
+    // Any web page can fire a skipi:// link: a link that stops the tunnel shows the real address.
+    @Test
+    fun linksThatControlTheTunnelOrTheAppNeedTheExternalControlSwitch() {
+        for (link in listOf(SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle, SkipiDeepLink.Close)) {
+            assertFalse(desktopLinkAllowed(link, externalControl = false), "$link")
+            assertTrue(desktopLinkAllowed(link, externalControl = true), "$link")
+        }
+    }
+
+    @Test
+    fun openingTheWindowNeedsNoSwitch() {
+        assertTrue(desktopLinkAllowed(SkipiDeepLink.Open, externalControl = false))
+    }
 }

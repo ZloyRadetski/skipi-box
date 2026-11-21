@@ -184,6 +184,11 @@ data class DesktopAppSettings(
      * not backed up. On by default, as a VPN client is expected to stay up when its window is closed.
      */
     val closeToBackground: Boolean = true,
+    /**
+     * skipi://connect, disconnect, toggle and close act only when this is on: any web page can fire such a link, and
+     * a disconnect shows the real address. A security choice of this machine, off by default and not backed up.
+     */
+    val allowExternalControl: Boolean = false,
 
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,

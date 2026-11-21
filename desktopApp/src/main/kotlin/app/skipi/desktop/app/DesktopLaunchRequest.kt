@@ -33,6 +33,16 @@ internal fun parseDesktopLaunchArgs(args: List<String>): DesktopLaunchRequest = 
     waitForPid = args.indexOf(WaitForPidOption).takeIf { it >= 0 }?.let { args.getOrNull(it + 1)?.toLongOrNull() },
 )
 
+/**
+ * A skipi:// link reaches SKIPI from any web page or mail, so one that starts or stops the tunnel, or quits the
+ * app, is honoured only when the user turned external control on (a keyboard shortcut needs it too). Opening the
+ * window changes nothing; theme links are approved on screen.
+ */
+internal fun desktopLinkAllowed(link: SkipiDeepLink, externalControl: Boolean): Boolean = when (link) {
+    SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle, SkipiDeepLink.Close -> externalControl
+    else -> true
+}
+
 internal enum class DesktopTunnelCommand { Start, Stop, None }
 
 /** Android's skipi://connect, disconnect and toggle: connect and disconnect leave a matching state alone. */

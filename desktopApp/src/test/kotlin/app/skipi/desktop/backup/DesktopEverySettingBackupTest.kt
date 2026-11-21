@@ -68,6 +68,7 @@ class DesktopEverySettingBackupTest {
      */
     private val notInTheBackupYet = mapOf(
         "closeToBackground" to "window behaviour",
+        "allowExternalControl" to "a security choice of this machine: a restored backup must not open it",
         "compactHome" to "Home layout",
         "sidebarCollapsed" to "window layout",
         "showConnectionLog" to "Home layout",
