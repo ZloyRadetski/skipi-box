@@ -741,6 +741,8 @@
     <string name="settings_deletion_confirmation_summary">Запрашивать подтверждение перед удалением серверов, правил, групп или ресурсов</string>
     <string name="settings_close_to_background">Работать в фоне после закрытия</string>
     <string name="settings_close_to_background_summary">Закрытие окна освобождает его память, подключение остаётся. Окно вернётся при повторном запуске SKIPI или по skipi://open; skipi://close завершает работу</string>
+    <string name="settings_graphics_acceleration">Графическое ускорение</string>
+    <string name="settings_graphics_acceleration_summary">Окно рисуется видеокартой, а не процессором. Применится после перезапуска SKIPI</string>
     <string name="settings_subscription_fetch_timeout">Таймаут ожидания подписки</string>
     <string name="settings_subscription_fetch_timeout_summary">Максимальное время ожидания ответа сервера при обновлении подписки</string>
     <string name="unit_seconds_short">сек</string>
@@ -1579,6 +1581,7 @@
     <string name="desktop_settings_admin_rights_failed">Не удалось получить права администратора: %1$s</string>
     <string name="desktop_settings_launcher_unknown">Запускающий файл приложения неизвестен</string>
     <string name="desktop_settings_general_saved">Общие настройки сохранены.</string>
+    <string name="desktop_settings_graphics_saved">Настройка графики сохранена. Перезапустите SKIPI, чтобы применить.</string>
     <string name="desktop_settings_appearance_saved">Настройки оформления сохранены.</string>
     <string name="desktop_settings_local_proxy_saved">Параметры локального прокси сохранены.</string>
     <string name="desktop_settings_socks_port_conflict">Порт SOCKS5 должен отличаться от порта HTTP-прокси.</string>

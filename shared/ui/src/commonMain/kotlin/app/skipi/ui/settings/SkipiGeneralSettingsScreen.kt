@@ -9,6 +9,7 @@ import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.SettingsRemote
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Minimize
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.Delete
@@ -81,6 +82,8 @@ data class GeneralSettingsState(
     val enableDeletionConfirmation: Boolean,
     val enableBroadcastControl: Boolean,
     val closeToBackground: Boolean = false,
+    /** Draw with the graphics card (desktop only); applied on the next start. */
+    val graphicsAcceleration: Boolean = true,
 )
 
 object GeneralSettingsValues {
@@ -112,6 +115,7 @@ enum class GeneralSettingsControl {
     BroadcastControl,
     BackupAndReset,
     CloseToBackground,
+    GraphicsAcceleration,
 }
 
 /** Host operations that are available alongside the portable general settings. */
@@ -126,6 +130,8 @@ data class GeneralSettingsCapabilities(
     val backupAndReset: Boolean = true,
     /** A window that can go away while the app keeps running; Android has no such window. */
     val closeToBackground: Boolean = false,
+    /** A renderer the user can switch between the graphics card and the processor; Android has none to switch. */
+    val graphicsAcceleration: Boolean = false,
 ) {
     val visibleControls: Set<GeneralSettingsControl>
         get() = buildSet {
@@ -138,6 +144,7 @@ data class GeneralSettingsCapabilities(
             if (broadcastControl) add(GeneralSettingsControl.BroadcastControl)
             if (backupAndReset) add(GeneralSettingsControl.BackupAndReset)
             if (closeToBackground) add(GeneralSettingsControl.CloseToBackground)
+            if (graphicsAcceleration) add(GeneralSettingsControl.GraphicsAcceleration)
         }
 
     companion object {
@@ -148,6 +155,7 @@ data class GeneralSettingsCapabilities(
             resourceFileNotifications = false,
             broadcastControl = false,
             closeToBackground = true,
+            graphicsAcceleration = true,
         )
     }
 }
@@ -305,7 +313,8 @@ fun SkipiGeneralSettingsScreen(
                 if (
                     GeneralSettingsControl.UrlSchemes in visibleControls ||
                     GeneralSettingsControl.BroadcastControl in visibleControls ||
-                    GeneralSettingsControl.CloseToBackground in visibleControls
+                    GeneralSettingsControl.CloseToBackground in visibleControls ||
+                    GeneralSettingsControl.GraphicsAcceleration in visibleControls
                 ) {
                     item(key = "general_integration") {
                         SmallTitle(text = stringResource(Res.string.settings_category_integration))
@@ -337,6 +346,17 @@ fun SkipiGeneralSettingsScreen(
                                     checked = state.closeToBackground,
                                     onCheckedChange = { enabled ->
                                         onSettingsChange { it.copy(closeToBackground = enabled) }
+                                    },
+                                )
+                            }
+                            if (GeneralSettingsControl.GraphicsAcceleration in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_graphics_acceleration),
+                                    startAction = settingIcon(Icons.Rounded.Speed),
+                                    summary = stringResource(Res.string.settings_graphics_acceleration_summary),
+                                    checked = state.graphicsAcceleration,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(graphicsAcceleration = enabled) }
                                     },
                                 )
                             }

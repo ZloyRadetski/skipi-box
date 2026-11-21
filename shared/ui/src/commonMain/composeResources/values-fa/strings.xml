@@ -141,6 +141,8 @@
     <string name="settings_deletion_confirmation_summary">پیش از حذف سرورها، مسیرها، گروه‌ها یا منابع، تأیید خواسته شود</string>
     <string name="settings_close_to_background">اجرا در پس‌زمینه پس از بستن</string>
     <string name="settings_close_to_background_summary">بستن پنجره حافظه آن را آزاد می‌کند و اتصال برقرار می‌ماند. با اجرای دوباره SKIPI یا skipi://open برمی‌گردد؛ skipi://close خارج می‌شود</string>
+    <string name="settings_graphics_acceleration">شتاب‌دهی گرافیکی</string>
+    <string name="settings_graphics_acceleration_summary">پنجره با کارت گرافیک رسم می‌شود، نه با پردازنده. پس از راه‌اندازی مجدد SKIPI اعمال می‌شود</string>
     <string name="settings_subscription_fetch_timeout">مهلت زمانی اشتراک</string>
     <string name="settings_subscription_fetch_timeout_summary">حداکثر زمان انتظار برای پاسخ سرور در طول به‌روزرسانی اشتراک</string>
     <string name="unit_seconds_short">س</string>
@@ -1434,6 +1436,7 @@
     <string name="desktop_settings_admin_rights_failed">دریافت دسترسی مدیر ناموفق بود: %1$s</string>
     <string name="desktop_settings_launcher_unknown">راه‌انداز برنامه ناشناخته است</string>
     <string name="desktop_settings_general_saved">تنظیمات عمومی ذخیره شد.</string>
+    <string name="desktop_settings_graphics_saved">تنظیم گرافیک ذخیره شد. برای اعمال، SKIPI را دوباره راه‌اندازی کنید.</string>
     <string name="desktop_settings_appearance_saved">تنظیمات ظاهر ذخیره شد.</string>
     <string name="desktop_settings_local_proxy_saved">تنظیمات پروکسی محلی ذخیره شد.</string>
     <string name="desktop_settings_socks_port_conflict">درگاه SOCKS5 باید با درگاه پروکسی HTTP متفاوت باشد.</string>

@@ -184,6 +184,8 @@ import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
 fun main(args: Array<String>) {
+    // The renderer is read when the first window is made, so the user's choice goes in before anything else.
+    applyGraphicsAccelerationAtStart()
     // The JVM writes the class-data archive here when the app exits; it needs the folder to exist.
     ensureClassArchiveFolder(System.getenv("LOCALAPPDATA"), System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true))
     val launch = parseDesktopLaunchArgs(args.toList())

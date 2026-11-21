@@ -199,16 +199,13 @@ compose.desktop {
             "-XX:MinHeapFreeRatio=10",
             "-XX:MaxHeapFreeRatio=30",
         )
-        // Windows draws with Skiko's direct software renderer and without Java2D's own Direct3D pipeline. Skiko's
-        // background erase is on, so a strip a drag has not painted yet is filled with the interface color
-        // (DesktopWindowChrome sets it) instead of black. Measured on one isolated image, idle private bytes / peak in a
-        // 5 s SetWindowPos drag / 10 s later / share of black corner samples during the drag:
-        //   SOFTWARE_FAST + erase  ~165 / 630 / 240-300 MB / 14 %   (maximize and restore repaint fully)
-        //   OPENGL                 ~230 / 865 / 445-490 MB / 56 %
-        //   DIRECT3D (default)     ~410 / 430 / 410 MB     / 32 %
-        if (isWindowsHost) {
-            jvmArgs += listOf("-Dskiko.renderApi=SOFTWARE_FAST", "-Dskiko.rendering.noerasebackground=false", "-Dsun.java2d.d3d=false")
-        }
+        // The renderer is not set here: the app reads the user's choice (Settings > General > Graphics acceleration,
+        // a file in the local data folder) at the start of main() and sets Skiko's and Java2D's properties itself
+        // (DesktopGraphicsAcceleration.kt). Without a choice every system draws with the graphics card. Measured on one isolated image (idle private bytes / peak in a 5 s SetWindowPos drag / 10 s later):
+        //   SOFTWARE_FAST + erase  ~165 / 630 / 240-300 MB   (maximize and restore repaint fully)
+        //   OPENGL                 ~230 / 865 / 445-490 MB
+        //   DIRECT3D (default)     ~410 / 430 / 410 MB
+        // A -D here would win over the user's choice, so none may be added for the renderer.
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)

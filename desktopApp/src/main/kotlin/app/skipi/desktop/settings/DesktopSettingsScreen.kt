@@ -30,6 +30,7 @@ import app.skipi.ui.resources.desktop_settings_data_dir_opened
 import app.skipi.ui.resources.desktop_settings_data_header
 import app.skipi.ui.resources.desktop_settings_folder_open_unsupported
 import app.skipi.ui.resources.desktop_settings_general_saved
+import app.skipi.ui.resources.desktop_settings_graphics_saved
 import app.skipi.ui.resources.desktop_settings_hide_log
 import app.skipi.ui.resources.desktop_settings_http_port_conflict
 import app.skipi.ui.resources.desktop_settings_link_open_failed
@@ -602,6 +603,10 @@ private fun DesktopGeneralSettings(
 ) {
     val locale = remember { DesktopApplicationLocale(Locale.getDefault(), Locale::setDefault) }
     val languageMode = GeneralSettingsValues.languageModeOfTag(settings.languageTag)
+    // The renderer is a choice of this machine, kept in its own file (see DesktopGraphicsAcceleration.kt), not in
+    // the settings a backup carries; it takes effect on the next start.
+    val graphicsPreference = remember { currentGraphicsPreferenceDirectory() }
+    var graphicsAcceleration by remember { mutableStateOf(readGraphicsAcceleration(graphicsPreference.second, graphicsPreference.first)) }
     val state = GeneralSettingsState(
         languageMode = languageMode,
         enableHaptics = settings.hapticsEnabled,
@@ -611,6 +616,7 @@ private fun DesktopGeneralSettings(
         enableDeletionConfirmation = settings.confirmDeletion,
         enableBroadcastControl = false,
         closeToBackground = settings.closeToBackground,
+        graphicsAcceleration = graphicsAcceleration,
     )
     SkipiGeneralSettingsScreen(
         state = state,
@@ -627,8 +633,16 @@ private fun DesktopGeneralSettings(
                 confirmDeletion = updated.enableDeletionConfirmation,
                 closeToBackground = updated.closeToBackground,
             )
-            onPersist(next, desktopText(Res.string.desktop_settings_general_saved))
-            next.toGeneralSettingsState()
+            var saved = desktopText(Res.string.desktop_settings_general_saved)
+            if (updated.graphicsAcceleration != graphicsAcceleration) {
+                val directory = graphicsPreference.second
+                if (directory != null && writeGraphicsAcceleration(directory, updated.graphicsAcceleration).isSuccess) {
+                    graphicsAcceleration = updated.graphicsAcceleration
+                    saved = desktopText(Res.string.desktop_settings_graphics_saved)
+                }
+            }
+            onPersist(next, saved)
+            next.toGeneralSettingsState(graphicsAcceleration)
         },
         onBack = onBack,
         onOpenUrlSchemes = onOpenUrlSchemes,
@@ -638,7 +652,7 @@ private fun DesktopGeneralSettings(
     if (message.isNotBlank()) SkipiSettingsStatusMessage(message)
 }
 
-private fun DesktopAppSettings.toGeneralSettingsState() = GeneralSettingsState(
+private fun DesktopAppSettings.toGeneralSettingsState(graphicsAcceleration: Boolean) = GeneralSettingsState(
     languageMode = GeneralSettingsValues.languageModeOfTag(languageTag),
     enableHaptics = hapticsEnabled,
     enableTrafficStatsNotification = false,
@@ -647,6 +661,7 @@ private fun DesktopAppSettings.toGeneralSettingsState() = GeneralSettingsState(
     enableDeletionConfirmation = confirmDeletion,
     enableBroadcastControl = false,
     closeToBackground = closeToBackground,
+    graphicsAcceleration = graphicsAcceleration,
 )
 
 @Composable

@@ -33,8 +33,27 @@ class GeneralSettingsCapabilitiesTest {
                 GeneralSettingsControl.UrlSchemes,
                 GeneralSettingsControl.BackupAndReset,
                 GeneralSettingsControl.CloseToBackground,
+                GeneralSettingsControl.GraphicsAcceleration,
             ),
             GeneralSettingsCapabilities.Desktop.visibleControls,
+        )
+    }
+
+    @Test
+    fun graphicsAccelerationIsADesktopChoiceAndAndroidNeverShowsIt() {
+        assertEquals(false, GeneralSettingsControl.GraphicsAcceleration in GeneralSettingsCapabilities().visibleControls)
+        assertEquals(true, GeneralSettingsControl.GraphicsAcceleration in GeneralSettingsCapabilities.Desktop.visibleControls)
+        assertEquals(
+            true,
+            GeneralSettingsState(
+                languageMode = GeneralSettingsValues.LanguageSystem,
+                enableHaptics = true,
+                enableTrafficStatsNotification = false,
+                trafficStatsNotificationRefreshIntervalSeconds = GeneralSettingsValues.MinTrafficRefreshSeconds,
+                enableResourceFileNotifications = false,
+                enableDeletionConfirmation = true,
+                enableBroadcastControl = false,
+            ).graphicsAcceleration,
         )
     }
 
