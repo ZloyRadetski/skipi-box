@@ -228,6 +228,25 @@ class DesktopCoreSessionTest {
         starter.join(5_000)
     }
 
+    // The Home log polls readConnectionLog without any lock; a stop must not free the handle under that read.
+    @Test
+    fun stopDoesNotDestroyTheHandleWhileTheLogIsBeingRead() {
+        val native = SessionNative(blockLogRead = true)
+        val controller = controller(native)
+        controller.start("{}", hev = hev).getOrThrow()
+        val reader = Thread { controller.readConnectionLog(0) }.apply { isDaemon = true; start() }
+        assertTrue(native.logReadEntered.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        val stopper = Thread { controller.stop() }.apply { isDaemon = true; start() }
+
+        stopper.join(500)
+        assertFalse(native.destroyedDuringLogRead, "the handle was destroyed while a native read used it")
+        native.releaseLogRead.countDown()
+        reader.join(5_000)
+        stopper.join(5_000)
+        assertTrue("destroy" in native.events)
+        assertFalse(native.destroyedDuringLogRead)
+    }
+
     @Test
     fun abandonedInstancesAreReadFromCore() {
         val native = SessionNative()
@@ -259,7 +278,22 @@ class DesktopCoreSessionTest {
         private val failSessionStart: Boolean = false,
         private val failStop: Boolean = false,
         private val blockSessionStart: Boolean = false,
+        private val blockLogRead: Boolean = false,
     ) : DesktopCoreNative {
+        val logReadEntered = java.util.concurrent.CountDownLatch(1)
+        val releaseLogRead = java.util.concurrent.CountDownLatch(1)
+        @Volatile private var logReading = false
+        @Volatile var destroyedDuringLogRead = false
+
+        override fun readConnectionLog(handle: Long, afterSeq: Long): String {
+            if (!blockLogRead) return "{}"
+            logReading = true
+            logReadEntered.countDown()
+            releaseLogRead.await()
+            logReading = false
+            return "{}"
+        }
+
         override val apiVersion: String = DesktopCoreApiVersion
         override val coreVersion: String = "session-test"
         val events = java.util.Collections.synchronizedList(mutableListOf<String>())
@@ -272,7 +306,7 @@ class DesktopCoreSessionTest {
 
         override fun initializeAssets(directory: String) { events += "assets" }
         override fun createController(): Long { events += "create"; return 7L }
-        override fun destroyController(handle: Long) { events += "destroy"; sessionState = 0 }
+        override fun destroyController(handle: Long) { if (logReading) destroyedDuringLogRead = true; events += "destroy"; sessionState = 0 }
         override fun start(handle: Long, configJson: String, tunFd: Long) { events += "core-start"; sessionState = 2 }
         override fun stop(handle: Long) { events += "core-stop"; sessionState = 0 }
         override fun isRunning(handle: Long): Boolean = sessionState == 2

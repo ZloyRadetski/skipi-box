@@ -115,6 +115,15 @@ internal class DesktopCoreController(
     // Probes only try it, so a probe in flight never makes Stop or Start wait on a hung native call.
     private val amneziaWgLock = java.util.concurrent.locks.ReentrantLock()
 
+    // Lock-free callers (the log poll, the TUN health check) use the handle while stop may destroy it. They hold the
+    // read side for the native call; a destroy takes the write side, so a handle is never freed under a call.
+    // forceStop skips it on purpose: the emergency stop must not wait on anything.
+    private val handleUse = java.util.concurrent.locks.ReentrantReadWriteLock()
+
+    private fun destroyHandle(core: DesktopCoreNative, handle: Long) {
+        handleUse.writeLock().withLock { core.destroyController(handle) }
+    }
+
     fun state(): DesktopCoreState = synchronized(stateLock) {
         val handle = activeHandle ?: return@synchronized inactiveState()
         val core = native ?: return@synchronized resetAfterUnexpectedStop(
@@ -261,7 +270,7 @@ internal class DesktopCoreController(
         runCatching {
             if (inSession) core.stopWithTimeout(handle, DesktopCoreSessionStopTimeoutMillis) else core.stop(handle)
         }.onFailure { failure = it }
-        runCatching { core.destroyController(handle) }.onFailure { error ->
+        runCatching { destroyHandle(core, handle) }.onFailure { error ->
             val previousFailure = failure
             if (previousFailure == null) failure = error else previousFailure.addSuppressed(error)
         }
@@ -281,9 +290,11 @@ internal class DesktopCoreController(
 
     /** Whether Core's session is running (HEV TUN included); false when none is, or its state cannot be read. */
     fun sessionRunning(): Boolean {
-        val handle = activeHandle ?: return false
-        val core = native ?: return false
-        return runCatching { core.sessionState(handle) == SessionRunningState }.getOrDefault(false)
+        return handleUse.readLock().withLock {
+            val handle = activeHandle ?: return@withLock false
+            val core = native ?: return@withLock false
+            runCatching { core.sessionState(handle) == SessionRunningState }.getOrDefault(false)
+        }
     }
 
     /**
@@ -355,8 +366,10 @@ internal class DesktopCoreController(
     /** Remembered for the next session and applied at once to a running one. Never waits for a running probe. */
     fun setConnectionLogEnabled(enabled: Boolean) {
         connectionLogEnabled = enabled
-        val handle = activeHandle ?: return
-        runCatching { native?.setConnectionLogEnabled(handle, enabled) }
+        handleUse.readLock().withLock {
+            val handle = activeHandle ?: return
+            runCatching { native?.setConnectionLogEnabled(handle, enabled) }
+        }
     }
 
     /**
@@ -364,8 +377,10 @@ internal class DesktopCoreController(
      * a delay probe holds the monitor for seconds, and the log must keep moving meanwhile.
      */
     fun readConnectionLog(afterSeq: Long): Result<String> = runCatching {
-        val handle = checkNotNull(activeHandle) { "SKIPI Core is not running" }
-        checkNotNull(native) { "SKIPI Core native library is unavailable" }.readConnectionLog(handle, afterSeq)
+        handleUse.readLock().withLock {
+            val handle = checkNotNull(activeHandle) { "SKIPI Core is not running" }
+            checkNotNull(native) { "SKIPI Core native library is unavailable" }.readConnectionLog(handle, afterSeq)
+        }
     }
 
     @Synchronized
@@ -462,7 +477,7 @@ internal class DesktopCoreController(
         activeCoreVersion = null
         if (error != null) diagnostic = nativeDiagnostic("read Core state", error)
         native?.let { core ->
-            runCatching { core.destroyController(handle) }
+            runCatching { destroyHandle(core, handle) }
                 .onFailure { destroyError ->
                     val detail = nativeDiagnostic("release stopped Core session", destroyError)
                     diagnostic = listOf(diagnostic, detail).filter(String::isNotBlank).joinToString("; ")
