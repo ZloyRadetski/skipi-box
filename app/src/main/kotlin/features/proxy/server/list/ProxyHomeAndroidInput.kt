@@ -200,6 +200,7 @@ internal fun AppState.toProxyHomeInput(
         ),
         availableServerTools = setOf(
             ProxyHomeServerTool.RestartService,
+            ProxyHomeServerTool.ResetTunnel,
             ProxyHomeServerTool.UpdateSubscriptions,
             ProxyHomeServerTool.DeleteDuplicateServers,
             ProxyHomeServerTool.DeleteInvalidServers,

@@ -227,6 +227,7 @@ internal fun DesktopProxyHome(
     onDeleteDuplicateServers: ((Set<Int>) -> Unit)? = null,
     onDeleteInvalidServers: ((Set<Int>) -> Unit)? = null,
     onRestartService: (() -> Unit)? = null,
+    onResetTunnel: (() -> Unit)? = null,
     onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
     onCancelLatencyTests: (() -> Unit)? = null,
     onTestConnection: ((Int) -> Unit)? = null,
@@ -413,6 +414,7 @@ internal fun DesktopProxyHome(
         onDeleteDuplicateServers = onDeleteDuplicateServers,
         onDeleteInvalidServers = onDeleteInvalidServers,
         onRestartService = onRestartService,
+        onResetTunnel = onResetTunnel,
         onDeleteAllServers = onDeleteAllServers,
     )
     val availableActions = desktopProxyHomeAvailableActions(
@@ -589,6 +591,7 @@ internal fun DesktopProxyHome(
         onDeleteDuplicateServers = onDeleteDuplicateServers,
         onDeleteInvalidServers = onDeleteInvalidServers,
         onRestartService = onRestartService,
+        onResetTunnel = onResetTunnel,
         onDeleteAllServers = onDeleteAllServers,
         onCancelLatencyTests = { homeLatencyCoordinator.cancel() },
         onTestConnection = onTestConnection,
@@ -1097,6 +1100,7 @@ internal class DesktopProxyHomeEffectContext(
     val onDeleteDuplicateServers: ((Set<Int>) -> Unit)? = null,
     val onDeleteInvalidServers: ((Set<Int>) -> Unit)? = null,
     val onRestartService: (() -> Unit)? = null,
+    val onResetTunnel: (() -> Unit)? = null,
     val onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
     val onCancelLatencyTests: (() -> Unit)? = null,
     val onTestConnection: ((Int) -> Unit)? = null,
@@ -1344,6 +1348,8 @@ internal class DesktopProxyHomeEffectContext(
     private fun runServerTool(tool: ProxyHomeServerTool): Result<Unit> = when (tool) {
         ProxyHomeServerTool.UpdateSubscriptions -> refreshAllSubscriptions()
         ProxyHomeServerTool.RestartService -> onRestartService?.let(::invoke)
+            ?: unsupported(desktopText(Res.string.desktop_home_restart_not_connected))
+        ProxyHomeServerTool.ResetTunnel -> onResetTunnel?.let(::invoke)
             ?: unsupported(desktopText(Res.string.desktop_home_restart_not_connected))
         ProxyHomeServerTool.DeleteDuplicateServers,
         ProxyHomeServerTool.DeleteInvalidServers,

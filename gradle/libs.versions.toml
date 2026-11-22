@@ -1,19 +1,18 @@
 [versions]
-agp = "9.3.1"
+agp = "9.5.2"
 androidx-activity-compose = "1.13.0"
-androidx-navigation3 = "1.1.6"
 androidx-navigationevent = "1.1.0"
-androidx-room = "2.8.4"
-androidx-work = "2.11.2"
-compose = "1.11.1"
-coil = "3.5.0"
+androidx-room = "2.8.5"
+androidx-work = "2.12.0"
+compose = "1.12.2"
+coil = "3.6.3"
 dbus-java = "5.0.0"
-kotlin = "2.4.10"
-kotlinx-serialization-json = "1.11.0"
-ksp = "2.3.11"
-ktor = "3.5.2"
+kotlin = "2.4.21"
+kotlinx-serialization-json = "1.13.0"
+ksp = "2.3.14"
+ktor = "3.6.1"
 kage = "0.6.0"
-miuix = "0.9.3"
+miuix = "0.9.4"
 reorderable = "3.1.0"
 snakeyaml-engine = "3.1.1"
 sora-editor = "0.24.6"
@@ -23,7 +22,6 @@ xz = "1.10"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
-androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidx-navigation3" }
 androidx-navigationevent = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "androidx-navigationevent" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
@@ -43,7 +41,7 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 kage = { module = "com.github.android-password-store:kage", version.ref = "kage" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miuix" }
-miuix-navigation3-ui = { module = "top.yukonga.miuix.kmp:miuix-navigation3-ui", version.ref = "miuix" }
+miuix-nav = { module = "top.yukonga.miuix.kmp:miuix-nav", version.ref = "miuix" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }

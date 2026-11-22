@@ -117,6 +117,8 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.connection_status_connected
 import app.skipi.ui.resources.connection_status_disconnected
 import app.skipi.ui.resources.tray_connect
+import app.skipi.ui.resources.settings_reset_tunnel_completed
+import app.skipi.ui.resources.settings_reset_tunnel_failed
 import app.skipi.ui.resources.tray_disconnect
 import app.skipi.ui.resources.tray_exit
 import app.skipi.ui.resources.tray_tun_disable
@@ -1853,6 +1855,17 @@ private fun runDesktopApplication(
                                 tunnel.desiredRunning = true
                                 tunnel.intentVersion += 1
                                 tunnel.requestReconnect(desktopText(Res.string.desktop_reason_restart_core))
+                            },
+                            onResetTunnel = {
+                                // The same full stop as Settings > Backup and reset.
+                                subscriptionScope.launch {
+                                    serverLibraryMessage = tunnel.stopForBackup().fold(
+                                        onSuccess = { desktopText(Res.string.settings_reset_tunnel_completed) },
+                                        onFailure = { error ->
+                                            desktopText(Res.string.settings_reset_tunnel_failed) + ": " + error.message.orEmpty()
+                                        },
+                                    )
+                                }
                             },
                             onPrepareSubscription = desktopPrepareSubscription,
                             onDeleteDuplicateServers = { currentGroupServerIds ->

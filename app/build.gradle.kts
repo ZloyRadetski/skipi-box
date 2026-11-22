@@ -43,6 +43,12 @@ android {
         versionName = ProjectConfig.VERSION_NAME
     }
 
+    // Miuix navigation inlines JVM 21 bytecode into the app, as the shared modules already target it.
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
     androidResources {
         localeFilters += listOf("en", "ru", "zh", "zh-rCN", "fa")
         noCompress += listOf("xz")
@@ -150,7 +156,6 @@ dependencies {
     implementation(project(":shared:ui"))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
-    implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigationevent)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.work.runtime)
@@ -163,7 +168,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.icons)
-    implementation(libs.miuix.navigation3.ui)
+    implementation(libs.miuix.nav)
     implementation(libs.miuix.preference)
     implementation(libs.reorderable)
     implementation(libs.sora.editor)

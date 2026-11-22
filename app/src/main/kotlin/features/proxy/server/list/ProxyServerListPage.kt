@@ -54,6 +54,7 @@ import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.R
+import app.withTunnelStopped
 import app.isTestingLatency
 import app.activeTrafficConfig
 import app.activeTunnelTargetDisplayName
@@ -267,6 +268,8 @@ fun ProxyServerListPage(
     val unknownGroupName = stringResource(R.string.common_unknown_group)
     val invalidSubscriptionUrlMessage = stringResource(R.string.subscription_invalid_url)
     val messages = proxyServerListMessages()
+    val tunnelResetCompletedMessage = stringResource(R.string.settings_reset_tunnel_completed)
+    val tunnelResetFailedMessage = stringResource(R.string.settings_reset_tunnel_failed)
     val latestMessages = rememberUpdatedState(messages)
     val validationMessageOf = rememberProxyServerValidationMessageResolver()
     fun runProxyServiceOperation(operation: suspend () -> Unit) {
@@ -1217,8 +1220,22 @@ fun ProxyServerListPage(
                         updateAppState { state -> state.copy(proxyServerListSort = sort) }
                     }
                     is ProxyHomeEffect.RunServerTool -> {
+                        if (effect.tool == ProxyHomeServerTool.ResetTunnel) {
+                            // The same full reset as Settings > Backup and reset: it never waits for a stuck stop.
+                            scope.launch {
+                                when (val result = proxyServiceUseCase.forceShutdown()) {
+                                    is ProxyServiceResult.Success, ProxyServiceResult.MissingServer -> {
+                                        updateAppState { state -> state.withTunnelStopped() }
+                                        tipNotifier.show(tunnelResetCompletedMessage)
+                                    }
+                                    is ProxyServiceResult.Failed -> tipNotifier.showError(result.error, tunnelResetFailedMessage)
+                                }
+                            }
+                            return@ProxyHomeEffectHandler Result.success(Unit)
+                        }
                         val action = when (effect.tool) {
                             ProxyHomeServerTool.RestartService -> ProxyServerListToolAction.RestartService
+                            ProxyHomeServerTool.ResetTunnel -> error("Handled above")
                             ProxyHomeServerTool.UpdateSubscriptions -> ProxyServerListToolAction.UpdateSubscriptions
                             ProxyHomeServerTool.DeleteDuplicateServers -> ProxyServerListToolAction.DeleteDuplicateServers
                             ProxyHomeServerTool.DeleteInvalidServers -> ProxyServerListToolAction.DeleteInvalidServers

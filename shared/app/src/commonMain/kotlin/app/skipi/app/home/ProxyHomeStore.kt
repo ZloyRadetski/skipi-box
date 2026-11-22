@@ -228,6 +228,7 @@ enum class ProxyHomeCopyFormat {
 
 enum class ProxyHomeServerTool {
     RestartService,
+    ResetTunnel,
     UpdateSubscriptions,
     DeleteDuplicateServers,
     DeleteInvalidServers,

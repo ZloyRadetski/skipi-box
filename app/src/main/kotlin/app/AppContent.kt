@@ -49,15 +49,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavEntryDecorator
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberDecoratedNavEntries
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import ui.background.AppBackground
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.NavDisplayTransitionEffects
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.core.NavEntryBuilder
+import top.yukonga.miuix.kmp.nav.core.NavKey
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -144,32 +140,13 @@ val LocalNavigator = staticCompositionLocalOf<Navigator> { error("No navigator f
 val LocalIsWideScreen = staticCompositionLocalOf { false }
 val LocalProxyPageScrollToTopRequest = staticCompositionLocalOf { 0 }
 
-private inline fun <reified T : NavKey> androidx.navigation3.runtime.EntryProviderScope<NavKey>.appEntry(
+private inline fun <reified T : NavKey> NavEntryBuilder.appEntry(
     crossinline content: @Composable (T) -> Unit,
 ) {
     entry<T> { route ->
         AppBackground {
             content(route)
         }
-    }
-}
-
-private const val PredictiveSlideOutThreshold = 0.20f
-
-private val PredictiveSlideOutEasing = Easing { fraction ->
-    if (fraction <= PredictiveSlideOutThreshold) {
-        0f
-    } else {
-        val t = (fraction - PredictiveSlideOutThreshold) / (1f - PredictiveSlideOutThreshold)
-        FastOutSlowInEasing.transform(t.coerceIn(0f, 1f))
-    }
-}
-
-private val PredictiveScaleOutEasing = Easing { fraction ->
-    if (fraction <= PredictiveSlideOutThreshold) {
-        FastOutSlowInEasing.transform((fraction / PredictiveSlideOutThreshold).coerceIn(0f, 1f))
-    } else {
-        1f
     }
 }
 
@@ -203,278 +180,235 @@ fun AppContent(
         LocalProxyPageScrollToTopRequest provides mainPagerState.proxyPageScrollToTopRequest,
     ) {
         // The background reads its own style; keying the entries on it would rebuild the open page on every change.
-        val entryProvider = remember(backStack, languageMode) {
-            entryProvider<NavKey> {
-                appEntry<Route.Onboarding> {
-                    key(languageMode) {
-                        features.onboarding.OnboardingPage(
-                            padding = padding,
-                            onFinish = {
-                                stateStore.update { it.copy(hasCompletedOnboarding = true) }
-                                if (backStack.contains(Route.Main)) {
-                                    navigator.pop()
-                                } else {
-                                    navigator.replace(Route.Main)
-                                }
-                            },
-                        )
-                    }
-                }
-                appEntry<Route.Main> {
-                    key(languageMode) {
-                        Home(
-                            padding = padding,
-                            mainPagerState = mainPagerState,
-                        )
-                    }
-                }
-                appEntry<Route.SettingsAppearance> {
-                    key(languageMode) {
-                        SettingsAppearancePage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsGeneral> {
-                    key(languageMode) {
-                        SettingsGeneralPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsVpn> {
-                    key(languageMode) {
-                        SettingsVpnPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsNetworkAutomation> {
-                    key(languageMode) {
-                        SettingsNetworkAutomationPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsSubscriptions> {
-                    key(languageMode) {
-                        SettingsSubscriptionsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsLogs> {
-                    key(languageMode) {
-                        SettingsLogsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SettingsBackupReset> {
-                    key(languageMode) {
-                        SettingsBackupResetPage(padding = padding)
-                    }
-                }
-                appEntry<Route.About> {
-                    key(languageMode) {
-                        AboutPage(padding = padding)
-                    }
-                }
-                appEntry<Route.License> {
-                    key(languageMode) {
-                        LicensePage(padding = padding)
-                    }
-                }
-                appEntry<Route.CoreLogs> {
-                    key(languageMode) {
-                        CoreLogsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.AccessLogs> {
-                    key(languageMode) {
-                        AccessLogsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.LogcatLogs> {
-                    key(languageMode) {
-                        LogcatLogsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SpeedTest> {
-                    key(languageMode) {
-                        features.tools.SpeedTestPage(padding = padding)
-                    }
-                }
-                appEntry<Route.DnsLeakTest> {
-                    key(languageMode) {
-                        features.tools.DnsLeakTestPage(padding = padding)
-                    }
-                }
-                appEntry<Route.IpInfo> {
-                    key(languageMode) {
-                        features.tools.IpInfoPage(padding = padding)
-                    }
-                }
-                appEntry<Route.ResourceManagement> { route ->
-                    key(languageMode) {
-                        ResourceManagementPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                        )
-                    }
-                }
-                appEntry<Route.TrafficConfigEditor> { route ->
-                    key(languageMode) {
-                        TrafficConfigEditorPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                        )
-                    }
-                }
-                appEntry<Route.TrafficConfigRawEditor> { route ->
-                    key(languageMode) {
-                        TrafficConfigRawEditorPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                        )
-                    }
-                }
-                appEntry<Route.TrafficConfigSection> { route ->
-                    key(languageMode) {
-                        TrafficConfigSectionPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                            section = route.section,
-                        )
-                    }
-                }
-                appEntry<Route.TrafficConfigRuleEditor> { route ->
-                    key(languageMode) {
-                        TrafficConfigRuleEditorPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                            ruleLineNumber = route.ruleLineNumber,
-                        )
-                    }
-                }
-                appEntry<Route.SubscriptionGroupList> {
-                    key(languageMode) {
-                        SubscriptionGroupListPage(padding = padding)
-                    }
-                }
-                appEntry<Route.ProxyAppList> { route ->
-                    key(languageMode) {
-                        ProxyAppListPage(
-                            padding = padding,
-                            trafficConfigId = route.trafficConfigId,
-                        )
-                    }
-                }
-                appEntry<Route.LocalProxySettings> {
-                    key(languageMode) {
-                        LocalProxySettingsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SubscriptionPingSettings> {
-                    key(languageMode) {
-                        SubscriptionPingSettingsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SubscriptionUserAgents> {
-                    key(languageMode) {
-                        SubscriptionUserAgentsPage(padding = padding)
-                    }
-                }
-                appEntry<Route.SkipiUrlSchemes> {
-                    key(languageMode) {
-                        SkipiUrlSchemesPage(padding = padding)
-                    }
-                }
-                appEntry<Route.ProxyServerEditor> {
-                    key(languageMode) {
-                        ProxyServerPage(
-                            padding = padding,
-                            ps = it.ps,
-                            serverId = it.serverId,
-                            groupId = it.groupId,
-                            returnGroupId = it.returnGroupId,
-                            resultKey = it.resultKey,
-                        )
-                    }
-                }
-                appEntry<Route.StrategyGroupMemberSelector> { route ->
-                    key(languageMode) {
-                        StrategyGroupMemberSelectorPage(
-                            padding = padding,
-                            selectedServerIds = route.selectedServerIds,
-                            selectedWholeGroupIds = route.selectedWholeGroupIds,
-                            excludedServerId = route.excludedServerId,
-                            resultKey = route.resultKey,
-                            requireServerRemarks = route.requireServerRemarks,
-                        )
-                    }
-                }
-                appEntry<Route.RouteOutboundSelector> { route ->
-                    key(languageMode) {
-                        RouteOutboundSelectorPage(
-                            padding = padding,
-                            selectedTag = route.selectedTag,
-                            resultKey = route.resultKey,
-                            trafficConfigId = route.trafficConfigId,
-                        )
-                    }
-                }
-                appEntry<Route.RoutingRuleEditor> { route ->
-                    key(languageMode) {
-                        RouteRuleEditorPage(
-                            padding = padding,
-                            ruleId = route.ruleId,
-                        )
-                    }
-                }
-            }
-        }
-
-        val entries = rememberDecoratedNavEntries(
-            backStack = backStack,
-            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
-            entryProvider = entryProvider,
-        )
-
         val transitionEffects = remember {
-            NavDisplayTransitionEffects(
+            NavDisplayEffects(
                 enableCornerClip = true,
                 dimAmount = 0f,
                 blockInputDuringTransition = true,
-                popDirectionFollowsSwipeEdge = false,
             )
         }
 
         NavDisplay(
-            entries = entries,
+            backStack = backStack,
             onBack = { navigator.pop() },
-            popTransitionSpec = {
-                ContentTransform(
-                    targetContentEnter = EnterTransition.None,
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-                    ) + scaleOut(
-                        targetScale = 0.90f,
-                        transformOrigin = TransformOrigin.Center,
-                        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-                    ),
-                )
-            },
-            predictivePopTransitionSpec = { _ ->
-                ContentTransform(
-                    targetContentEnter = EnterTransition.None,
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = tween(
-                            durationMillis = 550,
-                            easing = PredictiveSlideOutEasing,
-                        ),
-                    ) + scaleOut(
-                        targetScale = 0.90f,
-                        transformOrigin = TransformOrigin.Center,
-                        animationSpec = tween(
-                            durationMillis = 550,
-                            easing = PredictiveScaleOutEasing,
-                        ),
-                    ),
-                )
-            },
-            transitionEffects = transitionEffects,
-        )
+            effects = transitionEffects,
+        ) {
+            appEntry<Route.Onboarding> {
+                key(languageMode) {
+                    features.onboarding.OnboardingPage(
+                        padding = padding,
+                        onFinish = {
+                            stateStore.update { it.copy(hasCompletedOnboarding = true) }
+                            if (backStack.contains(Route.Main)) {
+                                navigator.pop()
+                            } else {
+                                navigator.replace(Route.Main)
+                            }
+                        },
+                    )
+                }
+            }
+            appEntry<Route.Main> {
+                key(languageMode) {
+                    Home(
+                        padding = padding,
+                        mainPagerState = mainPagerState,
+                    )
+                }
+            }
+            appEntry<Route.SettingsAppearance> {
+                key(languageMode) {
+                    SettingsAppearancePage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsGeneral> {
+                key(languageMode) {
+                    SettingsGeneralPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsVpn> {
+                key(languageMode) {
+                    SettingsVpnPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsNetworkAutomation> {
+                key(languageMode) {
+                    SettingsNetworkAutomationPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsSubscriptions> {
+                key(languageMode) {
+                    SettingsSubscriptionsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsLogs> {
+                key(languageMode) {
+                    SettingsLogsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsBackupReset> {
+                key(languageMode) {
+                    SettingsBackupResetPage(padding = padding)
+                }
+            }
+            appEntry<Route.About> {
+                key(languageMode) {
+                    AboutPage(padding = padding)
+                }
+            }
+            appEntry<Route.License> {
+                key(languageMode) {
+                    LicensePage(padding = padding)
+                }
+            }
+            appEntry<Route.CoreLogs> {
+                key(languageMode) {
+                    CoreLogsPage(padding = padding)
+                }
+            }
+            appEntry<Route.AccessLogs> {
+                key(languageMode) {
+                    AccessLogsPage(padding = padding)
+                }
+            }
+            appEntry<Route.LogcatLogs> {
+                key(languageMode) {
+                    LogcatLogsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SpeedTest> {
+                key(languageMode) {
+                    features.tools.SpeedTestPage(padding = padding)
+                }
+            }
+            appEntry<Route.DnsLeakTest> {
+                key(languageMode) {
+                    features.tools.DnsLeakTestPage(padding = padding)
+                }
+            }
+            appEntry<Route.IpInfo> {
+                key(languageMode) {
+                    features.tools.IpInfoPage(padding = padding)
+                }
+            }
+            appEntry<Route.ResourceManagement> { route ->
+                key(languageMode) {
+                    ResourceManagementPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                    )
+                }
+            }
+            appEntry<Route.TrafficConfigEditor> { route ->
+                key(languageMode) {
+                    TrafficConfigEditorPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                    )
+                }
+            }
+            appEntry<Route.TrafficConfigRawEditor> { route ->
+                key(languageMode) {
+                    TrafficConfigRawEditorPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                    )
+                }
+            }
+            appEntry<Route.TrafficConfigSection> { route ->
+                key(languageMode) {
+                    TrafficConfigSectionPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                        section = route.section,
+                    )
+                }
+            }
+            appEntry<Route.TrafficConfigRuleEditor> { route ->
+                key(languageMode) {
+                    TrafficConfigRuleEditorPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                        ruleLineNumber = route.ruleLineNumber,
+                    )
+                }
+            }
+            appEntry<Route.SubscriptionGroupList> {
+                key(languageMode) {
+                    SubscriptionGroupListPage(padding = padding)
+                }
+            }
+            appEntry<Route.ProxyAppList> { route ->
+                key(languageMode) {
+                    ProxyAppListPage(
+                        padding = padding,
+                        trafficConfigId = route.trafficConfigId,
+                    )
+                }
+            }
+            appEntry<Route.LocalProxySettings> {
+                key(languageMode) {
+                    LocalProxySettingsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SubscriptionPingSettings> {
+                key(languageMode) {
+                    SubscriptionPingSettingsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SubscriptionUserAgents> {
+                key(languageMode) {
+                    SubscriptionUserAgentsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SkipiUrlSchemes> {
+                key(languageMode) {
+                    SkipiUrlSchemesPage(padding = padding)
+                }
+            }
+            appEntry<Route.ProxyServerEditor> {
+                key(languageMode) {
+                    ProxyServerPage(
+                        padding = padding,
+                        ps = it.ps,
+                        serverId = it.serverId,
+                        groupId = it.groupId,
+                        returnGroupId = it.returnGroupId,
+                        resultKey = it.resultKey,
+                    )
+                }
+            }
+            appEntry<Route.StrategyGroupMemberSelector> { route ->
+                key(languageMode) {
+                    StrategyGroupMemberSelectorPage(
+                        padding = padding,
+                        selectedServerIds = route.selectedServerIds,
+                        selectedWholeGroupIds = route.selectedWholeGroupIds,
+                        excludedServerId = route.excludedServerId,
+                        resultKey = route.resultKey,
+                        requireServerRemarks = route.requireServerRemarks,
+                    )
+                }
+            }
+            appEntry<Route.RouteOutboundSelector> { route ->
+                key(languageMode) {
+                    RouteOutboundSelectorPage(
+                        padding = padding,
+                        selectedTag = route.selectedTag,
+                        resultKey = route.resultKey,
+                        trafficConfigId = route.trafficConfigId,
+                    )
+                }
+            }
+            appEntry<Route.RoutingRuleEditor> { route ->
+                key(languageMode) {
+                    RouteRuleEditorPage(
+                        padding = padding,
+                        ruleId = route.ruleId,
+                    )
+                }
+            }
+        }
     }
 }
 

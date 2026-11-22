@@ -37,6 +37,7 @@ import app.skipi.ui.resources.proxy_server_list_option_sort_latency
 import app.skipi.ui.resources.proxy_server_list_option_sort_protocol
 import app.skipi.ui.resources.proxy_server_list_option_sort_name
 import app.skipi.ui.resources.proxy_server_list_restart_service
+import app.skipi.ui.resources.settings_reset_tunnel
 import app.skipi.ui.resources.proxy_server_list_scan_qr_code
 import app.skipi.ui.resources.proxy_server_list_update_subscriptions
 import org.jetbrains.compose.resources.stringResource
@@ -93,6 +94,7 @@ internal fun sortModeTitle(mode: ProxyHomeSortMode): String = stringResource(
 internal fun serverToolTitle(tool: ProxyHomeServerTool): String = stringResource(
     when (tool) {
         ProxyHomeServerTool.RestartService -> Res.string.proxy_server_list_restart_service
+        ProxyHomeServerTool.ResetTunnel -> Res.string.settings_reset_tunnel
         ProxyHomeServerTool.UpdateSubscriptions -> Res.string.proxy_server_list_update_subscriptions
         ProxyHomeServerTool.DeleteDuplicateServers -> Res.string.proxy_server_list_delete_duplicates
         ProxyHomeServerTool.DeleteInvalidServers -> Res.string.proxy_server_list_delete_invalid

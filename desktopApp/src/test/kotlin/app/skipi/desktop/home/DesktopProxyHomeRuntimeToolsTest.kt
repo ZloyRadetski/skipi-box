@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeServerTool
 import kotlin.test.Test
@@ -79,5 +80,43 @@ class DesktopProxyHomeRuntimeToolsTest {
             setOf(ProxyHomeServerTool.RestartService, ProxyHomeServerTool.DeleteAllServers),
             available.serverTools,
         )
+    }
+
+    @Test
+    fun resetTunnelEffectReachesTheConfiguredDesktopOperation() {
+        var resetCalls = 0
+        val context = DesktopProxyHomeEffectContext(onResetTunnel = { resetCalls++ })
+
+        assertTrue(context.handle(ProxyHomeEffect.RunServerTool(ProxyHomeServerTool.ResetTunnel)).isSuccess)
+
+        assertEquals(1, resetCalls)
+    }
+
+    @Test
+    fun resetTunnelWithoutADesktopOperationIsRefused() {
+        val context = DesktopProxyHomeEffectContext()
+
+        assertTrue(context.handle(ProxyHomeEffect.RunServerTool(ProxyHomeServerTool.ResetTunnel)).isFailure)
+    }
+
+    @Test
+    fun resetTunnelAppearsOnlyWhenItsDesktopCallbackExists() {
+        val absent = desktopProxyHomeActionCapabilities(
+            subscriptions = emptyList(),
+            onRefreshAllSubscriptions = null,
+            onDeleteDuplicateServers = null,
+            onDeleteInvalidServers = null,
+        )
+        val available = desktopProxyHomeActionCapabilities(
+            subscriptions = emptyList(),
+            onRefreshAllSubscriptions = null,
+            onDeleteDuplicateServers = null,
+            onDeleteInvalidServers = null,
+            onResetTunnel = {},
+        )
+
+        assertTrue(ProxyHomeServerTool.ResetTunnel !in absent.serverTools)
+        assertEquals(setOf(ProxyHomeServerTool.ResetTunnel), available.serverTools)
+        assertTrue(ProxyHomeActionId.RunServerTool in available.actions)
     }
 }

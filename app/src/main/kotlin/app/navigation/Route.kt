@@ -3,7 +3,7 @@
 
 package app.navigation
 
-import androidx.navigation3.runtime.NavKey
+import top.yukonga.miuix.kmp.nav.core.NavKey
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
 

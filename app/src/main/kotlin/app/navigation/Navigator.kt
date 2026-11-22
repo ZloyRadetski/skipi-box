@@ -4,9 +4,10 @@
 package app.navigation
 
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
-import androidx.navigation3.runtime.NavKey
+import top.yukonga.miuix.kmp.nav.core.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,9 +21,9 @@ private val navigationKeyJson = Json { classDiscriminator = "route" }
  * Entries that cannot be serialized (or decoded back) are dropped instead of
  * crashing; the rest of the stack below them is kept.
  */
-val NavigationBackStackSaver: Saver<MutableList<NavKey>, List<String>> =
-    object : Saver<MutableList<NavKey>, List<String>> {
-        override fun SaverScope.save(value: MutableList<NavKey>): List<String> {
+val NavigationBackStackSaver: Saver<SnapshotStateList<NavKey>, List<String>> =
+    object : Saver<SnapshotStateList<NavKey>, List<String>> {
+        override fun SaverScope.save(value: SnapshotStateList<NavKey>): List<String> {
             val encodedKeys = mutableListOf<String>()
             for (key in value) {
                 // Entries that cannot be serialized end the saved portion of the
@@ -35,7 +36,7 @@ val NavigationBackStackSaver: Saver<MutableList<NavKey>, List<String>> =
             return encodedKeys
         }
 
-        override fun restore(value: List<String>): MutableList<NavKey> {
+        override fun restore(value: List<String>): SnapshotStateList<NavKey> {
             // MUST be a SnapshotStateList: a plain list is invisible to Compose,
             // so push/pop after restoration would never update the UI.
             val restoredKeys = mutableStateListOf<NavKey>()
@@ -52,7 +53,7 @@ val NavigationBackStackSaver: Saver<MutableList<NavKey>, List<String>> =
  * Supports push/replace/pop/popUntil and result APIs: navigateForResult/setResult/observeResult/clearResult.
  */
 class Navigator(
-    val backStack: MutableList<NavKey>,
+    val backStack: SnapshotStateList<NavKey>,
 ) {
     private val resultBus = mutableMapOf<String, MutableSharedFlow<Any>>()
 

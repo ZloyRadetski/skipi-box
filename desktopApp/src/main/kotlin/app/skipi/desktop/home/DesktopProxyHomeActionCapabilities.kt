@@ -27,6 +27,7 @@ internal fun desktopProxyHomeActionCapabilities(
     onDeleteDuplicateServers: ((Set<Int>) -> Unit)?,
     onDeleteInvalidServers: ((Set<Int>) -> Unit)?,
     onRestartService: (() -> Unit)? = null,
+    onResetTunnel: (() -> Unit)? = null,
     onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
 ): DesktopProxyHomeActionCapabilities {
     val serverTools = buildSet {
@@ -36,6 +37,7 @@ internal fun desktopProxyHomeActionCapabilities(
         if (onDeleteDuplicateServers != null) add(ProxyHomeServerTool.DeleteDuplicateServers)
         if (onDeleteInvalidServers != null) add(ProxyHomeServerTool.DeleteInvalidServers)
         if (onRestartService != null) add(ProxyHomeServerTool.RestartService)
+        if (onResetTunnel != null) add(ProxyHomeServerTool.ResetTunnel)
         if (onDeleteAllServers != null) add(ProxyHomeServerTool.DeleteAllServers)
     }
     val actions = buildSet {
