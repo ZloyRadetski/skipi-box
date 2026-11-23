@@ -183,7 +183,13 @@ class SharedApplicationStore(
 
     private suspend fun performAction(actionId: Long, action: SharedApplicationAction): SharedApplicationActionResult {
         val outcome = try {
-            actionMutex.withLock { execute(action) }
+            // A refresh is network I/O of arbitrary length; the subscription repository commits atomically itself, so it
+            // must not hold the mutex that every quick local mutation queues behind.
+            if (action is SharedApplicationAction.RefreshSubscription) {
+                execute(action)
+            } else {
+                actionMutex.withLock { execute(action) }
+            }
             SharedApplicationActionOutcome.Completed
         } catch (cancelled: CancellationException) {
             throw cancelled

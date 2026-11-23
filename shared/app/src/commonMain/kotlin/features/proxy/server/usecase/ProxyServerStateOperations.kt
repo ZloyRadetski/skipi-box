@@ -276,13 +276,15 @@ fun AppState.toSubscriptionRefreshSnapshot(): SubscriptionRefreshSnapshot = Subs
 fun AppState.toSubscriptionRefreshSnapshot(
     catalog: ProxyServerCatalog,
 ): SubscriptionRefreshSnapshot = toSubscriptionRefreshSnapshot().copy(
-    servers = catalog.servers.map { server ->
-        ProxyServerRow(
-            id = server.id,
-            groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
-            server = server.server,
-            latency = proxyServers.firstOrNull { current -> current.id == server.id }?.latency.orEmpty(),
-        )
+    servers = proxyServers.associate { current -> current.id to current.latency }.let { latencyById ->
+        catalog.servers.map { server ->
+            ProxyServerRow(
+                id = server.id,
+                groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+                server = server.server,
+                latency = latencyById[server.id].orEmpty(),
+            )
+        }
     },
     nextServerId = catalog.nextServerId,
     selectedServerId = catalog.selectedServerId,

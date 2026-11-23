@@ -60,6 +60,12 @@ internal class DesktopTunHost(
         return created.also { tunRuntime = it }
     }
 
+    /** Closes the TUN device if this run created one; never creates the runtime just to stop it. */
+    @Synchronized
+    fun stopPreparedTun() {
+        tunRuntime?.stop()
+    }
+
     companion object {
         fun forCore(
             coreController: DesktopCoreController,

@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -220,6 +221,9 @@ fun SkipiExpressiveNavigationBar(
             var totalWidthPx by remember { mutableIntStateOf(0) }
             var totalHeightPx by remember { mutableIntStateOf(0) }
             val tabCount = items.size.coerceAtLeast(1)
+            // The drag handler below lives across recompositions: it reads the latest items and callback, not the ones it started with.
+            val currentItems by rememberUpdatedState(items)
+            val currentOnSelect by rememberUpdatedState(onSelect)
             val tabWidthPx = if (totalWidthPx > 0) totalWidthPx.toFloat() / tabCount else 0f
             val tabWidthDp = if (totalWidthPx > 0) with(density) { tabWidthPx.toDp() } else 0.dp
             val totalHeightDp = if (totalHeightPx > 0) with(density) { totalHeightPx.toDp() } else 0.dp
@@ -318,10 +322,10 @@ fun SkipiExpressiveNavigationBar(
                                         ),
                                     )
                                 }
-                                val target = items.getOrNull(targetIndex)
+                                val target = currentItems.getOrNull(targetIndex)
                                 if (target != null && target.destination.pageIndex != selectedPage) {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onSelect(target.destination)
+                                    currentOnSelect(target.destination)
                                 }
                             } else {
                                 isDragging = false

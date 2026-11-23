@@ -317,12 +317,22 @@ internal fun DesktopSettingsScreen(
                 tunNeedsElevation = tunHost?.needsElevation() == true,
                 onRequestTunElevation = {
                     // The elevated instance starts with TUN on; a declined UAC prompt puts the setting back.
-                    persist(currentSettings.copy(enableTunMode = true), desktopText(Res.string.desktop_settings_vpn_saved))
+                    // The file is written before the copy is started, and this process does not reconnect in the
+                    // meantime (it is about to exit), so the settings change is not published to the application.
+                    val before = currentSettings
+                    val enabled = before.copy(enableTunMode = true)
+                    currentSettings = enabled
                     scope.launch {
-                        val result = withContext(Dispatchers.IO) { relaunchCurrentProcessElevated() }
+                        val result = withContext(Dispatchers.IO) {
+                            relaunchElevatedWithSavedSetting(
+                                save = { saveMutex.withLock { DesktopSettingsLibraries.saveDefault(enabled) } },
+                                relaunch = { relaunchCurrentProcessElevated() },
+                                revert = { saveMutex.withLock { DesktopSettingsLibraries.saveDefault(before) } },
+                            )
+                        }
                         result.onSuccess { onExitApplication() }
                             .onFailure { error ->
-                                persist(currentSettings.copy(enableTunMode = false), "")
+                                currentSettings = before
                                 message = desktopText(Res.string.desktop_settings_admin_rights_failed, error.message.orEmpty())
                             }
                     }

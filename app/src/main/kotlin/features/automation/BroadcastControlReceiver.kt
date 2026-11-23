@@ -47,7 +47,8 @@ class BroadcastControlReceiver : BroadcastReceiver() {
         const val ACTION_STOP = "com.radetski.skipi.action.PROXY_STOP"
         const val ACTION_TOGGLE = "com.radetski.skipi.action.PROXY_TOGGLE"
 
-        private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        // IO, not Main.immediate: onReceive runs on the main thread, so Main.immediate ran the whole body there.
+        private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val operationMutex = Mutex()
     }
 }

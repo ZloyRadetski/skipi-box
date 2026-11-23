@@ -45,7 +45,8 @@ internal fun createDesktopTunnelController(
         val settings = settings()
         val configs = configs()
         val coreAnswersDns = desktopAnswersTunDns(settings, configs) && servers().coreAnswersTunDns()
-        return desktopTunInterfacePlan(settings, configs, coreAnswersDns)
+        // Inside a connect every step shares one resolved interface (see DesktopPinnedTunPlan).
+        return pinned?.tunPlan?.plan(coreAnswersDns) ?: desktopTunInterfacePlan(settings, configs, coreAnswersDns)
     }
 
     fun tunStartRequestFor(options: LocalProxyXrayConfigOptions): DesktopTunStartRequest = desktopTunStartRequest(
@@ -104,7 +105,11 @@ internal fun createDesktopTunnelController(
         startCore = { request ->
             // Like Android: truncate the previous run's files, then follow the new ones.
             coreLogs.clear()
-            coreLogs.startTailers(settings())
+            // A start that fails would otherwise leave the tailers polling until some later stop.
+            startCoreWithLogTailers(
+                startTailers = { coreLogs.startTailers(settings()) },
+                stopTailers = coreLogs::stopTailers,
+            ) {
             // With a descriptor (or -1) Core runs HEV TUN in the same session call, pointed at this attempt's inbound.
             val hevResult = runCatching {
                 request.tunFd?.let { fd ->
@@ -119,6 +124,7 @@ internal fun createDesktopTunnelController(
                 localProxyRuntime.onCoreStarted(
                     coreController.start(request.configuration, request.assetsDirectory, request.amneziaWg, hevResult.getOrNull()),
                 )
+            }
             }
         },
         stopCore = {
@@ -193,7 +199,7 @@ internal fun createDesktopTunnelController(
                     ?: error("SKIPI Core is not running")
                 // The address and login hev will use: the running Core's own, not the saved settings'.
                 val target = desktopTunStartRequest(
-                    plan = desktopTunInterfacePlan(settings(), configs()),
+                    plan = pinned?.tunPlan?.plan() ?: desktopTunInterfacePlan(settings(), configs()),
                     options = options,
                     logPath = "",
                 )
@@ -210,7 +216,7 @@ internal fun createDesktopTunnelController(
             timedTunStage("prepare") {
                 runCatching {
                     tunHost.unavailableReason()?.let { reason -> error(reason) }
-                    tunHost.tunRuntime().prepare(desktopTunInterfacePlan(settings(), configs())).getOrThrow()
+                    tunHost.tunRuntime().prepare(pinned?.tunPlan?.plan() ?: desktopTunInterfacePlan(settings(), configs())).getOrThrow()
                 }
             }
         },
@@ -235,6 +241,18 @@ internal fun createDesktopTunnelController(
 
 }
 
+/** Starts the log tailers around a Core start and stops them again when that start fails. */
+internal fun <T> startCoreWithLogTailers(
+    startTailers: () -> Unit,
+    stopTailers: () -> Unit,
+    start: () -> Result<T>,
+): Result<T> {
+    startTailers()
+    val result = runCatching(start).getOrElse { error -> Result.failure(error) }
+    if (result.isFailure) stopTailers()
+    return result
+}
+
 /** Logs how long a TUN stage took, so a slow platform shows where the time goes. */
 private inline fun <T> timedTunStage(stage: String, block: () -> Result<T>): Result<T> {
     val started = System.nanoTime()
@@ -250,4 +268,7 @@ private class DesktopConnectInputs(
     val servers: DesktopServerLibrary,
     val configs: DesktopConfigLibrary,
     val latency: Map<Int, DesktopServerLatencyResult>,
-)
+) {
+    /** The TUN interface of this connect, resolved once for every step that needs it. */
+    val tunPlan = DesktopPinnedTunPlan(settings, configs)
+}

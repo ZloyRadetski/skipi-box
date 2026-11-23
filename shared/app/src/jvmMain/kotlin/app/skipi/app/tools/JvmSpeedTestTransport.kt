@@ -5,7 +5,10 @@ package app.skipi.app.tools
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.OutputStream
@@ -60,13 +63,15 @@ class JvmSpeedTestTransport(
             target.requestMethod = "GET"
         }
         try {
-            connection.inputStream.use { input ->
-                val buffer = ByteArray(BufferSizeBytes)
-                while (true) {
-                    currentCoroutineContext().ensureActive()
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    if (read > 0) onBytes(read)
+            abortOnCancellation(connection) {
+                connection.inputStream.use { input ->
+                    val buffer = ByteArray(BufferSizeBytes)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        if (read > 0) onBytes(read)
+                    }
                 }
             }
         } finally {
@@ -82,21 +87,41 @@ class JvmSpeedTestTransport(
             target.setFixedLengthStreamingMode(totalBytes)
         }
         try {
-            connection.outputStream.use { output ->
-                val buffer = Random.nextBytes(UploadChunkSizeBytes)
-                var remaining = totalBytes
-                while (remaining > 0) {
-                    currentCoroutineContext().ensureActive()
-                    val size = minOf(buffer.size.toLong(), remaining).toInt()
-                    output.write(buffer, 0, size)
-                    remaining -= size
-                    onBytes(size)
+            abortOnCancellation(connection) {
+                connection.outputStream.use { output ->
+                    val buffer = Random.nextBytes(UploadChunkSizeBytes)
+                    var remaining = totalBytes
+                    while (remaining > 0) {
+                        currentCoroutineContext().ensureActive()
+                        val size = minOf(buffer.size.toLong(), remaining).toInt()
+                        output.write(buffer, 0, size)
+                        remaining -= size
+                        onBytes(size)
+                    }
                 }
+                connection.responseCode
             }
-            connection.responseCode
-            Unit
         } finally {
             connection.disconnect()
+        }
+    }
+
+    /**
+     * A read or write blocked on the socket does not see coroutine cancellation, so cancelling disconnects the
+     * connection, which makes the blocked call fail at once.
+     */
+    private suspend fun abortOnCancellation(connection: HttpURLConnection, block: suspend () -> Unit) = coroutineScope {
+        val guard = launch(Dispatchers.Unconfined) {
+            try {
+                awaitCancellation()
+            } finally {
+                runCatching { connection.disconnect() }
+            }
+        }
+        try {
+            block()
+        } finally {
+            guard.cancel()
         }
     }
 

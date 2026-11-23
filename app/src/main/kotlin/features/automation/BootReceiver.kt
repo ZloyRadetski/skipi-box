@@ -18,6 +18,7 @@ import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val LogTag = "BootReceiver"
 
@@ -35,23 +36,25 @@ class BootReceiver : BroadcastReceiver() {
         if (action !in validActions) return
 
         val application = context.applicationContext as? SkipiApplication ?: return
-        val stateStore = AndroidAppStateStore.get(application)
-        val state = stateStore.state.value
+        // Without goAsync() the system treats the broadcast as finished when onReceive returns and may freeze the
+        // process before the state is loaded and the service started. The state store is opened off the main thread.
+        val pendingResult = goAsync()
 
-        if (!state.autoConnectOnBoot) {
-            AppLog.debug(LogTag, "Auto-connect on boot is disabled in settings")
-            return
-        }
-
-        if (VpnService.prepare(application) != null) {
-            AppLog.warn(LogTag, "Cannot auto-connect on boot: VPN permission not granted")
-            return
-        }
-
-        application.appScope.launch(Dispatchers.IO) {
+        val work = application.appScope.launch(Dispatchers.IO) {
+            val stateStore = AndroidAppStateStore.get(application)
             stateStore.awaitReady()
-            // Re-read: the lists were not loaded when the receiver looked at the settings above.
             val state = stateStore.currentState
+
+            if (!state.autoConnectOnBoot) {
+                AppLog.debug(LogTag, "Auto-connect on boot is disabled in settings")
+                return@launch
+            }
+
+            if (VpnService.prepare(application) != null) {
+                AppLog.warn(LogTag, "Cannot auto-connect on boot: VPN permission not granted")
+                return@launch
+            }
+
             val resolvedState = state.resolveActiveNetworkConfig(application)
             if (resolvedState.activeTrafficConfigId != state.activeTrafficConfigId) {
                 stateStore.update { it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId) }
@@ -83,5 +86,17 @@ class BootReceiver : BroadcastReceiver() {
                 }
             }
         }
+
+        // The broadcast is released when the work ends or its time budget does, whichever comes first; the work
+        // itself keeps running in the application scope.
+        application.appScope.launch(Dispatchers.IO) {
+            try {
+                withTimeoutOrNull(BroadcastBudgetMillis) { work.join() }
+            } finally {
+                pendingResult.finish()
+            }
+        }
     }
 }
+
+private const val BroadcastBudgetMillis = 8_000L

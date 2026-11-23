@@ -203,25 +203,20 @@ class ResourceSnapshotFiles(
 
     private fun replace(target: File, openInput: () -> InputStream) {
         dataDir.mkdirs()
-        val replaceTempFile = target.resolveSibling("${target.name}.replace.tmp")
+        // One streamed pass through the adapter's atomic, locked write: no fixed temp sibling to leak or
+        // race on, and an empty body aborts before the previous file is touched.
         openInput().use { input ->
-            replaceTempFile.outputStream().use { output -> input.copyTo(output) }
-        }
-        if (replaceTempFile.length() <= 0) {
-            replaceTempFile.delete()
-            error("${target.name} is empty")
-        }
-        try {
-            replaceTempFile.inputStream().use { input ->
-                atomicWrite(target) { output -> input.copyTo(output) }
+            atomicWrite(target) { output ->
+                if (input.copyTo(output) <= 0L) error("${target.name} is empty")
             }
-        } finally {
-            replaceTempFile.delete()
         }
     }
 
+    // Case-insensitive: GeoIP.dat is the same file as geoip.dat on Windows and macOS. Dotfiles are
+    // SKIPI's own markers (.resource-source, migration marker), never user resources.
     private fun isReservedName(file: File): Boolean {
-        return ResourceFileKind.entries.any { kind -> kind.fileName == file.name }
+        val name = file.name
+        return name.startsWith(".") || ResourceFileKind.entries.any { kind -> kind.fileName.equals(name, ignoreCase = true) }
     }
 
     private fun storedResourceFileSource(): Int? {

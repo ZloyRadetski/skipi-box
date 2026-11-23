@@ -247,6 +247,13 @@ fun String.withShadowrocketGeneralValue(
     return sourceLines.joinToString("\n").trimEnd() + "\n"
 }
 
+/** The section name of a `[Name]` header line, or null for any other line (a bare "Rule" is not a header). */
+internal fun String.shadowrocketSectionHeaderNameOrNull(): String? {
+    val trimmed = trim()
+    if (trimmed.length <= 2 || !trimmed.startsWith('[') || !trimmed.endsWith(']')) return null
+    return trimmed.substring(1, trimmed.length - 1)
+}
+
 /** Replaces one complete INI section while preserving every other section verbatim. */
 fun String.withShadowrocketSectionLines(
     sectionName: String,
@@ -256,7 +263,7 @@ fun String.withShadowrocketSectionLines(
     require(normalizedSectionName.isNotEmpty()) { "Section name must not be blank" }
     val sourceLines = lines().toMutableList()
     val headerIndex = sourceLines.indexOfFirst { line ->
-        line.trim().removeSurrounding("[", "]").equals(normalizedSectionName, ignoreCase = true)
+        line.shadowrocketSectionHeaderNameOrNull().equals(normalizedSectionName, ignoreCase = true)
     }
     if (headerIndex >= 0) {
         val nextHeaderIndex = sourceLines.drop(headerIndex + 1)
@@ -387,7 +394,7 @@ fun String.withShadowrocketRuleAdded(rawRule: String): String {
     }
 
     val ruleHeaderIndex = sourceLines.indexOfFirst { line ->
-        line.trim().removeSurrounding("[", "]").equals("Rule", ignoreCase = true)
+        line.shadowrocketSectionHeaderNameOrNull().equals("Rule", ignoreCase = true)
     }
     if (ruleHeaderIndex >= 0) {
         val insertionIndex = sourceLines
@@ -421,7 +428,7 @@ fun String.withoutShadowrocketProxyGroupLine(lineNumber: Int): String {
 fun String.withShadowrocketProxyGroupAdded(rawGroup: String): String {
     val sourceLines = lines().toMutableList()
     val headerIndex = sourceLines.indexOfFirst { line ->
-        line.trim().removeSurrounding("[", "]").equals("Proxy Group", ignoreCase = true)
+        line.shadowrocketSectionHeaderNameOrNull().equals("Proxy Group", ignoreCase = true)
     }
     if (headerIndex >= 0) {
         val nextSectionIndex = sourceLines
@@ -485,7 +492,7 @@ fun ShadowrocketRule.toShadowrocketLine(
     policy: String = this.policy,
 ): String {
     val body = if (type.equals("FINAL", ignoreCase = true)) {
-        "FINAL,${policy.trim()}"
+        listOfNotNull("FINAL", policy.trim(), option?.takeIf(String::isNotBlank)).joinToString(",")
     } else {
         listOfNotNull(type.trim().uppercase(), value.trim(), policy.trim(), option?.takeIf(String::isNotBlank))
             .joinToString(",")

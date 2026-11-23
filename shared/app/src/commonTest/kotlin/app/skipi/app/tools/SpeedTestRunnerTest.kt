@@ -10,6 +10,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -116,5 +117,27 @@ class SpeedTestRunnerTest {
 
         assertTrue(cancelled)
         assertEquals(SpeedTestState(), states.last())
+    }
+
+    @Test
+    fun transfersStuckPastTheDurationCapAreAbandonedAndKeepTheirBytes() = runTest {
+        val capped = config.copy(downloadMaxDurationMillis = 500L, uploadMaxDurationMillis = 500L)
+        val stuck = object : FakeTransport() {
+            override suspend fun download(url: String, onBytes: (Int) -> Unit) {
+                onBytes(1_000)
+                awaitCancellation()
+            }
+
+            override suspend fun upload(url: String, totalBytes: Long, onBytes: (Int) -> Unit) {
+                onBytes(500)
+                awaitCancellation()
+            }
+        }
+
+        val result = withTimeout(5_000) { SpeedTestRunner(stuck, capped) {}.run() }
+
+        assertNotNull(result)
+        assertTrue(result.downloadMbps > 0.0)
+        assertTrue(result.uploadMbps > 0.0)
     }
 }

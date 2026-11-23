@@ -60,7 +60,9 @@ internal class DesktopTunnelSession(
     var coreMessage by mutableStateOf("")
     var desiredRunning by mutableStateOf(coreState.isRunning)
     var operationInProgress by mutableStateOf(false)
-    var systemProxyRecoveryInProgress by mutableStateOf(systemProxyManager.isSupportedHost())
+    // A cheap OS check: asking the host loads the 36 MB Core library on Linux and macOS, and this runs on the UI thread.
+    // The recovery asks the host off it, and clears the flag when there is nothing to recover.
+    var systemProxyRecoveryInProgress by mutableStateOf(isDesktopSystemProxySupported())
     var intentVersion by mutableStateOf(0L)
     var closeRequested by mutableStateOf(false)
 
@@ -106,13 +108,12 @@ internal class DesktopTunnelSession(
 
     /** Releases a system proxy left behind by a previous run. */
     suspend fun recoverSystemProxy() {
-        if (!systemProxyManager.isSupportedHost()) {
-            systemProxyRecoveryInProgress = false
-            return
-        }
         systemProxyRecoveryInProgress = true
         try {
-            withContext(Dispatchers.IO) { systemProxyManager.recover() }
+            val outcome = withContext(Dispatchers.IO) {
+                if (systemProxyManager.isSupportedHost()) systemProxyManager.recover() else null
+            } ?: return
+            outcome
                 .onSuccess { recovery ->
                     if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
                         coreMessage = recovery.message
@@ -127,13 +128,16 @@ internal class DesktopTunnelSession(
         }
     }
 
+    /** Core's state is read through a native call and under the controller's locks: never on the UI thread. */
+    private suspend fun readCoreState(): DesktopCoreState = withContext(Dispatchers.IO) { coreController.state() }
+
     /** Mirrors Core's own state, which can change without a user action (e.g. a crash). */
     suspend fun observeCore() {
         var tick = 0
         while (true) {
             delay(750)
             val previous = coreState
-            val current = coreController.state()
+            val current = readCoreState()
             // The TUN tunnel (hev) can die while Core keeps running; nothing else would notice, and the system would
             // stay routed into an interface that carries nothing. Checked every few seconds while nothing else runs.
             if (current.isRunning && previous.isRunning && !operationInProgress && ++tick % TunnelHealthCheckTicks == 0) {
@@ -141,7 +145,7 @@ internal class DesktopTunnelSession(
                     checkDesktopTunnelHealth(snapshot = { tunnel.snapshot() }, disconnect = { tunnel.disconnect() })
                 }
                 if (failure != null) {
-                    coreState = coreController.state()
+                    coreState = readCoreState()
                     desiredRunning = false
                     intentVersion += 1
                     cancelPendingReconnect()
@@ -393,6 +397,9 @@ internal class DesktopTunnelSession(
             // Undispatched, so the flag is set before toggle returns: a double click no longer starts two operations.
             operationInProgress = true
             try {
+                // A startup recovery of a leftover system proxy is still running: connecting now could have it
+                // clear the proxy this connect is about to acquire. The intent is read again once it is done.
+                while (systemProxyRecoveryInProgress) delay(50)
                 if (desiredRunning) {
                     if (coreController.state().isRunning) {
                         coreState = coreController.state()

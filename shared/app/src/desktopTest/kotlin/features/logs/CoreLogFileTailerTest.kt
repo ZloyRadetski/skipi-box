@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CoreLogFileTailerTest {
@@ -29,6 +30,29 @@ class CoreLogFileTailerTest {
                 repository.entries.first { current -> current.isNotEmpty() }
             }
             assertTrue(entries.single().message.endsWith("[Info] first DNS event"))
+        } finally {
+            tailer.stop()
+            logFile.delete()
+        }
+    }
+
+    @Test
+    fun starting_twice_does_not_publish_every_line_twice() = runBlocking {
+        val logFile = File.createTempFile("skipi-core-log", ".log")
+        val repository = InMemoryCoreLogRepository()
+        val tailer = CoreLogFileTailer(
+            logFiles = listOf(CoreLogFile(path = logFile.absolutePath, defaultLevel = "error")),
+            repository = repository,
+            startAtEnd = false,
+        )
+        try {
+            logFile.writeText("2026/09/11 20:40:05 [Info] only once\n")
+            tailer.start()
+            tailer.start()
+
+            withTimeout(2_000) { repository.entries.first { current -> current.isNotEmpty() } }
+            kotlinx.coroutines.delay(1_500)
+            assertEquals(1, repository.entries.value.size)
         } finally {
             tailer.stop()
             logFile.delete()

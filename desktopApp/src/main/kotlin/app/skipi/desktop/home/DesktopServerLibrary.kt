@@ -102,19 +102,7 @@ object DesktopServerLibraries {
     fun save(path: Path, library: DesktopServerLibrary): Result<Unit> = runCatching {
         val normalized = library.normalized()
         path.parent?.let(Files::createDirectories)
-        val temporary = path.resolveSibling("${path.fileName}.tmp")
-        Files.writeString(
-            temporary,
-            json.encodeToString(normalized),
-            StandardCharsets.UTF_8,
-            CREATE,
-            TRUNCATE_EXISTING,
-        )
-        try {
-            Files.move(temporary, path, ATOMIC_MOVE, REPLACE_EXISTING)
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(temporary, path, REPLACE_EXISTING)
-        }
+        writeTextAtomically(path, json.encodeToString(normalized))
     }
 
     fun add(

@@ -4,6 +4,7 @@
 package app.skipi.app.home
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -57,5 +58,29 @@ class LatencyResultBatcherTest {
         runCurrent()
         batcher.flush()
         assertEquals(1, batches.size)
+    }
+
+    @Test
+    fun batchesAreAppliedInOrderEvenWhenAnApplyIsSlow() = runTest {
+        val events = mutableListOf<String>()
+        val firstApplyGate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val batcher = LatencyResultBatcher<Int, String>(this, intervalMillis = 100) { batch ->
+            events += "start ${batch.keys}"
+            if (batch.containsKey(1)) firstApplyGate.await()
+            events += "end ${batch.keys}"
+        }
+
+        batcher.add(1, "10 ms")
+        val firstFlush = launch { batcher.flush() }
+        runCurrent()
+        batcher.add(2, "20 ms")
+        val secondFlush = launch { batcher.flush() }
+        runCurrent()
+
+        assertEquals(listOf("start [1]"), events)
+        firstApplyGate.complete(Unit)
+        firstFlush.join()
+        secondFlush.join()
+        assertEquals(listOf("start [1]", "end [1]", "start [2]", "end [2]"), events)
     }
 }

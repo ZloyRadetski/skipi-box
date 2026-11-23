@@ -89,7 +89,6 @@ internal fun ServerListItem(
     dragModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
-    val menuActions = serverMenuActionIds(server, context, serverIndex, totalServers)
     val serverLatencyMs = server.latencyMs
     val latencyText = when {
         server.latencyTesting -> stringResource(Res.string.home_server_testing_latency)
@@ -108,6 +107,9 @@ internal fun ServerListItem(
 
     run {
         var menuExpanded by remember(server.id) { mutableStateOf(false) }
+        // The menu (rows, strings, animation state) is built only once the row was long-pressed, and then stays so its
+        // closing animation can play; a row that is never opened pays nothing for it.
+        var menuComposed by remember(server.id) { mutableStateOf(false) }
         SkipiProxyServerCompactListCard(
             state = SkipiProxyServerCompactListCardState(
                 flag = server.flag,
@@ -134,8 +136,12 @@ internal fun ServerListItem(
             titleFontWeight = themedFontWeight(FontWeight.SemiBold),
             latencyFontWeight = themedFontWeight(FontWeight.Medium),
             onSelect = { onAction(ProxyHomeAction.SelectServer(server.id)) },
-            onLongPress = { menuExpanded = true },
+            onLongPress = {
+                menuComposed = true
+                menuExpanded = true
+            },
             overlay = {
+                val menuActions = if (menuComposed) serverMenuActionIds(server, context, serverIndex, totalServers) else emptyList()
                 if (menuActions.isNotEmpty()) {
                     val moves = menuActions.filter { it == "move-up" || it == "move-down" }
                     val commandItems = (menuActions - moves.toSet()).map { actionId ->

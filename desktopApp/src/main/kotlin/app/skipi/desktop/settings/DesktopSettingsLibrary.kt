@@ -224,13 +224,7 @@ object DesktopSettingsLibraries {
     fun save(path: Path, settings: DesktopAppSettings): Result<Unit> = runCatching {
         val normalized = settings.normalized(validate = true)
         path.parent?.let(Files::createDirectories)
-        val temporary = path.resolveSibling("${path.fileName}.tmp")
-        Files.writeString(temporary, json.encodeToString(normalized), StandardCharsets.UTF_8)
-        try {
-            Files.move(temporary, path, ATOMIC_MOVE, REPLACE_EXISTING)
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(temporary, path, REPLACE_EXISTING)
-        }
+        writeTextAtomically(path, json.encodeToString(normalized))
     }
 
 }

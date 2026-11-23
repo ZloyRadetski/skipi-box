@@ -283,9 +283,16 @@ object XrayOutboundPlanner {
             routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
         }
 
+        // First row wins for a repeated id, as a linear scan would.
+        private val serversById: Map<Int, ProxyServerRow> by lazy {
+            HashMap<Int, ProxyServerRow>(input.servers.size * 2).also { index ->
+                input.servers.forEach { server -> index.putIfAbsent(server.id, server) }
+            }
+        }
+
         private fun chainProxyMembers(chainProxy: ChainProxy): List<ProxyServerRow> {
             return chainProxy.proxyServerIds.mapNotNull { memberId ->
-                input.servers.firstOrNull { server -> server.id == memberId && !server.server.isCompositeProxyServer() }
+                serversById[memberId]?.takeIf { server -> !server.server.isCompositeProxyServer() }
                     ?.takeUnless { server -> server.server.isCustomProxyServer() }
             }
         }
@@ -296,7 +303,7 @@ object XrayOutboundPlanner {
                 servers = input.servers,
                 trafficConfigContentById = input.trafficConfigContentById,
                 stripLeadingFlag = input.stripLeadingFlag,
-            ).mapNotNull { resolved -> input.servers.firstOrNull { it.id == resolved.id } }
+            ).mapNotNull { resolved -> serversById[resolved.id] }
 
         private fun shadowrocketPolicyGroupMembers(group: ShadowrocketPolicyGroup): List<ProxyServerRow> =
             resolveShadowrocketPolicyGroupMembers(
@@ -305,7 +312,7 @@ object XrayOutboundPlanner {
                 servers = input.servers,
                 trafficConfigContentById = input.trafficConfigContentById,
                 stripLeadingFlag = input.stripLeadingFlag,
-            ).mapNotNull { resolved -> input.servers.firstOrNull { it.id == resolved.id } }
+            ).mapNotNull { resolved -> serversById[resolved.id] }
     }
 }
 

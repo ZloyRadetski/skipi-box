@@ -63,4 +63,31 @@ class RoscomRoutingJsonTest {
         assertNull("{\"Name\":\"Not a routing profile\"}".toRoscomRoutingJsonOrNull())
         assertNull("[General]\ndns-server = 1.1.1.1".toRoscomRoutingJsonOrNull())
     }
+
+    @Test
+    fun mapsBareIpsIpExternalFilesAndPrefixedDomainsToTheirOwnRuleTypes() {
+        val routingJson = assertNotNull(
+            """
+            {
+              "Name": "Typed",
+              "GlobalProxy": "false",
+              "RouteOrder": "block-proxy-direct",
+              "DirectIp": ["8.8.8.8", "2001:db8::1", "ext:geoip.dat:ru", "10.0.0.0/8"],
+              "ProxySites": ["full:a.example", "domain:b.example", "keyword:ads", "regexp:^x-example$", "ext:geosite.dat:ru", "plain.example"]
+            }
+            """.trimIndent().toRoscomRoutingJsonOrNull(),
+        )
+        val conf = routingJson.toRoscomRoutingShadowrocketConf("Fallback", emptyList(), 5)
+
+        assertTrue(conf.contains("IP-CIDR,8.8.8.8,DIRECT"), conf)
+        assertTrue(conf.contains("IP-CIDR6,2001:db8::1,DIRECT"), conf)
+        assertTrue(conf.contains("GEOIP,ext:geoip.dat:ru,DIRECT"), conf)
+        assertTrue(conf.contains("IP-CIDR,10.0.0.0/8,DIRECT"), conf)
+        assertTrue(conf.contains("DOMAIN,a.example,PROXY"), conf)
+        assertTrue(conf.contains("DOMAIN-SUFFIX,b.example,PROXY"), conf)
+        assertTrue(conf.contains("DOMAIN-KEYWORD,ads,PROXY"), conf)
+        assertTrue(conf.contains("DOMAIN-SET,regexp:"), conf)
+        assertTrue(conf.contains("DOMAIN-SET,ext:geosite.dat:ru,PROXY"), conf)
+        assertTrue(conf.contains("DOMAIN-SUFFIX,plain.example,PROXY"), conf)
+    }
 }

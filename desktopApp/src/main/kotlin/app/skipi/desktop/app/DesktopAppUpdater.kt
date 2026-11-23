@@ -99,7 +99,11 @@ internal class DesktopAppUpdater(
         return job
     }
 
-    suspend fun install(): DesktopUpdateInstallResult {
+    /**
+     * [prepareExit] runs before a helper that waits for this process to end is started: it stops the tunnel, and a
+     * failure aborts the update, since a helper left waiting would replace the app that is still running.
+     */
+    suspend fun install(prepareExit: suspend () -> Result<Unit> = { Result.success(Unit) }): DesktopUpdateInstallResult {
         val current = mutableState.value
         val update = current.availableUpdate ?: return DesktopUpdateInstallResult.Failed("There is no update to install")
         val file = current.apkFilePath?.let(Path::of)?.takeIf { Files.isRegularFile(it) }
@@ -117,6 +121,11 @@ internal class DesktopAppUpdater(
             location = DesktopInstallLocation(launcher, portableRoot, processId()),
             appImage = runtime.appImage,
         ) ?: return DesktopUpdateInstallResult.Failed("This installation cannot update itself")
+        if (plan is DesktopUpdateInstallPlan.AfterExit) {
+            prepareExit().onFailure { error ->
+                return DesktopUpdateInstallResult.Failed(error.message ?: "The tunnel could not be stopped before the update")
+            }
+        }
         return withContext(Dispatchers.IO) { installer.install(plan) }.fold(
             onSuccess = { mustExit ->
                 if (mustExit) DesktopUpdateInstallResult.Restarting else DesktopUpdateInstallResult.HandedOver

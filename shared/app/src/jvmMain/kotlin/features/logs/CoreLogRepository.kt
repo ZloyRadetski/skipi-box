@@ -134,10 +134,15 @@ open class InMemoryCoreLogRepository(
     }
 
     /** Replaces the entries only if nothing was appended or removed since [expectedChangeCount]. */
-    protected fun replaceEntriesIfUnchanged(expectedChangeCount: Long, entries: List<CoreLogEntry>): Boolean {
+    protected fun replaceEntriesIfUnchanged(
+        expectedChangeCount: Long,
+        entries: List<CoreLogEntry>,
+        onReplaced: () -> Unit = {},
+    ): Boolean {
         synchronized(lock) {
             if (changes != expectedChangeCount) return false
             replaceEntriesLocked(entries)
+            onReplaced()
             return true
         }
     }

@@ -41,9 +41,7 @@ internal class DesktopLatencyStore(private val directory: Path) {
                 is DesktopServerLatencyResult.Error -> "$id\terror\t${result.message.replace('\n', ' ').replace('\t', ' ')}"
             }
         }
-        val temp = directory.resolve("$FileName.tmp")
-        Files.write(temp, lines)
-        Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING)
+        writeTextAtomically(file, lines.joinToString(separator = "") { line -> line + "\n" })
         true
     }.getOrDefault(false)
 

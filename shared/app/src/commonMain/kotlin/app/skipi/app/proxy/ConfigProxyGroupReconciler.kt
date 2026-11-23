@@ -43,10 +43,9 @@ fun reconcileConfigProxyGroups(
             .filter { group -> group.displayMode != StrategyGroupDisplayMode.NEVER }
             .map { ConfigAutoBalancerSource(config.id, it) }
     }
-    val existingGenerated = servers.filter { record ->
+    val (existingGenerated, regularServers) = servers.partition { record ->
         (record.server as? StrategyGroup)?.sourceTrafficConfigId != null
     }
-    val regularServers = servers.filterNot(existingGenerated::contains)
 
     val serverIdsByRemark = HashMap<String, MutableList<Int>>(regularServers.size * 2)
     regularServers.forEach { candidate ->

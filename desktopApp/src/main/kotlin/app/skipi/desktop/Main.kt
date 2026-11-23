@@ -295,6 +295,14 @@ private fun runDesktopApplication(
     }
     val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
     val systemProxyManager = remember(coreController) { DesktopSystemProxyManagers.create(coreController) }
+    remember(coreController, desktopTunHost, systemProxyManager) {
+        DesktopTeardownHook(
+            hasWorkToDo = { coreController.nativeLoaded },
+            releaseSystemProxy = { systemProxyManager.release() },
+            stopTun = { desktopTunHost.stopPreparedTun() },
+            stopCore = { coreController.forceStop() },
+        ).also(DesktopTeardownHook::install)
+    }
     var desktopSettings by remember {
         mutableStateOf(
             (initialSettings ?: DesktopSettingsLibraries.loadDefault().orEmptyKeepingUnreadable(DesktopSettingsLibraries.defaultPath()) { DesktopAppSettings() })
@@ -569,8 +577,8 @@ private fun runDesktopApplication(
                     when {
                         !update.canDownload -> browse(update.downloadUrl) { tunnel.coreMessage = it }
                         appUpdateState.status == AppUpdateDownloadStatus.READY_TO_INSTALL -> appUpdateScope.launch {
-                            when (val result = appUpdater.install()) {
-                                // The tunnel is stopped the usual way first; the helper waits for this process to end.
+                            when (val result = appUpdater.install(prepareExit = { tunnel.stopForBackup() })) {
+                                // The tunnel is stopped before the helper starts (a failed stop aborts the update); the helper waits for this process to end.
                                 DesktopUpdateInstallResult.Restarting -> tunnel.closeRequested = true
                                 DesktopUpdateInstallResult.HandedOver ->
                                     tunnel.coreMessage = desktopText(Res.string.desktop_update_installer_opened)

@@ -11,7 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_local_dns
 import app.skipi.ui.resources.configs_local_dns_summary
@@ -77,6 +81,7 @@ internal fun DesktopVpnSettings(
     contentPadding: PaddingValues,
 ) {
     var showTunSheet by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     var draft by remember { mutableStateOf(settings.toTunDraft()) }
     val saved = desktopText(Res.string.desktop_settings_vpn_saved)
     val tunAvailable = tunUnavailableReason == null
@@ -125,12 +130,15 @@ internal fun DesktopVpnSettings(
         onStrictFullTunnelChange = { enabled -> onPersist(settings.copy(enableStrictFullTunnel = enabled), saved) },
         onAutoConnectOnOpenChange = { enabled -> onPersist(settings.copy(autoConnectOnAppOpen = enabled), saved) },
         onAutoConnectOnBootChange = { enabled ->
-            onApplyLaunchOnLogin(enabled).fold(
-                onSuccess = { onPersist(settings.copy(launchOnLogin = enabled), saved) },
-                onFailure = { error ->
-                    onPersist(settings, desktopText(Res.string.desktop_vpn_autostart_failed, error.message.orEmpty()))
-                },
-            )
+            // Registering the autostart starts up to three system programs; never wait for them on the UI thread.
+            scope.launch {
+                withContext(Dispatchers.IO) { onApplyLaunchOnLogin(enabled) }.fold(
+                    onSuccess = { onPersist(settings.copy(launchOnLogin = enabled), saved) },
+                    onFailure = { error ->
+                        onPersist(settings, desktopText(Res.string.desktop_vpn_autostart_failed, error.message.orEmpty()))
+                    },
+                )
+            }
         },
         onKillSwitchChange = {},
         onBatteryOptimizationChange = {},

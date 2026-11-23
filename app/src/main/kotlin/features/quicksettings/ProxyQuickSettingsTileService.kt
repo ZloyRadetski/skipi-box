@@ -59,7 +59,7 @@ class ProxyQuickSettingsTileService : TileService() {
     private val proxyServiceUseCase by lazy { ProxyServiceUseCase(proxyEngine) }
 
     override fun attachBaseContext(newBase: Context) {
-        val languageMode = AppSettingsPreferences(newBase).load().languageMode
+        val languageMode = AppSettingsPreferences(newBase).loadLocaleAndColorMode().languageMode
         super.attachBaseContext(newBase.localizedAppContext(languageMode))
     }
 

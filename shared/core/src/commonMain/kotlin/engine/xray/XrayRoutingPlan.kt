@@ -55,7 +55,20 @@ interface XrayRoutingRuleValidator {
 
     fun filterValidIpRules(rules: List<String>): List<String> =
         rules.filter { rule -> isIpRuleValid(rule) }
+
+    /**
+     * Sorts [rules] into the ones a routing rule keeps and the ones to report as unapplied. The default
+     * honours the platform's [filterValidDomainRules] / [filterValidIpRules] (and so may validate an entry
+     * twice); an implementation that can classify in one pass overrides this to validate each entry once.
+     */
+    fun classifyDomainRules(rules: List<String>): XrayRuleClassification =
+        XrayRuleClassification(kept = filterValidDomainRules(rules), unapplied = rules.filterNot { isDomainRuleValid(it) })
+
+    fun classifyIpRules(rules: List<String>): XrayRuleClassification =
+        XrayRuleClassification(kept = filterValidIpRules(rules), unapplied = rules.filterNot { isIpRuleValid(it) })
 }
+
+class XrayRuleClassification(val kept: List<String>, val unapplied: List<String>)
 
 /** Builds a portable routing plan from [request] and its resource policy. */
 fun planXrayRouting(
@@ -118,9 +131,7 @@ private fun XrayRoutingRequest.routingRules(
         routeRules
             .filter(RouteRule::enabled)
             .forEach { rule ->
-                unapplied += rule.domain.filterNot { domain -> ruleValidator.isDomainRuleValid(domain) }
-                unapplied += rule.ip.filterNot { ip -> ruleValidator.isIpRuleValid(ip) }
-                rule.toXrayRule(routeTargets, ruleValidator, usedRuleTags)?.let(::add)
+                rule.toXrayRule(routeTargets, ruleValidator, usedRuleTags, unapplied)?.let(::add)
             }
         // Xray otherwise falls back to the first outbound.  That makes a
         // Shadowrocket FINAL choice look ignored whenever the selected card is
@@ -180,11 +191,16 @@ private fun RouteRule.toXrayRule(
     routeTargets: Map<String, XrayRouteTarget>,
     ruleValidator: XrayRoutingRuleValidator,
     usedRuleTags: MutableSet<String>,
+    unapplied: MutableList<String>,
 ): JsonObject? {
     val targetOutboundTag = outboundTag.trim().ifBlank { XrayTags.PROXY }
     val target = routeTargets[targetOutboundTag] ?: return null
-    val sanitizedDomains = ruleValidator.filterValidDomainRules(domain.toTrimmedNonEmptyDistinctList())
-    val sanitizedIps = ruleValidator.filterValidIpRules(ip.toTrimmedNonEmptyDistinctList())
+    val domains = ruleValidator.classifyDomainRules(domain.toTrimmedNonEmptyDistinctList())
+    val ips = ruleValidator.classifyIpRules(ip.toTrimmedNonEmptyDistinctList())
+    unapplied += domains.unapplied
+    unapplied += ips.unapplied
+    val sanitizedDomains = domains.kept
+    val sanitizedIps = ips.kept
     val sanitizedProcess = process.toTrimmedNonEmptyDistinctList()
     val sanitizedPort = port.trim()
     val sanitizedNetwork = network.trim()

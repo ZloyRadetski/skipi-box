@@ -31,7 +31,7 @@ fun String.toXrayExternalDomainRuleOrNull(): XrayExternalDomainRule? {
     return XrayExternalDomainRule(fileName = fileName, tag = tag)
 }
 
-private fun String.isPlainResourceFileName(): Boolean =
+internal fun String.isPlainResourceFileName(): Boolean =
     isNotBlank() &&
         this != "." &&
         this != ".." &&

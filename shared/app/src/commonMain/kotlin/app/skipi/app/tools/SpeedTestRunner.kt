@@ -13,6 +13,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -160,7 +161,18 @@ class SpeedTestRunner(
                     }
                 }
             }
+            // A transfer blocked mid-payload never reaches the loop condition, so the caps cancel the workers themselves.
+            val deadline = launch {
+                delay(maxDuration)
+                workers.forEach { it.cancel() }
+            }
+            val budget = launch {
+                transferred.first { it >= byteBudget }
+                workers.forEach { it.cancel() }
+            }
             workers.forEach { it.join() }
+            deadline.cancel()
+            budget.cancel()
             sampler.cancel()
         }
 

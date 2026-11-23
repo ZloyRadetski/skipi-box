@@ -21,9 +21,14 @@ fun resolveStrategyGroupMembers(
     trafficConfigContentById: Map<Int, String> = emptyMap(),
     stripLeadingFlag: (String) -> String = { it },
     visitingStrategyGroupIds: Set<Int> = emptySet(),
+    visitingPolicyGroupNames: Set<String> = emptySet(),
 ): List<ProxyServerRow> {
+    // First row wins for a repeated id, as a linear scan would.
+    val serversById = HashMap<Int, ProxyServerRow>(servers.size * 2).also { index ->
+        servers.forEach { row -> index.putIfAbsent(row.id, row) }
+    }
     val explicitMembers = strategyGroup.proxyServerIds.flatMap { memberId ->
-        val member = servers.firstOrNull { it.id == memberId }
+        val member = serversById[memberId]
         when (val server = member?.server) {
             is StrategyGroup -> if (member.id in visitingStrategyGroupIds) emptyList()
                 else resolveStrategyGroupMembers(
@@ -32,6 +37,7 @@ fun resolveStrategyGroupMembers(
                     trafficConfigContentById,
                     stripLeadingFlag,
                     visitingStrategyGroupIds + member.id,
+                    visitingPolicyGroupNames,
                 )
             null, is ChainProxy -> emptyList()
             is Custom -> member.takeIf { server.canBeUsedInGeneratedProxyPlan() }?.let(::listOf).orEmpty()
@@ -54,7 +60,8 @@ fun resolveStrategyGroupMembers(
                     servers,
                     trafficConfigContentById,
                     stripLeadingFlag,
-                    emptySet(),
+                    visitingPolicyGroupNames,
+                    visitingStrategyGroupIds,
                 )
             }
     }
@@ -90,8 +97,13 @@ fun resolveShadowrocketPolicyGroupMembers(
     trafficConfigContentById: Map<Int, String>,
     stripLeadingFlag: (String) -> String,
     visitingPolicyGroupNames: Set<String> = emptySet(),
+    visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerRow> {
-    if (group.name in visitingPolicyGroupNames) return emptyList()
+    // Strategy groups and policy groups can name each other, so both visited sets travel through both
+    // functions; names compare case-insensitively like every other policy-name lookup here.
+    val groupKey = group.name.lowercase()
+    if (groupKey in visitingPolicyGroupNames) return emptyList()
+    val visitingWithGroup = visitingPolicyGroupNames + groupKey
     val matchingStrategy = servers.firstOrNull { row ->
         (row.server as? StrategyGroup)?.sourcePolicyGroupName?.equals(group.name, ignoreCase = true) == true
     }?.let { it.server as? StrategyGroup }
@@ -101,6 +113,8 @@ fun resolveShadowrocketPolicyGroupMembers(
             servers,
             trafficConfigContentById,
             stripLeadingFlag,
+            visitingStrategyGroupIds,
+            visitingWithGroup,
         )
     }
 
@@ -130,7 +144,8 @@ fun resolveShadowrocketPolicyGroupMembers(
                         servers,
                         trafficConfigContentById,
                         stripLeadingFlag,
-                        emptySet(),
+                        visitingStrategyGroupIds,
+                        visitingWithGroup,
                     )
                     else -> matching.takeUnless { it.server.isCompositeProxyServer() }?.let(::listOf).orEmpty()
                 }
@@ -142,7 +157,8 @@ fun resolveShadowrocketPolicyGroupMembers(
                         servers,
                         trafficConfigContentById,
                         stripLeadingFlag,
-                        visitingPolicyGroupNames + group.name,
+                        visitingWithGroup,
+                        visitingStrategyGroupIds,
                     )
                 }.orEmpty()
             }

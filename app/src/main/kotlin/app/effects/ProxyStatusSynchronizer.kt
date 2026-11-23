@@ -6,6 +6,8 @@ package app.effects
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -15,7 +17,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.AppState
-import app.collectAppState
 import app.modes.RunModeVpnService
 import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
@@ -33,7 +34,13 @@ internal fun ProxyStatusSynchronizer(
     proxyEngine: AndroidProxyEngine,
     updateAppState: ((AppState) -> AppState) -> Unit,
 ) {
-    val appState by stateStore.collectAppState()
+    // Only these two fields matter here; the rest of AppState changing must not recompose this effect host.
+    val fullState = stateStore.state.collectAsState()
+    val trafficStatsSlice by remember(stateStore) {
+        derivedStateOf { fullState.value.proxyRunning to fullState.value.enableTrafficStatsNotification }
+    }
+    val proxyRunning = trafficStatsSlice.first
+    val enableTrafficStatsNotification = trafficStatsSlice.second
     val appContext = LocalContext.current.applicationContext
     val lifecycleOwner = LocalLifecycleOwner.current
     var foregroundSyncGeneration by remember(stateStore, proxyEngine) { mutableIntStateOf(0) }
@@ -52,10 +59,10 @@ internal fun ProxyStatusSynchronizer(
             updateAppState = updateAppState,
         )
     }
-    LaunchedEffect(appContext, appState.proxyRunning, appState.enableTrafficStatsNotification) {
-        if (!appState.enableTrafficStatsNotification) {
+    LaunchedEffect(appContext, proxyRunning, enableTrafficStatsNotification) {
+        if (!enableTrafficStatsNotification) {
             ProxyTrafficStatsService.reconcile(appContext, null)
-        } else if (appState.proxyRunning) {
+        } else if (proxyRunning) {
             ProxyTrafficStatsRuntimeStore.read(appContext)?.let { runtime ->
                 ProxyTrafficStatsService.reconcile(appContext, runtime)
             }

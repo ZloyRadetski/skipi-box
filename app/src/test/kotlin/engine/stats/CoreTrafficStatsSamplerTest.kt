@@ -52,6 +52,28 @@ class CoreTrafficStatsSamplerTest {
     }
 
     @Test
+    fun notification_is_not_published_while_the_screen_is_off() {
+        assertFalse(
+            shouldPublishTrafficNotification(
+                lastPublishedAtElapsedRealtime = 10_000L,
+                nowElapsedRealtime = 60_000L,
+                activeTargetChanged = true,
+                refreshIntervalMillis = 1_000L,
+                screenInteractive = false,
+            ),
+        )
+        assertTrue(
+            shouldPublishTrafficNotification(
+                lastPublishedAtElapsedRealtime = 10_000L,
+                nowElapsedRealtime = 60_000L,
+                activeTargetChanged = false,
+                refreshIntervalMillis = 1_000L,
+                screenInteractive = true,
+            ),
+        )
+    }
+
+    @Test
     fun notification_refresh_interval_is_limited_to_supported_range() {
         assertEquals(1_000L, trafficStatsNotificationRefreshIntervalMillis(0))
         assertEquals(1_000L, trafficStatsNotificationRefreshIntervalMillis(1))

@@ -308,8 +308,16 @@ class ResourceSnapshotFilesTest {
     )
 
     private fun writeForTest(target: File, write: (OutputStream) -> Unit) {
+        // Same contract as the real adapters: stage, refuse empty content, then replace in one step.
         target.parentFile?.mkdirs()
-        target.outputStream().use(write)
+        val staged = File.createTempFile("write-", ".tmp", target.parentFile)
+        try {
+            staged.outputStream().use(write)
+            check(staged.length() > 0) { "${target.name} is empty" }
+            Files.move(staged.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            staged.delete()
+        }
     }
 
     private fun bytes(vararg values: Int) = ByteArrayInputStream(values.map(Int::toByte).toByteArray())
@@ -323,5 +331,15 @@ class ResourceSnapshotFilesTest {
                 paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
             }
         }
+    }
+
+    @Test
+    fun reservedNamesAreMatchedCaseInsensitivelyAndDotfilesAreNeverCustomResources() = withXrayRoot { root ->
+        val snapshot = snapshot(root, trafficConfigId = 3)
+        listOf("GeoIP.dat", "GEOSITE.DAT", ".resource-source").forEach { name ->
+            snapshot.replaceCustom(TrafficConfigCustomResourceFile(1, name, "")) { bytes(1, 2) }
+            assertFalse(File(snapshot.dataDir, name).exists() && File(snapshot.dataDir, name).length() > 0 && name.startsWith("."), name)
+        }
+        assertFalse(snapshot.file(ResourceFileKind.GeoIp).exists())
     }
 }

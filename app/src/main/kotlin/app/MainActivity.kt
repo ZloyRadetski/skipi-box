@@ -211,6 +211,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        // Dismissing resumes a pending import confirmation with "no" through the cancel listener.
+        externalImportDialog?.dismiss()
+        externalImportDialog = null
         vpnPermissionRequester.complete(false)
         vpnPermissionRequester.registerLauncher(null)
         wifiSsidPermissionRequester.complete(false)
@@ -264,13 +267,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var externalImportDialog: AlertDialog? = null
+
     private fun checkAutoConnectOnAppOpen() {
         val application = application as SkipiApplication
-        val settings = application.stateStore.state.value
-        if (!settings.autoConnectOnAppOpen || settings.proxyRunning) return
-        // The user just ran an emergency stop; do not reconnect on the relaunch that follows it.
-        if (engine.vpn.EmergencyStopMarkers.of(applicationContext).consumeSuppressAutoConnect()) return
+        // The settings load and the marker's commit() are disk work: none of it runs on the main thread.
         application.appScope.launch(Dispatchers.IO) {
+            val settings = application.stateStore.state.value
+            if (!settings.autoConnectOnAppOpen || settings.proxyRunning) return@launch
+            // The user just ran an emergency stop; do not reconnect on the relaunch that follows it.
+            if (engine.vpn.EmergencyStopMarkers.of(applicationContext).consumeSuppressAutoConnect()) return@launch
             // Only the settings are available right away; the server list loads in the background.
             application.stateStore.awaitReady()
             val state = application.stateStore.currentState
@@ -346,6 +352,10 @@ class MainActivity : ComponentActivity() {
         messageRes: Int = R.string.external_import_confirm_message,
     ): Boolean = suspendCancellableCoroutine { continuation ->
         runOnUiThread {
+            if (isFinishing || isDestroyed) {
+                if (continuation.isActive) continuation.resume(false)
+                return@runOnUiThread
+            }
             val shownTarget = target.ifBlank { getString(R.string.external_import_inline_content) }
             val dialog = AlertDialog.Builder(this)
                 .setTitle(R.string.external_import_confirm_title)
@@ -356,9 +366,10 @@ class MainActivity : ComponentActivity() {
                 .setNegativeButton(android.R.string.cancel) { _, _ ->
                     if (continuation.isActive) continuation.resume(false)
                 }
-                .setOnCancelListener { if (continuation.isActive) continuation.resume(false) }
+                .setOnDismissListener { if (continuation.isActive) continuation.resume(false) }
                 .create()
             continuation.invokeOnCancellation { runOnUiThread { dialog.dismiss() } }
+            externalImportDialog = dialog
             dialog.show()
         }
     }

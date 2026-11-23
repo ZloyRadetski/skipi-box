@@ -140,3 +140,18 @@ class SubscriptionMetadataTest {
         assertTrue(embedded.activate)
     }
 }
+
+class SubscriptionMetadataLiteralPercentTest {
+    @Test
+    fun aLiteralPercentInATitleIsPlainTextNotAFailure() {
+        val response = SubscriptionFetchResponse(
+            body = "vless://uuid@server:443?security=tls#Server1",
+            headers = mapOf("profile-title" to "100%FastVPN", "announce" to "50%OFF"),
+        )
+
+        val metadata = response.subscriptionMetadata()
+
+        assertEquals("100%FastVPN", metadata.profileTitle)
+        assertEquals("50%OFF", metadata.announce)
+    }
+}

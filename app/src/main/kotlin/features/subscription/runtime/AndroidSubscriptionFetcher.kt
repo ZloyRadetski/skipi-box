@@ -31,13 +31,22 @@ import java.net.Proxy
 import java.net.URI
 import features.subscription.SubscriptionAgeCrypto
 
-internal class AndroidSubscriptionFetcher(
-    private val installationHwid: String,
+internal class AndroidSubscriptionFetcher private constructor(
+    hwidProvider: () -> String,
     private val ageCrypto: SubscriptionAgeCrypto,
-    private val context: Context? = null,
+    private val context: Context?,
 ) {
+    // Resolved on the first fetch, which runs on IO: the Keystore round trip stays off the main thread.
+    private val installationHwid: String by lazy(hwidProvider)
+
+    constructor(
+        installationHwid: String,
+        ageCrypto: SubscriptionAgeCrypto,
+        context: Context? = null,
+    ) : this({ installationHwid }, ageCrypto, context)
+
     constructor(context: Context) : this(
-        installationHwid = AppSettingsPreferences(context.applicationContext).getOrCreateSubscriptionHwid(),
+        hwidProvider = { AppSettingsPreferences(context.applicationContext).getOrCreateSubscriptionHwid() },
         ageCrypto = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             KageSubscriptionAgeCrypto
         } else {

@@ -228,6 +228,23 @@ class DesktopCoreSessionTest {
         starter.join(5_000)
     }
 
+    @Test
+    fun aStartReleasedAfterAForceStopNeverInstallsTheDestroyedHandle() {
+        val native = SessionNative(blockSessionStart = true)
+        val controller = controller(native)
+        var startResult: Result<DesktopCoreState>? = null
+        val starter = Thread { startResult = controller.start("{}", hev = hev) }.apply { isDaemon = true; start() }
+        assertTrue(native.startEntered.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        controller.forceStop()
+
+        native.releaseStart.countDown()
+        starter.join(5_000)
+
+        assertTrue(checkNotNull(startResult).isFailure, "the cancelled start must not report success")
+        assertNull(controller.state().sessionId, "a destroyed handle must not become the active one")
+        assertFalse(controller.state().isRunning)
+    }
+
     // The Home log polls readConnectionLog without any lock; a stop must not free the handle under that read.
     @Test
     fun stopDoesNotDestroyTheHandleWhileTheLogIsBeingRead() {

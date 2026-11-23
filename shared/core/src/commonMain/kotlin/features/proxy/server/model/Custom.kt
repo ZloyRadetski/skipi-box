@@ -20,7 +20,9 @@ data class Custom(
     var configJson: String = "",
 ) : ProxyServer<Custom> {
     override fun getInfo(): ProxyServerInfo {
-        return ProxyServerInfo(remarks, customXrayConfigSummary(configJson), customXrayConfigProtocolDisplayName(configJson))
+        // One parse of the JSON serves both the address summary and the protocol name.
+        val outbounds = configJson.customXrayConfigOutboundsOrNull()
+        return ProxyServerInfo(remarks, customXrayConfigSummary(outbounds), customXrayConfigProtocolDisplayName(outbounds))
     }
 
     override fun toXrayOutbound(tag: String): OutboundObject {
@@ -115,8 +117,11 @@ fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOutboundEnd
  * Returns the primary proxy outbound from a raw Xray configuration when it
  * can be embedded in a generated SKIPI plan (for routing or a balancer).
  */
-fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? {
-    val outbounds = value.customXrayConfigOutboundsOrNull() ?: return null
+fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? =
+    value.customXrayConfigOutboundsOrNull().primaryProxyOutbound()
+
+private fun JsonArray?.primaryProxyOutbound(): JsonObject? {
+    val outbounds = this ?: return null
     val objects = outbounds.mapNotNull { element -> element as? JsonObject }
     return objects.firstOrNull { outbound -> outbound.stringValue("tag") == CustomProxyOutboundTag }
         ?: objects.firstOrNull { outbound -> outbound.stringValue("tag") !in CustomFixedOutboundTags }
@@ -137,8 +142,11 @@ private fun String.customXrayConfigOutboundsOrNull(): JsonArray? {
     }.getOrNull()
 }
 
-internal fun customXrayConfigProtocolDisplayName(value: String): String {
-    val primary = customXrayConfigPrimaryProxyOutbound(value)
+internal fun customXrayConfigProtocolDisplayName(value: String): String =
+    customXrayConfigProtocolDisplayName(value.customXrayConfigOutboundsOrNull())
+
+private fun customXrayConfigProtocolDisplayName(outbounds: JsonArray?): String {
+    val primary = outbounds.primaryProxyOutbound()
     val rawProtocol = primary?.stringValue("protocol")?.trim()?.lowercase()
     val typeName = when (rawProtocol) {
         "vless" -> "VLESS"
@@ -205,10 +213,7 @@ internal fun customXrayConfigTransportDisplay(value: String): String? {
     }
 }
 
-private fun customXrayConfigSummary(value: String): String {
-    val outbounds = runCatching {
-        parseCustomXrayConfigJsonObject(value)["outbounds"] as? JsonArray
-    }.getOrNull()
+private fun customXrayConfigSummary(outbounds: JsonArray?): String {
     outbounds?.customProxyOutboundEndpoint()?.let { return it.toDisplayAddress() }
     return when (val count = outbounds?.size ?: 0) {
         1 -> "1 outbound"

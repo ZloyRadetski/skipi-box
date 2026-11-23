@@ -161,6 +161,9 @@ class ProxyTrafficStatsService : Service() {
 
         val runtime = ProxyTrafficStatsRuntimeStore.read(this)
         if (runtime == null) {
+            // The paused-state start came through startForegroundService(), which must be answered with
+            // startForeground() even when there is nothing left to show; stopStats() then removes it again.
+            answerForegroundStartRequest()
             stopStats()
             return START_NOT_STICKY
         }
@@ -268,6 +271,7 @@ class ProxyTrafficStatsService : Service() {
                             nowElapsedRealtime = now,
                             activeTargetChanged = activeTargetChanged,
                             refreshIntervalMillis = notificationRefreshIntervalMillis(),
+                            screenInteractive = isScreenInteractive,
                         )
                     ) {
                         publishNotification(runtime, latestSample)
@@ -275,6 +279,25 @@ class ProxyTrafficStatsService : Service() {
                     }
                 }
             }
+        }
+    }
+
+    private fun answerForegroundStartRequest() {
+        if (ownsForegroundNotification) return
+        runCatching {
+            VpnForegroundNotification.ensureChannel(this, notificationManager)
+            startForegroundCompat(
+                notificationBuilder()
+                    .setSmallIcon(R.drawable.ic_qs_proxy)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setOngoing(true)
+                    .setLocalOnly(true)
+                    .setShowWhen(false)
+                    .build(),
+            )
+            ownsForegroundNotification = true
+        }.onFailure { error ->
+            AppLog.warn(LogTag, "Could not answer the traffic stats foreground start request", error)
         }
     }
 
@@ -544,7 +567,10 @@ internal fun shouldPublishTrafficNotification(
     nowElapsedRealtime: Long,
     activeTargetChanged: Boolean,
     refreshIntervalMillis: Long,
+    screenInteractive: Boolean = true,
 ): Boolean {
+    // A screen that is off shows nothing; the screen-on receiver publishes right away.
+    if (!screenInteractive) return false
     return activeTargetChanged ||
         lastPublishedAtElapsedRealtime == 0L ||
         nowElapsedRealtime - lastPublishedAtElapsedRealtime >= refreshIntervalMillis.coerceAtLeast(1_000L)

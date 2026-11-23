@@ -474,7 +474,9 @@ internal class AppSettingsPreferences(
      * blobs that did not change are not encoded or written again.
      */
     fun save(state: AppState, previous: AppState? = null) {
-        preferences.edit { putAppState(state, previous) }
+        // commit(), not apply(): every caller is on the store's IO save path, and an apply() leaves a pending write that
+        // QueuedWork flushes on the main thread when the app is backgrounded.
+        preferences.edit(commit = true) { putAppState(state, previous) }
     }
 
     /** Clears every persisted application preference, including the local HWID seed. */

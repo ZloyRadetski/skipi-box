@@ -81,14 +81,28 @@ fun AppState.xrayDnsHosts(
         launchLookup(host, resolveAddresses)?.let { future -> host to future }
     }
 
-    val resolvedEntries = futures.mapNotNull { (host, future) ->
-        runCatching {
-            future.get(DnsLookupTimeoutMillis, TimeUnit.MILLISECONDS)
-        }.onFailure {
+    // One deadline for all lookups: they run in parallel, so waiting a fresh timeout per host would stack up to
+    // hosts x timeout when DNS is slow or blocked.
+    val deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(DnsLookupTimeoutMillis)
+    val resolvedEntries = mutableListOf<String>()
+    var interrupted = false
+    for ((host, future) in futures) {
+        if (interrupted) {
             future.cancel(true)
-        }.getOrNull()?.takeIf { addresses -> addresses.isNotEmpty() }?.let { addresses ->
-            "$host:${addresses.joinToString(",")}"
+            continue
         }
+        val addresses = try {
+            future.get((deadlineNanos - System.nanoTime()).coerceAtLeast(0L), TimeUnit.NANOSECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            interrupted = true
+            future.cancel(true)
+            null
+        } catch (_: Exception) {
+            future.cancel(true)
+            null
+        }
+        if (!addresses.isNullOrEmpty()) resolvedEntries += "$host:${addresses.joinToString(",")}"
     }
 
     return (dnsHosts + resolvedEntries).distinct()

@@ -61,30 +61,95 @@ fun String.withRoutingRowsImported(
     mode: ClipboardImportMode,
 ): RoutingRowsImportResult {
     val before = analyzeShadowrocketConfig().rules
-    var document = this
     val known = mutableSetOf<String>()
+    var lines: MutableList<String>? = null
     when (mode) {
-        ClipboardImportMode.Replace ->
-            before.sortedByDescending(ShadowrocketRule::lineNumber).forEach { rule ->
-                document = document.withoutShadowrocketRuleLine(rule.lineNumber)
+        ClipboardImportMode.Replace -> if (before.isNotEmpty()) {
+            // Remove from the bottom so the line numbers of the rules still to go stay valid.
+            lines = lines().toMutableList().also { list ->
+                before.sortedByDescending(ShadowrocketRule::lineNumber).forEach { rule -> list.removeAt(rule.lineNumber - 1) }
+                list.normalizeTrailingBlankLines()
             }
+        }
 
         ClipboardImportMode.Merge -> before.mapTo(known) { it.toShadowrocketLine().substringBefore(RuleRemarksSeparator) }
     }
 
+    // One split and one join for the whole import: each rule goes where withShadowrocketRuleAdded would put it
+    // (before the first FINAL, or else at the end of [Rule]), without re-reading the document per row.
+    val inserter = ShadowrocketRuleInserter(
+        lines = lines ?: lines().toMutableList(),
+        finalLineIndex = if (mode == ClipboardImportMode.Merge) before.firstOrNull(ShadowrocketRule::isFinal)?.let { it.lineNumber - 1 } else null,
+        alreadyEdited = lines != null,
+    )
     var added = 0
     val unwritable = mutableListOf<UnwritableRowValue>()
     for (row in rows) {
         row.unwritableValues().mapTo(unwritable) { value -> UnwritableRowValue(row.name, value) }
         val line = row.toShadowrocketLineOrNull()?.line ?: continue
         if (!known.add(line.substringBefore(RuleRemarksSeparator))) continue
-        document = document.withShadowrocketRuleAdded(line)
+        inserter.add(line)
         added++
     }
 
     if (mode == ClipboardImportMode.Replace) {
         val policy = finalPolicy ?: before.lastOrNull(ShadowrocketRule::isFinal)?.policy
-        if (policy != null) document = document.withShadowrocketRuleAdded("FINAL,$policy")
+        if (policy != null) inserter.add("FINAL,$policy")
     }
+    val document = if (inserter.changed) inserter.lines.joinToString("\n") else this
     return RoutingRowsImportResult(document, added, unwritable)
+}
+
+/** Drops trailing blank lines and ends the list with one empty element, as `joinToString("\n").trimEnd() + "\n"` does. */
+private fun MutableList<String>.normalizeTrailingBlankLines() {
+    while (isNotEmpty() && last().isBlank()) removeAt(lastIndex)
+    if (isEmpty()) {
+        add("")
+    } else {
+        this[lastIndex] = last().trimEnd()
+    }
+    add("")
+}
+
+/** [withShadowrocketRuleAdded] for many rules over one line list. */
+private class ShadowrocketRuleInserter(
+    val lines: MutableList<String>,
+    private var finalLineIndex: Int?,
+    alreadyEdited: Boolean,
+) {
+    var changed: Boolean = alreadyEdited
+        private set
+    private var ruleHeaderIndex = -1
+    private var nextHeaderIndex = -1
+
+    fun add(rawRule: String) {
+        changed = true
+        val rule = rawRule.trim()
+        val finalIndex = finalLineIndex
+        if (finalIndex != null) {
+            lines.add(finalIndex, rule)
+            finalLineIndex = finalIndex + 1
+            lines.normalizeTrailingBlankLines()
+            return
+        }
+        if (ruleHeaderIndex < 0) {
+            ruleHeaderIndex = lines.indexOfFirst { line -> line.shadowrocketSectionHeaderNameOrNull().equals("Rule", ignoreCase = true) }
+            if (ruleHeaderIndex >= 0) {
+                nextHeaderIndex = (ruleHeaderIndex + 1 until lines.size).firstOrNull { index ->
+                    val trimmed = lines[index].trim()
+                    trimmed.startsWith("[") && trimmed.endsWith("]")
+                } ?: -1
+            }
+        }
+        if (ruleHeaderIndex >= 0) {
+            lines.add(if (nextHeaderIndex < 0) lines.size else nextHeaderIndex, rule)
+            if (nextHeaderIndex >= 0) nextHeaderIndex++
+        } else {
+            if (lines.isNotEmpty() && lines.last().isNotBlank()) lines += ""
+            ruleHeaderIndex = lines.size
+            lines += "[Rule]"
+            lines += rule
+        }
+        lines.normalizeTrailingBlankLines()
+    }
 }

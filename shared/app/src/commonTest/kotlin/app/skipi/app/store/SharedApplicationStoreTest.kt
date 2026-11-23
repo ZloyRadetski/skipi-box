@@ -652,6 +652,27 @@ class SharedApplicationStoreTest {
         }
     }
 
+    @Test
+    fun slowSubscriptionRefreshDoesNotBlockOtherStoreActions() = runTest {
+        val repositories = FakeRepositories()
+        repositories.proxyServers.servers.value = listOf(ProxyServerRecord(id = 7, server = HTTP(server = "seven.example")))
+        val gate = CompletableDeferred<Unit>()
+        repositories.subscriptions.refreshGate = gate
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val refresh = async { store.dispatchAndAwait(SharedApplicationAction.RefreshSubscription(1)) }
+        runCurrent()
+        val select = async { store.dispatchAndAwait(SharedApplicationAction.SelectProxyServer(7)) }
+        runCurrent()
+
+        assertTrue(select.isCompleted, "selection must not wait for the network refresh")
+        assertEquals(7, repositories.proxyServers.selectedId)
+        gate.complete(Unit)
+        runCurrent()
+        assertTrue(refresh.isCompleted)
+    }
+
     private class FakeRepositories(includeExtensions: Boolean = true) {
         val settings = FakeSettingsRepository()
         val proxyServers = FakeProxyRepository()
@@ -730,8 +751,11 @@ class SharedApplicationStoreTest {
                 current.copy(subscriptions = current.subscriptions.filterNot { it.id == subscriptionId })
             }
         }
-        override suspend fun refresh(subscriptionId: Int): Result<SubscriptionRecord> =
-            Result.failure(UnsupportedOperationException("No refresh implementation"))
+        var refreshGate: CompletableDeferred<Unit>? = null
+        override suspend fun refresh(subscriptionId: Int): Result<SubscriptionRecord> {
+            refreshGate?.await()
+            return Result.failure(UnsupportedOperationException("No refresh implementation"))
+        }
     }
 
     private class FakeTrafficRepository : TrafficConfigRepository {

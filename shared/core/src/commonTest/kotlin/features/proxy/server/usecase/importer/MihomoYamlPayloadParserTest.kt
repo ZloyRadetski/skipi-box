@@ -355,6 +355,34 @@ class MihomoYamlPayloadParserTest {
         assertEquals(1, summary.rejectedCount)
         assertEquals(2, summary.urlCount)
     }
+
+    @Test
+    fun aPayloadOfProxyUrlsImportsTheServers() {
+        val parser = parser(
+            trees = mapOf("root" to mapOf("payload" to listOf("socks5://one.example.test:1080#One", "socks5://two.example.test:1080#Two"))),
+        )
+
+        val result = runSynchronously { parser("root", ProxyServerImportContext(source = ProxyServerImportSource.Clipboard)) }
+
+        assertEquals(listOf("One", "Two"), result.servers.map { it.getInfo().remarks })
+    }
+
+    @Test
+    fun anInlineProviderPayloadOfProxyUrlsImportsTheServers() {
+        val parser = parser(
+            trees = mapOf(
+                "root" to mapOf(
+                    "proxy-providers" to mapOf(
+                        "inline" to mapOf("type" to "inline", "payload" to listOf("socks5://one.example.test:1080#One")),
+                    ),
+                ),
+            ),
+        )
+
+        val result = runSynchronously { parser("root", ProxyServerImportContext(source = ProxyServerImportSource.Clipboard)) }
+
+        assertEquals(listOf("One"), result.servers.map { it.getInfo().remarks })
+    }
 }
 
 private fun parser(

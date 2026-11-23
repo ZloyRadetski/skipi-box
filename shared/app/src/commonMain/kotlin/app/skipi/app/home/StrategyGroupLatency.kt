@@ -42,7 +42,9 @@ suspend fun <M> strategyGroupLatency(
 ): Long? {
     if (members.isEmpty()) return null
     // Probes live in their own scope so giving up on one never waits for it; the scope ends with this call.
-    val probes = CoroutineScope(currentCoroutineContext().minusKey(kotlinx.coroutines.Job) + SupervisorJob())
+    // Parented to the caller so cancelling the call cancels them too, but a supervisor so one failing never sinks the rest.
+    val callerContext = currentCoroutineContext()
+    val probes = CoroutineScope(callerContext.minusKey(kotlinx.coroutines.Job) + SupervisorJob(callerContext[kotlinx.coroutines.Job]))
     try {
         val permits = Semaphore(concurrency.coerceAtLeast(1))
         val best = MutableStateFlow<Long?>(null)
@@ -66,15 +68,20 @@ private suspend fun <M> probeUnlessOutrun(
     val started = timeSource.markNow()
     val outcome = CompletableDeferred<Long?>()
     val running = scope.launch {
-        outcome.complete(
-            try {
-                probe(member)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                null
-            },
-        )
+        try {
+            outcome.complete(
+                try {
+                    probe(member)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                    null
+                },
+            )
+        } finally {
+            // Cancelled or died of an Error before answering: count as no answer instead of waiting forever.
+            outcome.complete(null)
+        }
     }
     val watcher = scope.launch {
         // A better answer moves the deadline closer, so the wait restarts with each one.
@@ -89,6 +96,7 @@ private suspend fun <M> probeUnlessOutrun(
         outcome.await()
     } finally {
         watcher.cancel()
+        running.cancel()
     }
     if (answer != null && answer >= 0L) best.update { current -> if (current == null || answer < current) answer else current }
     return answer

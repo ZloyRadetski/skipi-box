@@ -20,8 +20,8 @@ import utils.encodeBase64
 
 /** This URL with a Unicode host name converted to its ASCII (punycode) form; any other URL is returned unchanged. */
 fun String.toIdnUrl(): String {
-    val host = URL(this).host
-    val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
+    val host = runCatching { URL(this).host }.getOrNull() ?: return this
+    val asciiHost = runCatching { IDN.toASCII(host, IDN.ALLOW_UNASSIGNED) }.getOrNull() ?: return this
     if (host == asciiHost) return this
     // Replace the host of the authority only: the same text may also sit in the userinfo, path or query.
     val authorityStart = indexOf("://").let { if (it < 0) 0 else it + 3 }
@@ -105,28 +105,74 @@ fun isSocksProxyAuthenticationRequest(requestingPort: Int, proxyPort: Int): Bool
     return requestingPort == proxyPort && proxyPort in 1..65_535
 }
 
-private val SocksAuthenticatorLock = Any()
+/**
+ * True when [requestorType]/[protocol] describe a SOCKS (or proxy) credential challenge rather than a web
+ * server's 401 that merely arrives on the same port. The JDK reports SOCKS handshakes as protocol "SOCKS5".
+ */
+fun isSocksProxyChallenge(requestorType: Authenticator.RequestorType?, protocol: String?): Boolean =
+    requestorType == Authenticator.RequestorType.PROXY || protocol?.startsWith("SOCKS", ignoreCase = true) == true
+
+private class SocksCredentials(val username: String, val password: String, var references: Int)
+
+/**
+ * One process-wide [Authenticator] serving every local SOCKS proxy by port. Transfers register their
+ * credentials for the duration of the call and never block each other; it is taken down (and the authenticator
+ * that was there put back) only when the last running transfer ends, so a finishing transfer cannot take it from
+ * one still running.
+ */
+private object SocksAuthenticatorRegistry : Authenticator() {
+    private val credentialsByPort = HashMap<Int, SocksCredentials>()
+    private var previous: Authenticator? = null
+    private var active = false
+
+    @Synchronized
+    fun acquire(port: Int, username: String, password: String) {
+        val existing = credentialsByPort[port]
+        if (existing != null && existing.username == username && existing.password == password) {
+            existing.references++
+        } else {
+            credentialsByPort[port] = SocksCredentials(username, password, (existing?.references ?: 0) + 1)
+        }
+        // The authenticator that was there is remembered while any transfer is running and put back when the
+        // last one ends; the platform cannot be asked on Android, where nothing else installs one.
+        if (!active || defaultAuthenticatorOrNull() !== this) {
+            if (!active) previous = defaultAuthenticatorOrNull()
+            setDefault(this)
+            active = true
+        }
+    }
+
+    @Synchronized
+    fun release(port: Int) {
+        val entry = credentialsByPort[port] ?: return
+        if (--entry.references <= 0) credentialsByPort.remove(port)
+        if (credentialsByPort.isEmpty() && active) {
+            active = false
+            if (defaultAuthenticatorOrNull().let { it == null || it === this }) setDefault(previous)
+            previous = null
+        }
+    }
+
+    @Synchronized
+    override fun getPasswordAuthentication(): PasswordAuthentication? {
+        if (!isSocksProxyChallenge(requestorType, requestingProtocol)) return null
+        val entry = credentialsByPort[requestingPort] ?: return null
+        return PasswordAuthentication(entry.username, entry.password.toCharArray())
+    }
+}
 
 /**
  * Runs [block] with the credentials of a local SOCKS proxy available to java.net. A SOCKS proxy asks for them
  * lazily, at connect time, so configuring the Proxy object alone is not enough. Without a [username] nothing
- * is installed; afterwards the authenticator that was there before is restored.
+ * is registered. No lock is held while [block] runs, so transfers stay parallel.
  */
 fun <T> withSocksProxyAuthenticator(port: Int, username: String, password: String, block: () -> T): T {
     if (username.isBlank()) return block()
-    synchronized(SocksAuthenticatorLock) {
-        val previous = defaultAuthenticatorOrNull()
-        Authenticator.setDefault(object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication? {
-                if (!isSocksProxyAuthenticationRequest(requestingPort, port)) return null
-                return PasswordAuthentication(username, password.toCharArray())
-            }
-        })
-        return try {
-            block()
-        } finally {
-            Authenticator.setDefault(previous)
-        }
+    SocksAuthenticatorRegistry.acquire(port, username, password)
+    return try {
+        block()
+    } finally {
+        SocksAuthenticatorRegistry.release(port)
     }
 }
 

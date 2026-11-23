@@ -6,6 +6,9 @@ package features.logs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import utils.decodeBase64StringOrNull
 import utils.encodeBase64
@@ -20,7 +23,19 @@ open class PersistedAppLogRepository(
 ) : InMemoryCoreLogRepository() {
 
     private val restoredPreviousLogs = AtomicBoolean(false)
+
+    // Disk writes happen on one background thread, in order: onAppended runs inside the in-memory log's lock on
+    // whatever thread logged, and a file append (or the trim that rewrites the whole file) must not run there.
+    private val writer: ExecutorService = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "skipi-log-writer").apply { isDaemon = true }
+    }
+
+    @Volatile
     private var logFile: File? = null
+
+    /** Appends are written only once the first restore has merged what was logged before the file was known. */
+    @Volatile
+    private var persisting = false
     private val fileStore = BoundedLogFileStore(
         file = { logFile },
         logTag = logTag,
@@ -35,6 +50,7 @@ open class PersistedAppLogRepository(
     override fun pruneOlderThanDays(days: Int) {
         super.pruneOlderThanDays(days)
         if (days <= 0) return
+        flushPendingWrites()
         fileStore.prune { line ->
             val entry = decodeLogLine(0L, line) ?: return@prune true
             !entry.isOlderThanDays(days)
@@ -43,19 +59,33 @@ open class PersistedAppLogRepository(
 
     // Every committed append, single or batch, is written with one file open per batch.
     override fun onAppended(lines: List<ParsedCoreLogLine>) {
-        fileStore.appendLines(lines.map { line -> encodeLogLine(checkNotNull(line.time), line.level, line.message) })
+        // Before initialize() there is no file; those entries are merged and written by restorePreviousLogs().
+        if (!persisting) return
+        val encoded = lines.map { line -> encodeLogLine(checkNotNull(line.time), line.level, line.message) }
+        writer.execute { fileStore.appendLines(encoded) }
     }
 
     override fun clear() {
         super.clear()
-        fileStore.clear()
+        writer.execute { fileStore.clear() }
+    }
+
+    /** Waits until every append queued so far is on disk (before reading the file, and for tests). */
+    fun flushPendingWrites() {
+        runCatching { writer.submit {}.get(FlushTimeoutSeconds, TimeUnit.SECONDS) }
     }
 
     override suspend fun refresh() {
-        val restoredEntries = withContext(Dispatchers.IO) {
-            readPersistedEntries()
+        // Lines appended while the file is read must not be dropped by the replacement: retry on a fresh read, and
+        // if appends keep arriving keep the in-memory entries, which already hold every one of them.
+        repeat(RefreshAttempts) {
+            val seen = changeCount()
+            val restoredEntries = withContext(Dispatchers.IO) {
+                flushPendingWrites()
+                readPersistedEntries()
+            }
+            if (replaceEntriesIfUnchanged(seen, restoredEntries)) return
         }
-        replaceEntries(restoredEntries)
     }
 
     private fun restorePreviousLogs(retentionDays: Int = 0) {
@@ -63,14 +93,29 @@ open class PersistedAppLogRepository(
             if (retentionDays > 0) pruneOlderThanDays(retentionDays)
             return
         }
+        flushPendingWrites()
         if (retentionDays > 0) {
             fileStore.prune { line ->
                 val entry = decodeLogLine(0L, line) ?: return@prune true
                 !entry.isOlderThanDays(retentionDays)
             }
         }
+        // Appends keep landing in memory meanwhile and are not written (persisting is off) until the merge commits,
+        // atomically with it: otherwise a line logged during the restore would be on disk and also re-appended below.
+        repeat(RefreshAttempts) {
+            val seen = changeCount()
+            val pendingEntries = entries.value
+            val merged = readPersistedEntries() + pendingEntries
+            val committed = replaceEntriesIfUnchanged(seen, merged) {
+                persisting = true
+                val encoded = pendingEntries.map { entry -> encodeLogLine(entry.time, entry.level, entry.message) }
+                writer.execute { fileStore.appendLines(encoded) }
+            }
+            if (committed) return
+        }
         val pendingEntries = entries.value
         replaceEntries(readPersistedEntries() + pendingEntries)
+        persisting = true
         fileStore.appendLines(pendingEntries.map { entry -> encodeLogLine(entry.time, entry.level, entry.message) })
     }
 
@@ -81,6 +126,9 @@ open class PersistedAppLogRepository(
             }
     }
 }
+
+private const val FlushTimeoutSeconds = 10L
+private const val RefreshAttempts = 5
 
 private const val LogcatFieldSeparator = '\t'
 

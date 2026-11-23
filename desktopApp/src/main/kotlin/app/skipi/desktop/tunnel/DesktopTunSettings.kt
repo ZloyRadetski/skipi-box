@@ -49,6 +49,24 @@ internal fun desktopTunInterfacePlan(
     return if (macInterfaces == null) plan else plan.copy(name = pickMacTunInterfaceName(macInterfaces()))
 }
 
+/**
+ * The interface plan of one connect, resolved once: on macOS the free utunN is looked up by listing the interfaces,
+ * and once Core has brought its utunN up a later look-up would call that one taken and pick the next number, so the
+ * steps of a connect would disagree about the interface. Only the DNS part depends on the caller.
+ */
+internal class DesktopPinnedTunPlan(
+    private val settings: DesktopAppSettings,
+    private val configLibrary: DesktopConfigLibrary,
+    private val macInterfaces: (() -> List<String>)? = macInterfaceListerOrNull(),
+) {
+    private val base: TunInterfacePlan by lazy {
+        desktopTunInterfacePlan(settings, configLibrary, coreAnswersDns = true, macInterfaces = macInterfaces)
+    }
+
+    fun plan(coreAnswersDns: Boolean = true): TunInterfacePlan =
+        if (coreAnswersDns) base else base.copy(dnsServers = emptyList())
+}
+
 private fun macInterfaceListerOrNull(): (() -> List<String>)? =
     if (System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)) ::macInterfaceNames else null
 

@@ -119,6 +119,7 @@ internal fun SkipiMenuPopup(
     text: Color = SkipiTheme.colors.onSurface,
     outline: Color = SkipiTheme.colors.outline,
     alignToAnchorStart: Boolean = false,
+    contentModifier: @Composable () -> Modifier = { Modifier },
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val visibility = remember { MutableTransitionState(false) }
@@ -161,6 +162,7 @@ internal fun SkipiMenuPopup(
             Box(Modifier.padding(ShadowMargin)) {
                 Column(
                     modifier = modifier
+                        .then(contentModifier())
                         .shadow(8.dp, shape)
                         .clip(shape)
                         .background(surface)

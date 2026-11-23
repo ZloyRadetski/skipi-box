@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -106,8 +108,6 @@ fun SkipiCodeEditor(
     if (field.text != value) field = reconcileExternalValue(field, value, lastEmitted)
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(TextFieldDefaults.CornerRadius)
-    val borderWidth by animateDpAsState(if (focused) 2.dp else 0.dp)
-    val borderColor by animateColorAsState(if (focused) colors.accent else colors.border)
     val textStyle = TextStyle(
         color = colors.foreground,
         fontFamily = FontFamily.Monospace,
@@ -115,19 +115,16 @@ fun SkipiCodeEditor(
         lineHeight = 20.sp,
     )
     val transformation = remember(colors, highlight) {
+        // One-entry cache: cursor moves and focus changes re-run the transformation on unchanged text.
+        val cache = HighlightCache { highlight(it, colors) }
         VisualTransformation { text ->
-            TransformedText(highlight(text.text, colors), OffsetMapping.Identity)
+            TransformedText(cache.get(text.text), OffsetMapping.Identity)
         }
     }
-    val lineCount = field.text.count { it == '\n' } + 1
-    val gutterText = remember(lineCount) { (1..lineCount).joinToString("\n") }
+    val fieldText = field.text
+    val gutterText = remember(fieldText) { (1..(fieldText.count { it == '\n' } + 1)).joinToString("\n") }
 
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(colors.background)
-            .border(borderWidth, borderColor, shape),
-    ) {
+    EditorFrame(focused = focused, colors = colors, shape = shape, modifier = modifier) {
         Row(
             modifier = if (scrollsInternally) {
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -206,3 +203,26 @@ internal fun reconcileExternalValue(field: TextFieldValue, value: String, lastEm
     } else {
         TextFieldValue(value, TextRange(value.length))
     }
+
+/**
+ * The editor's frame. The focus border animates here, so each animation frame recomposes only this function and not
+ * the editor body, whose [content] is skipped while it is unchanged.
+ */
+@Composable
+private fun EditorFrame(
+    focused: Boolean,
+    colors: JsonEditorColors,
+    shape: Shape,
+    modifier: Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val borderWidth by animateDpAsState(if (focused) 2.dp else 0.dp)
+    val borderColor by animateColorAsState(if (focused) colors.accent else colors.border)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(colors.background)
+            .border(borderWidth, borderColor, shape),
+        content = content,
+    )
+}

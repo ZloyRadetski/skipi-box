@@ -141,6 +141,7 @@ class CoreLogStorageTest {
         first.initialize(file)
         first.append("warn", "two\nlines", "2026-01-01 10:00:00")
         first.append("nonsense", "x", "2026-01-01 10:00:01")
+        first.flushPendingWrites()
 
         val restored = PersistedAppLogRepository("app") { _, _ -> }
         restored.append("info", "before init", "2026-01-01 10:00:02")
@@ -160,5 +161,21 @@ class CoreLogStorageTest {
         lease.close()
         lease.close()
         assertEquals(CoreLogBackgroundTailIntervalMillis, CoreLogTailerPollingPolicy.intervalMillis())
+    }
+
+    @Test
+    fun refreshKeepsEntriesAppendedWhileItReadsTheFile() = runBlocking {
+        val file = File(directory, "app.log")
+        val repository = PersistedAppLogRepository("app") { _, _ -> }
+        repository.initialize(file)
+        val total = 400
+        val appender = Thread {
+            repeat(total) { index -> repository.append("info", "line $index", "2026-01-01 10:00:00") }
+        }
+        appender.start()
+        while (appender.isAlive) repository.refresh()
+        appender.join()
+
+        assertEquals(total, repository.entries.value.size)
     }
 }

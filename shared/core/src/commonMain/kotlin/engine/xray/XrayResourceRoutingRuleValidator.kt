@@ -43,6 +43,16 @@ class XrayResourceRoutingRuleValidator(
         return rules.filter(::isIpRuleValid)
     }
 
+    override fun classifyDomainRules(rules: List<String>): XrayRuleClassification {
+        val (valid, invalid) = rules.partition(::isDomainRuleValid)
+        return XrayRuleClassification(kept = if (hasResourceTag == null) rules else valid, unapplied = invalid)
+    }
+
+    override fun classifyIpRules(rules: List<String>): XrayRuleClassification {
+        val (valid, invalid) = rules.partition(::isIpRuleValid)
+        return XrayRuleClassification(kept = if (hasResourceTag == null) rules else valid, unapplied = invalid)
+    }
+
     private fun isResourceRule(rule: String): Boolean =
         rule.startsWith("geoip:", ignoreCase = true) || rule.startsWith("ext:", ignoreCase = true)
 }

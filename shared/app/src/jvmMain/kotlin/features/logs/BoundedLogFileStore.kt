@@ -59,13 +59,17 @@ class BoundedLogFileStore(
         val logFile = file() ?: return
         synchronized(lock) {
             runCatching {
-                val lines = if (ownsFile) readLastLinesLocked(logFile) else readAllLinesLocked(logFile)
-                val filtered = lines.filter(predicate)
-                if (filtered.size != lines.size) {
-                    logFile.writeText(
-                        filtered.joinToString(separator = "\n", postfix = if (filtered.isEmpty()) "" else "\n")
-                    )
-                    lineCount = filtered.size
+                if (ownsFile) {
+                    val lines = readLastLinesLocked(logFile)
+                    val filtered = lines.filter(predicate)
+                    if (filtered.size != lines.size) {
+                        logFile.writeText(
+                            filtered.joinToString(separator = "\n", postfix = if (filtered.isEmpty()) "" else "\n")
+                        )
+                        lineCount = filtered.size
+                    }
+                } else {
+                    pruneStreamingLocked(logFile, predicate)
                 }
             }.onFailure { error ->
                 reportFailure("prune", logFile, error)
@@ -75,11 +79,9 @@ class BoundedLogFileStore(
 
     fun readLastLines(): List<String> {
         val logFile = file() ?: return emptyList()
-        val lines = synchronized(lock) {
-            readLastLinesLocked(logFile)
+        return synchronized(lock) {
+            readLastLinesLocked(logFile).also { lines -> lineCount = lines.size }
         }
-        lineCount = lines.size
-        return lines
     }
 
     private fun trimLocked(logFile: File) {
@@ -90,9 +92,42 @@ class BoundedLogFileStore(
         lineCount = lines.size
     }
 
-    private fun readAllLinesLocked(logFile: File): List<String> {
-        if (!logFile.exists() || !logFile.isFile) return emptyList()
-        return logFile.readLines(Charsets.UTF_8)
+    /**
+     * A file somebody else writes (Xray's) has no size bound, so it is filtered line by line into a sibling file
+     * that replaces it only when something was dropped; the file is never held in memory.
+     */
+    private fun pruneStreamingLocked(logFile: File, predicate: (String) -> Boolean) {
+        if (!logFile.exists() || !logFile.isFile) return
+        val staged = File.createTempFile("${logFile.name}.", ".prune", logFile.parentFile)
+        try {
+            var kept = 0
+            var dropped = false
+            staged.bufferedWriter(Charsets.UTF_8).use { out ->
+                logFile.forEachLine(Charsets.UTF_8) { line ->
+                    if (predicate(line)) {
+                        out.write(line)
+                        out.write("\n")
+                        kept++
+                    } else {
+                        dropped = true
+                    }
+                }
+            }
+            if (!dropped) return
+            try {
+                java.nio.file.Files.move(
+                    staged.toPath(),
+                    logFile.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: java.io.IOException) {
+                // The writer holds the file open (Windows refuses to replace it): copy the contents over instead.
+                staged.inputStream().use { input -> logFile.outputStream().use { output -> input.copyTo(output) } }
+            }
+            lineCount = kept
+        } finally {
+            staged.delete()
+        }
     }
 
     private fun readLastLinesLocked(logFile: File): List<String> {

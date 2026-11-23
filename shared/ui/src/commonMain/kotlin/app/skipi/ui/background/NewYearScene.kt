@@ -119,16 +119,94 @@ fun NewYearOverlay(reduceMotion: Boolean, modifier: Modifier = Modifier) {
             }
         }
     }
+    val cache = remember { NewYearDrawCache() }
     Canvas(modifier.fillMaxSize().graphicsLayer { }) {
-        drawSnow(flakes, elapsed.longValue)
-        drawGarland(elapsed.longValue)
+        drawSnow(flakes, elapsed.longValue, cache)
+        drawGarland(elapsed.longValue, cache)
+    }
+}
+
+/**
+ * What the draw passes would otherwise rebuild every frame: the size-dependent geometry of the garland and the glow
+ * brushes, which are centred on the origin and moved into place, with the per-frame brightness applied as the draw alpha.
+ * Used from the draw pass only.
+ */
+private class NewYearDrawCache {
+    private var snowDensity = Float.NaN
+    private val snowGlow = HashMap<Float, Brush>()
+
+    fun snowGlow(density: Float, radius: Float): Brush {
+        if (density != snowDensity) {
+            snowGlow.clear()
+            snowDensity = density
+        }
+        return snowGlow.getOrPut(radius) {
+            Brush.radialGradient(
+                colors = listOf(Color.White, Color.White.copy(alpha = 0.35f), Color.Transparent),
+                center = Offset.Zero,
+                radius = radius,
+            )
+        }
+    }
+
+    class Garland(
+        val unit: Float,
+        val wire: Path,
+        val bulbs: List<GarlandBulb>,
+        val body: Path,
+        val glows: List<Brush>,
+    )
+
+    private var garlandWidth = Float.NaN
+    private var garlandUnit = Float.NaN
+    private var garland: Garland? = null
+
+    fun garland(width: Float, unit: Float): Garland {
+        garland?.let { if (garlandWidth == width && garlandUnit == unit) return it }
+        val sag = 12f * unit
+        val spanTarget = GarlandSpanWidth * unit
+        val spans = (width / spanTarget).roundToInt().coerceAtLeast(1)
+        val spanWidth = width / spans
+        val wire = Path().apply {
+            moveTo(0f, 0f)
+            for (span in 0 until spans) {
+                val left = span * spanWidth
+                quadraticTo(left + spanWidth / 2f, sag * 2f, left + spanWidth, 0f)
+            }
+        }
+        val r = 3.6f * unit
+        val length = r * 3.1f
+        val body = Path().apply {
+            moveTo(-r * 0.5f, 0f)
+            cubicTo(-r * 1.35f, length * 0.28f, -r * 1.15f, length * 0.95f, 0f, length)
+            cubicTo(r * 1.15f, length * 0.95f, r * 1.35f, length * 0.28f, r * 0.5f, 0f)
+            close()
+        }
+        val glows = NewYearBulbColors.map { color ->
+            Brush.radialGradient(
+                colors = listOf(color.copy(alpha = 0.34f), color.copy(alpha = 0.10f), Color.Transparent),
+                center = Offset.Zero,
+                radius = r * 5.5f,
+            )
+        }
+        return Garland(
+            unit = unit,
+            wire = wire,
+            bulbs = garlandBulbs(width = width, spacing = 32f * unit, sag = sag, spanTarget = spanTarget),
+            body = body,
+            glows = glows,
+        ).also {
+            garland = it
+            garlandWidth = width
+            garlandUnit = unit
+        }
     }
 }
 
 private val WireDark = Color(0xFF0A2417)
 private val WireLight = Color(0xFF2F7D4F)
 
-private fun DrawScope.drawSnow(flakes: List<SnowflakeSpec>, elapsedMillis: Long) {
+private fun DrawScope.drawSnow(flakes: List<SnowflakeSpec>, elapsedMillis: Long, cache: NewYearDrawCache) {
     val density = (size.minDimension / 400f).coerceIn(0.8f, 1.6f)
     for (flake in flakes) {
         val progress = snowfallProgress(flake, elapsedMillis)
@@ -140,15 +218,14 @@ private fun DrawScope.drawSnow(flakes: List<SnowflakeSpec>, elapsedMillis: Long)
         val alpha = (0.28f + 0.42f * depth) * edge
         val center = Offset((flake.x + sway) * size.width, progress * size.height)
         val radius = flake.radius * 0.7f * density
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color.White.copy(alpha = alpha), Color.White.copy(alpha = alpha * 0.35f), Color.Transparent),
-                center = center,
+        translate(left = center.x, top = center.y) {
+            drawCircle(
+                brush = cache.snowGlow(density, radius * 2f),
                 radius = radius * 2f,
-            ),
-            radius = radius * 2f,
-            center = center,
-        )
+                center = Offset.Zero,
+                alpha = alpha,
+            )
+        }
         if (depth > 0.65f) {
             val arm = radius * 1.7f
             val spin = progress * 360f * 1.5f + flake.phase * 90f
@@ -167,32 +244,17 @@ private fun DrawScope.drawSnow(flakes: List<SnowflakeSpec>, elapsedMillis: Long)
     }
 }
 
-private fun DrawScope.drawGarland(elapsedMillis: Long) {
+private fun DrawScope.drawGarland(elapsedMillis: Long, cache: NewYearDrawCache) {
     val unit = (size.minDimension / 400f).coerceIn(0.8f, 1.5f)
-    val sag = 12f * unit
-    val spanTarget = GarlandSpanWidth * unit
-    val spans = (size.width / spanTarget).roundToInt().coerceAtLeast(1)
-    val spanWidth = size.width / spans
-    val wire = Path().apply {
-        moveTo(0f, 0f)
-        for (span in 0 until spans) {
-            val left = span * spanWidth
-            quadraticTo(left + spanWidth / 2f, sag * 2f, left + spanWidth, 0f)
-        }
-    }
-    drawPath(wire, color = WireDark, style = Stroke(width = 2.4f * unit, cap = StrokeCap.Round))
-    drawPath(wire, color = WireLight, style = Stroke(width = 1.1f * unit, cap = StrokeCap.Round))
+    val geometry = cache.garland(size.width, unit)
+    drawPath(geometry.wire, color = WireDark, style = Stroke(width = 2.4f * unit, cap = StrokeCap.Round))
+    drawPath(geometry.wire, color = WireLight, style = Stroke(width = 1.1f * unit, cap = StrokeCap.Round))
 
-    val bulbs = garlandBulbs(width = size.width, spacing = 32f * unit, sag = sag, spanTarget = spanTarget)
+    val bulbs = geometry.bulbs
+    val body = geometry.body
     val r = 3.6f * unit
     val socketH = 3.2f * unit
     val length = r * 3.1f
-    val body = Path().apply {
-        moveTo(-r * 0.5f, 0f)
-        cubicTo(-r * 1.35f, length * 0.28f, -r * 1.15f, length * 0.95f, 0f, length)
-        cubicTo(r * 1.15f, length * 0.95f, r * 1.35f, length * 0.28f, r * 0.5f, 0f)
-        close()
-    }
     bulbs.forEachIndexed { index, bulb ->
         val color = NewYearBulbColors[bulb.colorIndex]
         val alpha = twinkleAlpha(index, elapsedMillis)
@@ -202,15 +264,14 @@ private fun DrawScope.drawGarland(elapsedMillis: Long) {
             rotate(degrees = swing, pivot = Offset.Zero) {
                 val tip = Offset(0f, socketH + length * 0.55f)
                 // Soft light spilled around the bulb.
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(color.copy(alpha = 0.34f * alpha), color.copy(alpha = 0.10f * alpha), Color.Transparent),
-                        center = tip,
+                translate(left = tip.x, top = tip.y) {
+                    drawCircle(
+                        brush = geometry.glows[bulb.colorIndex],
                         radius = r * 5.5f,
-                    ),
-                    radius = r * 5.5f,
-                    center = tip,
-                )
+                        center = Offset.Zero,
+                        alpha = alpha,
+                    )
+                }
                 // Socket: a small dark cap clipped to the wire.
                 drawRoundRect(
                     color = WireDark,

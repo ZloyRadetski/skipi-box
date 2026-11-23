@@ -17,6 +17,12 @@ class LogSearch private constructor(
 ) {
     val isEmpty: Boolean get() = terms.isEmpty() && excluded.isEmpty() && levels.isEmpty()
 
+    // Value equality: parsing the same query twice must not look like a new search to remember() and effects.
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is LogSearch && terms == other.terms && excluded == other.excluded && levels == other.levels)
+
+    override fun hashCode(): Int = 31 * (31 * terms.hashCode() + excluded.hashCode()) + levels.hashCode()
+
     /** [text] is the line as shown, so the time and the level can be searched too. */
     fun matches(entry: CoreLogEntry, text: String): Boolean {
         if (levels.isNotEmpty() && normalizeLevel(entry.level) !in levels) return false

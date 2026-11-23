@@ -3,8 +3,10 @@
 
 package app.skipi.desktop
 
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopWindowsElevationTest {
@@ -61,5 +63,47 @@ class DesktopWindowsElevationTest {
 
         assertTrue(result.isSuccess)
         assertTrue(ran.orEmpty().last().contains("-Verb RunAs"))
+    }
+
+    @Test
+    fun theElevatedCopyIsOnlyStartedOnceTheSettingIsOnDisk() = runBlocking<Unit> {
+        val events = mutableListOf<String>()
+
+        val result = relaunchElevatedWithSavedSetting(
+            save = { events += "saved"; Result.success(Unit) },
+            relaunch = { events += "relaunch"; Result.success(Unit) },
+            revert = { events += "reverted" },
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf("saved", "relaunch"), events)
+    }
+
+    @Test
+    fun aSaveThatFailedNeverStartsTheElevatedCopy() = runBlocking<Unit> {
+        val events = mutableListOf<String>()
+
+        val result = relaunchElevatedWithSavedSetting(
+            save = { events += "save"; Result.failure(java.io.IOException("disk full")) },
+            relaunch = { events += "relaunch"; Result.success(Unit) },
+            revert = { events += "reverted" },
+        )
+
+        assertTrue(result.isFailure)
+        assertFalse("relaunch" in events)
+    }
+
+    @Test
+    fun aDeclinedPromptPutsTheSettingBack() = runBlocking<Unit> {
+        val events = mutableListOf<String>()
+
+        val result = relaunchElevatedWithSavedSetting(
+            save = { events += "saved"; Result.success(Unit) },
+            relaunch = { events += "relaunch"; Result.failure(IllegalStateException("declined")) },
+            revert = { events += "reverted" },
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals(listOf("saved", "relaunch", "reverted"), events)
     }
 }

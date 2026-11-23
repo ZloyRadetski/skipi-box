@@ -3,11 +3,10 @@
 
 package app.skipi.app.tools
 
-import java.net.Authenticator
+import engine.network.withSocksProxyAuthenticator
 import java.net.DatagramSocket
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
-import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URL
 
@@ -43,28 +42,13 @@ interface DiagnosticsNetworkBinding {
 
 internal fun DiagnosticsRoute.Socks.javaProxy(): Proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
 
-private val socksAuthenticatorLock = Any()
-
 /**
- * Installs the SOCKS credentials for the duration of [block] so the JDK can authenticate the
- * proxy handshake. Redirects that open after the scope ends fail instead of going direct.
+ * Registers the SOCKS credentials for the duration of [block] so the JDK can authenticate the
+ * proxy handshake. Shares the process-wide authenticator of [withSocksProxyAuthenticator], so
+ * parallel probes are not serialised and no other default authenticator is wiped.
  */
-internal inline fun <T> DiagnosticsRoute.withSocksAuthenticator(block: () -> T): T {
+internal fun <T> DiagnosticsRoute.withSocksAuthenticator(block: () -> T): T {
     val socks = this as? DiagnosticsRoute.Socks
     if (socks == null || socks.username.isBlank()) return block()
-    synchronized(socksAuthenticatorLock) {
-        Authenticator.setDefault(
-            object : Authenticator() {
-                override fun getPasswordAuthentication(): PasswordAuthentication? {
-                    if (requestingPort != socks.port) return null
-                    return PasswordAuthentication(socks.username, socks.password.toCharArray())
-                }
-            },
-        )
-        return try {
-            block()
-        } finally {
-            Authenticator.setDefault(null)
-        }
-    }
+    return withSocksProxyAuthenticator(socks.port, socks.username, socks.password, block)
 }

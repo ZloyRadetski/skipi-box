@@ -79,6 +79,28 @@ class XrayRoutingPlanTest {
         assertTrue(buildXrayDnsHijackRule(emptyList()) == null)
     }
 
+    @Test
+    fun looks_each_geo_rule_up_once_and_ignores_blank_or_skipped_rules() {
+        val lookups = mutableListOf<String>()
+        val resourceValidator = XrayResourceRoutingRuleValidator(
+            hasResourceTag = { _, tag, original -> lookups += original; tag != "bad" },
+        )
+
+        val plan = planXrayRouting(
+            request = request(
+                routeRules = listOf(
+                    RouteRule(id = 1, outboundTag = XrayTags.DIRECT, domain = listOf("geosite:cn", " ", "geosite:bad"), ip = listOf("geoip:private", "geoip:bad")),
+                    RouteRule(id = 2, outboundTag = "no-such-outbound", domain = listOf("geosite:skipped")),
+                ),
+            ),
+            ruleValidator = resourceValidator,
+        )
+
+        assertEquals(listOf("geosite:bad", "geoip:bad"), plan.unappliedRules)
+        assertEquals(lookups.distinct().sorted(), lookups.sorted(), "a tag was looked up more than once: $lookups")
+        assertFalse("geosite:skipped" in lookups)
+    }
+
     private fun request(
         routeRules: List<RouteRule> = emptyList(),
         enableLocalDns: Boolean = false,

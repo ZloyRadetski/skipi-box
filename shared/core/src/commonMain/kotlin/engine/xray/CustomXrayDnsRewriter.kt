@@ -62,7 +62,9 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         outboundsRewrite.outbounds
     }
 
-    return request.config.updatedWithout(setOf("fakedns", "fakeDns") + UntrustedCustomTopLevelKeys) {
+    return request.config.updatedWithoutIgnoreCase(
+        setOf("fakedns", "inbounds", "dns", "outbounds", "routing") + UntrustedCustomTopLevelKeys,
+    ) {
         put("inbounds", request.inbounds.toJsonObjectArray())
         put("dns", buildXrayDnsConfig(request.dnsPlan))
         putIfNotNull("fakeDns", request.dnsPlan.fakeDns)

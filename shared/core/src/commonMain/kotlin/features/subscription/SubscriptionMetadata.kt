@@ -200,14 +200,9 @@ private fun String.toSubscriptionEmbeddedConfigOrNull(): SubscriptionEmbeddedCon
         }
     }
 
-    if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
-        return SubscriptionEmbeddedConfig(
-            payload = trimmed,
-            activate = true,
-            isUrl = true,
-        )
-    }
-
+    // A bare http(s) line is deliberately not a routing config: plain-text subscriptions carry HTTP proxy
+    // lines and informational links, and fetching those would leak credentials and import junk. A URL is
+    // only taken from an explicit routing header or a routing deep link above.
     return null
 }
 
@@ -224,9 +219,9 @@ private fun String.decodeSubscriptionHeaderValue(): String {
     // Plain-text profile names commonly contain spaces.  Removing whitespace first made
     // values such as "TORVALDS VPN" look like Base64 and displayed them incorrectly.
     if (!explicitlyEncoded && unquoted.any(Char::isWhitespace)) return raw
-    val encoded = unquoted
-        .removeBase64Prefix()
-        .decodeURLPart()
+    // A literal % that is not an escape ("100%FastVPN") is plain text, not a reason to fail the whole parse.
+    val encoded = runCatching { unquoted.removeBase64Prefix().decodeURLPart() }
+        .getOrElse { return raw }
         .filterNot(Char::isWhitespace)
     if (!encoded.isBase64HeaderValue()) return raw
     return encoded.decodeFlexibleBase64OrNull()

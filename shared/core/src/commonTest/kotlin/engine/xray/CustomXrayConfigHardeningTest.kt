@@ -46,6 +46,16 @@ class CustomXrayConfigHardeningTest {
     }
 
     @Test
+    fun differentlyCasedSectionsAreDroppedToo() {
+        // Xray-core reads JSON keys case-insensitively, so "API" is the api section.
+        val result = rewrite(mapOf("API" to "0.0.0.0:1", "Metrics" to "0.0.0.0:2", "REVERSE" to "x", "FakeDNS" to "x"))
+
+        assertFalse(result.keys.any { it.lowercase() in setOf("metrics", "reverse") })
+        assertFalse(result.containsKey("API"))
+        assertFalse(result.containsKey("FakeDNS"))
+    }
+
+    @Test
     fun harmlessSectionsOfTheImportedConfigAreKept() {
         val result = rewrite(emptyMap())
 

@@ -8,6 +8,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import app.AppState
 import app.MainActivity
@@ -394,11 +396,14 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         appContext: Context,
         message: String,
     ) {
-        Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()
+        // The widget work runs off the main thread; a toast must be made and shown on a looper thread.
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun Context.localizedContext(): Context {
-        val languageMode = AppSettingsPreferences(this).load().languageMode
+        val languageMode = AppSettingsPreferences(this).loadLocaleAndColorMode().languageMode
         return localizedAppContext(languageMode)
     }
 
@@ -421,7 +426,9 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         private const val LogTag = "SkipiWidgetProvider"
         private const val WidgetRenderSettleDelayMillis = 1_000L
 
-        private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        // IO, not Main.immediate: onReceive runs on the main thread, so Main.immediate ran the whole body (state store,
+        // config resolution, widget rendering) there and could hit the 10 s broadcast timeout.
+        private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val operationInProgress = AtomicBoolean(false)
     }
 }

@@ -3,6 +3,7 @@
 
 package features.config
 
+import engine.network.isIpOrCidrAddress
 import engine.xray.isSupportedXrayDnsServer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -123,26 +124,32 @@ fun JsonObject.toRoscomRoutingShadowrocketConf(
 }
 
 private fun MutableList<String>.appendGroupRules(json: JsonObject, sitesKey: String, ipsKey: String, policy: String) {
-    json.stringList(sitesKey).plus(json.stringList(ipsKey)).forEach { value ->
-        routingValueToShadowrocketRule(value, policy)?.let(::add)
-    }
+    json.stringList(sitesKey).forEach { value -> routingValueToShadowrocketRule(value, policy, fromIpList = false)?.let(::add) }
+    json.stringList(ipsKey).forEach { value -> routingValueToShadowrocketRule(value, policy, fromIpList = true)?.let(::add) }
 }
 
 /**
  * Maps one routing JSON value onto a Shadowrocket rule line. Geosite and ext
- * references use SKIPI's existing DOMAIN-SET type; geo tags become GEOIP,
- * CIDR blocks become IP-CIDR and bare domains are treated as suffixes.
+ * references in a site list use SKIPI's existing DOMAIN-SET type, while an
+ * ext file in an IP list is a GEOIP file; geo tags become GEOIP, addresses and
+ * CIDR blocks become IP-CIDR / IP-CIDR6, Xray domain prefixes keep their match
+ * kind and bare domains are treated as suffixes.
  */
-private fun routingValueToShadowrocketRule(value: String, policy: String): String? {
+private fun routingValueToShadowrocketRule(value: String, policy: String, fromIpList: Boolean): String? {
     val trimmed = value.trim()
     return when {
         trimmed.isEmpty() -> null
-        trimmed.startsWith("geosite:", ignoreCase = true) || trimmed.startsWith("ext:", ignoreCase = true) ->
+        trimmed.startsWith("geoip:", ignoreCase = true) -> "GEOIP,${trimmed.substringAfter(':')},$policy"
+        trimmed.startsWith("ext:", ignoreCase = true) ->
+            if (fromIpList) "GEOIP,$trimmed,$policy" else "DOMAIN-SET,$trimmed,$policy"
+
+        trimmed.startsWith("geosite:", ignoreCase = true) || trimmed.startsWith("regexp:", ignoreCase = true) ->
             "DOMAIN-SET,$trimmed,$policy"
 
-        trimmed.startsWith("geoip:", ignoreCase = true) ->
-            "GEOIP,${trimmed.substringAfter(':')},$policy"
-
+        trimmed.startsWith("full:", ignoreCase = true) -> "DOMAIN,${trimmed.substringAfter(':')},$policy"
+        trimmed.startsWith("domain:", ignoreCase = true) -> "DOMAIN-SUFFIX,${trimmed.substringAfter(':')},$policy"
+        trimmed.startsWith("keyword:", ignoreCase = true) -> "DOMAIN-KEYWORD,${trimmed.substringAfter(':')},$policy"
+        isIpOrCidrAddress(trimmed) -> "${if (':' in trimmed) "IP-CIDR6" else "IP-CIDR"},$trimmed,$policy"
         trimmed.contains('/') -> "IP-CIDR,$trimmed,$policy"
         else -> "DOMAIN-SUFFIX,$trimmed,$policy"
     }

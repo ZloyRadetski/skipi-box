@@ -157,6 +157,9 @@ class AppPullToRefreshState(
         isRefreshingNow: () -> Boolean,
     ) {
         isTouching = false
+        // While refreshing the indicator rests at the threshold (dragOffset > 0), so a mouse move or a tap
+        // release must not collapse it to Idle and have the effect below start it again.
+        if (internalRefreshState == AppRefreshState.Refreshing || internalRefreshState == AppRefreshState.RefreshComplete) return
         if (internalRefreshState == AppRefreshState.ThresholdReached) {
             internalRefreshState = AppRefreshState.Refreshing
             onRefresh()

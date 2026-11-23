@@ -24,6 +24,26 @@ class StrategyGroupMemberResolverTest {
     }
 
     @Test
+    fun aStrategyGroupAndAPolicyGroupNamingEachOtherTerminate() {
+        val servers = listOf(
+            record(1, HTTP(remarks = "Alpha")),
+            record(2, StrategyGroup(remarks = "Loop", sourceTrafficConfigId = 8, sourcePolicyGroupName = "Policy")),
+        )
+        // Policy lists the strategy group that is itself built from Policy.
+        val config = """[Proxy Group]
+Policy = select, Loop, Alpha
+"""
+
+        val members = resolveStrategyGroupMembers(
+            strategyGroup = servers[1].server as StrategyGroup,
+            servers = servers,
+            trafficConfigContentById = mapOf(8 to config),
+        )
+
+        assertEquals(listOf(1), members.map(ProxyServerRow::id))
+    }
+
+    @Test
     fun configOwnedGroupResolvesTheDeclaredPolicyMembers() {
         val servers = listOf(
             record(1, HTTP(remarks = "🇩🇪 Alpha")),

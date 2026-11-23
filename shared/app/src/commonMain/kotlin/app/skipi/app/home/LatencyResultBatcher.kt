@@ -23,6 +23,9 @@ class LatencyResultBatcher<K, V>(
     private val apply: suspend (Map<K, V>) -> Unit,
 ) {
     private val mutex = Mutex()
+
+    // Serializes apply: a slow batch must finish before the next one is taken, so results land in order.
+    private val applyMutex = Mutex()
     private val pending = LinkedHashMap<K, V>()
     private var scheduled = false
 
@@ -40,10 +43,12 @@ class LatencyResultBatcher<K, V>(
     }
 
     suspend fun flush() {
-        val batch = mutex.withLock {
-            scheduled = false
-            if (pending.isEmpty()) null else LinkedHashMap(pending).also { pending.clear() }
+        applyMutex.withLock {
+            val batch = mutex.withLock {
+                scheduled = false
+                if (pending.isEmpty()) null else LinkedHashMap(pending).also { pending.clear() }
+            }
+            batch?.let { apply(it) }
         }
-        batch?.let { apply(it) }
     }
 }

@@ -7,6 +7,7 @@ import features.networkautomation.policy.ObservedNetworkTransport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DesktopNetworkObserverTest {
     private fun nic(name: String, display: String = name, up: Boolean = true, loopback: Boolean = false, hasAddress: Boolean = true) =
@@ -78,5 +79,47 @@ class DesktopNetworkObserverTest {
     fun nmcliOutputYieldsTheActiveSsid() {
         assertEquals("Cafe:Guest", parseNmcliActiveSsid("no:Other\nyes:Cafe\\:Guest\n"))
         assertNull(parseNmcliActiveSsid("no:Other\n"))
+    }
+
+    @Test
+    fun netshOutputOfALocalizedWindowsYieldsTheConnectedSsid() {
+        val russian = """
+            В системе 1 интерфейс:
+
+                Имя                    : Wi-Fi
+                Состояние              : подключено
+                SSID                   : Домашняя сеть
+                BSSID                  : aa:bb:cc:dd:ee:ff
+        """.trimIndent()
+        assertEquals("Домашняя сеть", parseNetshWlanSsid(russian))
+        val german = listOf(
+            "    Status                 : Verbunden",
+            "    SSID                   : Zuhause",
+            "    BSSID                  : aa:bb:cc:dd:ee:ff",
+        ).joinToString("\n")
+        assertEquals("Zuhause", parseNetshWlanSsid(german))
+        // A disconnected adapter lists no access point, whatever the language.
+        assertNull(parseNetshWlanSsid(listOf("    Состояние              : отключено", "    SSID                   : Old").joinToString("\n")))
+    }
+
+    @Test
+    fun linuxSsidIsReadFromTheCacheWithoutTriggeringAScan() {
+        val command = desktopWifiSsidCommand("Linux")
+        assertTrue(command!!.windowed(2).contains(listOf("--rescan", "no")))
+    }
+
+    @Test
+    fun macWifiDeviceIsFoundFromTheHardwarePortList() {
+        val ports = """
+            Hardware Port: Ethernet Adapter (en0)
+            Device: en0
+            Ethernet Address: aa
+
+            Hardware Port: Wi-Fi
+            Device: en1
+            Ethernet Address: bb
+        """.trimIndent()
+        assertEquals("en1", parseMacWifiDevice(ports))
+        assertNull(parseMacWifiDevice(listOf("Hardware Port: Thunderbolt Bridge", "Device: bridge0").joinToString("\n")))
     }
 }

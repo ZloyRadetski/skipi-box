@@ -181,6 +181,23 @@ class SkipiRoutingTableState internal constructor() {
     private var pending by mutableStateOf(false)
     private var immediate = false
 
+    /** Writes the open edit through the table that shows this state; set while the table is on screen. */
+    private var flusher: (() -> Unit)? = null
+
+    internal fun attachFlusher(flusher: (() -> Unit)?) {
+        this.flusher = flusher
+    }
+
+    /** Drops an edit still waiting out its pause: the rule it belongs to is going away. */
+    internal fun discardPending() {
+        pending = false
+    }
+
+    /** Saves an edit still waiting out its pause, so switching rows, adding, closing or moving cannot drop it. */
+    internal fun flushPending() {
+        if (pending) flusher?.invoke()
+    }
+
     val hasEditor: Boolean
         get() = isNew || selectedLine != null || isFinalSelected
 
@@ -248,6 +265,7 @@ class SkipiRoutingTableState internal constructor() {
         final: Boolean = false,
         isNew: Boolean = false,
     ) {
+        flushPending()
         this.selectedLine = selectedLine
         this.isNew = isNew
         isFinalSelected = final
@@ -342,7 +360,11 @@ fun SkipiTrafficConfigRoutingTable(
         }
     }
     DisposableEffect(state, profile.id) {
-        onDispose { state.flush(profile.id, currentController) }
+        state.attachFlusher { state.flush(profile.id, currentController) }
+        onDispose {
+            state.flush(profile.id, currentController)
+            state.attachFlusher(null)
+        }
     }
     LaunchedEffect(table) { state.reconcile(table) }
 
@@ -705,16 +727,19 @@ private fun RoutingTableEditor(
                 )
                 if (state.selectedLine != null && !state.isFinalSelected) {
                     SmallAction(stringResource(Res.string.routing_table_move_up), enabled = index > 0) {
+                        state.flushPending()
                         val to = table.entries[index - 1].lineNumber
                         controller.moveRoutingRule(profile.id, index, index - 1)
                         state.moved(to)
                     }
                     SmallAction(stringResource(Res.string.routing_table_move_down), enabled = index in 0 until table.entries.lastIndex) {
+                        state.flushPending()
                         val to = table.entries[index + 1].lineNumber
                         controller.moveRoutingRule(profile.id, index, index + 1)
                         state.moved(to)
                     }
                     SmallAction(stringResource(Res.string.common_delete)) {
+                        state.discardPending()
                         state.selectedLine?.let { controller.deleteRoutingRule(profile.id, it) }
                         state.close()
                     }

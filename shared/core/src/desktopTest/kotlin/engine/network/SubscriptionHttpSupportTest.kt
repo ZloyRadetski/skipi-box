@@ -22,6 +22,12 @@ class SubscriptionHttpSupportTest {
     }
 
     @Test
+    fun anUnrecognisedUrlIsReturnedUnchangedInsteadOfThrowing() {
+        assertEquals("not a url", "not a url".toIdnUrl())
+        assertEquals("http://[bad host/", "http://[bad host/".toIdnUrl())
+    }
+
+    @Test
     fun anAsciiUrlIsLeftExactlyAsItIs() {
         assertEquals("https://example.com:8443/a?b=c", "https://example.com:8443/a?b=c".toIdnUrl())
     }
@@ -119,19 +125,36 @@ class SubscriptionHttpSupportTest {
     }
 
     @Test
-    fun aBlankUserLeavesTheAuthenticatorAloneAndThePreviousOneComesBack() {
-        val previous = object : Authenticator() {
-            override fun getPasswordAuthentication() = PasswordAuthentication("prev", "x".toCharArray())
+    fun aWebServerChallengeOnTheProxyPortNeverGetsTheCredentials() {
+        withSocksProxyAuthenticator(port = 10808, username = "u", password = "p") {
+            val web = Authenticator.requestPasswordAuthentication("127.0.0.1", InetAddress.getLoopbackAddress(), 10808, "http", "", "basic")
+            assertNull(web)
         }
-        Authenticator.setDefault(previous)
-        try {
-            withSocksProxyAuthenticator(port = 10808, username = "", password = "") {
-                assertEquals("prev", Authenticator.requestPasswordAuthentication("h", null, 1, "p", "", "")?.userName)
-            }
-            withSocksProxyAuthenticator(port = 10808, username = "u", password = "p") { }
-            assertEquals("prev", Authenticator.requestPasswordAuthentication("h", null, 1, "p", "", "")?.userName)
-        } finally {
-            Authenticator.setDefault(null)
+    }
+
+    @Test
+    fun parallelTransfersOnDifferentPortsKeepTheirOwnCredentialsWithoutSerialising() {
+        val bothInside = java.util.concurrent.CountDownLatch(2)
+        val results = java.util.concurrent.ConcurrentHashMap<Int, String?>()
+        val threads = listOf(10801 to "a", 10802 to "b").map { (port, user) ->
+            Thread {
+                withSocksProxyAuthenticator(port = port, username = user, password = "p") {
+                    bothInside.countDown()
+                    // Both must be inside at once; a lock held across the block would deadlock here.
+                    check(bothInside.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                    results[port] = Authenticator.requestPasswordAuthentication("127.0.0.1", InetAddress.getLoopbackAddress(), port, "SOCKS5", "", "")?.userName
+                }
+            }.also(Thread::start)
+        }
+        threads.forEach { it.join(10_000) }
+        assertEquals("a", results[10801])
+        assertEquals("b", results[10802])
+    }
+
+    @Test
+    fun aBlankUserRegistersNothing() {
+        withSocksProxyAuthenticator(port = 10808, username = "", password = "") {
+            assertNull(Authenticator.requestPasswordAuthentication("127.0.0.1", InetAddress.getLoopbackAddress(), 10808, "SOCKS5", "", ""))
         }
     }
 

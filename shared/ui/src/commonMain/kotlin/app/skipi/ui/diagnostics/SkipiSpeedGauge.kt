@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -65,7 +66,9 @@ internal fun SkipiSpeedGauge(
         targetValue = speedGaugeFraction(mbps),
         animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow),
     )
-    val measurer = rememberTextMeasurer()
+    // One cache slot per mark: the default of eight would evict a mark on every frame of the nine.
+    val measurer = rememberTextMeasurer(cacheSize = SpeedGaugeMarks.size)
+    val needlePath = remember { Path() }
     Box(modifier = modifier.fillMaxWidth().aspectRatio(1.18f), contentAlignment = Alignment.BottomCenter) {
         Canvas(Modifier.fillMaxWidth().aspectRatio(1.18f)) {
             val diameter = min(size.width, size.height * 1.18f) * 0.94f
@@ -117,11 +120,11 @@ internal fun SkipiSpeedGauge(
                     style = TextStyle(
                         fontSize = (diameter * 0.04f).toSp(),
                         fontWeight = FontWeight.Bold,
-                        color = if (at <= fraction + 0.001f) activeMarkColor else markColor,
                     ),
                 )
                 drawText(
                     textLayoutResult = layout,
+                    color = if (at <= fraction + 0.001f) activeMarkColor else markColor,
                     topLeft = Offset(
                         center.x + labelRadius * cos(angle).toFloat() - layout.size.width / 2f,
                         center.y + labelRadius * sin(angle).toFloat() - layout.size.height / 2f,
@@ -129,16 +132,17 @@ internal fun SkipiSpeedGauge(
                 )
             }
 
-            drawNeedle(center = center, angleDegrees = StartAngle + Sweep * fraction, outer = labelRadius * 0.86f, inner = radius * 0.34f, width = diameter * 0.026f)
+            drawNeedle(path = needlePath, center = center, angleDegrees = StartAngle + Sweep * fraction, outer = labelRadius * 0.86f, inner = radius * 0.34f, width = diameter * 0.026f)
         }
         content()
     }
 }
 
 /** A tapered wedge that fades towards the middle of the dial, like the needle of a speed-test dial. */
-private fun DrawScope.drawNeedle(center: Offset, angleDegrees: Float, outer: Float, inner: Float, width: Float) {
+private fun DrawScope.drawNeedle(path: Path, center: Offset, angleDegrees: Float, outer: Float, inner: Float, width: Float) {
     rotate(degrees = angleDegrees, pivot = center) {
-        val path = Path().apply {
+        path.reset()
+        path.apply {
             moveTo(center.x + inner, center.y - width * 0.15f)
             lineTo(center.x + outer, center.y - width / 2f)
             lineTo(center.x + outer, center.y + width / 2f)

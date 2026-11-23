@@ -15,6 +15,7 @@ import java.io.RandomAccessFile
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class CoreLogFile(
     val path: String,
@@ -29,7 +30,11 @@ class CoreLogFileTailer(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val started = AtomicBoolean(false)
+
     fun start() {
+        // A second start() would run a second poller per file and publish every line twice.
+        if (!started.compareAndSet(false, true)) return
         logFiles
             .filter { logFile -> logFile.path.isNotBlank() }
             .forEach { logFile ->
@@ -139,13 +144,20 @@ internal class CoreLogFilePoller(private val file: File, startAtEnd: Boolean) {
     /** Position after the last line of the rewritten file that equals the anchor, else 0. */
     private fun positionAfterRewrite(reader: RandomAccessFile): Long {
         val line = anchor ?: return 0L
-        val bytes = ByteArray(reader.length().toInt())
-        reader.seek(0)
+        // Only the tail is searched, and it is bounded: the file is Xray's own and can be far larger than memory,
+        // and a length over 2 GiB does not even fit an Int.
+        val length = reader.length()
+        val window = minOf(length, MaxBytesPerPoll.toLong())
+        val base = length - window
+        val bytes = ByteArray(window.toInt())
+        reader.seek(base)
         reader.readFully(bytes)
         var end = bytes.size - line.size
         while (end >= 0) {
-            val startsLine = end == 0 || bytes[end - 1] == NewLine
-            if (startsLine && bytes.regionEquals(end, line)) return (end + line.size).toLong()
+            // A line start inside the window needs the byte before it; the window's first byte is only known to be
+            // one when it is the start of the file.
+            val startsLine = if (end == 0) base == 0L else bytes[end - 1] == NewLine
+            if (startsLine && bytes.regionEquals(end, line)) return base + end + line.size
             end -= 1
         }
         return 0L

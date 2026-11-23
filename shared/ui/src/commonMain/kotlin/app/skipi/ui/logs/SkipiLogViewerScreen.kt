@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.flow.conflate
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -117,15 +119,27 @@ fun SkipiLogViewerScreen(
     // Oldest first, like a terminal: the newest line is at the bottom, where the log opens.
     // A search goes over up to several thousand lines, building each one's text: it runs off the UI thread, a little
     // after the last keystroke, and the list keeps showing the previous result meanwhile.
-    var filtered by remember { mutableStateOf(entries) }
-    LaunchedEffect(entries, search, showMetadata) {
-        if (search.isEmpty) return@LaunchedEffect
-        delay(LogSearchDebounceMillis)
-        filtered = withContext(Dispatchers.Default) {
-            entries.filter { search.matches(it, it.exportText(showMetadata)) }
+    // Only the query is debounced: live entries must reach the filter without waiting, or a busy log (a line
+    // every few milliseconds) would restart the wait forever and the search would never show anything.
+    var debouncedSearch by remember { mutableStateOf(search) }
+    LaunchedEffect(search) {
+        if (!search.isEmpty) delay(LogSearchDebounceMillis)
+        debouncedSearch = search
+    }
+    var filtered by remember { mutableStateOf<List<CoreLogEntry>?>(null) }
+    val latestEntries by rememberUpdatedState(entries)
+    val latestShowMetadata by rememberUpdatedState(showMetadata)
+    LaunchedEffect(Unit) {
+        // conflate: a pass that finishes always publishes; passes that pile up behind it collapse into one.
+        snapshotFlow { Triple(latestEntries, debouncedSearch, latestShowMetadata) }.conflate().collect { (all, query, metadata) ->
+            filtered = if (query.isEmpty) {
+                null
+            } else {
+                withContext(Dispatchers.Default) { all.filter { query.matches(it, it.exportText(metadata)) } }
+            }
         }
     }
-    val displayed = if (search.isEmpty) entries else filtered
+    val displayed = if (search.isEmpty) entries else filtered ?: entries
     val copiedMessage = stringResource(Res.string.logs_copied_to_clipboard)
     val hapticFeedback = LocalHapticFeedback.current
 

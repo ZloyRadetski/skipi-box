@@ -302,5 +302,9 @@ private fun Throwable.readableMessage(): String {
 /** How often the Access logs page asks Core for new connections. */
 internal const val ConnectionAccessLogPollMillis = 1_000L
 
+private val connectionLogTimeFormat = ThreadLocal.withInitial {
+    java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT)
+}
+
 internal fun formatConnectionLogTime(timeMillis: Long): String =
-    java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date(timeMillis))
+    connectionLogTimeFormat.get()!!.format(java.util.Date(timeMillis))

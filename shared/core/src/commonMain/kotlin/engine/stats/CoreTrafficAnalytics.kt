@@ -46,29 +46,31 @@ fun Map<String, XrayTrafficBytes>.maxTrafficDeltaComparedTo(
     currentActiveTag: String? = null,
     minDeltaBytes: Long = MinimumMeaningfulTrafficDeltaBytes,
 ): String? {
-    val deltas = entries
-        .map { (tag, current) ->
-            val before = previous[tag] ?: XrayTrafficBytes()
-            tag to ((current.uplink - before.uplink).coerceAtLeast(0L) +
-                (current.downlink - before.downlink).coerceAtLeast(0L))
+    var maxTag: String? = null
+    var maxDelta = 0L
+    var currentDelta = 0L
+    for ((tag, current) in this) {
+        val before = previous[tag]
+        val delta = (current.uplink - (before?.uplink ?: 0L)).coerceAtLeast(0L) +
+            (current.downlink - (before?.downlink ?: 0L)).coerceAtLeast(0L)
+        if (delta <= 0L) continue
+        if (delta > maxDelta) {
+            maxDelta = delta
+            maxTag = tag
         }
-        .filter { (_, delta) -> delta > 0L }
-
-    if (deltas.isEmpty()) return currentActiveTag
-
-    val maxEntry = deltas.maxByOrNull { (_, delta) -> delta } ?: return currentActiveTag
-
-    if (currentActiveTag != null) {
-        val currentDelta = deltas.firstOrNull { it.first == currentActiveTag }?.second ?: 0L
-        if (currentDelta > 0L && maxEntry.second < currentDelta * 2) {
-            return currentActiveTag
-        }
+        if (tag == currentActiveTag) currentDelta = delta
     }
 
-    return if (maxEntry.second >= minDeltaBytes) {
-        maxEntry.first
+    if (maxTag == null) return currentActiveTag
+
+    if (currentActiveTag != null && currentDelta > 0L && maxDelta < currentDelta * 2) {
+        return currentActiveTag
+    }
+
+    return if (maxDelta >= minDeltaBytes) {
+        maxTag
     } else {
-        currentActiveTag ?: maxEntry.first
+        currentActiveTag ?: maxTag
     }
 }
 
@@ -76,6 +78,8 @@ class XrayTrafficSessionAccumulator {
     private var totalBytes = XrayTrafficBytes()
     private val speedSamples = ArrayDeque<XrayTrafficSpeedSample>()
     private var speedWindowElapsedMillis = 0L
+    private var speedWindowUplink = 0L
+    private var speedWindowDownlink = 0L
 
     fun record(
         delta: XrayTrafficBytes,
@@ -90,21 +94,22 @@ class XrayTrafficSessionAccumulator {
             ),
         )
         speedWindowElapsedMillis += sampleElapsedMillis
+        speedWindowUplink += delta.uplink
+        speedWindowDownlink += delta.downlink
         while (speedSamples.size > 1) {
             val oldest = speedSamples.first()
             if (speedWindowElapsedMillis - oldest.elapsedMillis < TrafficSpeedWindowMillis) break
             speedSamples.removeFirst()
             speedWindowElapsedMillis -= oldest.elapsedMillis
+            speedWindowUplink -= oldest.bytes.uplink
+            speedWindowDownlink -= oldest.bytes.downlink
         }
 
-        val speedWindowBytes = speedSamples.fold(XrayTrafficBytes()) { result, sample ->
-            result + sample.bytes
-        }
         val speedWindowSeconds = speedWindowElapsedMillis.toDouble() / 1000.0
         return XrayTrafficSessionSample(
             speedBytesPerSecond = XrayTrafficBytes(
-                uplink = (speedWindowBytes.uplink / speedWindowSeconds).toLong(),
-                downlink = (speedWindowBytes.downlink / speedWindowSeconds).toLong(),
+                uplink = (speedWindowUplink / speedWindowSeconds).toLong(),
+                downlink = (speedWindowDownlink / speedWindowSeconds).toLong(),
             ),
             totalBytes = totalBytes,
         )

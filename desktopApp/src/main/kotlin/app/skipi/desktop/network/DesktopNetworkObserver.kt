@@ -80,22 +80,51 @@ internal fun readDesktopNetworkInterfaces(): List<DesktopNetworkInterface> =
         }
     }.getOrDefault(emptyList())
 
-/** `netsh wlan show interfaces` -> SSID of the connected interface. */
+/**
+ * `netsh wlan show interfaces` -> SSID of the connected interface.
+ *
+ * The labels and the state words are localized on non-English Windows, while the `SSID` and `BSSID` keys are not.
+ * An English state is judged as before; for any other language a connected adapter is the one that reports the
+ * access point it is joined to (a BSSID), which a disconnected adapter never does. (Querying wlanapi over FFM
+ * would be language-free, but costs a native binding for what these two stable keys already answer.)
+ */
 internal fun parseNetshWlanSsid(output: String): String? {
     val lines = output.lines().map { it.trim() }
-    val connected = lines.any { line ->
-        line.substringBefore(':').trim().equals("State", ignoreCase = true) &&
-            line.substringAfter(':').trim().equals("connected", ignoreCase = true)
+    fun value(line: String) = line.substringAfter(':', "").trim()
+    val englishState = lines.firstOrNull { line -> line.substringBefore(':').trim().equals("State", ignoreCase = true) }
+    val connected = if (englishState != null) {
+        value(englishState).equals("connected", ignoreCase = true)
+    } else {
+        lines.any { line -> line.substringBefore(':').trim().endsWith("BSSID", ignoreCase = true) && value(line).isNotEmpty() }
     }
     if (!connected) return null
     return lines.firstOrNull { line -> line.substringBefore(':').trim().equals("SSID", ignoreCase = true) }
-        ?.substringAfter(':')?.trim()?.takeIf(String::isNotEmpty)
+        ?.let(::value)?.takeIf(String::isNotEmpty)
 }
 
 /** `nmcli -t -f active,ssid dev wifi` -> SSID of the active access point (`\:` escapes a colon). */
 internal fun parseNmcliActiveSsid(output: String): String? =
     output.lines().firstOrNull { it.startsWith("yes:") }
         ?.removePrefix("yes:")?.replace("\\:", ":")?.trim()?.takeIf(String::isNotEmpty)
+
+/** The cached list, never a fresh scan: a rescan every poll keeps the radio busy. */
+internal fun desktopWifiSsidCommand(osName: String): List<String>? = when {
+    "linux" in osName.lowercase() -> listOf("nmcli", "-t", "-f", "active,ssid", "dev", "wifi", "list", "--rescan", "no")
+    else -> null
+}
+
+/** `networksetup -listallhardwareports` -> the device of the Wi-Fi port ("Hardware Port: Wi-Fi" / "Device: en1"). */
+internal fun parseMacWifiDevice(output: String): String? {
+    val lines = output.lines().map(String::trim)
+    val port = lines.indexOfFirst { line ->
+        line.startsWith("Hardware Port:") && line.substringAfter(':').trim().let { name ->
+            name.equals("Wi-Fi", ignoreCase = true) || name.equals("AirPort", ignoreCase = true)
+        }
+    }
+    if (port < 0) return null
+    return lines.drop(port + 1).takeWhile { it.isNotEmpty() }.firstOrNull { it.startsWith("Device:") }
+        ?.substringAfter(':')?.trim()?.takeIf(String::isNotEmpty)
+}
 
 private fun runCommand(vararg command: String): String? =
     runProcessWithTimeout(command.toList(), kotlin.time.Duration.parse("5s")).getOrNull()
@@ -105,8 +134,12 @@ internal fun readDesktopWifiSsid(): String? {
     val os = System.getProperty("os.name").orEmpty().lowercase()
     return when {
         "win" in os -> runCommand("netsh", "wlan", "show", "interfaces")?.let(::parseNetshWlanSsid)
-        "linux" in os -> runCommand("nmcli", "-t", "-f", "active,ssid", "dev", "wifi")?.let(::parseNmcliActiveSsid)
-        "mac" in os -> runCommand("/usr/sbin/networksetup", "-getairportnetwork", "en0")?.let(::parseMacWifiSsid)
+        "linux" in os -> desktopWifiSsidCommand(os)?.let { command -> runCommand(*command.toTypedArray()) }?.let(::parseNmcliActiveSsid)
+        "mac" in os -> {
+            // Wi-Fi is not always en0 (en1 when en0 is Ethernet or Thunderbolt).
+            val device = runCommand("/usr/sbin/networksetup", "-listallhardwareports")?.let(::parseMacWifiDevice) ?: "en0"
+            runCommand("/usr/sbin/networksetup", "-getairportnetwork", device)?.let(::parseMacWifiSsid)
+        }
         else -> null
     }
 }

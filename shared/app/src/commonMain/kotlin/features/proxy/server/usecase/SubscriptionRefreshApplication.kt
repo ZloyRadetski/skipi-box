@@ -165,26 +165,23 @@ private class SubscriptionRefreshCommitPortImpl(
         reconcileLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshReconciliationResult,
     ): SubscriptionRefreshReconciliationResult {
         var result: SubscriptionRefreshReconciliationResult? = null
-        stateStore.update { state ->
-            val reconciled = reconcileLatest(state.toSubscriptionRefreshSnapshot())
+        proxyServers.updateCatalog { current ->
+            val reconciled = reconcileLatest(stateStore.currentState.toSubscriptionRefreshSnapshot(current))
             result = reconciled
             if (!reconciled.applicable) {
-                state
+                current
             } else {
-                state.withProxyServerCatalog(
-                    ProxyServerCatalog(
-                        servers = reconciled.snapshot.servers.map { server ->
-                            app.skipi.app.model.ProxyServerRecord(
-                                id = server.id,
-                                server = server.server,
-                                sourceSubscriptionId = server.groupId.takeIf {
-                                    it != DefaultSubscriptionGroupId
-                                },
-                            )
-                        },
-                        nextServerId = reconciled.snapshot.nextServerId,
-                        selectedServerId = reconciled.snapshot.selectedServerId,
-                    ),
+                ProxyServerCatalog(
+                    servers = reconciled.snapshot.servers.map { server ->
+                        app.skipi.app.model.ProxyServerRecord(
+                            id = server.id,
+                            server = server.server,
+                            sourceSubscriptionId = server.groupId.takeIf { it != DefaultSubscriptionGroupId },
+                        )
+                    },
+                    nextServerId = reconciled.snapshot.nextServerId,
+                    selectedServerId = reconciled.snapshot.selectedServerId,
+                    retainedServerIds = current.retainedServerIds,
                 )
             }
         }

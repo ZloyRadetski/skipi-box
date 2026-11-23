@@ -66,4 +66,32 @@ class DesktopInstanceChannelTest {
 
         repeat(3) { assertEquals("skipi://toggle", received.poll(5, TimeUnit.SECONDS)) }
     }
+
+    @Test
+    fun aClientThatNeverFinishesDoesNotBlockLaterLaunches() {
+        val received = LinkedBlockingQueue<String>()
+        assertNotNull(claim(emptyList())).listen(received::put)
+        // Connects and stays silent: no newline, no EOF.
+        val stalled = java.nio.channels.SocketChannel.open(java.net.UnixDomainSocketAddress.of(socket))
+        try {
+            assertNull(claim(listOf("skipi://open")))
+
+            assertEquals("skipi://open", received.poll(5, TimeUnit.SECONDS))
+        } finally {
+            stalled.close()
+        }
+    }
+
+    @Test
+    fun theSocketDirectoryIsReadableByTheOwnerOnly() {
+        val view = Files.getFileAttributeView(directory, java.nio.file.attribute.PosixFileAttributeView::class.java) ?: return
+        view.setPermissions(java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr-x"))
+
+        assertNotNull(claim(emptyList()))
+
+        assertEquals(
+            java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"),
+            view.readAttributes().permissions(),
+        )
+    }
 }

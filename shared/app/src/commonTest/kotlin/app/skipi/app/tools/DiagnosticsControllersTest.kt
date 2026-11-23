@@ -208,6 +208,44 @@ class DiagnosticsControllersTest {
     }
 
     @Test
+    fun ipInfoResultArrivingAfterStopDoesNotReplaceIdle() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val controller = IpInfoController(TestScope(StandardTestDispatcher(testScheduler))) {
+            withContext(NonCancellable) { gate.await() }
+            sampleIpInfo()
+        }
+        controller.refresh()
+        testScheduler.runCurrent()
+
+        controller.stop()
+        gate.complete(Unit)
+        testScheduler.runCurrent()
+
+        assertEquals(IpInfoState.Idle, controller.state.value)
+    }
+
+    @Test
+    fun ipInfoSupersededRefreshDoesNotOverwriteTheNewerLoad() = runTest {
+        val first = CompletableDeferred<Unit>()
+        val second = CompletableDeferred<Unit>()
+        var call = 0
+        val controller = IpInfoController(TestScope(StandardTestDispatcher(testScheduler))) {
+            val gate = if (++call == 1) first else second
+            withContext(NonCancellable) { gate.await() }
+            sampleIpInfo()
+        }
+        controller.refresh()
+        testScheduler.runCurrent()
+        controller.refresh()
+        testScheduler.runCurrent()
+
+        first.complete(Unit)
+        testScheduler.runCurrent()
+
+        assertEquals(IpInfoState.Loading, controller.state.value)
+    }
+
+    @Test
     fun aCancelledSpeedTestWindingDownDoesNotOverwriteTheNewRun() = runTest {
         val gate = CompletableDeferred<Unit>()
         var run = 0
@@ -242,5 +280,11 @@ class DiagnosticsControllersTest {
 
         assertEquals(SpeedTestPhase.Download, controller.state.value.phase)
     }
-}
 
+    private fun sampleIpInfo() = features.tools.ipinfo.IpInfoData(
+        ipv4 = "203.0.113.9", ipv6 = null, country = "", countryCode = "", flagEmoji = "", continent = "",
+        region = "", city = "", postal = "", capital = "", latitude = null, longitude = null, isp = "",
+        org = "", asn = null, domain = "", timezoneId = "", timezoneAbbr = "", timezoneUtc = "",
+        currentTime = "", isVpnTunnel = false,
+    )
+}

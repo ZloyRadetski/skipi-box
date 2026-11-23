@@ -98,6 +98,9 @@ internal class DesktopCoreController(
     private val stateLock = Any()
 
     @Volatile private var native: DesktopCoreNative? = null
+
+    /** Whether this process ever loaded Core: when it did not, no tunnel of this run exists to tear down. */
+    val nativeLoaded: Boolean get() = native != null
     private var loadedLibrary: Path? = null
     @Volatile private var activeHandle: Long? = null
     @Volatile private var connectionLogEnabled = false
@@ -178,7 +181,9 @@ internal class DesktopCoreController(
         }
 
         synchronized(stateLock) {
-            activeHandle = handle
+            // A session start already published its handle atomically (see startSession); only the older
+            // separate start publishes here. A handle a force stop took in between must not come back.
+            if (hev != null) check(activeHandle == handle) { "The start was cancelled by an emergency stop" } else activeHandle = handle
             sessionMode = hev != null
             activeCoreVersion = core.coreVersion
             diagnostic = ""
@@ -230,22 +235,31 @@ internal class DesktopCoreController(
     ): Long {
         val plan = sessionPlanJson(configJson, amneziaWg, connectionLogEnabled, hev)
         val handle = core.createController()
-        startingHandle = handle
+        synchronized(stateLock) { startingHandle = handle }
         // Core owns the runner in a session; the flag keeps latency probes away from it until the session ends.
         val locked = amneziaWg != null && amneziaWgLock.tryLock()
         try {
             check(amneziaWg == null || locked) { "The AmneziaWG runner is busy with another measurement" }
             if (amneziaWg != null) amneziaWgActive = true
             core.startSession(handle, plan, 0)
-            // A force stop that came in while the start was hanging already released it; the late result is void.
-            check(startingHandle == handle) { "The start was cancelled by an emergency stop" }
+            // The hand-over from "starting" to "active" is one step under the state lock: a force stop that came in
+            // while the start was hanging already released the handle, and publishing it now would install a
+            // destroyed handle for state(), stop() and the log reads to use.
+            synchronized(stateLock) {
+                check(startingHandle == handle) { "The start was cancelled by an emergency stop" }
+                startingHandle = null
+                activeHandle = handle
+                sessionMode = true
+                activeCoreVersion = core.coreVersion
+                diagnostic = ""
+            }
         } catch (error: Throwable) {
             if (amneziaWg != null && locked) amneziaWgActive = false
             // After an emergency stop the handle is already destroyed; a second destroy only adds a suppressed note.
-            if (startingHandle == handle) runCatching { core.destroyController(handle) }.onFailure(error::addSuppressed)
+            val stillOurs = synchronized(stateLock) { (startingHandle == handle).also { if (it) startingHandle = null } }
+            if (stillOurs) runCatching { core.destroyController(handle) }.onFailure(error::addSuppressed)
             throw error
         } finally {
-            startingHandle = null
             if (locked) amneziaWgLock.unlock()
         }
         return handle

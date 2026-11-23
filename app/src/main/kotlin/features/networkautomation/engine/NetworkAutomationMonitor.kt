@@ -57,6 +57,9 @@ class NetworkAutomationMonitor(
     @Volatile
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var debounceJob: Job? = null
+    // networkCallback, observesWifiSsid and debounceJob change from start() (Default), refresh() (main) and the
+    // connectivity thread; one lock keeps register/unregister/schedule from interleaving.
+    private val callbackLock = Any()
     private var lastKnownNetworkId: String? = null
     private var observesWifiSsid = false
 
@@ -73,12 +76,14 @@ class NetworkAutomationMonitor(
                 .distinctUntilChanged()
                 .collect { plan ->
                     if (plan.shouldListen) {
-                        if (networkCallback != null && observesWifiSsid != plan.requiresWifiSsid) {
-                            unregisterCallback()
+                        synchronized(callbackLock) {
+                            if (networkCallback != null && observesWifiSsid != plan.requiresWifiSsid) {
+                                unregisterCallbackLocked()
+                            }
+                            registerCallbackLocked(plan.requiresWifiSsid)
                         }
-                        registerCallback(plan.requiresWifiSsid)
                     } else {
-                        unregisterCallback()
+                        synchronized(callbackLock) { unregisterCallbackLocked() }
                     }
                 }
         }
@@ -92,11 +97,13 @@ class NetworkAutomationMonitor(
             onDemandVpnEnabled = state.enableOnDemandVpn,
             rules = state.networkAutomationRules,
         )
-        unregisterCallback()
-        if (plan.shouldListen) registerCallback(plan.requiresWifiSsid)
+        synchronized(callbackLock) {
+            unregisterCallbackLocked()
+            if (plan.shouldListen) registerCallbackLocked(plan.requiresWifiSsid)
+        }
     }
 
-    private fun registerCallback(requiresWifiSsid: Boolean) {
+    private fun registerCallbackLocked(requiresWifiSsid: Boolean) {
         if (networkCallback != null) return
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return
 
@@ -187,7 +194,7 @@ class NetworkAutomationMonitor(
         scheduleEvaluation(null)
     }
 
-    private fun unregisterCallback() {
+    private fun unregisterCallbackLocked() {
         val callback = networkCallback
         networkCallback = null
         lastKnownNetworkId = null
@@ -205,7 +212,9 @@ class NetworkAutomationMonitor(
         }
     }
 
-    fun scheduleEvaluation(capabilities: NetworkCapabilities?) {
+    fun scheduleEvaluation(capabilities: NetworkCapabilities?) = synchronized(callbackLock) {
+        // After unregisterCallback() nothing observes the network any more; a late callback must not start work.
+        if (networkCallback == null) return@synchronized
         debounceJob?.cancel()
         val handoverToken = NetworkHandoverRecoveryGate.beginNetworkAutomationEvaluation()
         debounceJob = scope.launch(Dispatchers.Default) {

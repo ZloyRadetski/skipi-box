@@ -62,6 +62,20 @@ internal fun relaunchCurrentProcessElevated(
 }
 
 /**
+ * The TUN switch of a non-elevated Windows process: the elevated copy reads `enableTunMode` from the settings file as it
+ * starts, so the file must hold it before the copy exists. A save that failed starts nothing; a declined UAC prompt
+ * puts the setting back through [revert].
+ */
+internal suspend fun relaunchElevatedWithSavedSetting(
+    save: suspend () -> Result<Unit>,
+    relaunch: suspend () -> Result<Unit>,
+    revert: suspend () -> Unit,
+): Result<Unit> {
+    save().onFailure { return Result.failure(it) }
+    return relaunch().onFailure { revert() }
+}
+
+/**
  * Whether a start should hand over to an elevated copy: TUN mode is saved as on, this process lacks
  * administrator rights, and it is not itself the copy that was started for that. The relaunched copy
  * never asks again, so a wrong elevation check cannot loop on UAC prompts.
@@ -72,8 +86,15 @@ internal fun shouldRelaunchElevatedAtStart(
     alreadyRelaunched: Boolean,
 ): Boolean = tunModeEnabled && needsElevation && !alreadyRelaunched
 
-/** Whether this process runs with an elevated administrator token. */
-internal fun isWindowsElevated(): Boolean = runCatching {
+/**
+ * Whether this process runs with an elevated administrator token. The token of a running process does not change, so
+ * the FFM lookup is made once: the settings page asks on every recomposition.
+ */
+internal fun isWindowsElevated(): Boolean = windowsElevated
+
+private val windowsElevated: Boolean by lazy { readWindowsElevated() }
+
+private fun readWindowsElevated(): Boolean = runCatching {
     val linker = Linker.nativeLinker()
     val shell32 = SymbolLookup.libraryLookup("shell32", java.lang.foreign.Arena.global())
     val isUserAnAdmin = linker.downcallHandle(

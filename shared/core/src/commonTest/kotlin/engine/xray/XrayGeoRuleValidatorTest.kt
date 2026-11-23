@@ -32,8 +32,34 @@ class XrayGeoRuleValidatorTest {
         assertTrue(XrayGeoRuleValidator.isIpRuleValid("192.168.1.0/24", lookup))
         assertFalse(XrayGeoRuleValidator.isIpRuleValid("not-an-ip", lookup))
         assertTrue(XrayGeoRuleValidator.isIpRuleValid("geoip:private", lookup))
-        assertTrue(XrayGeoRuleValidator.isIpRuleValid("geoip:custom:ru", lookup))
+        assertTrue(XrayGeoRuleValidator.isIpRuleValid("ext:custom:ru", lookup))
+        // Only `ext:` names a file; `geoip:` always reads the bundled geoip.dat.
+        assertFalse(XrayGeoRuleValidator.isIpRuleValid("geoip:custom:ru", lookup))
         assertFalse(XrayGeoRuleValidator.isIpRuleValid("geoip:", lookup))
         assertEquals(1, lookupCount)
+    }
+
+    @Test
+    fun refusesFileNamesThatLeaveTheResourceDirectory() {
+        val seen = mutableListOf<String>()
+        val lookup: (String, String) -> Boolean = { file, _ -> seen += file; true }
+
+        listOf("ext:../../secret:tag", "ext:..\\x:tag", "ext:a/b:tag", "ext:..:tag", "geosite:../../x:y").forEach {
+            assertFalse(XrayGeoRuleValidator.isDomainRuleValid(it, lookup), it)
+            assertFalse(XrayGeoRuleValidator.isIpRuleValid(it, lookup), it)
+        }
+        assertTrue(seen.isEmpty(), seen.toString())
+    }
+
+    @Test
+    fun geoSiteAttributesAreCheckedAgainstTheBaseTag() {
+        val seen = mutableListOf<String>()
+        val lookup: (String, String) -> Boolean = { _, tag -> seen += tag; tag == "google" || tag == "geolocation-!cn" }
+
+        assertTrue(XrayGeoRuleValidator.isDomainRuleValid("geosite:google@cn", lookup))
+        assertTrue(XrayGeoRuleValidator.isDomainRuleValid("geosite:geolocation-!cn@cn", lookup))
+        assertFalse(XrayGeoRuleValidator.isDomainRuleValid("geosite:google@", lookup))
+        assertFalse(XrayGeoRuleValidator.isDomainRuleValid("geosite:@cn", lookup))
+        assertEquals(listOf("google", "geolocation-!cn"), seen)
     }
 }

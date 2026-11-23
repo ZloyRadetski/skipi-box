@@ -75,7 +75,8 @@ fun mihomoYamlPayloadParser(
     val document = root.toMihomoProxyDocument()
     val configs = document.proxyNodes
     val providers = document.providers
-    if (configs.isEmpty() && providers.isEmpty()) {
+    val inlineTexts = document.inlinePayloadTexts
+    if (configs.isEmpty() && providers.isEmpty() && inlineTexts.isEmpty()) {
         return@parser EmptyProxyServerImportResult
     }
 
@@ -85,6 +86,10 @@ fun mihomoYamlPayloadParser(
     }
     var rejectedCount = importedConfigs.rejectedCount
     val servers = importedConfigs.servers.toMutableList()
+    // A string-list `payload:` holds proxy links rather than node maps.
+    val importedUrls = inlineTexts.importProxyServerUrls()
+    rejectedCount += importedUrls.rejectedCount
+    servers += importedUrls.servers
 
     val providerResults = providers.map { provider ->
         provider.import(context, normalizeProviderUrl, parseProviderPayload, providerLogHost, diagnosticSink)
@@ -94,7 +99,7 @@ fun mihomoYamlPayloadParser(
         servers += result.servers
     }
 
-    val urlCount = configs.size + providers.size + providerResults.sumOf(MihomoProviderImportResult::urlCount)
+    val urlCount = configs.size + importedUrls.urlCount + providers.size + providerResults.sumOf(MihomoProviderImportResult::urlCount)
     if (rejectedCount > 0) {
         diagnosticSink(
             MihomoYamlImportDiagnostic.Summary(
@@ -184,16 +189,26 @@ private fun MihomoProxyProvider.importInlinePayload(
     source: ProxyServerImportSource,
     diagnosticSink: (MihomoYamlImportDiagnostic) -> Unit,
 ): MihomoProviderImportResult {
-    if (proxyNodes.isEmpty()) return MihomoProviderImportResult.Empty
+    if (proxyNodes.isEmpty() && inlinePayloadTexts.isEmpty()) return MihomoProviderImportResult.Empty
     val importedNodes = proxyNodes.importMihomoProxyNodes()
     importedNodes.failures.forEach { failure ->
         diagnosticSink(MihomoYamlImportDiagnostic.NodeRejected(source, failure))
     }
+    val importedUrls = inlinePayloadTexts.importProxyServerUrls()
     return MihomoProviderImportResult(
-        urlCount = proxyNodes.size,
-        servers = importedNodes.servers,
-        rejectedCount = importedNodes.rejectedCount,
+        urlCount = proxyNodes.size + importedUrls.urlCount,
+        servers = importedNodes.servers + importedUrls.servers,
+        rejectedCount = importedNodes.rejectedCount + importedUrls.rejectedCount,
     )
+}
+
+private class MihomoUrlImportResult(val urlCount: Int, val servers: List<ProxyServer<*>>, val rejectedCount: Int)
+
+private fun List<String>.importProxyServerUrls(): MihomoUrlImportResult {
+    if (isEmpty()) return MihomoUrlImportResult(0, emptyList(), 0)
+    var rejected = 0
+    val result = importProxyServersFromUrls(joinToString("\n")) { rejected++ }
+    return MihomoUrlImportResult(result.urlCount, result.servers, rejected)
 }
 
 private fun MihomoProxyProvider.providerSkipped(

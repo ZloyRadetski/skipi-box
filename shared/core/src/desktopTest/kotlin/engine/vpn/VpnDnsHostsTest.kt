@@ -29,6 +29,26 @@ class VpnDnsHostsTest {
     }
 
     @Test
+    fun slowLookupsShareOneTimeoutInsteadOfStackingOnePerHost() {
+        val release = CountDownLatch(1)
+        val hosts = (1..10).map { "slow$it.example.test" }
+        try {
+            val started = System.nanoTime()
+            val result = AppState().xrayDnsHosts(hosts) {
+                // Ignores interruption, like InetAddress.getAllByName.
+                while (!release.await(30, TimeUnit.SECONDS)) Unit
+                emptyList()
+            }
+            val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started)
+
+            assertTrue(result.isEmpty())
+            assertTrue(elapsedMillis < 2_500, "ten slow hosts took $elapsedMillis ms; one shared deadline is ~600 ms")
+        } finally {
+            release.countDown()
+        }
+    }
+
+    @Test
     fun lookupsThatNeverFinishDoNotStarveLaterLookups() {
         val release = CountDownLatch(1)
         val hungHosts = (1..9).map { "hung$it.example.test" }

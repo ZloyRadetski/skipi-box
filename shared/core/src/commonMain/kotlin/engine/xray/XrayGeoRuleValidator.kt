@@ -12,7 +12,9 @@ object XrayGeoRuleValidator {
         if (trimmed.isBlank()) return false
         if (!trimmed.startsWith("geosite:", ignoreCase = true) && !trimmed.startsWith("ext:", ignoreCase = true)) return true
         val reference = parseReference(trimmed, "geosite:", "ext:") ?: return false
-        return hasResourceTag(reference.fileName, reference.tag)
+        // `geosite:google@cn` selects the entries of tag "google" carrying attribute "cn".
+        val tag = reference.tag.withoutAttributeOrNull() ?: return false
+        return hasResourceTag(reference.fileName, tag)
     }
 
     fun isIpRuleValid(rule: String, hasResourceTag: (fileName: String, tag: String) -> Boolean): Boolean {
@@ -31,14 +33,34 @@ object XrayGeoRuleValidator {
         val prefix = if (isExternal) externalPrefix else standardPrefix
         if (!rule.startsWith(prefix, ignoreCase = true)) return null
         val payload = rule.substring(prefix.length).trim()
+        // Only `ext:` names a file; `geosite:` / `geoip:` always read the bundled one, so a
+        // crafted `geosite:../../x:y` cannot pick a path.
         val separator = payload.indexOf(':')
+        if (!isExternal && separator >= 0) return null
         if (isExternal && separator <= 0) return null
-        val file = if (separator > 0) payload.substring(0, separator).trim() else null
-        val tag = if (separator > 0) payload.substring(separator + 1).trim() else payload
+        val file = if (isExternal) payload.substring(0, separator).trim() else null
+        val tag = if (isExternal) payload.substring(separator + 1).trim() else payload
         if (tag.isBlank()) return null
-        val fileName = file?.let { if (it.endsWith(".dat", ignoreCase = true)) it else "$it.dat" }
-            ?: if (standardPrefix.equals("geoip:", ignoreCase = true)) DefaultGeoIpFileName else DefaultGeoSiteFileName
+        val fileName = if (file != null) {
+            if (!file.isPlainResourceFileName()) return null
+            val withExtension = if (file.endsWith(".dat", ignoreCase = true)) file else "$file.dat"
+            if (!withExtension.isPlainResourceFileName()) return null
+            withExtension
+        } else if (standardPrefix.equals("geoip:", ignoreCase = true)) {
+            DefaultGeoIpFileName
+        } else {
+            DefaultGeoSiteFileName
+        }
         return ResourceTagReference(fileName, tag)
+    }
+
+    /** The tag before any `@attribute`; null when either side of the `@` is blank. */
+    private fun String.withoutAttributeOrNull(): String? {
+        val at = indexOf('@')
+        if (at < 0) return this
+        val base = substring(0, at).trim()
+        val attribute = substring(at + 1).trim()
+        return base.takeIf { it.isNotBlank() && attribute.isNotBlank() }
     }
 
     private data class ResourceTagReference(val fileName: String, val tag: String)

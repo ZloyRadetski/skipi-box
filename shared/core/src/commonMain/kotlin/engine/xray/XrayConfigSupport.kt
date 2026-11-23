@@ -119,6 +119,22 @@ fun JsonObject.updatedWithout(
     block()
 }
 
+/** Xray-core parses JSON field names case-insensitively, so "API" and "api" are the same section. */
+fun JsonObject.updatedWithoutIgnoreCase(
+    keys: Set<String>,
+    block: JsonObjectBuilder.() -> Unit = {},
+): JsonObject {
+    val lowered = keys.mapTo(HashSet()) { it.lowercase() }
+    return buildJsonObject {
+        this@updatedWithoutIgnoreCase.forEach { (name, value) ->
+            if (name.lowercase() !in lowered) {
+                put(name, value)
+            }
+        }
+        block()
+    }
+}
+
 fun JsonObject.updatedNestedObject(
     name: String,
     nestedName: String,

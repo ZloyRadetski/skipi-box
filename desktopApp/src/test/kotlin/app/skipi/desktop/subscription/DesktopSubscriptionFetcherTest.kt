@@ -33,6 +33,63 @@ class DesktopSubscriptionFetcherTest {
     }
 
     @Test
+    fun aRejectedRedirectTargetClosesTheResponseStream() {
+        // A client that follows redirects hands back the final response: its URI is checked and, when unsafe, the
+        // stream it carries must not stay open behind the exception.
+        var closed = false
+        val body = object : java.io.ByteArrayInputStream(ByteArray(0)) {
+            override fun close() { closed = true; super.close() }
+        }
+        val client = redirectedClient(finalUri = URI("http://localhost/internal"), body = body)
+
+        assertFailsWith<IllegalArgumentException> {
+            DesktopSubscriptionFetcher(client = lazy { client })
+                .fetchAutomaticResource("https://8.8.8.8/list.yaml", "SKIPI", Duration.ofSeconds(5), null)
+        }
+
+        assertTrue(closed, "the rejected response's stream was left open")
+    }
+
+    private fun redirectedClient(finalUri: URI, body: java.io.InputStream): java.net.http.HttpClient =
+        object : java.net.http.HttpClient() {
+            override fun cookieHandler() = java.util.Optional.empty<java.net.CookieHandler>()
+            override fun connectTimeout() = java.util.Optional.empty<Duration>()
+            override fun followRedirects() = Redirect.ALWAYS
+            override fun proxy() = java.util.Optional.empty<java.net.ProxySelector>()
+            override fun sslContext(): javax.net.ssl.SSLContext = javax.net.ssl.SSLContext.getDefault()
+            override fun sslParameters() = javax.net.ssl.SSLParameters()
+            override fun authenticator() = java.util.Optional.empty<java.net.Authenticator>()
+            override fun version() = Version.HTTP_1_1
+            override fun executor() = java.util.Optional.empty<java.util.concurrent.Executor>()
+
+            @Suppress("UNCHECKED_CAST")
+            override fun <T> send(
+                request: java.net.http.HttpRequest,
+                responseBodyHandler: java.net.http.HttpResponse.BodyHandler<T>,
+            ): java.net.http.HttpResponse<T> = object : java.net.http.HttpResponse<java.io.InputStream> {
+                override fun statusCode() = 200
+                override fun request() = request
+                override fun previousResponse() = java.util.Optional.empty<java.net.http.HttpResponse<java.io.InputStream>>()
+                override fun headers() = java.net.http.HttpHeaders.of(emptyMap()) { _, _ -> true }
+                override fun body() = body
+                override fun sslSession() = java.util.Optional.empty<javax.net.ssl.SSLSession>()
+                override fun uri() = finalUri
+                override fun version() = Version.HTTP_1_1
+            } as java.net.http.HttpResponse<T>
+
+            override fun <T> sendAsync(
+                request: java.net.http.HttpRequest,
+                responseBodyHandler: java.net.http.HttpResponse.BodyHandler<T>,
+            ): java.util.concurrent.CompletableFuture<java.net.http.HttpResponse<T>> = throw UnsupportedOperationException()
+
+            override fun <T> sendAsync(
+                request: java.net.http.HttpRequest,
+                responseBodyHandler: java.net.http.HttpResponse.BodyHandler<T>,
+                pushPromiseHandler: java.net.http.HttpResponse.PushPromiseHandler<T>?,
+            ): java.util.concurrent.CompletableFuture<java.net.http.HttpResponse<T>> = throw UnsupportedOperationException()
+        }
+
+    @Test
     fun fetches_subscription_body_headers_and_user_agent() {
         withSubscriptionServer { server ->
             var receivedAgent = ""

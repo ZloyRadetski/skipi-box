@@ -78,17 +78,13 @@ object TrafficConfigRuntimePlanner {
         }
 
         val finalRule = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
+        val policyResolver = ShadowrocketPolicyResolver(input.configs, input.servers)
         val resolvedRules = buildList {
             var nextId = 1
             analysis.rules.filterNot(ShadowrocketRule::isFinal).forEachIndexed { index, rule ->
                 // An OR / AND rule can expand to several Xray rules, so ids follow the produced rules.
                 val produced = rule.toXrayRouteRules(maxOf(index + 1, nextId)) { policy ->
-                    resolveShadowrocketPolicy(
-                        policy = policy,
-                        policyGroups = analysis.proxyGroups,
-                        configs = input.configs,
-                        servers = input.servers,
-                    )
+                    policyResolver.resolve(policy, analysis.proxyGroups, "")
                 }
                 addAll(produced)
                 nextId = (produced.maxOfOrNull(RouteRule::id) ?: (nextId - 1)) + 1
@@ -97,12 +93,7 @@ object TrafficConfigRuntimePlanner {
         val defaultRouteOutboundTag = finalRule
             ?.policy
             ?.let { policy ->
-                resolveShadowrocketPolicy(
-                    policy = policy,
-                    policyGroups = analysis.proxyGroups,
-                    configs = input.configs,
-                    servers = input.servers,
-                )
+                policyResolver.resolve(policy, analysis.proxyGroups, "")
             }
             ?: XrayTags.PROXY
 
@@ -128,50 +119,71 @@ object TrafficConfigRuntimePlanner {
     }
 }
 
-private fun resolveShadowrocketPolicy(
-    policy: String,
-    policyGroups: List<ShadowrocketPolicyGroup>,
-    configs: List<TrafficConfigReference>,
+/**
+ * Resolves a rule policy to an outbound tag. The groups of each profile, the servers and the analyses of
+ * referenced CONFIG profiles are indexed once (first match wins, as a linear scan would) instead of being
+ * rescanned or re-parsed for every rule.
+ */
+private class ShadowrocketPolicyResolver(
+    private val configs: List<TrafficConfigReference>,
     servers: List<TrafficConfigServerTarget>,
-    visitedConfigIds: Set<Int> = emptySet(),
-): String {
-    val normalized = policy.trim()
-    return when {
-        policyGroups.any { group -> group.name.equals(normalized, ignoreCase = true) } ->
-            policyGroups.first { group -> group.name.equals(normalized, ignoreCase = true) }.outboundTag
-        normalized.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
-        normalized.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
-        normalized.startsWith("REJECT", ignoreCase = true) || normalized.equals("BLOCK", ignoreCase = true) -> XrayTags.BLOCK
-        normalized.startsWith("CONFIG:", ignoreCase = true) -> {
-            val configId = normalized.substringAfter(':').trim().toIntOrNull()
-            val referenced = configId
-                ?.takeUnless { it in visitedConfigIds }
-                ?.let { id -> configs.firstOrNull { config -> config.id == id } }
-            val referencedAnalysis = referenced?.rawConfig?.analyzeShadowrocketConfig()
-            referencedAnalysis
-                ?.rules
-                ?.lastOrNull(ShadowrocketRule::isFinal)
-                ?.let { finalRule ->
-                    resolveShadowrocketPolicy(
-                        policy = finalRule.policy,
-                        policyGroups = referencedAnalysis.proxyGroups,
-                        configs = configs,
-                        servers = servers,
-                        visitedConfigIds = visitedConfigIds + requireNotNull(referenced).id,
-                    )
-                }
-                ?: XrayTags.PROXY
+) {
+    private val outboundTagByRemarks = HashMap<String, String>().also { index ->
+        servers.forEach { server -> index.getOrPut(server.remarks.lowercase()) { server.outboundTag } }
+    }
+    private val analysisByConfigId = HashMap<Int, ShadowrocketConfigAnalysis>()
+    private val groupsByScope = HashMap<String, Map<String, ShadowrocketPolicyGroup>>()
+
+    /** [groupsScope] names which profile [policyGroups] belong to ("" for the active one). */
+    fun resolve(
+        policy: String,
+        policyGroups: List<ShadowrocketPolicyGroup>,
+        groupsScope: String,
+        visitedConfigIds: Set<Int> = emptySet(),
+    ): String {
+        val normalized = policy.trim()
+        val groups = groupsByScope.getOrPut(groupsScope) {
+            HashMap<String, ShadowrocketPolicyGroup>().also { index ->
+                policyGroups.forEach { group -> index.getOrPut(group.name.lowercase()) { group } }
+            }
         }
-        else -> servers.firstOrNull { server -> server.remarks.equals(normalized, ignoreCase = true) }?.outboundTag
-            ?: normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
-                .let { tag ->
-                    when {
-                        tag.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
-                        tag.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
-                        tag.equals("BLOCK", ignoreCase = true) || tag.startsWith("REJECT", ignoreCase = true) -> XrayTags.BLOCK
-                        else -> tag
-                    }
+        groups[normalized.lowercase()]?.let { return it.outboundTag }
+        return when {
+            normalized.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
+            normalized.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
+            normalized.startsWith("REJECT", ignoreCase = true) || normalized.equals("BLOCK", ignoreCase = true) -> XrayTags.BLOCK
+            normalized.startsWith("CONFIG:", ignoreCase = true) -> {
+                val configId = normalized.substringAfter(':').trim().toIntOrNull()
+                val referenced = configId
+                    ?.takeUnless { it in visitedConfigIds }
+                    ?.let { id -> configs.firstOrNull { config -> config.id == id } }
+                val referencedAnalysis = referenced?.let { config ->
+                    analysisByConfigId.getOrPut(config.id) { config.rawConfig.analyzeShadowrocketConfig() }
                 }
+                referencedAnalysis
+                    ?.rules
+                    ?.lastOrNull(ShadowrocketRule::isFinal)
+                    ?.let { finalRule ->
+                        resolve(
+                            policy = finalRule.policy,
+                            policyGroups = referencedAnalysis.proxyGroups,
+                            groupsScope = "config:${requireNotNull(referenced).id}",
+                            visitedConfigIds = visitedConfigIds + requireNotNull(referenced).id,
+                        )
+                    }
+                    ?: XrayTags.PROXY
+            }
+            else -> outboundTagByRemarks[normalized.lowercase()]
+                ?: normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
+                    .let { tag ->
+                        when {
+                            tag.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
+                            tag.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
+                            tag.equals("BLOCK", ignoreCase = true) || tag.startsWith("REJECT", ignoreCase = true) -> XrayTags.BLOCK
+                            else -> tag
+                        }
+                    }
+        }
     }
 }
 

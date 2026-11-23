@@ -276,6 +276,7 @@ internal class DesktopCoreFfmNative(
         downcall("SkipiCoreDesktopTunClose", FunctionDescriptor.of(ValueLayout.ADDRESS))
     }
 
+    @Volatile
     private var closed = false
 
     override val apiVersion: String
@@ -527,7 +528,13 @@ internal class DesktopCoreFfmNative(
     private fun readOwnedString(value: MemorySegment): String = try {
         value.reinterpret(Long.MAX_VALUE).getString(0)
     } finally {
-        invoke(freeStringFunction, value)
+        // Not through invoke(): a close() racing in would make its checkOpen() throw before the free and leak
+        // the string. The library is never unloaded (see close), so freeing after close is safe.
+        try {
+            freeStringFunction.invokeWithArguments(value)
+        } catch (error: Throwable) {
+            throw IllegalStateException("SKIPI Core native call failed", error)
+        }
     }
 
     private fun <T> withUtf8(value: String, block: (MemorySegment) -> T): T {

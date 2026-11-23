@@ -4,6 +4,8 @@
 package features.resources.runtime
 
 import features.resources.ResourceFileDownloadCancelledException
+import features.subscription.SubscriptionRedirectDecision
+import features.subscription.decideSubscriptionRedirect
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -77,9 +79,18 @@ class ResourceFileDownloadTransfer(
             try {
                 val responseCode = connection.responseCode
                 throwIfCancelled()
-                if (responseCode in 300..399) {
+                if (responseCode in FollowedRedirectCodes) {
                     val location = connection.location ?: throw IOException("Redirect location missing")
-                    currentUrl = URI(currentUrl).resolve(location).toString()
+                    val nextUrl = try {
+                        URI(currentUrl).resolve(location).toString()
+                    } catch (error: IllegalArgumentException) {
+                        throw IOException("Redirect location is invalid", error)
+                    }
+                    when (val decision = decideSubscriptionRedirect(currentUrl, nextUrl)) {
+                        is SubscriptionRedirectDecision.Reject -> error("Redirect refused: ${decision.reason}") // not an IOException: retrying cannot change the answer
+                        else -> Unit
+                    }
+                    currentUrl = nextUrl
                     return@repeat
                 }
                 if (responseCode !in 200..299) {
@@ -100,6 +111,8 @@ class ResourceFileDownloadTransfer(
         error("Too many redirects")
     }
 }
+
+private val FollowedRedirectCodes = setOf(301, 302, 303, 307, 308)
 
 private fun InputStream.copyToWithProgress(
     output: OutputStream,

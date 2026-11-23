@@ -73,6 +73,7 @@ import kotlinx.coroutines.withTimeout
 import system.getInstalledApplicationsCompat
 import utils.runCatchingCancellable
 import utils.toTrimmedNonEmptyDistinctList
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -83,7 +84,6 @@ class SkipiVpnService : VpnService() {
     private var connectionAccessLogJob: Job? = null
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
-    private val operationMutex = Mutex()
     private val networkHandoverLock = Any()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val stateStore by lazy { AndroidAppStateStore.get(applicationContext) }
@@ -138,7 +138,7 @@ class SkipiVpnService : VpnService() {
             }
             AppLog.warn(LogTag, "Ignoring VPN service request without an operation id: action=$action")
             if (action == SkipiVpnServiceIntents.ACTION_START) {
-                stopSelfOnMain(startId)
+                answerForegroundStartThenStop(startId)
             }
             return Service.START_NOT_STICKY
         }
@@ -177,11 +177,11 @@ class SkipiVpnService : VpnService() {
                     if (isLatestOperation(operationId)) {
                         completeStart(operationId, Result.failure(error))
                     }
-                    stopSelfOnMain(startId)
+                    answerForegroundStartThenStop(startId)
                     return Service.START_NOT_STICKY
                 }
                 if (!isLatestOperation(operationId)) {
-                    stopSelfOnMain(startId)
+                    answerForegroundStartThenStop(startId)
                     return Service.START_NOT_STICKY
                 }
                 runCatching {
@@ -236,9 +236,13 @@ class SkipiVpnService : VpnService() {
     private fun startSystemManagedVpn(startId: Int) {
         if (emergencyMarker.suppressSystemManagedStart()) {
             AppLog.info(LogTag, "Ignoring a system-managed VPN start right after an emergency stop")
-            stopSelfOnMain(startId)
+            answerForegroundStartThenStop(startId)
             return
         }
+        // The real notification needs the config, which is built behind the operation lock and a state load; the
+        // system gives a few seconds only, so a plain one goes up at once.
+        runCatching { promoteForeground(getString(R.string.app_name), connecting = true) }
+            .onFailure { error -> AppLog.warn(LogTag, "Could not enter foreground for the Always-on start", error) }
         serviceScope.launch {
             var failed = false
             operationMutex.withLock {
@@ -287,7 +291,20 @@ class SkipiVpnService : VpnService() {
         serviceScope.launch {
             runCatchingCancellable {
                 operationMutex.withLock {
-                    stopVpn(ForegroundNotificationDisposition.Remove)
+                    val owner = tunnelOwner
+                    if (owner != null && owner !== this@SkipiVpnService) {
+                        // A newer instance already runs the tunnel; stopping the shared runtimes now would tear
+                        // down its tunnel. Release only what this instance holds itself.
+                        AppLog.info(LogTag, "Destroyed instance is not the tunnel owner; leaving the running tunnel alone")
+                        runCatching { tunFileDescriptor?.close() }
+                        tunFileDescriptor = null
+                        connectionAccessLogJob?.cancel()
+                        connectionAccessLogJob = null
+                        unregisterNetworkHandoverCallback()
+                    } else {
+                        stopVpn(ForegroundNotificationDisposition.Remove)
+                        if (owner === this@SkipiVpnService) tunnelOwner = null
+                    }
                 }
             }.onFailure { error ->
                 AppLog.warn(LogTag, "Failed to stop VPN Service while destroying service", error)
@@ -319,13 +336,25 @@ class SkipiVpnService : VpnService() {
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (shouldForceFreeMemory(level, vpnRunning = running)) {
-            SkipiCoreRuntime.forceFreeMemory()
+            forceFreeMemoryOffMain()
         }
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        if (running) SkipiCoreRuntime.forceFreeMemory()
+        if (running) forceFreeMemoryOffMain()
+    }
+
+    /** The Go GC behind forceFreeMemory() can pause for a while: never on the main thread, never twice at once. */
+    private fun forceFreeMemoryOffMain() {
+        if (!memoryFreeInProgress.compareAndSet(false, true)) return
+        serviceScope.launch {
+            try {
+                SkipiCoreRuntime.forceFreeMemory()
+            } finally {
+                memoryFreeInProgress.set(false)
+            }
+        }
     }
 
     private fun stopSelfOnMain(startId: Int? = null) {
@@ -351,6 +380,7 @@ class SkipiVpnService : VpnService() {
         }
         val startedAt = android.os.SystemClock.elapsedRealtime()
         stopVpn(ForegroundNotificationDisposition.Keep)
+        tunnelOwner = this@SkipiVpnService
         val stoppedAt = android.os.SystemClock.elapsedRealtime()
         currentConfig = config
         stateStore.update(persist = false) { state ->
@@ -731,6 +761,27 @@ class SkipiVpnService : VpnService() {
     private fun promoteVpnForeground(
         config: VpnServiceStartConfig,
         connecting: Boolean,
+    ) = promoteForeground(config.sessionName.ifBlank { getString(R.string.app_name) }, connecting)
+
+    /**
+     * Every startForegroundService() call must be answered with startForeground() within seconds, even when the
+     * request is then dropped (config gone, a newer operation took over): an unanswered one crashes the app with
+     * ForegroundServiceDidNotStartInTimeException. This answers with the plain notification and stops again.
+     */
+    private fun answerForegroundStartThenStop(startId: Int) {
+        val alreadyForeground = ownsForegroundNotification
+        runCatching { promoteForeground(getString(R.string.app_name), connecting = true) }
+            .onFailure { error -> AppLog.warn(LogTag, "Could not answer the foreground start request", error) }
+        if (!alreadyForeground && !running) {
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+            ownsForegroundNotification = false
+        }
+        stopSelfOnMain(startId)
+    }
+
+    private fun promoteForeground(
+        title: String,
+        connecting: Boolean,
     ) {
         VpnForegroundNotification.ensureChannel(this, notificationManager)
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -740,7 +791,7 @@ class SkipiVpnService : VpnService() {
             Notification.Builder(this)
         }
             .setSmallIcon(R.drawable.ic_qs_proxy)
-            .setContentTitle(config.sessionName.ifBlank { getString(R.string.app_name) })
+            .setContentTitle(title)
             .setContentText(
                 getString(
                     if (connecting) R.string.quick_settings_tile_processing else R.string.quick_settings_tile_running,
@@ -1059,6 +1110,18 @@ class SkipiVpnService : VpnService() {
             set(value) {
                 mutableRunning.value = value
             }
+
+        /**
+         * Shared by every service instance: the native runtimes, the socket protector and [running] are process-wide,
+         * so an instance Android is still destroying must not interleave with the one that replaced it.
+         */
+        private val operationMutex = Mutex()
+
+        /** The instance whose start produced the tunnel that is up; a destroyed older instance must not stop it. */
+        @Volatile
+        private var tunnelOwner: SkipiVpnService? = null
+
+        private val memoryFreeInProgress = AtomicBoolean(false)
 
         private val startMutex = Mutex()
         private val stopRequestLock = Any()

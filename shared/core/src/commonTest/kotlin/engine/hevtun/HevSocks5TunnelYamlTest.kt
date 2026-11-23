@@ -104,4 +104,25 @@ class HevSocks5TunnelYamlTest {
         assertEquals(false, "username" in yaml)
         assertEquals(false, "password" in yaml)
     }
+
+    @Test
+    fun lineBreaksInCredentialsCannotInjectYamlKeys() {
+        val yaml = buildHevSocks5TunnelConfigYaml(
+            HevSocks5TunnelYamlSpec(
+                mtu = 1400,
+                ipv4Address = "172.19.0.1",
+                ipv6Address = null,
+                socksAddress = "127.0.0.1",
+                socksPort = 10808,
+                logPath = "/tmp/tun2socks.log",
+                socksUsername = "user\nmisc:\r\n  log-file: '/etc/x'",
+                socksPassword = "p\nw",
+                logLevel = "warn\nlog-file: x",
+            ),
+        )
+
+        assertEquals(1, yaml.lines().count { it.trimStart().startsWith("log-file:") })
+        assertEquals(1, yaml.lines().count { it == "misc:" })
+        assertEquals(true, yaml.lines().all { it.isEmpty() || it.startsWith("  ") || it.endsWith(":") })
+    }
 }

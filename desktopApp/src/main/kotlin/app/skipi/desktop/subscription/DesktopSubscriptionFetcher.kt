@@ -232,7 +232,7 @@ class DesktopSubscriptionFetcher(
      * is rejected when it resolves to loopback, private, link-local or metadata
      * infrastructure.
      */
-    private fun fetchAutomaticResource(
+    internal fun fetchAutomaticResource(
         url: String,
         userAgent: String,
         timeout: Duration,
@@ -340,7 +340,13 @@ class DesktopSubscriptionFetcher(
             // A caller may inject an HttpClient configured to follow redirects.
             // Re-check its final URI even though the production client disables it.
             if (automaticResource) {
-                requireSafeAutomaticSubscriptionResourceUrl(response.uri().toString())
+                try {
+                    requireSafeAutomaticSubscriptionResourceUrl(response.uri().toString())
+                } catch (error: Throwable) {
+                    // The unsafe response is refused; its connection must not stay open behind the exception.
+                    runCatching { response.body().close() }
+                    throw error
+                }
             }
 
             if (response.statusCode().isRedirect(automaticResource)) {

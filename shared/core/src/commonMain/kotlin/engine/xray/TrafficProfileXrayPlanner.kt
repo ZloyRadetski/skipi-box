@@ -76,6 +76,14 @@ object TrafficProfileXrayPlanner {
         }
 
         val usableServers = servers.filter { record -> record.server.isTrafficProfileUsable() }
+        // Rule-by-rule lookups would otherwise rescan every server and group (and re-parse every referenced
+        // CONFIG profile) for each rule. First match wins, as the linear scans it replaces.
+        val usableServersByRemarks = HashMap<String, TrafficProfileServerRecord>().also { index ->
+            usableServers.forEach { record -> index.getOrPut(record.server.getInfo().remarks.lowercase()) { record } }
+        }
+        val referencedAnalyses = HashMap<Int, ShadowrocketConfigAnalysis>()
+        val groupsByExactName = HashMap<String, Map<String, ShadowrocketPolicyGroup>>()
+        val groupsByTrimmedName = HashMap<String, Map<String, ShadowrocketPolicyGroup>>()
         val addedOutboundTags = mutableSetOf<String>()
         val proxyOutbounds = mutableListOf<JsonObject>()
         val proxyServers = mutableListOf<ProxyServer<*>>()
@@ -104,17 +112,20 @@ object TrafficProfileXrayPlanner {
         fun membersFor(
             group: ShadowrocketPolicyGroup,
             policyGroups: List<ShadowrocketPolicyGroup>,
+            namespace: String,
             visited: Set<String> = emptySet(),
         ): List<TrafficProfileServerRecord> {
             val groupKey = group.name.trim().lowercase()
             if (groupKey in visited) return emptyList()
-            val groupsByName = policyGroups.associateBy { it.name.trim().lowercase() }
+            val groupsByName = groupsByTrimmedName.getOrPut(namespace) {
+                policyGroups.associateBy { it.name.trim().lowercase() }
+            }
             return group.members.flatMap { rawMember ->
                 val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'")
                 when {
                     member == ".*" -> usableServers
                     else -> groupsByName[member.lowercase()]?.let { nested ->
-                        membersFor(nested, policyGroups, visited + groupKey)
+                        membersFor(nested, policyGroups, namespace, visited + groupKey)
                     }
                         ?: usableServers.filter { it.server.getInfo().remarks.matchesProfileGroupMember(member) }
                 }
@@ -130,7 +141,7 @@ object TrafficProfileXrayPlanner {
             builtGroupTargets[groupKey]?.let { return it }
             check(buildingGroups.add(groupKey)) { "Proxy groups form a cycle at '${group.name}'" }
             try {
-                val members = membersFor(group, policyGroups)
+                val members = membersFor(group, policyGroups, namespace)
                 check(members.isNotEmpty()) { "Proxy group '${group.name}' has no matching local servers" }
                 val target = when (group.type.trim().lowercase()) {
                     "select" -> normalTarget(members.first())
@@ -171,7 +182,11 @@ object TrafficProfileXrayPlanner {
             visitedConfigIds: Set<Int> = emptySet(),
         ): XrayRouteTarget {
             val normalized = policy.trim()
-            policyGroups.firstOrNull { group -> group.name.equals(normalized, ignoreCase = true) }
+            groupsByExactName.getOrPut(namespace) {
+                HashMap<String, ShadowrocketPolicyGroup>().also { index ->
+                    policyGroups.forEach { group -> index.getOrPut(group.name.lowercase()) { group } }
+                }
+            }[normalized.lowercase()]
                 ?.let { group -> return groupTarget(group, policyGroups, namespace) }
             when {
                 normalized.equals("PROXY", ignoreCase = true) -> return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
@@ -184,7 +199,9 @@ object TrafficProfileXrayPlanner {
                     val referenced = configId
                         ?.takeUnless(visitedConfigIds::contains)
                         ?.let { id -> configs.firstOrNull { config -> config.id == id } }
-                    val referencedAnalysis = referenced?.rawConfig?.analyzeShadowrocketConfig()
+                    val referencedAnalysis = referenced?.let { config ->
+                        referencedAnalyses.getOrPut(config.id) { config.rawConfig.analyzeShadowrocketConfig() }
+                    }
                     val finalRule = referencedAnalysis?.rules?.lastOrNull(ShadowrocketRule::isFinal)
                     if (referencedAnalysis == null || finalRule == null) {
                         return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
@@ -197,7 +214,7 @@ object TrafficProfileXrayPlanner {
                     )
                 }
             }
-            usableServers.firstOrNull { it.server.getInfo().remarks.equals(normalized, ignoreCase = true) }
+            usableServersByRemarks[normalized.lowercase()]
                 ?.let(::normalTarget)?.let { return it }
             val tag = normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
             return when {

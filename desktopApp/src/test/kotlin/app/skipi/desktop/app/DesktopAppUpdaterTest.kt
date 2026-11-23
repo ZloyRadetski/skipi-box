@@ -156,6 +156,32 @@ class DesktopAppUpdaterTest {
     }
 
     @Test
+    fun theHelperIsNotStartedWhenTheTunnelCannotBeStoppedFirst() = runBlocking {
+        val commands = mutableListOf<List<String>>()
+        val updater = updater(installer = DesktopUpdateInstaller { command -> commands += command; Result.success(Unit) })
+        updater.check(AppUpdateChannel.Stable)
+        updater.download()?.join()
+
+        val result = updater.install(prepareExit = { Result.failure(IllegalStateException("proxy stuck")) })
+
+        val failed = assertIs<DesktopUpdateInstallResult.Failed>(result)
+        assertTrue("proxy stuck" in failed.message, failed.message)
+        assertTrue(commands.isEmpty(), "the helper waits for this process to end and must not exist yet")
+    }
+
+    @Test
+    fun theTunnelIsStoppedBeforeTheHelperStarts() = runBlocking {
+        val events = mutableListOf<String>()
+        val updater = updater(installer = DesktopUpdateInstaller { events += "helper"; Result.success(Unit) })
+        updater.check(AppUpdateChannel.Stable)
+        updater.download()?.join()
+
+        updater.install(prepareExit = { events += "stopped"; Result.success(Unit) })
+
+        assertEquals(listOf("stopped", "helper"), events)
+    }
+
+    @Test
     fun aDownloadedMsiStartsAHelperAndAsksTheAppToExit() = runBlocking {
         val commands = mutableListOf<List<String>>()
         val updater = updater(installer = DesktopUpdateInstaller { command -> commands += command; Result.success(Unit) })

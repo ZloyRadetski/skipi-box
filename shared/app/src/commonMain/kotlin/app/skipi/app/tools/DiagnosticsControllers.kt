@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
 /**
@@ -36,15 +37,15 @@ class SpeedTestController(
     private val mutableState = MutableStateFlow(SpeedTestState())
     val state: StateFlow<SpeedTestState> = mutableState.asStateFlow()
     private var job: Job? = null
-    private var currentRun = 0
+    private val currentRun = MutableStateFlow(0)
 
     fun start() {
         stop()
-        val run = currentRun
+        val run = currentRun.value
         mutableState.value = SpeedTestState(phase = SpeedTestPhase.Ping)
         // Only the current run may publish: a cancelled run winding down after a restart reports its
         // cleanup state late and must not overwrite the new run.
-        val speedTest = runnerFactory { fresh -> if (run == currentRun) mutableState.value = fresh }
+        val speedTest = runnerFactory { fresh -> if (run == currentRun.value) mutableState.value = fresh }
         job = scope.launch { speedTest.run() }
     }
 
@@ -52,7 +53,7 @@ class SpeedTestController(
     fun stop() {
         job?.cancel()
         job = null
-        currentRun++
+        currentRun.update { it + 1 }
         if (mutableState.value.phase.isRunning()) mutableState.value = SpeedTestState()
     }
 }
@@ -81,14 +82,14 @@ class DnsLeakTestController(
     private val mutableState = MutableStateFlow(DnsLeakTestUiState())
     val state: StateFlow<DnsLeakTestUiState> = mutableState.asStateFlow()
     private var job: Job? = null
-    private var currentRun = 0
+    private val currentRun = MutableStateFlow(0)
 
     fun start() {
         job?.cancel()
-        val run = ++currentRun
+        val run = currentRun.updateAndGet { it + 1 }
         mutableState.value = DnsLeakTestUiState(running = true, stage = DnsLeakStage.Probing)
         fun update(transform: (DnsLeakTestUiState) -> DnsLeakTestUiState) {
-            if (run == currentRun) mutableState.update(transform)
+            if (run == currentRun.value) mutableState.update(transform)
         }
         job = scope.launch {
             try {
@@ -113,7 +114,7 @@ class DnsLeakTestController(
     fun stop() {
         job?.cancel()
         job = null
-        currentRun++
+        currentRun.update { it + 1 }
         mutableState.update { it.copy(running = false, stage = null) }
     }
 }
@@ -125,19 +126,28 @@ class IpInfoController(
     private val mutableState = MutableStateFlow<IpInfoState>(IpInfoState.Idle)
     val state: StateFlow<IpInfoState> = mutableState.asStateFlow()
     private var job: Job? = null
+    private val currentRun = MutableStateFlow(0)
 
     fun refresh() {
         job?.cancel()
+        val run = currentRun.updateAndGet { it + 1 }
         mutableState.value = IpInfoState.Loading
+        // Only the current run may publish: a fetch that ignores cancellation and finishes after stop() or a newer
+        // refresh() must not overwrite the state.
+        fun publish(next: IpInfoState) {
+            if (run == currentRun.value) mutableState.value = next
+        }
         job = scope.launch {
             try {
-                mutableState.value = IpInfoState.Success(fetcher())
+                publish(IpInfoState.Success(fetcher()))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                mutableState.value = IpInfoState.Failure(
-                    errorMessage = error.message,
-                    isTunnelIssue = (error as? IpInfoFailure)?.isTunnelIssue == true,
+                publish(
+                    IpInfoState.Failure(
+                        errorMessage = error.message,
+                        isTunnelIssue = (error as? IpInfoFailure)?.isTunnelIssue == true,
+                    ),
                 )
             }
         }
@@ -146,6 +156,7 @@ class IpInfoController(
     fun stop() {
         job?.cancel()
         job = null
+        currentRun.update { it + 1 }
         if (mutableState.value is IpInfoState.Loading) mutableState.value = IpInfoState.Idle
     }
 }

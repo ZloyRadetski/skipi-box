@@ -118,7 +118,14 @@ private fun linuxPortableScript(archive: Path, root: Path, location: DesktopInst
 /** Runs an install plan. Returns true when the app must now exit so the helper can replace it. */
 internal class DesktopUpdateInstaller(
     private val start: (List<String>) -> Result<Unit> = { command ->
-        runCatching { ProcessBuilder(command).redirectErrorStream(true).start(); Unit }
+        // Nobody reads the helper's output; an undrained pipe would stall it once the buffer fills.
+        runCatching {
+            ProcessBuilder(command)
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            Unit
+        }
     },
 ) {
     fun install(plan: DesktopUpdateInstallPlan): Result<Boolean> = when (plan) {

@@ -49,7 +49,10 @@ fun buildHevSocks5TunnelConfigYaml(spec: HevSocks5TunnelYamlSpec): String = buil
     appendLine("  tcp-read-write-timeout: ${spec.tcpReadWriteTimeoutMillis}")
     appendLine("  udp-read-write-timeout: ${spec.udpReadWriteTimeoutMillis}")
     appendLine("  log-file: ${spec.logPath.toYamlSingleQuotedString()}")
-    appendLine("  log-level: ${spec.logLevel}")
+    appendLine("  log-level: ${spec.logLevel.withoutLineBreaks()}")
 }
 
-private fun String.toYamlSingleQuotedString(): String = "'${replace("'", "''")}'"
+// A raw CR/LF would end the scalar line and let the rest of the value be read as further YAML keys.
+private fun String.withoutLineBreaks(): String = filterNot { it == '\r' || it == '\n' }
+
+private fun String.toYamlSingleQuotedString(): String = "'${withoutLineBreaks().replace("'", "''")}'"

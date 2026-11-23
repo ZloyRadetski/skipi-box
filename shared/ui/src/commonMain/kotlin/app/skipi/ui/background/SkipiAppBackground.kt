@@ -91,7 +91,7 @@ fun SkipiAppBackground(
                 }
             }
 
-            AppearanceSettingValues.BackgroundStyleConnection -> ConnectionLayer(isDark, isConnected)
+            AppearanceSettingValues.BackgroundStyleConnection -> ConnectionLayer(isDark, isConnected, reduceMotion)
 
             AppearanceSettingValues.BackgroundStyleAurora -> {
                 AuroraLayer(isDark, reduceMotion)
@@ -106,10 +106,10 @@ fun SkipiAppBackground(
 }
 
 @Composable
-private fun ConnectionLayer(isDark: Boolean, isConnected: Boolean) {
+private fun ConnectionLayer(isDark: Boolean, isConnected: Boolean, reduceMotion: Boolean) {
     // Breathing runs only while connected; when idle the background rests statically.
     val pulse = rememberInfinitePulse(
-        enabled = isConnected,
+        enabled = isConnected && !reduceMotion,
         initialValue = 0.90f,
         targetValue = 1.10f,
         durationMillis = 2400,

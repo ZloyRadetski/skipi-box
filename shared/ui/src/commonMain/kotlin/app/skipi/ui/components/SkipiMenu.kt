@@ -83,7 +83,8 @@ fun SkipiMenu(
             openedKeys = emptyList()
             onDismissRequest()
         },
-        modifier = modifier.then(animatedMenuWidth(levelWidths, openedKeys.lastOrNull() ?: RootLevelKey)),
+        modifier = modifier,
+        contentModifier = { animatedMenuWidth(levelWidths, openedKeys.lastOrNull() ?: RootLevelKey) },
         surface = surface,
         text = text,
         outline = outline,
