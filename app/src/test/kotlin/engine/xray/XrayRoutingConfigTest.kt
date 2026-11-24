@@ -4,7 +4,9 @@
 package engine.xray
 
 import app.AppState
+import app.effectiveLocalDnsEnabled
 import features.routing.model.RouteRule
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -12,6 +14,29 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+
+/** What the Android build asked the shared planner for before the shared builders took it over. */
+private fun AppState.buildXrayRoutingPlan(
+    routeTargets: Map<String, XrayRouteTarget>,
+    balancers: List<JsonObject>,
+    routeProxyDns: Boolean,
+    routeDirectDns: Boolean,
+    dnsHijackInboundTags: List<String>,
+    dataDir: String? = null,
+): XrayRoutingPlan = planXrayRouting(
+    request = XrayRoutingRequest(
+        routeDomainStrategy = routeDomainStrategy,
+        routeRules = routeRules,
+        defaultRouteOutboundTag = defaultRouteOutboundTag,
+        routeTargets = routeTargets,
+        balancers = balancers,
+        enableLocalDns = effectiveLocalDnsEnabled,
+        routeProxyDns = routeProxyDns,
+        routeDirectDns = routeDirectDns,
+        dnsHijackInboundTags = dnsHijackInboundTags,
+    ),
+    ruleValidator = xrayRoutingRuleValidator(dataDir),
+)
 
 class XrayRoutingConfigTest {
 

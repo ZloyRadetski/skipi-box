@@ -29,6 +29,11 @@ class CustomSkipiRouting(
     val rules: (proxyOutboundTag: String) -> List<JsonObject>,
     /** The outbounds, balancers and health checks [rules] refer to besides the server's own proxy outbound. */
     val extras: (proxyOutboundTag: String) -> CustomSkipiExtras = { CustomSkipiExtras() },
+    /**
+     * What the planner did not apply as written while making [rules] (values the resources cannot serve, unknown
+     * targets routed to the proxy), in the wording of [XrayRoutingPlan.unappliedRules].
+     */
+    val unappliedRules: (proxyOutboundTag: String) -> List<String> = { emptyList() },
 )
 
 /**
@@ -48,7 +53,17 @@ class CustomSkipiExtras(
  * profile while retaining its proxy outbounds and, unless [CustomXrayDnsRewriteRequest.skipiRouting]
  * replaces them, its original user routing.
  */
-fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject {
+fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject =
+    rewriteCustomXrayDnsConfigWithReport(request).config
+
+/** The rewritten raw config and the SKIPI rules it did not apply as written (empty without SKIPI routing). */
+class CustomXrayDnsRewriteResult(
+    val config: JsonObject,
+    val unappliedRules: List<String> = emptyList(),
+)
+
+/** Like [rewriteCustomXrayDnsConfig], also reporting [CustomSkipiRouting.unappliedRules]. */
+fun rewriteCustomXrayDnsConfigWithReport(request: CustomXrayDnsRewriteRequest): CustomXrayDnsRewriteResult {
     val outboundsRewrite = request.config.rewriteCustomDnsOutbounds(
         directOutbound = request.directOutbound,
         enableLocalDns = request.enableLocalDns,
@@ -79,7 +94,12 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         outboundsRewrite.outbounds
     }
 
-    return request.config.updatedWithoutIgnoreCase(
+    // The rules are only applied when the raw config has a proxy outbound to send them to.
+    val unapplied = request.skipiRouting?.let { skipi ->
+        outboundsRewrite.proxyOutboundTag?.takeIf(String::isNotBlank)?.let(skipi.unappliedRules)
+    }.orEmpty()
+
+    val config = request.config.updatedWithoutIgnoreCase(
         setOf("fakedns", "inbounds", "dns", "outbounds", "routing") + UntrustedCustomTopLevelKeys,
     ) {
         put("inbounds", request.inbounds.toJsonObjectArray())
@@ -89,6 +109,7 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         put("routing", if (extras == null || extras.balancers.isEmpty()) routing else routing.withBalancers(extras.balancers))
         extras?.observatory?.let { probe -> put("observatory", request.config.objectValue("observatory").mergedObservatory(probe)) }
     }
+    return CustomXrayDnsRewriteResult(config, unapplied)
 }
 
 /**

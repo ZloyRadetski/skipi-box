@@ -82,7 +82,7 @@ object DesktopSelectedServerXrayConfigFactory {
             LocalProxyXrayConfigFactory.validateOptions(options)
             validateServer(selectedServer)
             if (selectedServer is Custom) {
-                return@mapCatching DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(
+                val raw = buildDesktopCustomXrayConfigResult(
                         selectedServer,
                         options,
                         answerTunDns = answerTunDns,
@@ -93,8 +93,8 @@ object DesktopSelectedServerXrayConfigFactory {
                                 serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId,
                             ),
                         ),
-                    ),
                 )
+                return@mapCatching DesktopGeneratedXrayConfig(raw.json, unappliedRules = raw.unappliedRules)
             }
             // A profile's external rule-sets are skipped and reported when the file is missing, never an error.
             routingDataDirectory?.takeIf { profile == null }?.let { dataDirectory ->

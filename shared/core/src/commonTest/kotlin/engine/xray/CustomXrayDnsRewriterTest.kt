@@ -92,4 +92,35 @@ class CustomXrayDnsRewriterTest {
         assertFalse(result.containsKey("fakeDns"))
         assertTrue(result.containsKey("dns"))
     }
+
+    @Test
+    fun theRulesSkippedForTheProxyOutboundAreReportedWithTheConfig() {
+        fun rewrite(outbound: kotlinx.serialization.json.JsonObject) = rewriteCustomXrayDnsConfigWithReport(
+            CustomXrayDnsRewriteRequest(
+                config = buildJsonObject { put("outbounds", buildJsonArray { add(outbound) }) },
+                inbounds = emptyList(),
+                dnsPlan = XrayDnsPlan(
+                    servers = buildJsonArray {},
+                    queryStrategy = "UseIPv4",
+                    tag = XrayTags.PROXY_DNS,
+                    hosts = buildJsonObject {},
+                    fakeDns = null,
+                    nonIpQueryFallback = XrayDnsTcpFallback("1.1.1.1"),
+                    routingOptions = XrayDnsRoutingOptions(routeProxyDns = false, routeDirectDns = false),
+                ),
+                enableLocalDns = false,
+                dnsHijackInboundTags = emptyList(),
+                directOutbound = buildFreedomOutbound(XrayTags.DIRECT, "UseIPv4"),
+                skipiRouting = CustomSkipiRouting(
+                    domainStrategy = null,
+                    rules = { emptyList() },
+                    unappliedRules = { tag -> listOf("skipped for $tag") },
+                ),
+            ),
+        )
+
+        assertEquals(listOf("skipped for my-proxy"), rewrite(buildJsonObject { put("tag", "my-proxy") }).unappliedRules)
+        // Without a proxy outbound to send them to, SKIPI's rules are not applied at all.
+        assertEquals(emptyList(), rewrite(buildSimpleOutbound(XrayTags.DIRECT, XrayProtocols.FREEDOM)).unappliedRules)
+    }
 }

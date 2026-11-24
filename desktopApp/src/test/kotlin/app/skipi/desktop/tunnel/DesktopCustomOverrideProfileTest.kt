@@ -76,6 +76,40 @@ class DesktopCustomOverrideProfileTest {
         .getValue("settings").jsonObject.getValue("domainStrategy").jsonPrimitive.content
 
     @Test
+    fun aProfileRuleDesktopCannotServeIsReportedForARawServerToo() {
+        val library = DesktopServerLibrary(
+            selectedServerId = 41,
+            servers = listOf(
+                DesktopStoredProxyServer(
+                    id = 41,
+                    serverJson = Custom(remarks = "Raw", overrideInboundAndDns = true, configJson = raw)
+                        .encodePersistedProxyServer(),
+                ),
+            ),
+        )
+        val configs = DesktopConfigLibrary(
+            selectedConfigId = 7,
+            configs = listOf(
+                DesktopStoredConfig(id = 7, name = "P", content = "[Rule]\nIP-ASN,13335,PROXY\nFINAL,PROXY\n"),
+            ),
+        )
+        val generated = assertNotNull(
+            buildDesktopSelectedServerConfigWithBridge(
+                serverLibrary = library,
+                configLibrary = configs,
+                routing = RoutingConfigRecord(),
+                options = LocalProxyXrayConfigOptions(socksPort = 20_480),
+                trafficConfigContentById = emptyMap(),
+                subscriptionPingUrl = "",
+                latencyByServerId = emptyMap(),
+            ),
+        ).getOrThrow()
+
+        assertEquals(listOf("geoip:as13335"), generated.unappliedRules)
+        assertEquals(false, "geoip:as13335" in generated.json)
+    }
+
+    @Test
     fun theActiveProfilesDnsHostsAndIpv6ReachTheOverriddenCustomConfig() {
         val root = build(PROFILE)
         val dns = root.getValue("dns").jsonObject

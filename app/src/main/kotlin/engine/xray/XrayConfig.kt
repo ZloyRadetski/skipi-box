@@ -51,7 +51,7 @@ internal object XrayConfigFactory {
         )
         val customServer = resolvedRequest.selectedServer.server as? Custom
         if (customServer != null) {
-            return BuiltXrayConfig(json = buildCustomXrayConfig(resolvedRequest, customServer))
+            return buildCustomXrayConfig(resolvedRequest, customServer)
         }
 
         val generated = buildGeneratedXrayConfigResult(resolvedRequest)
@@ -79,7 +79,7 @@ internal object XraySpeedTestConfigFactory {
                     inbounds = emptyList<JsonObject>(),
                 ),
                 customServer,
-            )
+            ).json
         }
 
         val speedTestState = request.appState.copy(
@@ -195,21 +195,36 @@ private fun buildGeneratedXrayConfigResult(request: XrayConfigRequest): XrayGene
 private fun buildCustomXrayConfig(
     request: XrayConfigRequest,
     server: Custom,
-): String {
+): BuiltXrayConfig {
     // Logging belongs to the application rather than a pasted raw profile.
     // Otherwise a profile's "log": {"loglevel":"none"} silently disables
     // the access/error viewer and DNS diagnostics selected in Skipi.
-    val config = CustomXrayConfigRewriter.rewrite(request, server)
-        .let { rewritten ->
-            if (request.appState.enableStrictFullTunnel) rewritten.withStrictFullTunnelRouting() else rewritten
-        }
-        .updated {
-            put("log", request.buildXrayLogConfig())
-        }
-        .let { rewritten ->
-            if (request.collectTrafficStats) rewritten.withXrayTrafficStatsConfig() else rewritten
-        }
-    return encodeRuntimeXrayConfig(config)
+    val appState = request.appState
+    val result = buildRawServerConfig(
+        RawServerConfigInput(
+            server = server,
+            inbounds = request.inbounds,
+            log = request.buildXrayLogConfig(),
+            buildDnsPlan = { startupProxyServerDomains -> request.buildXrayDnsPlan(startupProxyServerDomains) },
+            directOutbound = buildFreedomOutbound(
+                tag = XrayTags.DIRECT,
+                domainStrategy = appState.xrayDirectOutboundDomainStrategy(),
+                appState = appState,
+            ),
+            enableLocalDns = appState.effectiveLocalDnsEnabled,
+            dnsHijackInboundTags = request.dnsHijackInboundTags,
+            skipiRouting = if (server.overrideInboundAndDns) {
+                appState.rawServerSkipiRouting(request.selectedServer, request.dataDir)
+            } else {
+                null
+            },
+            strictFullTunnel = appState.enableStrictFullTunnel,
+            collectTrafficStats = request.collectTrafficStats,
+            layout = RawServerConfigLayout.Compact,
+        ),
+    )
+    logGeneratedXrayConfig(result.json)
+    return BuiltXrayConfig(json = result.json, unappliedRules = result.unappliedRules)
 }
 
 /**
@@ -218,9 +233,6 @@ private fun buildCustomXrayConfig(
  * Keep a small fingerprint instead; explicit configuration export remains the
  * proper diagnostic path.
  */
-private fun encodeRuntimeXrayConfig(config: JsonObject): String =
-    XrayConfigJson.encodeToString(config).withSingleTrailingLf().also(::logGeneratedXrayConfig)
-
 private fun logGeneratedXrayConfig(json: String) {
     AppLog.debug(
         LogTag,

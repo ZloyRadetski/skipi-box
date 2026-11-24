@@ -12,20 +12,6 @@ import engine.xray.toJson
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayTcpSockopt
 import engine.xray.XrayMuxOutboundOptions
-import engine.xray.XrayOutboundPlan
-import engine.xray.XrayOutboundRenderingOptions
-import engine.xray.XrayRouteTarget
-import engine.xray.XrayRouteTargetKind
-import engine.xray.XrayRoutingPlan
-import engine.xray.XrayRoutingRequest
-import engine.xray.XrayRoutingRuleValidator
-import engine.xray.XrayTags
-import engine.xray.buildXrayBalancers
-import engine.xray.buildXrayObservatory
-import engine.xray.buildXrayRouting
-import engine.xray.planXrayRouting
-import engine.xray.renderXrayOutbounds
-import features.routing.model.RouteRule
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.isCompositeProxyServer
@@ -114,43 +100,6 @@ object LocalProxyXrayConfigFactory {
         )
     }
 
-    /** Builds the same local listener around a planner-produced proxy graph. */
-    fun buildFromPlan(
-        plan: XrayOutboundPlan,
-        options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(),
-        renderingOptions: XrayOutboundRenderingOptions,
-        routingPlan: XrayRoutingPlan? = null,
-    ): String {
-        validateOptions(options)
-
-        val effectiveRoutingPlan = routingPlan ?: buildLocalRoutingPlan(
-            plan = plan,
-            options = options,
-            renderingOptions = renderingOptions,
-        )
-        val effectiveRenderingOptions = renderingOptions.copy(
-            primaryOutboundTag = effectiveRoutingPlan?.primaryOutboundTag ?: renderingOptions.primaryOutboundTag,
-            mux = renderingOptions.mux ?: options.mux,
-            fragment = renderingOptions.fragment ?: options.fragment,
-        )
-        val outbounds = renderXrayOutbounds(plan.proxyOutbounds, effectiveRenderingOptions)
-        val routing = effectiveRoutingPlan?.let(::buildXrayRouting)
-        val observatory = buildXrayObservatory(
-            selectors = plan.observatorySelectors,
-            probeUrl = plan.observatoryProbeUrl,
-            probeInterval = plan.observatoryProbeInterval,
-            probeTimeout = plan.observatoryProbeTimeout,
-        )
-
-        return buildConfigJson(
-            options = options,
-            outbounds = outbounds,
-            routing = routing,
-            observatory = observatory,
-            dnsPlan = renderingOptions.dnsPlan,
-        )
-    }
-
     fun build(
         server: ProxyServer<*>,
         options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(),
@@ -184,42 +133,6 @@ object LocalProxyXrayConfigFactory {
             includeDefaultRouting = true,
         ),
     ): String = build(server, options)
-
-    private fun buildLocalRoutingPlan(
-        plan: XrayOutboundPlan,
-        options: LocalProxyXrayConfigOptions,
-        renderingOptions: XrayOutboundRenderingOptions,
-    ): XrayRoutingPlan? {
-        val selectedTarget = plan.routeTargets[XrayTags.PROXY]
-        val shouldBuildRouting = options.includeDefaultRouting || selectedTarget?.kind == XrayRouteTargetKind.Balancer
-        if (!shouldBuildRouting) return null
-
-        val routeTargets = if (options.includeDefaultRouting) {
-            plan.routeTargets + (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound))
-        } else {
-            plan.routeTargets
-        }
-        val routeRules = if (options.includeDefaultRouting) {
-            listOf(RouteRule(outboundTag = XrayTags.DIRECT, ip = listOf(PrivateGeoIpRule)))
-        } else {
-            emptyList()
-        }
-        val dnsRouting = renderingOptions.dnsPlan?.routingOptions
-        return planXrayRouting(
-            request = XrayRoutingRequest(
-                routeDomainStrategy = LocalRoutingDomainStrategy,
-                routeRules = routeRules,
-                defaultRouteOutboundTag = XrayTags.PROXY,
-                routeTargets = routeTargets,
-                balancers = buildXrayBalancers(plan.balancers),
-                enableLocalDns = renderingOptions.enableLocalDns,
-                routeProxyDns = dnsRouting?.routeProxyDns == true,
-                routeDirectDns = dnsRouting?.routeDirectDns == true,
-                dnsHijackInboundTags = emptyList(),
-            ),
-            ruleValidator = LocalProxyRoutingRuleValidator,
-        )
-    }
 
     /** The local SOCKS inbound plus the optional loopback HTTP inbound, as written to every local config. */
     fun buildInbounds(options: LocalProxyXrayConfigOptions): List<JsonObject> = buildList {
@@ -323,12 +236,6 @@ private val XrayConfigJson = Json {
 }
 
 private const val PrivateGeoIpRule = "geoip:private"
-private const val LocalRoutingDomainStrategy = 1
-
-private object LocalProxyRoutingRuleValidator : XrayRoutingRuleValidator {
-    override fun isDomainRuleValid(rule: String): Boolean = true
-    override fun isIpRuleValid(rule: String): Boolean = true
-}
 
 /** Adds Android's inbound sniffing object when the host configured one. */
 fun JsonObject.withSniffing(sniffing: XraySniffingOptions?): JsonObject =

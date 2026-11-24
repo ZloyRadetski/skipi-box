@@ -3,32 +3,6 @@
 
 package engine.xray
 
-import app.AppState
-import app.effectiveLocalDnsEnabled
-import kotlinx.serialization.json.JsonObject
-
-internal fun AppState.buildXrayRoutingPlan(
-    routeTargets: Map<String, XrayRouteTarget>,
-    balancers: List<JsonObject>,
-    routeProxyDns: Boolean,
-    routeDirectDns: Boolean,
-    dnsHijackInboundTags: List<String>,
-    dataDir: String? = null,
-): XrayRoutingPlan = planXrayRouting(
-    request = XrayRoutingRequest(
-        routeDomainStrategy = routeDomainStrategy,
-        routeRules = routeRules,
-        defaultRouteOutboundTag = defaultRouteOutboundTag,
-        routeTargets = routeTargets,
-        balancers = balancers,
-        enableLocalDns = effectiveLocalDnsEnabled,
-        routeProxyDns = routeProxyDns,
-        routeDirectDns = routeDirectDns,
-        dnsHijackInboundTags = dnsHijackInboundTags,
-    ),
-    ruleValidator = xrayRoutingRuleValidator(dataDir),
-)
-
 internal fun xrayRoutingRuleValidator(dataDir: String?): XrayRoutingRuleValidator = object : XrayRoutingRuleValidator {
     override fun isDomainRuleValid(rule: String): Boolean =
         XrayGeoRuleSanitizer.isDomainRuleValid(rule, dataDir)

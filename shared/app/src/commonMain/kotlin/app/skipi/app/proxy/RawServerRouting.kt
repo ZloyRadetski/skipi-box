@@ -11,6 +11,7 @@ import engine.xray.XrayOutboundRenderingOptions
 import engine.xray.XrayOutboundTransportOptions
 import engine.xray.XrayRouteTarget
 import engine.xray.XrayRouteTargetKind
+import engine.xray.XrayRoutingPlan
 import engine.xray.XrayRoutingRequest
 import engine.xray.XrayRoutingRuleValidator
 import engine.xray.XrayTags
@@ -49,27 +50,31 @@ fun rawServerSkipiRouting(
             ),
         )
     }
+    // The rules and the list of what they skipped come from one routing plan per proxy tag.
+    val routings = HashMap<String, XrayRoutingPlan>()
+    fun routingFor(proxyTag: String) = routings.getOrPut(proxyTag) {
+        val plan = planFor(proxyTag)
+        planXrayRouting(
+            request = XrayRoutingRequest(
+                routeDomainStrategy = routeDomainStrategy,
+                routeRules = input.routeRules,
+                defaultRouteOutboundTag = input.defaultRouteOutboundTag,
+                routeTargets = plan.routeTargets +
+                    (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound)) +
+                    (XrayTags.BLOCK to XrayRouteTarget(XrayTags.BLOCK, XrayRouteTargetKind.Outbound)),
+                balancers = buildXrayBalancers(plan.balancers),
+                enableLocalDns = false,
+                routeProxyDns = false,
+                routeDirectDns = false,
+                dnsHijackInboundTags = emptyList(),
+            ),
+            ruleValidator = ruleValidator,
+        )
+    }
     return CustomSkipiRouting(
         domainStrategy = routeDomainStrategy.toXrayRoutingDomainStrategy(),
-        rules = { proxyTag ->
-            val plan = planFor(proxyTag)
-            planXrayRouting(
-                request = XrayRoutingRequest(
-                    routeDomainStrategy = routeDomainStrategy,
-                    routeRules = input.routeRules,
-                    defaultRouteOutboundTag = input.defaultRouteOutboundTag,
-                    routeTargets = plan.routeTargets +
-                        (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound)) +
-                        (XrayTags.BLOCK to XrayRouteTarget(XrayTags.BLOCK, XrayRouteTargetKind.Outbound)),
-                    balancers = buildXrayBalancers(plan.balancers),
-                    enableLocalDns = false,
-                    routeProxyDns = false,
-                    routeDirectDns = false,
-                    dnsHijackInboundTags = emptyList(),
-                ),
-                ruleValidator = ruleValidator,
-            ).rules.map { rule -> rule as JsonObject }
-        },
+        rules = { proxyTag -> routingFor(proxyTag).rules.map { rule -> rule as JsonObject } },
+        unappliedRules = { proxyTag -> routingFor(proxyTag).unappliedRules },
         extras = { proxyTag ->
             val plan = planFor(proxyTag)
             val added = plan.proxyOutbounds.map { outbound -> outbound.tag }.toSet()

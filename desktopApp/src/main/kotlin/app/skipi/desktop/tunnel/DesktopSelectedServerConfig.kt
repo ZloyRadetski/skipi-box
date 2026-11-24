@@ -6,7 +6,10 @@ package app.skipi.desktop
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.desktop_select_server_before_connect
 import platform.buildLogJson
-import engine.xray.CustomXrayDnsRewriteRequest
+import engine.xray.RawServerConfigInput
+import engine.xray.RawServerConfigLayout
+import engine.xray.RawServerConfigResult
+import engine.xray.buildRawServerConfig
 import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayTags
@@ -33,7 +36,6 @@ import features.config.TrafficConfigReference
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.bootstrapHosts
 import engine.xray.buildFreedomOutbound
-import engine.xray.rewriteCustomXrayDnsConfig
 import engine.xray.xrayDirectOutboundDomainStrategy
 import engine.network.isIpv4Address
 import engine.xray.startupProxyServerHostDnsDomains
@@ -61,7 +63,7 @@ internal data class DesktopGeneratedXrayConfig(
     val amneziaWg: DesktopAmneziaWgBridge? = null,
     /**
      * Rules the configuration does not apply as written: a value Desktop's bundled resources cannot serve is
-     * skipped, a rule naming an unknown target goes to the proxy. Empty for a raw JSON server.
+     * skipped, a rule naming an unknown target goes to the proxy.
      */
     val unappliedRules: List<String> = emptyList(),
 )
@@ -122,8 +124,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     if (selectedServer is Custom) {
         val dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns)
         return checkNotNull(selectedServerResult).mapCatching {
-            DesktopGeneratedXrayConfig(
-                buildDesktopCustomXrayConfig(
+            val raw = buildDesktopCustomXrayConfigResult(
                     server = selectedServer,
                     options = options,
                     dnsInputs = dnsInputs,
@@ -142,8 +143,8 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                             )
                         },
                     ),
-                ),
             )
+            DesktopGeneratedXrayConfig(raw.json, unappliedRules = raw.unappliedRules)
         }
     }
 
@@ -222,6 +223,21 @@ internal fun AmneziaWgBridgePlan.toDesktopBridge(): DesktopAmneziaWgBridge =
 internal fun buildDesktopCustomXrayConfig(
     server: Custom,
     options: LocalProxyXrayConfigOptions,
+    dnsInputs: DesktopDnsInputs = DesktopDnsInputs(),
+    sniffing: XraySniffingOptions? = null,
+    listeners: Boolean = true,
+    log: JsonObject = options.buildLogJson(),
+    skipiRouting: CustomSkipiRouting? = null,
+    strictFullTunnel: Boolean = false,
+    answerTunDns: Boolean = false,
+): String = buildDesktopCustomXrayConfigResult(
+    server, options, dnsInputs, sniffing, listeners, log, skipiRouting, strictFullTunnel, answerTunDns,
+).json
+
+/** [buildDesktopCustomXrayConfig] with the SKIPI rules it did not apply as written. */
+internal fun buildDesktopCustomXrayConfigResult(
+    server: Custom,
+    options: LocalProxyXrayConfigOptions,
     /** The DNS and IPv6 values of the start: the active profile's, or the application defaults. */
     dnsInputs: DesktopDnsInputs = DesktopDnsInputs(),
     /** The active profile's sniffing; the listener options' own apply without a profile. */
@@ -235,8 +251,7 @@ internal fun buildDesktopCustomXrayConfig(
     strictFullTunnel: Boolean = false,
     /** TUN mode; applies only with "override inbound and DNS", see [DesktopServerLibrary.coreAnswersTunDns]. */
     answerTunDns: Boolean = false,
-): String {
-    val customJson = parseCustomXrayConfigJsonObject(server.configJson)
+): RawServerConfigResult {
     val inbounds = if (!listeners) emptyList() else buildList {
         add(
             buildJsonObject {
@@ -249,43 +264,31 @@ internal fun buildDesktopCustomXrayConfig(
         )
         if (options.enableHttpProxy) add(LocalProxyXrayConfigFactory.buildHttpInbound(options))
     }
-    val config = if (server.overrideInboundAndDns) {
-        val dnsPlan = planDesktopXrayDns(
-            inputs = dnsInputs,
-            startupProxyServerDomains = (
-                customXrayConfigProxyServerHosts(server.configJson) +
-                    skipiRouting?.extras?.invoke(XrayTags.PROXY)?.serverHosts.orEmpty()
-                ).startupProxyServerHostDnsDomains(),
-            ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
-        )
-        rewriteCustomXrayDnsConfig(
-            CustomXrayDnsRewriteRequest(
-                config = customJson,
-                inbounds = inbounds,
-                dnsPlan = dnsPlan,
-                enableLocalDns = answerTunDns,
-                dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
-                directOutbound = buildFreedomOutbound(
-                    tag = XrayTags.DIRECT,
-                    domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
-                    tcpSockopt = options.tcpSockopt,
-                ),
-                skipiRouting = skipiRouting,
+    return buildRawServerConfig(
+        RawServerConfigInput(
+            server = server,
+            inbounds = inbounds,
+            log = log,
+            buildDnsPlan = { startupProxyServerDomains ->
+                planDesktopXrayDns(
+                    inputs = dnsInputs,
+                    startupProxyServerDomains = startupProxyServerDomains,
+                    ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
+                )
+            },
+            directOutbound = buildFreedomOutbound(
+                tag = XrayTags.DIRECT,
+                domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                tcpSockopt = options.tcpSockopt,
             ),
-        )
-    } else {
-        customJson
-    }.let { routed -> if (strictFullTunnel) routed.withStrictFullTunnelRouting() else routed }
-    val cleanConfig = buildJsonObject {
-        put("log", log)
-        put("inbounds", JsonArray(inbounds))
-        config.forEach { (key, value) ->
-            if (key != "inbounds" && key != "log") {
-                put(key, value)
-            }
-        }
-    }
-    return formatCustomXrayConfigJson(cleanConfig)
+            enableLocalDns = answerTunDns,
+            dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
+            skipiRouting = skipiRouting,
+            strictFullTunnel = strictFullTunnel,
+            collectTrafficStats = false,
+            layout = RawServerConfigLayout.Pretty,
+        ),
+    )
 }
 
 /**
