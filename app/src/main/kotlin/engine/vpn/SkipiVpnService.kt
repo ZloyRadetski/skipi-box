@@ -429,6 +429,7 @@ class SkipiVpnService : VpnService() {
             repository = AndroidAccessLogRepository,
             read = SkipiCoreRuntime::readConnectionLog,
             formatTime = ::formatConnectionLogTime,
+            labels = { config.outboundLabels },
         )
         connectionAccessLogJob = serviceScope.launch {
             while (isActive) {

@@ -7,7 +7,10 @@ package app.skipi.app.home
  * Reads the connections Core recorded since the last read. [read] asks Core for the entries after
  * a cursor and returns its JSON; the reader keeps the cursor and survives a Core restart.
  */
-class ConnectionLogReader(private val read: (afterSeq: Long) -> Result<String>) {
+class ConnectionLogReader(
+    private val labels: () -> OutboundLabels? = { null },
+    private val read: (afterSeq: Long) -> Result<String>,
+) {
     private var cursor = 0L
 
     @Synchronized
@@ -19,7 +22,8 @@ class ConnectionLogReader(private val read: (afterSeq: Long) -> Result<String>) 
             return emptyList()
         }
         cursor = snapshot.seq
-        return snapshot.entries
+        val named = labels() ?: return snapshot.entries
+        return snapshot.entries.map { entry -> entry.copy(outboundLabel = named.label(entry.outbound)) }
     }
 
     @Synchronized
@@ -31,5 +35,5 @@ class ConnectionLogReader(private val read: (afterSeq: Long) -> Result<String>) 
 /** A connection as a line of plain text: `12:03:41  tcp  youtube.com:443  → proxy`. */
 fun ConnectionLogEntry.accessLogText(formatTime: (Long) -> String): String {
     val address = if (':' in host) "[$host]:$port" else "$host:$port"
-    return "${formatTime(timeMillis)}  $network  $address  → $outbound"
+    return "${formatTime(timeMillis)}  $network  $address  → $outboundLabel"
 }

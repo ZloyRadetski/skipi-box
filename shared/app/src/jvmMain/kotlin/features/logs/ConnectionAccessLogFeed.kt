@@ -4,6 +4,7 @@
 package features.logs
 
 import app.skipi.app.home.ConnectionLogReader
+import app.skipi.app.home.OutboundLabels
 import app.skipi.app.home.accessLogText
 
 /**
@@ -15,8 +16,9 @@ class ConnectionAccessLogFeed(
     private val repository: CoreLogRepository,
     read: (afterSeq: Long) -> Result<String>,
     private val formatTime: (Long) -> String,
+    labels: () -> OutboundLabels? = { null },
 ) {
-    private val reader = ConnectionLogReader(read)
+    private val reader = ConnectionLogReader(labels = labels, read = read)
 
     fun poll() {
         val entries = reader.next()

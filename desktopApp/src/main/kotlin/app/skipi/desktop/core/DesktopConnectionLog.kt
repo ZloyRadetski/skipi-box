@@ -10,6 +10,7 @@ import app.skipi.app.home.ConnectionLogReader
 import app.skipi.app.home.ConnectionLogMessage
 import app.skipi.app.home.ConnectionLogSource
 import app.skipi.app.home.ConnectionLogState
+import app.skipi.app.home.OutboundLabels
 import app.skipi.app.home.connectionLogLevel
 import app.skipi.app.home.parseConnectionLogSnapshot
 import features.logs.ParsedCoreLogLine
@@ -72,9 +73,10 @@ internal fun connectionLogThreshold(levelName: String): ConnectionLogLevel? =
 internal class DesktopConnectionLog(
     read: (Long) -> Result<String>,
     private val readMessages: (Long) -> DesktopLogFeedSnapshot = { DesktopLogFeedSnapshot(0, emptyList()) },
+    labels: () -> OutboundLabels? = { null },
 ) {
     private val mutableState = MutableStateFlow(ConnectionLogState())
-    private val connections = ConnectionLogReader(read)
+    private val connections = ConnectionLogReader(labels = labels, read = read)
     private var messageCursor = 0L
 
     val state: StateFlow<ConnectionLogState> = mutableState.asStateFlow()

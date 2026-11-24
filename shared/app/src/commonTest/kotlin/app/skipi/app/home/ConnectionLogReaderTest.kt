@@ -76,4 +76,14 @@ class ConnectionLogReaderTest {
         val entry = ConnectionLogEntry(1, 0, "2001:db8::1", 53, "udp", "direct")
         assertEquals("12:03:41  udp  [2001:db8::1]:53  → direct", entry.accessLogText { "12:03:41" })
     }
+
+    @Test
+    fun entriesCarryTheNameOfTheirOutbound() {
+        val labels = OutboundLabels(mapOf(20 to "Frankfurt"), selectedName = null)
+        val reader = ConnectionLogReader(labels = { labels }) { Result.success(json(1, Triple(1, "a.com", "20"))) }
+        val entry = reader.next().single()
+        assertEquals("20", entry.outbound)
+        assertEquals("Frankfurt", entry.outboundLabel)
+        assertEquals("12:03:41  tcp  a.com:443  → Frankfurt", entry.accessLogText { "12:03:41" })
+    }
 }

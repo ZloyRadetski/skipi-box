@@ -63,6 +63,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import app.skipi.app.home.OutboundLabels
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.lookupHostAddress
 import app.skipi.app.home.resolveTunnelIpWithServerFallback
@@ -764,8 +765,19 @@ private fun runDesktopApplication(
                 }
 
                 LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
+                val outboundLabels = remember(automationServers, serverLibrary.selectedServerId) {
+                    OutboundLabels(
+                        serverNames = automationServers.associate { server -> server.id to server.name },
+                        selectedName = automationServers.firstOrNull { server -> server.id == serverLibrary.selectedServerId }?.name,
+                    )
+                }
+                val latestOutboundLabels by rememberUpdatedState(outboundLabels)
                 val desktopConnectionLog = remember(coreController) {
-                    DesktopConnectionLog(coreController::readConnectionLog, DesktopAppLogFeed::after)
+                    DesktopConnectionLog(
+                        read = coreController::readConnectionLog,
+                        readMessages = DesktopAppLogFeed::after,
+                        labels = { latestOutboundLabels },
+                    )
                 }
                 SideEffect { desktopConnectionLog.logLevel = desktopSettings.coreLogLevel }
                 LaunchedEffect(desktopSettings.showConnectionLog) {

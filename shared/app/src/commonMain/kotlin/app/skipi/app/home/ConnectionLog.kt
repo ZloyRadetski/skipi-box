@@ -22,6 +22,8 @@ data class ConnectionLogEntry(
     val port: Int,
     val network: String,
     val outbound: String,
+    /** What the log shows for [outbound]: the server or group it stands for. */
+    val outboundLabel: String = outbound,
 ) : ConnectionLogItem
 
 enum class ConnectionLogLevel { Debug, Info, Warning, Error }
@@ -181,7 +183,7 @@ private fun ConnectionLogEntry.toRow(id: Long): ConnectionLogRow {
             else -> host
         },
         isAddress = isAddress,
-        outbound = outbound,
+        outbound = outboundLabel,
         route = when (outbound) {
             XrayTags.DIRECT -> ConnectionLogRoute.Direct
             XrayTags.BLOCK -> ConnectionLogRoute.Block

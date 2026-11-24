@@ -21,6 +21,7 @@ import engine.proxy.toLocalProxyOptionsFor
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
+import app.skipi.app.home.OutboundLabels
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
@@ -79,6 +80,7 @@ internal data class VpnServiceStartConfig(
     val amneziaWgConfigJson: String? = null,
     val amneziaWgSocksPort: Int = 0,
     val activeAmneziaWgBridge: ActiveAmneziaWgBridge? = null,
+    val outboundLabels: OutboundLabels? = null,
 )
 
 internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
@@ -170,6 +172,12 @@ internal object VpnXrayConfigFactory {
             amneziaWgConfigJson = bridgePlan.amneziaWgConfigJson,
             amneziaWgSocksPort = bridgePlan.amneziaWgSocksPort,
             activeAmneziaWgBridge = bridgePlan.activeAmneziaWgBridge,
+            outboundLabels = OutboundLabels(
+                serverNames = appState.proxyServers.associate { server ->
+                    server.id to server.server.getInfo().remarks.trim().ifBlank { "#${server.id}" }
+                },
+                selectedName = request.selectedServer.server.getInfo().remarks.trim().ifBlank { null },
+            ),
         )
     }
 }
