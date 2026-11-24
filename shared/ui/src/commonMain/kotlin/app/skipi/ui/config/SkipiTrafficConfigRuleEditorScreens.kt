@@ -132,6 +132,7 @@ fun SkipiTrafficConfigRulesEditorScreen(
     onHapticFeedback: (HapticFeedbackType) -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     actions: (@Composable () -> Unit)? = null,
+    unappliedRules: List<String> = emptyList(),
 ) {
     var localRawConfig by remember(profile.rawConfig) { mutableStateOf(profile.rawConfig) }
     val analysis = remember(localRawConfig) { localRawConfig.analyzeShadowrocketConfig() }
@@ -203,6 +204,7 @@ fun SkipiTrafficConfigRulesEditorScreen(
             },
             onMove = ::moveRules,
             onHapticFeedback = onHapticFeedback,
+            unappliedRules = unappliedRules,
         )
     }
     SkipiRoutingRulesInfoBottomSheet(

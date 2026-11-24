@@ -58,6 +58,7 @@ internal fun TrafficConfigRulesPage(
         onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
         onHapticFeedback = hapticFeedback::performHapticFeedback,
         platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
+        unappliedRules = appState.unappliedRoutingRules,
     )
 }
 

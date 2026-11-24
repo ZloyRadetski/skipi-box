@@ -69,6 +69,7 @@ internal fun prepareDesktopTunnelStartPlan(
             rebuild = ::buildPlan,
             assetsDirectory = assetsDirectory,
             amneziaWg = generated.amneziaWg,
+            unappliedRules = generated.unappliedRules,
         )
     }
 

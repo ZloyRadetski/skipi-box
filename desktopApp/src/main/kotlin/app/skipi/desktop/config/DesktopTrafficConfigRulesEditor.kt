@@ -66,6 +66,8 @@ internal fun DesktopTrafficConfigRulesEditor(
     onBack: () -> Unit,
     fetchRoutingDocument: suspend (url: String) -> String,
     statusContent: (@Composable () -> Unit)? = null,
+    /** What the running Core's configuration did not apply; empty while it is stopped. */
+    unappliedRules: List<String> = emptyList(),
 ) {
     var editorSession by remember(profile.id) { mutableStateOf<DesktopRuleEditorSession?>(null) }
     var nextEditorSessionId by remember(profile.id) { mutableIntStateOf(0) }
@@ -147,6 +149,7 @@ internal fun DesktopTrafficConfigRulesEditor(
                     },
                     canApply = tableDraft.hasChanges,
                     onApply = { tableDraft.apply(tableState) },
+                    unappliedRules = unappliedRules,
                 )
 
                 else -> SkipiTrafficConfigRulesEditorScreen(
@@ -159,6 +162,7 @@ internal fun DesktopTrafficConfigRulesEditor(
                     onAdd = { openRuleEditor(lineNumber = null) },
                     onEdit = { rule -> openRuleEditor(lineNumber = rule.lineNumber) },
                     onHapticFeedback = {},
+                    unappliedRules = unappliedRules,
                 )
             }
         }

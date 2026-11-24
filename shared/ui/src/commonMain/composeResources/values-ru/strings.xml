@@ -667,6 +667,11 @@
     <string name="routing_default_proxy_server">Прокси-сервер {id}</string>
     <string name="routing_new_rule">Новое правило</string>
     <string name="routing_unnamed_rule">Безымянное правило</string>
+    <string name="routing_rule_badge_skipped">Пропущено</string>
+    <string name="routing_rule_badge_partly_skipped">Пропущено частично</string>
+    <string name="routing_rule_badge_unknown_target">Цель не найдена</string>
+    <string name="routing_rule_reason_skipped">Не применено, нет данных для: {values}</string>
+    <string name="routing_rule_reason_unknown_target">Цель правила не найдена, поэтому оно направляется в прокси.</string>
     <string name="routing_add_rule">Добавить правило маршрутизации</string>
     <string name="routing_edit_rule">Редактировать правило маршрутизации</string>
     <string name="routing_rule_name">Имя правила</string>

@@ -1100,6 +1100,8 @@ private fun runDesktopApplication(
                     nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextCheckAtMillis,
                     wakeups = desktopTrafficConfigAutoUpdateWakeups,
                 )
+                // The rules the running configuration did not apply, kept from a connect until the tunnel is gone.
+                var unappliedRoutingRules by remember { mutableStateOf<List<String>>(emptyList()) }
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
                     createDesktopTunnelController(
                         coreController = coreController,
@@ -1113,6 +1115,7 @@ private fun runDesktopApplication(
                         readConfigs = { latestConfigLibrary },
                         readLatency = { latencyByServerIdState.value },
                         tunHost = desktopTunHost,
+                        onUnappliedRulesChanged = { rules -> unappliedRoutingRules = rules },
                     ).also(tunnel::attach)
                 }
                 val selectedTunnelProfileId = configLibrary.selectedConfigId?.toString()
@@ -2169,6 +2172,7 @@ private fun runDesktopApplication(
                             latencyByServerId = latencyByServerId,
                             resourceServices = desktopResourceFileServices,
                             resourceFileStatusMessage = resourceFileStatusMessage,
+                            unappliedRules = unappliedRoutingRules,
                         ) }
 
                         SkipiMainDestination.Settings -> key(settingsOpenCount) { DesktopSettingsScreen(

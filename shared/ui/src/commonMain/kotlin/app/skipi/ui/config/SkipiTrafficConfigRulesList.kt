@@ -42,7 +42,9 @@ import app.skipi.ui.resources.configs_rules_final_missing
 import app.skipi.ui.resources.configs_rules_order
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.text.themedFontWeight
+import engine.xray.RuleApplicationStatus
 import features.config.ShadowrocketRule
+import features.config.applicationStatus
 import features.config.listSummary
 import features.config.xrayUnsupportedReason
 import org.jetbrains.compose.resources.stringResource
@@ -80,6 +82,8 @@ fun SkipiTrafficConfigRulesList(
     onEditFinal: () -> Unit,
     onMove: (fromIndex: Int, toIndex: Int) -> Unit,
     onHapticFeedback: (HapticFeedbackType) -> Unit,
+    /** What the last configuration build did not apply; a rule it concerns shows a badge. */
+    unappliedRules: List<String> = emptyList(),
 ) {
     val currentOnMove = rememberUpdatedState(onMove)
     val currentOnHapticFeedback = rememberUpdatedState(onHapticFeedback)
@@ -145,6 +149,7 @@ fun SkipiTrafficConfigRulesList(
                     ),
                     onEdit = { onEdit(item.rule) },
                     onDelete = { onDelete(item.rule) },
+                    application = remember(item.rule.raw, unappliedRules) { item.rule.applicationStatus(unappliedRules) },
                 )
             }
         }
@@ -161,6 +166,7 @@ private fun TrafficConfigVisualRuleCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     dragModifier: Modifier,
+    application: RuleApplicationStatus,
 ) {
     val animatedScale by animateFloatAsState(
         targetValue = if (isDragging) 1.025f else 1f,
@@ -215,13 +221,18 @@ private fun TrafficConfigVisualRuleCard(
                     )
                 }
                 Spacer(Modifier.height(2.dp))
-                Text(
-                    text = rule.policy,
-                    fontSize = 12.sp,
-                    color = MiuixTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = rule.policy,
+                        fontSize = 12.sp,
+                        color = MiuixTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    SkipiRuleApplicationBadge(application)
+                }
+                SkipiRuleApplicationReason(application)
             }
             IconButton(onClick = onEdit) {
                 SkipiIcon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_edit), fallbackTint = MiuixTheme.colorScheme.onSurface)

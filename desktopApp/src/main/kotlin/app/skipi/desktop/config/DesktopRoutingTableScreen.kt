@@ -72,6 +72,7 @@ internal fun DesktopRoutingTableScreen(
     onEditRule: (ShadowrocketRule) -> Unit,
     canApply: Boolean = false,
     onApply: (() -> Unit)? = null,
+    unappliedRules: List<String> = emptyList(),
 ) {
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf<V2rayRoutingImport?>(null) }
@@ -130,6 +131,7 @@ internal fun DesktopRoutingTableScreen(
             notice = notice,
             canApply = canApply,
             onApply = onApply,
+            unappliedRules = unappliedRules,
         )
     }
 

@@ -625,6 +625,11 @@
     <string name="routing_default_proxy_server">سرور پروکسی {id}</string>
     <string name="routing_new_rule">قانون مسیریابی جدید</string>
     <string name="routing_unnamed_rule">قانون بی نام</string>
+    <string name="routing_rule_badge_skipped">نادیده گرفته شد</string>
+    <string name="routing_rule_badge_partly_skipped">تا حدی نادیده گرفته شد</string>
+    <string name="routing_rule_badge_unknown_target">هدف ناشناخته</string>
+    <string name="routing_rule_reason_skipped">اعمال نشد، داده‌ای برای این موارد نیست: {values}</string>
+    <string name="routing_rule_reason_unknown_target">هدف این قانون وجود ندارد، بنابراین به پراکسی می‌رود.</string>
     <string name="routing_add_rule">قانون مسیریابی را اضافه کنید</string>
     <string name="routing_edit_rule">ویرایش قانون مسیریابی</string>
     <string name="routing_rule_name">نام قانون</string>
