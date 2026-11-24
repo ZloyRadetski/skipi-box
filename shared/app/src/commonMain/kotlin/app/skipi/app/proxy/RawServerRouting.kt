@@ -4,6 +4,7 @@
 package app.skipi.app.proxy
 
 import engine.xray.CustomSkipiExtras
+import features.proxy.server.model.AmneziaWg
 import engine.xray.CustomSkipiRouting
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayOutboundRenderingOptions
@@ -38,7 +39,15 @@ fun rawServerSkipiRouting(
     val plans = HashMap<String, XrayOutboundPlan>()
     fun planFor(proxyTag: String) = plans.getOrPut(proxyTag) {
         // The raw config has neither the DNS nor the fragment outbound a generated one carries.
-        XrayOutboundPlanner.plan(input.copy(rawProxyTag = proxyTag, enableLocalDns = false, enableFragment = false))
+        XrayOutboundPlanner.plan(
+            input.copy(
+                // AmneziaWG needs the runner the generated path starts; a rule naming one goes to the raw proxy.
+                servers = input.servers.filterNot { row -> row.server is AmneziaWg },
+                rawProxyTag = proxyTag,
+                enableLocalDns = false,
+                enableFragment = false,
+            ),
+        )
     }
     return CustomSkipiRouting(
         domainStrategy = routeDomainStrategy.toXrayRoutingDomainStrategy(),
