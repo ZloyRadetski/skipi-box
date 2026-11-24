@@ -7,6 +7,7 @@ import features.updater.AppUpdateChannel
 import features.updater.AppUpdateInfo
 import features.updater.AppUpdateState
 import features.updater.DesktopUpdatePackage
+import features.updater.isSameReleaseAs
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.CoroutineScope
@@ -57,7 +58,7 @@ internal class DesktopAppUpdater(
                 val before = mutableState.value
                 val next = before.applyCheckedRelease(outcome.update).state
                 // A new release replaces the one being downloaded, so its transfer must not keep running.
-                if (before.availableUpdate?.isSameRelease(outcome.update) != true) downloadJob?.cancel()
+                if (before.availableUpdate?.isSameReleaseAs(outcome.update) != true) downloadJob?.cancel()
                 mutableState.value = next
             }
             DesktopAppUpdateCheck.UpToDate -> {
@@ -134,9 +135,6 @@ internal class DesktopAppUpdater(
         )
     }
 }
-
-private fun AppUpdateInfo.isSameRelease(other: AppUpdateInfo) =
-    versionName == other.versionName && versionCode == other.versionCode && assetName == other.assetName
 
 /** Where downloaded updates wait: next to the app's other data, never inside the installation. */
 internal fun desktopUpdatesDirectory(): Path {
