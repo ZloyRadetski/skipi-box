@@ -12,14 +12,17 @@ import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
-import engine.xray.XrayOutboundRenderingOptions
 import engine.xray.XrayOutboundTransportOptions
 import engine.xray.xrayDirectOutboundDomainStrategy
 import engine.xray.xrayWireguardDomainStrategy
-import engine.xray.XrayRoutingRequest
+import engine.xray.XrayGeneratedConfigInput
+import engine.xray.buildGeneratedXrayConfig
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import platform.buildLogJson
 import engine.xray.XrayTags
-import engine.xray.buildXrayBalancers
-import engine.xray.planXrayRouting
 import engine.xray.validateXrayExternalDomainResources
 import features.routing.usecase.GeoDatParser
 import engine.vpn.VpnDefaults
@@ -32,7 +35,6 @@ import features.proxy.server.model.stripLeadingCountryFlag
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 import java.nio.file.Path
-import engine.xray.XrayConfigJson
 import engine.xray.dnsDialerProxyTag
 
 /** Builds a local listener config from the selected row and Android's shared proxy planner. */
@@ -152,22 +154,6 @@ object DesktopSelectedServerXrayConfigFactory {
                 startupProxyServerDomains = plan.proxyOutbounds.startupProxyServerDnsDomains(),
                 ruleValidator = ruleValidator,
             )
-            val routeTargets = plan.routeTargets +
-                (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound))
-            val routingPlan = planXrayRouting(
-                request = XrayRoutingRequest(
-                    routeDomainStrategy = routing.domainStrategy,
-                    routeRules = routing.rules,
-                    defaultRouteOutboundTag = routing.defaultOutboundTag,
-                    routeTargets = routeTargets,
-                    balancers = buildXrayBalancers(plan.balancers),
-                    enableLocalDns = answerTunDns,
-                    routeProxyDns = dnsPlan.routingOptions.routeProxyDns,
-                    routeDirectDns = dnsPlan.routingOptions.routeDirectDns,
-                    dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
-                ),
-                ruleValidator = ruleValidator,
-            )
             plan.proxyOutbounds.forEach { outbound -> outbound.server?.let(::validateServer) }
 
             val settings = profile?.settings
@@ -182,13 +168,21 @@ object DesktopSelectedServerXrayConfigFactory {
                     interval = it.fragmentInterval,
                 )
             }
-            val json = LocalProxyXrayConfigFactory.buildFromPlan(
-                plan = plan,
-                options = if (profile == null) options else options.copy(sniffing = profile.sniffingOptions(), mux = null, fragment = null),
-                renderingOptions = XrayOutboundRenderingOptions(
-                    primaryOutboundTag = plan.routeTargets[XrayTags.PROXY]?.tag ?: XrayTags.PROXY,
-                    enableLocalDns = answerTunDns,
+            val effectiveOptions = if (profile == null) options else options.copy(sniffing = profile.sniffingOptions(), mux = null, fragment = null)
+            val generated = buildGeneratedXrayConfig(
+                XrayGeneratedConfigInput(
+                    outboundPlan = plan,
                     dnsPlan = dnsPlan,
+                    log = effectiveOptions.buildLogJson(),
+                    inbounds = LocalProxyXrayConfigFactory.buildInbounds(effectiveOptions),
+                    routeDomainStrategy = routing.domainStrategy,
+                    routeRules = routing.rules,
+                    defaultRouteOutboundTag = routing.defaultOutboundTag,
+                    routeTargets = plan.routeTargets +
+                        (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound)),
+                    enableLocalDns = answerTunDns,
+                    dnsHijackInboundTags = desktopTunDnsHijackInboundTags(answerTunDns),
+                    ruleValidator = ruleValidator,
                     // Like Android: queries Core's DNS does not answer itself go out through the proxy.
                     dnsProxyOutboundTag = if (answerTunDns) plan.dnsDialerProxyTag() else null,
                     // Without a profile there is no IPv6: the strategy Android's defaults select.
@@ -199,15 +193,22 @@ object DesktopSelectedServerXrayConfigFactory {
                             tcpSockopt = sockopt,
                         )
                     },
-                    mux = muxOptions,
-                    fragment = fragmentOptions,
+                    mux = muxOptions ?: effectiveOptions.mux,
+                    fragment = fragmentOptions ?: effectiveOptions.fragment,
+                    collectTrafficStats = false,
+                    fallbackPrimaryOutboundTag = plan.routeTargets[XrayTags.PROXY]?.tag ?: XrayTags.PROXY,
+                    dnsOverride = effectiveOptions.dnsServers.takeIf { it.isNotEmpty() }?.let { servers ->
+                        buildJsonObject {
+                            put("servers", buildJsonArray { servers.forEach { add(JsonPrimitive(it)) } })
+                            put("queryStrategy", "UseIPv4")
+                        }
+                    },
                 ),
-                routingPlan = routingPlan,
             )
             DesktopGeneratedXrayConfig(
-                json = json,
+                json = generated.json,
                 amneziaWg = amneziaWgPlan?.toDesktopBridge(),
-                unappliedRules = routingPlan.unappliedRules,
+                unappliedRules = generated.unappliedRules,
             )
         }
     }

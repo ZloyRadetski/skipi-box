@@ -5,6 +5,7 @@ package engine.xray
 
 import app.AppState
 import app.ProxyServerState
+import app.effectiveLocalDnsEnabled
 import features.logs.AppLog
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
@@ -53,12 +54,9 @@ internal object XrayConfigFactory {
             return BuiltXrayConfig(json = buildCustomXrayConfig(resolvedRequest, customServer))
         }
 
-        val (generated, routingPlan) = buildGeneratedXrayConfig(resolvedRequest)
-        val config = generated.toJsonObject()
-        return BuiltXrayConfig(
-            json = encodeRuntimeXrayConfig(config),
-            unappliedRules = routingPlan.unappliedRules,
-        )
+        val generated = buildGeneratedXrayConfigResult(resolvedRequest)
+        logGeneratedXrayConfig(generated.json)
+        return BuiltXrayConfig(json = generated.json, unappliedRules = generated.unappliedRules)
     }
 
     fun buildXrayConfig(request: XrayConfigRequest): String {
@@ -169,42 +167,29 @@ internal object XraySpeedTestConfigFactory {
     }
 }
 
-private fun buildGeneratedXrayConfig(request: XrayConfigRequest): Pair<GeneratedXrayConfig, XrayRoutingPlan> {
-    val outboundPlan = request.outboundPlan ?: request.appState.buildXrayOutboundPlan(request.selectedServer)
-    val startupProxyServerDomains = outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
-    val dnsPlan = request.buildXrayDnsPlan(startupProxyServerDomains)
-    val routingPlan = request.appState.buildXrayRoutingPlan(
-        routeTargets = outboundPlan.routeTargets,
-        balancers = buildXrayBalancers(outboundPlan.balancers),
-        routeProxyDns = dnsPlan.routingOptions.routeProxyDns,
-        routeDirectDns = dnsPlan.routingOptions.routeDirectDns,
-        dnsHijackInboundTags = request.dnsHijackInboundTags,
-        dataDir = request.dataDir,
-    )
-
-    val generated = GeneratedXrayConfig(
-        log = request.buildXrayLogConfig(),
-        dns = buildXrayDnsConfig(dnsPlan),
-        inbounds = request.inbounds.toJsonObjectArray(),
-        outbounds = buildXrayOutbounds(
-            appState = request.appState,
-            proxyOutbounds = outboundPlan.proxyOutbounds,
-            primaryOutboundTag = routingPlan.primaryOutboundTag,
+private fun buildGeneratedXrayConfigResult(request: XrayConfigRequest): XrayGeneratedConfigResult {
+    val appState = request.appState
+    val outboundPlan = request.outboundPlan ?: appState.buildXrayOutboundPlan(request.selectedServer)
+    val dnsPlan = request.buildXrayDnsPlan(outboundPlan.proxyOutbounds.startupProxyServerDnsDomains())
+    return buildGeneratedXrayConfig(
+        XrayGeneratedConfigInput(
+            outboundPlan = outboundPlan,
             dnsPlan = dnsPlan,
+            log = request.buildXrayLogConfig(),
+            inbounds = request.inbounds,
+            routeDomainStrategy = appState.routeDomainStrategy,
+            routeRules = appState.routeRules,
+            defaultRouteOutboundTag = appState.defaultRouteOutboundTag,
+            enableLocalDns = appState.effectiveLocalDnsEnabled,
+            dnsHijackInboundTags = request.dnsHijackInboundTags,
+            ruleValidator = xrayRoutingRuleValidator(request.dataDir),
             dnsProxyOutboundTag = outboundPlan.dnsDialerProxyTag(),
+            transport = appState.xrayTransportOptions(),
+            mux = appState.xrayMuxOptions(),
+            fragment = appState.xrayFragmentOptions(),
+            collectTrafficStats = request.collectTrafficStats,
         ),
-        routing = buildXrayRouting(routingPlan),
-        fakeDns = dnsPlan.fakeDns,
-        observatory = buildXrayObservatory(
-            selectors = outboundPlan.observatorySelectors,
-            probeUrl = outboundPlan.observatoryProbeUrl,
-            probeInterval = outboundPlan.observatoryProbeInterval,
-            probeTimeout = outboundPlan.observatoryProbeTimeout,
-        ),
-        burstObservatory = null,
-        collectTrafficStats = request.collectTrafficStats,
     )
-    return generated to routingPlan
 }
 
 private fun buildCustomXrayConfig(
@@ -233,13 +218,14 @@ private fun buildCustomXrayConfig(
  * Keep a small fingerprint instead; explicit configuration export remains the
  * proper diagnostic path.
  */
-private fun encodeRuntimeXrayConfig(config: JsonObject): String {
-    val json = XrayConfigJson.encodeToString(config).withSingleTrailingLf()
+private fun encodeRuntimeXrayConfig(config: JsonObject): String =
+    XrayConfigJson.encodeToString(config).withSingleTrailingLf().also(::logGeneratedXrayConfig)
+
+private fun logGeneratedXrayConfig(json: String) {
     AppLog.debug(
         LogTag,
         "Generated Xray config: chars=${json.length}, fingerprint=${json.hashCode().toUInt().toString(16)}",
     )
-    return json
 }
 
 private const val LogTag = "XrayConfig"
