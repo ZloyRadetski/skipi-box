@@ -3,15 +3,10 @@
 
 package features.subscription.runtime
 
-import engine.network.withAuthenticator
+import engine.network.AutomaticSubscriptionResourceUrlGuard
 import engine.network.SocksProxyEndpoint
-import engine.network.readUtf8Limited
-import engine.network.setEmbeddedBasicAuth
-import engine.network.toIdnUrl
-import engine.network.withSocksProxyAuthenticator
-import features.subscription.SubscriptionRedirectDecision
-import features.subscription.parseSubscriptionHttpErrorMessage
-import features.subscription.decideSubscriptionRedirect
+import engine.network.SubscriptionHttpRequest
+import engine.network.SubscriptionHttpTransport
 import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
@@ -19,22 +14,17 @@ import features.subscription.KageSubscriptionAgeCrypto
 import features.subscription.SubscriptionAgePolicy
 import features.subscription.SubscriptionFetchResponse
 import features.subscription.SubscriptionFetchPolicy
-import features.subscription.normalizeSkipiUserAgent
-import features.subscription.SubscriptionHttpException
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.InetSocketAddress
-import java.net.Proxy
-import java.net.URI
 import features.subscription.SubscriptionAgeCrypto
 
 internal class AndroidSubscriptionFetcher private constructor(
     hwidProvider: () -> String,
     private val ageCrypto: SubscriptionAgeCrypto,
     private val context: Context?,
+    private val transport: SubscriptionHttpTransport = SubscriptionHttpTransport(),
 ) {
     // Resolved on the first fetch, which runs on IO: the Keystore round trip stays off the main thread.
     private val installationHwid: String by lazy(hwidProvider)
@@ -61,27 +51,34 @@ internal class AndroidSubscriptionFetcher private constructor(
         options: AndroidSubscriptionFetchOptions,
     ): String = fetchResponse(url, userAgent, options).body
 
+    /**
+     * [automaticResource] marks a URL a downloaded subscription named (Mihomo provider, linked config): it is
+     * refused when it, or a redirect hop, points at a loopback, private or metadata address. The URL the user
+     * typed is never checked.
+     */
     suspend fun fetchResponse(
         url: String,
         userAgent: String,
         options: AndroidSubscriptionFetchOptions,
+        automaticResource: Boolean = false,
     ): SubscriptionFetchResponse = withContext(Dispatchers.IO) {
         val proxy = options.toProxy()
         val requestCredentials = options.toRequestCredentials(
             installationHwid = installationHwid,
             ageCrypto = ageCrypto,
         )
-        proxy.withAuthenticator {
-            fetchWithRedirects(
-                url = url.toIdnUrl(),
-                userAgent = normalizeSkipiUserAgent(userAgent),
-                requestCredentials = requestCredentials,
-                proxy = proxy,
-                timeoutSeconds = options.timeoutSeconds,
-            )
-        }.let { response ->
-            response.copy(body = SubscriptionAgePolicy.decryptResponseBody(response.body, options.ageSecretKey, ageCrypto))
-        }
+        val response = transport.fetch(
+            SubscriptionHttpRequest(
+                url = url,
+                userAgent = userAgent,
+                timeoutMillis = SubscriptionFetchPolicy.timeoutSeconds(options.timeoutSeconds) * 1000,
+                identityHeaders = requestCredentials.deviceHeaders,
+                agePublicKey = requestCredentials.agePublicKey,
+                socksProxy = proxy,
+                urlGuard = AutomaticSubscriptionResourceUrlGuard.takeIf { automaticResource },
+            ),
+        )
+        response.copy(body = SubscriptionAgePolicy.decryptResponseBody(response.body, options.ageSecretKey, ageCrypto))
     }
 }
 
@@ -107,72 +104,6 @@ internal fun AndroidSubscriptionFetchOptions.toProxy(): SocksProxyEndpoint? {
         username = runtimeOptions.username,
         password = runtimeOptions.password,
     )
-}
-
-private fun fetchWithRedirects(
-    url: String,
-    userAgent: String,
-    requestCredentials: SubscriptionRequestCredentials,
-    proxy: SocksProxyEndpoint?,
-    timeoutSeconds: Int,
-): SubscriptionFetchResponse {
-    var currentUrl = url
-    var sendIdentity = true
-    val timeoutMillis = SubscriptionFetchPolicy.timeoutSeconds(timeoutSeconds) * 1000
-    repeat(SubscriptionFetchPolicy.maxRedirects + 1) {
-        val connection = currentUrl.toConnection(proxy, timeoutMillis)
-        try {
-            connection.setRequestProperty("User-Agent", userAgent)
-            connection.setRequestProperty("Connection", "close")
-            if (sendIdentity) {
-                requestCredentials.deviceHeaders.forEach { (name, value) ->
-                    connection.setRequestProperty(name, value)
-                }
-                requestCredentials.agePublicKey?.let { publicKey ->
-                    connection.setRequestProperty("X-Age-Public-Key", publicKey)
-                }
-                connection.setEmbeddedBasicAuth(currentUrl)
-            }
-
-            val code = connection.responseCode
-            if (code in 300..399) {
-                val location = connection.getHeaderField("Location")
-                    ?: error("Redirect location missing")
-                val target = URI(currentUrl).resolve(location).toString()
-                when (val decision = decideSubscriptionRedirect(currentUrl, target)) {
-                    SubscriptionRedirectDecision.Follow -> Unit
-                    SubscriptionRedirectDecision.FollowWithoutIdentity -> sendIdentity = false
-                    is SubscriptionRedirectDecision.Reject -> error("Subscription redirect refused: ${decision.reason}")
-                }
-                currentUrl = target
-                return@repeat
-            }
-            if (code !in 200..299) {
-                val errorBody = runCatching {
-                    connection.errorStream?.use { input -> input.readTextLimited(MaxSubscriptionErrorBodyBytes) }
-                }.getOrNull()
-                val serverMessage = parseSubscriptionHttpErrorMessage(errorBody)
-                throw SubscriptionHttpException(
-                    statusCode = code,
-                    serverMessage = serverMessage,
-                    responseBody = errorBody,
-                )
-            }
-            val body = connection.inputStream.use { input -> input.readTextLimited(MaxSubscriptionBodyBytes) }
-            val headers = connection.headerFields
-                .filterKeys { name -> name != null }
-                .mapNotNull { (name, values) ->
-                    name?.lowercase()?.let { normalizedName ->
-                        normalizedName to values.orEmpty().joinToString(",")
-                    }
-                }
-                .toMap()
-            return SubscriptionFetchResponse(body = body, headers = headers)
-        } finally {
-            connection.disconnect()
-        }
-    }
-    error("Too many redirects")
 }
 
 private fun AndroidSubscriptionFetchOptions.toRequestCredentials(
@@ -201,27 +132,3 @@ private fun subscriptionDeviceHeaders(installationHwid: String): Map<String, Str
         "X-Device-ID" to installationHwid,
     )
 }
-
-private fun String.toConnection(
-    proxy: SocksProxyEndpoint?,
-    timeoutMillis: Int,
-): HttpURLConnection {
-    val url = URI(this).toURL()
-    val connection = when {
-        proxy != null -> url.openConnection(proxy.toJavaProxy())
-        else -> url.openConnection()
-    }
-    return (connection as HttpURLConnection).apply {
-        connectTimeout = timeoutMillis
-        readTimeout = timeoutMillis
-        instanceFollowRedirects = false
-        requestMethod = "GET"
-    }
-}
-
-private const val MaxSubscriptionBodyBytes = 32 * 1024 * 1024
-private const val MaxSubscriptionErrorBodyBytes = 64 * 1024
-
-/** Reads UTF-8 text, failing early instead of exhausting memory on a hostile or broken endpoint. */
-internal fun java.io.InputStream.readTextLimited(maxBytes: Int): String =
-    readUtf8Limited(maxBytes) { IllegalStateException("Subscription response is larger than $maxBytes bytes") }

@@ -63,7 +63,7 @@ internal class DesktopSubscriptionRefreshCoordinator(
             throw cancelled
         } catch (error: Throwable) {
             subscriptionWorkerOutcome(
-                transientFailureFlags = listOf(isTransientDesktopSubscriptionRefreshFailure(error)),
+                transientFailureFlags = listOf(features.subscription.isTransientSubscriptionFailure(error)),
             )
         }
     }

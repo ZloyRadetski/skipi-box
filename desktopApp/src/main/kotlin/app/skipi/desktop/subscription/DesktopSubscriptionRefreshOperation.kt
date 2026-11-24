@@ -33,6 +33,9 @@ internal class DesktopSubscriptionRefreshOperation(
     private val fetchResponse: suspend (String, String, DesktopSubscriptionRefreshFetchOptions) -> SubscriptionFetchResponse,
     private val parsers: List<ProxyServerPayloadParser>,
     private val refreshedAtMillis: () -> Long,
+    /** Provider and linked-config URLs the downloaded document named; defaults to the root fetch. */
+    private val fetchAutomaticResource: suspend (String, String, DesktopSubscriptionRefreshFetchOptions) -> SubscriptionFetchResponse =
+        fetchResponse,
 ) {
     suspend fun run(
         request: SubscriptionRefreshLoadRequest<DesktopSubscriptionRefreshFetchOptions>,
@@ -69,6 +72,7 @@ internal class DesktopSubscriptionRefreshOperation(
             request = request,
             fetchResponse = fetchResponse,
             parsers = parsers,
+            fetchAutomaticResource = fetchAutomaticResource,
         )
     }
 }

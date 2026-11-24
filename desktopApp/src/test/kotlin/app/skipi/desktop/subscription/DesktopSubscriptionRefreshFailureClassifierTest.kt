@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import features.subscription.SubscriptionHttpException
 import java.io.IOException
+import features.subscription.isTransientSubscriptionFailure
 import java.net.http.HttpTimeoutException
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -14,25 +15,25 @@ class DesktopSubscriptionRefreshFailureClassifierTest {
     @Test
     fun httpStatusAndJdkTimeoutFailuresMatchTheSharedAndroidRetryPolicy() {
         listOf(408, 429, 500, 599).forEach { statusCode ->
-            assertTrue(isTransientDesktopSubscriptionRefreshFailure(SubscriptionHttpException(statusCode, responseBody = "")))
+            assertTrue(isTransientSubscriptionFailure(SubscriptionHttpException(statusCode, responseBody = "")))
             assertTrue(
-                isTransientDesktopSubscriptionRefreshFailure(
+                isTransientSubscriptionFailure(
                     IllegalStateException("scheduled refresh", SubscriptionHttpException(statusCode, responseBody = "")),
                 ),
             )
         }
 
         listOf(200, 400, 407, 409, 499, 600).forEach { statusCode ->
-            assertFalse(isTransientDesktopSubscriptionRefreshFailure(SubscriptionHttpException(statusCode, responseBody = "")))
+            assertFalse(isTransientSubscriptionFailure(SubscriptionHttpException(statusCode, responseBody = "")))
         }
 
-        assertTrue(isTransientDesktopSubscriptionRefreshFailure(HttpTimeoutException("request timed out")))
+        assertTrue(isTransientSubscriptionFailure(HttpTimeoutException("request timed out")))
         assertTrue(
-            isTransientDesktopSubscriptionRefreshFailure(
+            isTransientSubscriptionFailure(
                 IllegalStateException("scheduled refresh", HttpTimeoutException("request timed out")),
             ),
         )
-        assertFalse(isTransientDesktopSubscriptionRefreshFailure(IOException("generic I/O failure")))
-        assertFalse(isTransientDesktopSubscriptionRefreshFailure(IllegalArgumentException("invalid payload")))
+        assertFalse(isTransientSubscriptionFailure(IOException("generic I/O failure")))
+        assertFalse(isTransientSubscriptionFailure(IllegalArgumentException("invalid payload")))
     }
 }

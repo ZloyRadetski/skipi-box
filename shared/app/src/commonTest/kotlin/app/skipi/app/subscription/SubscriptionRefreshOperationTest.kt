@@ -268,6 +268,45 @@ class SubscriptionRefreshOperationTest {
     }
 
     @Test
+    fun providerAndEmbeddedUrlsGoThroughTheAutomaticResourceFetcherAndTheRootDoesNot() = runTest {
+        val request = SubscriptionRefreshLoadRequest(
+            subscription = subscription(title = "Provider plan"),
+            fetchOptions = RefreshOptions(),
+        )
+        val providerUrl = "https://provider.example/list"
+        val embeddedUrl = "https://config.example/profile.conf"
+        val rootCalls = mutableListOf<String>()
+        val automaticCalls = mutableListOf<String>()
+        val parser: ProxyServerPayloadParser = { text, context ->
+            if (text == "root payload") {
+                context.providerUrlFetcher!!.fetch(providerUrl)
+                ProxyServerImportResult(1, listOf(vless("provider.example", "provider server")))
+            } else {
+                EmptyProxyServerImportResult
+            }
+        }
+
+        loadSubscriptionRefresh(
+            request = request,
+            fetchResponse = { url, _, _ ->
+                rootCalls += url
+                SubscriptionFetchResponse(
+                    body = "root payload",
+                    headers = mapOf("routing" to "skipi://conf/add/$embeddedUrl"),
+                )
+            },
+            parsers = listOf(parser),
+            fetchAutomaticResource = { url, _, _ ->
+                automaticCalls += url
+                SubscriptionFetchResponse(body = "resource body")
+            },
+        )
+
+        assertEquals(listOf(request.subscription.url), rootCalls)
+        assertEquals(listOf(providerUrl, embeddedUrl), automaticCalls)
+    }
+
+    @Test
     fun inlineEmbeddedConfigUsesSubscriptionSourceAndAndroidFallbackName() = runTest {
         val request = SubscriptionRefreshLoadRequest(
             subscription = subscription(id = 73, title = ""),

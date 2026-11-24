@@ -49,6 +49,9 @@ internal suspend fun updateSubscriptions(
     fetchResponse = { url, userAgent, options ->
         subscriptionFetcher.fetchResponse(url, userAgent, options)
     },
+    fetchAutomaticResource = { url, userAgent, options ->
+        subscriptionFetcher.fetchResponse(url, userAgent, options, automaticResource = true)
+    },
 )
 
 internal suspend fun updateSubscriptions(
@@ -69,6 +72,8 @@ private suspend fun updateSubscriptionsFromResponses(
     groups: List<SubscriptionGroupState>,
     fetchOptions: (SubscriptionGroupState) -> AndroidSubscriptionFetchOptions,
     fetchResponse: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse,
+    fetchAutomaticResource: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse =
+        fetchResponse,
     coordinator: SubscriptionUpdateCoordinator = DefaultSubscriptionUpdateCoordinator,
 ): ProxyServerListSubscriptionUpdateResult {
     val groupsById = groups.associateBy(SubscriptionGroupState::id)
@@ -86,11 +91,12 @@ private suspend fun updateSubscriptionsFromResponses(
             val group = checkNotNull(groupsById[request.subscription.id])
             coordinator.withGroup(group.id) {
                 withContext(Dispatchers.Default) {
-                    updateSubscriptionGroup(
+                    loadGroupUpdate(
                         group = group,
+                        request = SubscriptionRefreshLoadRequest(request.subscription, request.fetchOptions()),
                         fetchResponse = fetchResponse,
-                        fetchOptions = request.fetchOptions(),
-                    ).getOrThrow()
+                        fetchAutomaticResource = fetchAutomaticResource,
+                    )
                 }
             }
         },
@@ -111,6 +117,8 @@ internal class AndroidSubscriptionRefreshBatchRunner(
     private val onBeforeEligibility: () -> Unit,
     private val fetchOptions: (SubscriptionGroupState) -> AndroidSubscriptionFetchOptions,
     private val fetchResponse: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse,
+    private val fetchAutomaticResource: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse =
+        fetchResponse,
     private val onCommitUpdates: suspend (List<ProxyServerListSubscriptionUpdate>, Long) -> Unit,
     private val coordinator: SubscriptionUpdateCoordinator = DefaultSubscriptionUpdateCoordinator,
     private val refreshedAtMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
@@ -156,29 +164,15 @@ internal class AndroidSubscriptionRefreshBatchRunner(
         request: SubscriptionRefreshLoadRequest<AndroidSubscriptionRefreshBatchLoadContext>,
     ): ProxyServerListSubscriptionUpdate {
         val context = request.fetchOptions
-        return try {
-            coordinator.withGroup(context.group.id) {
-                withContext(Dispatchers.Default) {
-                    val loaded = loadSubscriptionRefresh(
-                        request = SubscriptionRefreshLoadRequest(
-                            subscription = request.subscription,
-                            fetchOptions = context.readFetchOptions(),
-                        ),
-                        fetchResponse = fetchResponse,
-                        parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
-                    )
-                    loaded.toProxyServerListSubscriptionUpdate(context.group)
-                }
+        return coordinator.withGroup(context.group.id) {
+            withContext(Dispatchers.Default) {
+                loadGroupUpdate(
+                    group = context.group,
+                    request = SubscriptionRefreshLoadRequest(request.subscription, context.readFetchOptions()),
+                    fetchResponse = fetchResponse,
+                    fetchAutomaticResource = fetchAutomaticResource,
+                )
             }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Throwable) {
-            AppLog.warn(
-                LogTag,
-                "Subscription update failed ${context.group.logIdentity()}",
-                error,
-            )
-            throw error
         }
     }
 }
@@ -206,46 +200,24 @@ private fun LoadedSubscriptionRefresh.toProxyServerListSubscriptionUpdate(
     },
 )
 
-private suspend fun updateSubscriptionGroup(
+/** Loads one group, logging a failure (cancellation excepted) before it propagates. */
+private suspend fun loadGroupUpdate(
     group: SubscriptionGroupState,
+    request: SubscriptionRefreshLoadRequest<AndroidSubscriptionFetchOptions>,
     fetchResponse: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse,
-    fetchOptions: AndroidSubscriptionFetchOptions,
-): Result<ProxyServerListSubscriptionUpdate> {
-    return try {
-        val loaded = loadSubscriptionRefresh(
-            request = SubscriptionRefreshLoadRequest(
-                subscription = group.toSubscriptionRecord(),
-                fetchOptions = fetchOptions,
-            ),
-            fetchResponse = fetchResponse,
-            parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
-        )
-        val update = ProxyServerListSubscriptionUpdate(
-            groupId = group.id,
-            sourceIdentity = group.subscriptionFetchIdentity(),
-            urlCount = loaded.urlCount,
-            servers = loaded.servers,
-            metadata = loaded.metadata,
-            resolvedConfig = loaded.resolvedEmbeddedConfig?.let { config ->
-                features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig(
-                    content = config.content,
-                    sourceUrl = config.sourceUrl,
-                    fallbackName = config.fallbackName,
-                    activate = config.activate,
-                )
-            },
-        )
-        Result.success(update)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (error: Throwable) {
-        AppLog.warn(
-            LogTag,
-            "Subscription update failed ${group.logIdentity()}",
-            error,
-        )
-        Result.failure(error)
-    }
+    fetchAutomaticResource: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse,
+): ProxyServerListSubscriptionUpdate = try {
+    loadSubscriptionRefresh(
+        request = request,
+        fetchResponse = fetchResponse,
+        parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
+        fetchAutomaticResource = fetchAutomaticResource,
+    ).toProxyServerListSubscriptionUpdate(group)
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (error: Throwable) {
+    AppLog.warn(LogTag, "Subscription update failed ${group.logIdentity()}", error)
+    throw error
 }
 
 private val AndroidSubscriptionRefreshPayloadParser: ProxyServerPayloadParser = { payload, context ->
