@@ -9,16 +9,13 @@ import features.updater.AppUpdateInfo
 import features.updater.CurrentAppVersion
 import features.updater.DesktopUpdatePackage
 import features.updater.GitHubReleaseParser
+import features.updater.GitHubUpdateFetcher
+import features.updater.UpdateHttp
 import features.updater.runUpdateCheck
 import features.updater.ReleaseListResponse
 import features.updater.UpdateCheckResult
 import features.updater.UpdateManifestParser
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.time.Duration
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -57,36 +54,21 @@ internal class DesktopAppUpdateChecker(
     }
 }
 
-/** One client per kind for every check (a new one each time left a selector thread behind until a full collection). */
-private val DesktopGitHubApiHttpClient: Lazy<HttpClient> = lazy {
-    HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build()
-}
-
-/** Follows GitHub's redirects to the release files; shared with the update downloader, built on first use. */
-internal val DesktopReleaseHttpClient: Lazy<HttpClient> = lazy {
-    HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).followRedirects(HttpClient.Redirect.NORMAL).build()
+private val DesktopUpdateFetcher: Lazy<GitHubUpdateFetcher> = lazy {
+    GitHubUpdateFetcher(
+        DesktopUpdateTransport(requestTimeout = Duration.ofMillis(UpdateHttp.ApiReadTimeoutMs.toLong())),
+        ProjectInfo.VERSION_NAME,
+    )
 }
 
 private suspend fun fetchReleasesFromGitHub(channel: AppUpdateChannel): String = withContext(Dispatchers.IO) {
-    val client = DesktopGitHubApiHttpClient.value
-    val request = HttpRequest.newBuilder(URI(channel.releasesUrl))
-        .timeout(Duration.ofSeconds(20))
-        .header("Accept", "application/vnd.github.v3+json")
-        .header("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
-        .GET()
-        .build()
-    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-    check(response.statusCode() == 200) { "HTTP ${response.statusCode()}" }
-    response.body()
+    when (val response = DesktopUpdateFetcher.value.fetchReleases(channel)) {
+        is ReleaseListResponse.Ok -> response.body
+        else -> error("Unexpected answer of the release list")
+    }
 }
 
 private suspend fun fetchManifestFromGitHub(channel: AppUpdateChannel): String? = withContext(Dispatchers.IO) {
-    val client = DesktopReleaseHttpClient.value
-    val request = HttpRequest.newBuilder(URI(channel.manifestUrl))
-        .timeout(Duration.ofSeconds(20))
-        .header("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
-        .GET()
-        .build()
-    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-    response.body().takeIf { response.statusCode() == 200 }
+    DesktopUpdateFetcher.value.fetchManifest(channel)
 }
+
