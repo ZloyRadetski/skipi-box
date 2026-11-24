@@ -635,6 +635,11 @@
     <string name="routing_default_proxy_server">代理服务器 {id}</string>
     <string name="routing_new_rule">新的路由规则</string>
     <string name="routing_unnamed_rule">未命名规则</string>
+    <string name="routing_rule_badge_skipped">已跳过</string>
+    <string name="routing_rule_badge_partly_skipped">部分跳过</string>
+    <string name="routing_rule_badge_unknown_target">目标未知</string>
+    <string name="routing_rule_reason_skipped">未应用，缺少以下数据：{values}</string>
+    <string name="routing_rule_reason_unknown_target">该规则的目标不存在，因此走代理。</string>
     <string name="routing_add_rule">添加路由规则</string>
     <string name="routing_edit_rule">编辑路由规则</string>
     <string name="routing_rule_name">规则名称</string>

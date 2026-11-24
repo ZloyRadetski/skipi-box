@@ -241,6 +241,8 @@ internal fun DesktopConfigsScreen(
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     resourceServices: DesktopResourceFileServices,
     resourceFileStatusMessage: String,
+    /** What the running Core's configuration did not apply; shown as a badge on the rules. */
+    unappliedRules: List<String> = emptyList(),
     readPerAppClipboardText: suspend () -> String? = {
         Toolkit.getDefaultToolkit().systemClipboard
             .getData(DataFlavor.stringFlavor) as? String
@@ -663,6 +665,7 @@ internal fun DesktopConfigsScreen(
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }
                     },
+                    unappliedRules = unappliedRules,
                 )
                 DesktopVisualEditorSection.ProxyGroups -> DesktopTrafficConfigProxyGroupsEditor(
                     profile = profile,

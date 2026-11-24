@@ -128,6 +128,7 @@ import features.config.RoutingTable
 import features.config.RoutingTableEntry
 import features.config.RoutingTableRow
 import features.config.ShadowrocketRule
+import features.config.applicationStatus
 import features.config.TrafficConfigState
 import features.config.V2rayRoutingImport
 import features.config.V2rayRoutingSkipReason
@@ -349,6 +350,8 @@ fun SkipiTrafficConfigRoutingTable(
     notice: String? = null,
     canApply: Boolean = false,
     onApply: (() -> Unit)? = null,
+    /** What the last configuration build did not apply; a rule it concerns shows a badge. */
+    unappliedRules: List<String> = emptyList(),
 ) {
     val table = remember(profile.rawConfig) { profile.rawConfig.toRoutingTable() }
     val currentController by rememberUpdatedState(controller)
@@ -405,7 +408,7 @@ fun SkipiTrafficConfigRoutingTable(
             }
             LazyColumn(Modifier.fillMaxSize()) {
                 items(visible, key = RoutingTableEntry::lineNumber) { entry ->
-                    RoutingTableRowView(entry, selected = state.selectedLine == entry.lineNumber && !state.isNew, state = state, profileId = profile.id, controller = controller)
+                    RoutingTableRowView(entry, selected = state.selectedLine == entry.lineNumber && !state.isNew, state = state, profileId = profile.id, controller = controller, unappliedRules = unappliedRules)
                 }
             }
         }
@@ -589,9 +592,11 @@ private fun RoutingTableRowView(
     state: SkipiRoutingTableState,
     profileId: Int,
     controller: TrafficConfigEditorController,
+    unappliedRules: List<String>,
 ) {
     val rule = entry.rule
     val row = entry.row
+    val application = remember(rule.raw, unappliedRules) { rule.applicationStatus(unappliedRules) }
     val enabled = !rule.isDisabled
     val name = rule.remarks.ifBlank { stringResource(Res.string.routing_unnamed_rule) }
     val toggleLabel = stringResource(Res.string.routing_table_toggle).formatTemplate("name" to name)
@@ -632,15 +637,18 @@ private fun RoutingTableRowView(
         RowCell(row?.port.orEmpty(), PortColumn, dim)
         RowCell(row?.protocols.orEmpty().joinToString(", "), ProtocolColumn, dim)
         RowCell(row?.network.orEmpty(), NetworkColumn, dim)
-        Text(
-            text = if (row == null) stringResource(Res.string.routing_table_complex_label) else (row.domains + row.ips + row.processes).joinToString(", "),
-            fontSize = 11.5.sp,
-            fontFamily = if (row == null) null else FontFamily.Monospace,
-            color = if (row == null) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = dim.weight(1f),
-        )
+        Row(dim.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SkipiRuleApplicationBadge(application)
+            Text(
+                text = if (row == null) stringResource(Res.string.routing_table_complex_label) else (row.domains + row.ips + row.processes).joinToString(", "),
+                fontSize = 11.5.sp,
+                fontFamily = if (row == null) null else FontFamily.Monospace,
+                color = if (row == null) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 

@@ -21,6 +21,8 @@ internal fun createDesktopTunnelController(
     readConfigs: () -> DesktopConfigLibrary,
     readLatency: () -> Map<Int, DesktopServerLatencyResult>,
     tunHost: DesktopTunHost,
+    /** Receives the rules the running configuration does not apply, and an empty list once it is gone. */
+    onUnappliedRulesChanged: (List<String>) -> Unit = {},
 ): DesktopTunnelController {
     // One consistent view of the user's data per connect: the Core configuration and the TUN interface are built
     // at different moments, and a settings edit between them must not make the two disagree. The controller
@@ -237,6 +239,7 @@ internal fun createDesktopTunnelController(
         stopTun = { runCatching { tunHost.tunRuntime().stop().getOrThrow() } },
         tunRunning = { tunHost.tunRuntime().isRunning() },
         tunSupported = { tunHost.hostSupported },
+        onUnappliedRulesChanged = onUnappliedRulesChanged,
     )
 
 }

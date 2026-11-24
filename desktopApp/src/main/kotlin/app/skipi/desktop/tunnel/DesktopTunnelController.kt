@@ -38,6 +38,8 @@ data class DesktopTunnelStartPlan(
     val rebuild: (Set<Int>) -> DesktopTunnelStartPlan,
     val assetsDirectory: Path? = null,
     val amneziaWg: DesktopAmneziaWgBridge? = null,
+    /** Rules the configuration does not apply as written; shown on the rules screen while the tunnel runs. */
+    val unappliedRules: List<String> = emptyList(),
 )
 
 /**
@@ -90,6 +92,8 @@ class DesktopTunnelController(
     private val stopTun: () -> Result<Unit> = { Result.success(Unit) },
     private val tunRunning: () -> Boolean = { false },
     private val tunSupported: () -> Boolean = { false },
+    /** The rules the running configuration does not apply; empty whenever no session built from a profile is up. */
+    private val onUnappliedRulesChanged: (List<String>) -> Unit = {},
 ) : TunnelController {
     private var latestSnapshot = TunnelSnapshot()
     private var tunActive = false
@@ -113,6 +117,7 @@ class DesktopTunnelController(
         }
         var tunPrepared = false
         var coreTunFd: Int? = null
+        var startedUnappliedRules: List<String> = emptyList()
         val result = runCatching {
             if (useTun) {
                 operationStage = TunnelOperationStage.Start
@@ -161,6 +166,7 @@ class DesktopTunnelController(
                 config = startPlan.configuration
                 require(config.isNotBlank()) { "Tunnel configuration must not be blank" }
             }
+            startedUnappliedRules = startPlan?.unappliedRules.orEmpty()
             try {
                 if (useTun) {
                     operationStage = TunnelOperationStage.Start
@@ -181,6 +187,7 @@ class DesktopTunnelController(
         }
         if (result.isFailure && tunPrepared && !tunActive) releaseTun()
         val operationResult = result.mapFailure(operationStage)
+        onUnappliedRulesChanged(if (result.isSuccess) startedUnappliedRules else emptyList())
         latestSnapshot = operationResult.fold(
             onSuccess = { TunnelLifecyclePolicy.connected(latestSnapshot) },
             onFailure = { error -> TunnelLifecyclePolicy.connectFailed(latestSnapshot, failure(error, operationStage)) },
@@ -207,6 +214,7 @@ class DesktopTunnelController(
             }
             Unit
         }
+        if (result.isSuccess) onUnappliedRulesChanged(emptyList())
         latestSnapshot = result.fold(
             onSuccess = { TunnelLifecyclePolicy.disconnected(latestSnapshot) },
             onFailure = { error -> TunnelLifecyclePolicy.disconnectFailed(latestSnapshot, failure(error, TunnelOperationStage.Stop)) },
@@ -216,6 +224,7 @@ class DesktopTunnelController(
 
     override suspend fun snapshot(): TunnelSnapshot = synchronized(this) {
         if (latestSnapshot.phase == TunnelPhase.Connected && !coreState().isRunning) {
+            onUnappliedRulesChanged(emptyList())
             val proxyRestoreFailure = releaseSystemProxy().exceptionOrNull()
             // A TUN session whose Core died carries nothing, yet keeps the system routed into it: release it too.
             val tunStopFailure = if (tunActive) stopTun().exceptionOrNull() else null
@@ -238,6 +247,7 @@ class DesktopTunnelController(
         } else if (latestSnapshot.phase == TunnelPhase.Connected && tunActive && !tunRunning()) {
             // hev died under a live Core: the interface is useless, so release it instead of leaving
             // the system routed into a tunnel that carries nothing.
+            onUnappliedRulesChanged(emptyList())
             val stopped = IllegalStateException("The TUN tunnel stopped unexpectedly")
             stopTun().exceptionOrNull()?.let(stopped::addSuppressed)
             tunActive = false

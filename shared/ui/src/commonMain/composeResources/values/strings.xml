@@ -693,6 +693,11 @@
     <string name="routing_default_proxy_server">Proxy server {id}</string>
     <string name="routing_new_rule">New routing rule</string>
     <string name="routing_unnamed_rule">Unnamed rule</string>
+    <string name="routing_rule_badge_skipped">Skipped</string>
+    <string name="routing_rule_badge_partly_skipped">Partly skipped</string>
+    <string name="routing_rule_badge_unknown_target">Unknown target</string>
+    <string name="routing_rule_reason_skipped">Not applied, no data for: {values}</string>
+    <string name="routing_rule_reason_unknown_target">The target of this rule is missing, so it goes to the proxy.</string>
     <string name="routing_add_rule">Add routing rule</string>
     <string name="routing_edit_rule">Edit routing rule</string>
     <string name="routing_rule_name">Rule name</string>
