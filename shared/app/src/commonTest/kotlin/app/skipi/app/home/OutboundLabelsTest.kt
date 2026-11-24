@@ -42,13 +42,6 @@ class OutboundLabelsTest {
     }
 
     @Test
-    fun aProfilesServerAndBalancerMemberAreNamedToo() {
-        assertEquals("Frankfurt", labels.label("skipi-server-20"))
-        assertEquals("Balancer - Frankfurt", labels.label("skipi-group-member-2-20"))
-        assertEquals("skipi-group-member-2-9", labels.label("skipi-group-member-2-9"))
-    }
-
-    @Test
     fun aShadowrocketGroupIsNamedByItsName() {
         assertEquals("Fast", labels.label("shadowrocket-group:Fast"))
         assertEquals("Fast - Frankfurt", labels.label("shadowrocket-group:Fast-policy-20"))
