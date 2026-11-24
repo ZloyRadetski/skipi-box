@@ -21,6 +21,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -76,6 +78,8 @@ fun SkipiMenu(
     var openedKeys by remember { mutableStateOf(emptyList<String>()) }
     val levelWidths = remember { MenuLevelWidths() }
     val opened = openedKeys.openedRows(sections)
+    // A long level is drawn lazily: composing and measuring every row of a list of hundreds opens the menu slowly.
+    val lazyRows = remember(sections) { sections.hasLongLevel() }
 
     SkipiMenuPopup(
         expanded = expanded,
@@ -85,6 +89,7 @@ fun SkipiMenu(
         },
         modifier = modifier,
         contentModifier = { animatedMenuWidth(levelWidths, openedKeys.lastOrNull() ?: RootLevelKey) },
+        lazyRows = lazyRows,
         surface = surface,
         text = text,
         outline = outline,
@@ -110,6 +115,32 @@ fun SkipiMenu(
         ) { levelKeys ->
             // The level on screen while it slides out is the one of its own keys, not of the current ones.
             val rows = levelKeys.openedRows(sections)
+            if (lazyRows) {
+                val door = rows.lastOrNull()
+                LazyMenuLevel(
+                    sections = if (door != null) listOf(SkipiMenuSection(door.children)) else sections,
+                    backTitle = door?.title,
+                    accent = accent,
+                    text = text,
+                    mutedText = mutedText,
+                    outline = outline,
+                    header = header.takeIf { door == null },
+                    footer = footer.takeIf { door == null },
+                    onBack = { openedKeys = openedKeys.dropLast(1) },
+                    onItemClick = { item ->
+                        if (item.hasChildren) {
+                            openedKeys = openedKeys + item.key
+                        } else {
+                            item.onClick?.invoke()
+                            if (closeOnSelection) {
+                                openedKeys = emptyList()
+                                onDismissRequest()
+                            }
+                        }
+                    },
+                )
+                return@AnimatedContent
+            }
             Column(Modifier.reportMenuLevelWidth(levelWidths, levelKeys.lastOrNull() ?: RootLevelKey)) {
                 if (rows.isEmpty()) header?.invoke()
                 if (rows.isNotEmpty()) {
@@ -165,6 +196,65 @@ fun SkipiMenu(
     // Keeps a stale path from outliving the rows it pointed at (the menu was rebuilt without them).
     LaunchedEffect(opened.size, openedKeys.size) {
         if (opened.size != openedKeys.size) openedKeys = openedKeys.take(opened.size)
+    }
+}
+
+/** One level of a long menu: only the rows on screen are composed and measured. */
+@Composable
+private fun LazyMenuLevel(
+    sections: List<SkipiMenuSection>,
+    backTitle: String?,
+    accent: Color,
+    text: Color,
+    mutedText: Color,
+    outline: Color,
+    header: (@Composable () -> Unit)?,
+    footer: (@Composable () -> Unit)?,
+    onBack: () -> Unit,
+    onItemClick: (SkipiMenuItem) -> Unit,
+) {
+    LazyColumn(Modifier.fillMaxWidth()) {
+        header?.let { item { it() } }
+        if (backTitle != null) {
+            item {
+                SkipiMenuRowItem(
+                    onClick = onBack,
+                    text = text,
+                    leadingIcon = {
+                        SkipiContentIcon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = null,
+                            fallbackTint = mutedText,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    label = { SkipiMenuRowLabel(text = backTitle, maxLines = 1) },
+                )
+            }
+        }
+        sections.forEachIndexed { sectionIndex, section ->
+            if (sectionIndex > 0) {
+                item {
+                    Box(
+                        Modifier
+                            .padding(vertical = 4.dp)
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(outline.copy(alpha = 0.2f)),
+                    )
+                }
+            }
+            itemsIndexed(section.items) { _, menuItem ->
+                SkipiMenuRow(
+                    item = menuItem,
+                    accent = accent,
+                    text = text,
+                    mutedText = mutedText,
+                    onClick = { onItemClick(menuItem) },
+                )
+            }
+        }
+        footer?.let { item { it() } }
     }
 }
 

@@ -120,6 +120,8 @@ internal fun SkipiMenuPopup(
     outline: Color = SkipiTheme.colors.outline,
     alignToAnchorStart: Boolean = false,
     contentModifier: @Composable () -> Modifier = { Modifier },
+    /** The content is a lazy list that scrolls itself: no scroll wrapper and no intrinsic width, which a lazy list cannot answer. */
+    lazyRows: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val visibility = remember { MutableTransitionState(false) }
@@ -168,10 +170,10 @@ internal fun SkipiMenuPopup(
                         .background(surface)
                         .border(BorderStroke(1.dp, outline.copy(alpha = 0.2f)), shape)
                         .padding(vertical = 8.dp)
-                        .width(IntrinsicSize.Max)
+                        .then(if (lazyRows) Modifier.width(MenuMaxWidth) else Modifier.width(IntrinsicSize.Max))
                         .widthIn(min = MenuMinWidth, max = MenuMaxWidth)
                         .heightIn(max = MenuMaxHeight)
-                        .verticalScroll(rememberScrollState()),
+                        .then(if (lazyRows) Modifier else Modifier.verticalScroll(rememberScrollState())),
                 ) {
                     // A popup is not under a Material surface, so the text style the rows read would be the library
                     // default, not the font the appearance settings chose. The app's text style is passed in here.

@@ -56,3 +56,11 @@ fun List<SkipiMenuSection>.selectedTitle(): String? =
 
 /** A menu of one section is a plain choice and closes on it; with several sections the rows are toggles. */
 fun closesOnSelection(sectionCount: Int): Boolean = sectionCount <= 1
+
+/** A level with more rows than this is drawn lazily: only the visible rows are composed and measured. */
+internal const val LazyMenuRowThreshold = 40
+
+/** True when some level of the menu, the top one or a submenu, has more than [limit] rows. */
+internal fun List<SkipiMenuSection>.hasLongLevel(limit: Int = LazyMenuRowThreshold): Boolean =
+    sumOf { section -> section.items.size } > limit ||
+        any { section -> section.items.any { item -> item.hasChildren && listOf(SkipiMenuSection(item.children)).hasLongLevel(limit) } }
