@@ -105,7 +105,13 @@ fun SkipiCodeEditor(
     var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     var lastEmitted by remember { mutableStateOf<String?>(null) }
     // An external replacement (for example "Format JSON") moves the cursor to the end.
-    if (field.text != value) field = reconcileExternalValue(field, value, lastEmitted)
+    // Only a changed [value] is an external replacement. A caller that keeps the text in a plain, non-observable
+    // object recomposes this function with its old value after every keystroke; resetting to that would undo typing.
+    val seenValue = remember { arrayOf(value) }
+    if (value != seenValue[0]) {
+        seenValue[0] = value
+        if (field.text != value) field = reconcileExternalValue(field, value, lastEmitted)
+    }
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(TextFieldDefaults.CornerRadius)
     val textStyle = TextStyle(
