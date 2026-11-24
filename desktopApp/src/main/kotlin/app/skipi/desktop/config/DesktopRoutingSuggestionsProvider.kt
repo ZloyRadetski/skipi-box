@@ -4,12 +4,11 @@
 package app.skipi.desktop
 
 import features.config.TrafficConfigState
-import features.routing.usecase.GeoDatParser
 import features.routing.usecase.GeoSuggestionItem
+import features.routing.usecase.geoTagReader
 import features.routing.usecase.resolveGeoIpSuggestions as resolveGeoIpSuggestionsCommon
 import features.routing.usecase.resolveGeoSiteSuggestions as resolveGeoSiteSuggestionsCommon
 import features.routing.usecase.resolveRuleSetSuggestions as resolveRuleSetSuggestionsCommon
-import java.io.File
 
 internal class DesktopRoutingSuggestionsProvider(
     private val resourceFiles: DesktopProfileResourceFiles,
@@ -19,7 +18,7 @@ internal class DesktopRoutingSuggestionsProvider(
         return resolveGeoSiteSuggestionsCommon(
             profile = profile,
             globalCustomFiles = emptyList(),
-            fileTags = { fileName -> readTags(snapshot.dataDir, fileName) },
+            fileTags = geoTagReader(snapshot.dataDir),
         )
     }
 
@@ -31,7 +30,7 @@ internal class DesktopRoutingSuggestionsProvider(
         return resolveGeoIpSuggestionsCommon(
             profile = profile,
             globalCustomFiles = emptyList(),
-            fileTags = { fileName -> readTags(snapshot.dataDir, fileName) },
+            fileTags = geoTagReader(snapshot.dataDir),
             forShadowrocket = forShadowrocket,
         )
     }
@@ -41,11 +40,7 @@ internal class DesktopRoutingSuggestionsProvider(
         return resolveRuleSetSuggestionsCommon(
             profile = profile,
             globalCustomFiles = emptyList(),
-            fileTags = { fileName -> readTags(snapshot.dataDir, fileName) },
+            fileTags = geoTagReader(snapshot.dataDir),
         )
-    }
-
-    private fun readTags(dataDir: File, fileName: String): List<String> {
-        return GeoDatParser.parseTags(File(dataDir, fileName))
     }
 }

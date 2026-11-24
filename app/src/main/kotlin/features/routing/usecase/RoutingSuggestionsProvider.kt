@@ -8,7 +8,6 @@ import app.AppState
 import features.config.TrafficConfigState
 import features.resources.runtime.XrayResourceFileScope
 import features.resources.runtime.xrayResourceFilesDir
-import java.io.File
 
 /** Android file and profile-scope adapter for the portable routing suggestion rules. */
 object RoutingSuggestionsProvider {
@@ -73,10 +72,7 @@ object RoutingSuggestionsProvider {
 
     private fun fileTagReader(context: Context, profile: TrafficConfigState?): (String) -> List<String> {
         val dataDir = context.xrayResourceFilesDir(profile.resourceFileScopeOrNull())
-        return { fileName ->
-            val file = File(dataDir, fileName)
-            if (file.isFile && file.length() > 0) GeoDatParser.parseTags(file) else emptyList()
-        }
+        return geoTagReader(dataDir)
     }
 
     private fun TrafficConfigState?.resourceFileScopeOrNull(): XrayResourceFileScope? =
