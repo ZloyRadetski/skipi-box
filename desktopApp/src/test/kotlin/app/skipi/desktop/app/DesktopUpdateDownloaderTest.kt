@@ -6,6 +6,7 @@ package app.skipi.desktop
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import features.updater.AppUpdateInfo
+import features.updater.isTrustedReleaseHost
 import java.net.InetSocketAddress
 import java.net.URI
 import java.nio.file.Files

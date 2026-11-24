@@ -5,13 +5,6 @@ package features.updater
 
 import kotlin.coroutines.cancellation.CancellationException
 
-/** What the release list answered; the platform owns the transport and the ETag. */
-sealed interface ReleaseListResponse {
-    data class Ok(val body: String, val eTag: String?) : ReleaseListResponse
-    data object NotModified : ReleaseListResponse
-    data object Failed : ReleaseListResponse
-}
-
 sealed interface UpdateCheckResult {
     /** [update] is null when this build is the newest; a transport or parse failure is never reported as that. */
     data class Success(val update: AppUpdateInfo?, val eTag: String?) : UpdateCheckResult
