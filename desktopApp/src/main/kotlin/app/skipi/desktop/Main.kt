@@ -674,6 +674,14 @@ private fun runDesktopApplication(
                         },
                         parsers = subscriptionPayloadParsers,
                         refreshedAtMillis = { System.currentTimeMillis() },
+                        fetchAutomaticResource = { url, userAgent, options ->
+                            subscriptionFetcher.fetchSubscriptionRefreshResponse(
+                                url = url,
+                                storedUserAgent = userAgent,
+                                options = options,
+                                automaticResourceUrl = true,
+                            )
+                        },
                     )
                 }
                 val desktopSubscriptionRefreshBatchRunner = remember(

@@ -184,6 +184,9 @@ fun ProxyServerListPage(
             fetchResponse = { url, userAgent, options ->
                 subscriptionFetcher.fetchResponse(url, userAgent, options)
             },
+            fetchAutomaticResource = { url, userAgent, options ->
+                subscriptionFetcher.fetchResponse(url, userAgent, options, automaticResource = true)
+            },
             onCommitUpdates = { updates, updatedAtMillis ->
                 applyProxySubscriptionUpdates(
                     stateStore = stateStore,

@@ -94,13 +94,19 @@ suspend fun <FetchOptions> loadSubscriptionRefresh(
     request: SubscriptionRefreshLoadRequest<FetchOptions>,
     fetchResponse: suspend (url: String, userAgent: String, options: FetchOptions) -> SubscriptionFetchResponse,
     parsers: List<ProxyServerPayloadParser>,
+    /**
+     * Fetches the URLs the downloaded document names (Mihomo providers, a linked config), which no one typed.
+     * Hosts pass a variant that refuses private addresses; the root URL always goes through [fetchResponse].
+     */
+    fetchAutomaticResource: suspend (url: String, userAgent: String, options: FetchOptions) -> SubscriptionFetchResponse =
+        fetchResponse,
 ): LoadedSubscriptionRefresh {
     val subscription = request.subscription
     val rootResponse = fetchResponse(subscription.url, subscription.userAgent, request.fetchOptions)
     val context = ProxyServerImportContext(
         source = ProxyServerImportSource.SubscriptionUrl,
         providerUrlFetcher = ProxyServerProviderUrlFetcher { providerUrl ->
-            fetchResponse(providerUrl, subscription.userAgent, request.fetchOptions).body
+            fetchAutomaticResource(providerUrl, subscription.userAgent, request.fetchOptions).body
         },
     )
     val imported = importProxyServerPayloadText(
@@ -120,7 +126,7 @@ suspend fun <FetchOptions> loadSubscriptionRefresh(
             fallbackName = subscription.title,
             embedded = embedded,
             fetchResponse = { url ->
-                fetchResponse(url, subscription.userAgent, request.fetchOptions)
+                fetchAutomaticResource(url, subscription.userAgent, request.fetchOptions)
             },
         )
     }

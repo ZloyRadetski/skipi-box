@@ -70,11 +70,14 @@ suspend fun <FetchOptions> refreshSubscription(
     parsers: List<ProxyServerPayloadParser>,
     refreshedAtMillis: () -> Long,
     port: SubscriptionRefreshCommitPort,
+    fetchAutomaticResource: suspend (url: String, userAgent: String, options: FetchOptions) -> SubscriptionFetchResponse =
+        fetchResponse,
 ): SubscriptionRefreshResult {
     val loaded = loadSubscriptionRefresh(
         request = request,
         fetchResponse = fetchResponse,
         parsers = parsers,
+        fetchAutomaticResource = fetchAutomaticResource,
     )
     val committed = commitSubscriptionRefresh(
         loaded = loaded,
