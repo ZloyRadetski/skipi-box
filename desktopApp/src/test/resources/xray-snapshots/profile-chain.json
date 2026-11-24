@@ -1,0 +1,148 @@
+{
+  "dns": {
+    "hosts": {
+      "1dot1dot1dot1.cloudflare-dns.com": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "cloudflare-dns.com": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ],
+      "common.dot.dns.yandex.net": [
+        "77.88.8.8",
+        "77.88.8.1"
+      ],
+      "dns.adguard-dns.com": [
+        "94.140.14.14",
+        "94.140.15.15"
+      ],
+      "dns.alidns.com": [
+        "223.5.5.5",
+        "223.6.6.6"
+      ],
+      "dns.google": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ],
+      "dns.quad9.net": [
+        "9.9.9.9",
+        "149.112.112.112"
+      ],
+      "doh.pub": [
+        "1.12.12.12",
+        "120.53.53.53"
+      ],
+      "one.one.one.one": [
+        "1.1.1.1",
+        "1.0.0.1"
+      ]
+    },
+    "queryStrategy": "UseIPv4",
+    "servers": [
+      {
+        "address": "https://1.1.1.1/dns-query",
+        "domains": [
+          "domain:a.example"
+        ],
+        "skipFallback": true,
+        "tag": "dns-direct"
+      },
+      {
+        "address": "https://8.8.8.8/dns-query",
+        "domains": [
+          "domain:a.example"
+        ],
+        "skipFallback": true,
+        "tag": "dns-direct"
+      },
+      "https://8.8.8.8/dns-query"
+    ],
+    "tag": "dns-proxy"
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 20480,
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "ip": "127.0.0.1",
+        "udp": true,
+        "userLevel": 0
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "enabled": true,
+        "routeOnly": true
+      },
+      "tag": "skipi-socks"
+    }
+  ],
+  "log": {
+    "loglevel": "warning"
+  },
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "address": "a.example",
+        "encryption": "none",
+        "id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "raw"
+      },
+      "tag": "skipi-proxy"
+    },
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv4"
+      },
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "inboundTag": [
+          "dns-direct"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "inboundTag": [
+          "dns-proxy"
+        ],
+        "outboundTag": "skipi-proxy"
+      },
+      {
+        "domain": [
+          "geosite:netflix"
+        ],
+        "outboundTag": "Hops"
+      },
+      {
+        "domain": [
+          "geosite:steam"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "network": "tcp,udp",
+        "outboundTag": "skipi-proxy"
+      }
+    ]
+  }
+}
