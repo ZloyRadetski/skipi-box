@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import com.sun.net.httpserver.HttpServer
+import engine.network.decodeRawUtf8HeaderValue
 import java.net.InetSocketAddress
 import kotlin.test.Test
 import kotlin.test.assertEquals

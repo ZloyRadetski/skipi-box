@@ -153,6 +153,30 @@ class AndroidSubscriptionFetcherTest {
     }
 
     @Test
+    fun an_automatic_resource_on_a_loopback_address_is_refused_but_the_typed_root_url_is_not() {
+        withSubscriptionServer { server ->
+            var requests = 0
+            server.createContext("/list") { exchange ->
+                requests += 1
+                exchange.sendResponseHeaders(200, 2)
+                exchange.responseBody.use { it.write("ok".encodeToByteArray()) }
+            }
+            val url = "http://127.0.0.1:${server.address.port}/list"
+            val fetcher = AndroidSubscriptionFetcher("hwid", RecordingAgeCrypto("unused"))
+
+            assertFailsWith<IllegalArgumentException> {
+                runBlocking { fetcher.fetchResponse(url, "agent", AndroidSubscriptionFetchOptions(), automaticResource = true) }
+            }
+            assertEquals(0, requests)
+            assertEquals(
+                "ok",
+                runBlocking { fetcher.fetchResponse(url, "agent", AndroidSubscriptionFetchOptions()) }.body,
+            )
+            assertEquals(1, requests)
+        }
+    }
+
+    @Test
     fun reads_a_response_larger_than_the_old_desktop_body_cap() {
         withSubscriptionServer { server ->
             val body = "x".repeat(8 * 1024 * 1024 + 1)

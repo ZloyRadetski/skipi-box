@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.desktop_subscription_provider_failed
+import engine.network.requireSafeAutomaticSubscriptionResourceUrl
 import engine.network.toBasicAuthHeaderOrNull
 import engine.network.toIdnUrl
 import features.subscription.DefaultSubscriptionUserAgent
