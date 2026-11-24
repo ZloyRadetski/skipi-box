@@ -12,15 +12,7 @@ import kotlinx.serialization.json.Json
  * `uplink` and `downlink` retain the names used by Xray's statistics API;
  * [toTunnelTraffic] maps them to the platform-neutral tunnel contract.
  */
-data class CoreTrafficBytes(
-    val uplink: Long = 0L,
-    val downlink: Long = 0L,
-) {
-    operator fun plus(other: CoreTrafficBytes): CoreTrafficBytes = CoreTrafficBytes(
-        uplink = uplink + other.uplink,
-        downlink = downlink + other.downlink,
-    )
-}
+typealias CoreTrafficBytes = engine.stats.XrayTrafficBytes
 
 /** A process-private traffic snapshot that needs no Xray API listener. */
 data class CoreTrafficSnapshot(

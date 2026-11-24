@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import platform.CoreTrafficBytes
 import platform.CoreTrafficSnapshot
 import platform.aggregateCoreInboundTraffic
 import platform.coreTrafficStatsPollIntervalMillis
@@ -196,7 +195,6 @@ internal object CoreTrafficStatsSampler {
                 consecutiveFailures = 0
                 val inboundTotals = snapshot.inbound
                     .aggregateCoreInboundTraffic(xrayTrafficExcludedInboundTags())
-                    .toXrayTrafficBytes()
                 val previousInbound = previousInboundTotals.aggregateInboundTraffic()
                 val inboundDelta = XrayTrafficBytes(
                     uplink = (inboundTotals.uplink - previousInbound.uplink).coerceAtLeast(0L),
@@ -205,13 +203,12 @@ internal object CoreTrafficStatsSampler {
                 hasMeaningfulTraffic =
                     inboundDelta.uplink + inboundDelta.downlink >= MinimumMeaningfulTrafficDeltaBytes
                 activeOutboundTag = snapshot.outbound
-                    .toXrayTrafficBytes()
                     .maxTrafficDeltaComparedTo(
                         previous = previousOutboundTotals,
                         currentActiveTag = activeOutboundTag,
                     )
-                previousInboundTotals = snapshot.inbound.toXrayTrafficBytes()
-                previousOutboundTotals = snapshot.outbound.toXrayTrafficBytes()
+                previousInboundTotals = snapshot.inbound
+                previousOutboundTotals = snapshot.outbound
                 if (!isCurrent(token)) return
                 mutableSamples.value = CoreTrafficStatsSample(
                     runtime = activeRuntime,
@@ -289,11 +286,3 @@ internal object CoreTrafficStatsSampler {
         val hasDefaultFrequencyConsumer: Boolean,
     )
 }
-
-private fun CoreTrafficBytes.toXrayTrafficBytes(): XrayTrafficBytes = XrayTrafficBytes(
-    uplink = uplink,
-    downlink = downlink,
-)
-
-private fun Map<String, CoreTrafficBytes>.toXrayTrafficBytes(): Map<String, XrayTrafficBytes> =
-    mapValues { (_, bytes) -> bytes.toXrayTrafficBytes() }
