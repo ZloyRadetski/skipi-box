@@ -17,8 +17,11 @@ internal object CustomXrayConfigRewriter {
         if (!server.overrideInboundAndDns) {
             config
         } else {
-            val startupProxyServerDomains = customXrayConfigProxyServerHosts(server.configJson)
-                .startupProxyServerHostDnsDomains()
+            val skipiRouting = request.appState.rawServerSkipiRouting(request.selectedServer, request.dataDir)
+            val startupProxyServerDomains = (
+                customXrayConfigProxyServerHosts(server.configJson) +
+                    skipiRouting?.extras?.invoke(XrayTags.PROXY)?.serverHosts.orEmpty()
+                ).startupProxyServerHostDnsDomains()
             val dnsPlan = request.buildXrayDnsPlan(startupProxyServerDomains)
             rewriteCustomXrayDnsConfig(
                 CustomXrayDnsRewriteRequest(
@@ -32,6 +35,7 @@ internal object CustomXrayConfigRewriter {
                         domainStrategy = request.appState.xrayDirectOutboundDomainStrategy(),
                         appState = request.appState,
                     ),
+                    skipiRouting = skipiRouting,
                 ),
             )
         }

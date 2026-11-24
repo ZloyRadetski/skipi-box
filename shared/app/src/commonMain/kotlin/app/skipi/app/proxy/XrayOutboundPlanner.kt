@@ -35,6 +35,12 @@ data class XrayOutboundPlanningInput(
     val enableFragment: Boolean,
     val subscriptionPingUrl: String,
     val stripLeadingFlag: (String) -> String,
+    /**
+     * Set when [selectedServer] is a raw JSON that keeps its own proxy outbound under this tag. The planner then
+     * adds no outbound for it: `proxy`, and the raw server named by its id, route to that tag, and only the other
+     * servers and groups the rules name become outbounds and balancers.
+     */
+    val rawProxyTag: String? = null,
 )
 
 /** Portable counterpart of Android's live-list Xray outbound planner. */
@@ -55,7 +61,14 @@ object XrayOutboundPlanner {
         private var observatoryProbeTimeout: String? = null
 
         fun build(): XrayOutboundPlan {
-            addRouteTarget(XrayTags.PROXY, input.selectedServer)
+            val rawProxyTag = input.rawProxyTag
+            if (rawProxyTag == null) {
+                addRouteTarget(XrayTags.PROXY, input.selectedServer)
+            } else {
+                val rawTarget = XrayRouteTarget(rawProxyTag, XrayRouteTargetKind.Outbound)
+                routeTargets[XrayTags.PROXY] = rawTarget
+                routeTargets[input.selectedServer.id.toString()] = rawTarget
+            }
             routeTargetServers().forEach { server ->
                 addRouteTarget(server.id.toString(), server)
             }
@@ -92,7 +105,10 @@ object XrayOutboundPlanner {
                 .map { tag -> tag.trim() }
                 .filter { tag -> tag.isNotEmpty() && tag !in XrayTags.FIXED_OUTBOUND_TAGS }
                 .toSet()
-            return input.servers.filter { server -> server.id.toString() in routeOutboundTags }
+            return input.servers.filter { server ->
+                server.id.toString() in routeOutboundTags &&
+                    (input.rawProxyTag == null || server.id != input.selectedServer.id)
+            }
         }
 
         /**

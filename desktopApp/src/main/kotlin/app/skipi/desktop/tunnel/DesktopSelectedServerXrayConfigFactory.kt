@@ -78,7 +78,14 @@ object DesktopSelectedServerXrayConfigFactory {
                         selectedServer,
                         options,
                         answerTunDns = answerTunDns,
-                        skipiRouting = customServerSkipiRouting(profile = null, profileDomainStrategy = null, routing = routing),
+                        skipiRouting = customServerSkipiRouting(
+                            profile = null,
+                            profileDomainStrategy = null,
+                            routing = routing,
+                            rawRoutePlanning = DesktopRawRoutePlanning(
+                                serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId,
+                            ),
+                        ),
                     ),
                 )
             }

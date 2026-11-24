@@ -5,6 +5,8 @@ package app.skipi.desktop
 
 import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.Custom
+import features.proxy.server.model.ProxyServer
+import features.routing.model.RouteRule
 import features.proxy.server.model.encodePersistedProxyServer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -32,7 +34,12 @@ class DesktopCustomOverrideProfileTest {
         }
     """.trimIndent()
 
-    private fun build(profile: String?, rawJson: String = raw): JsonObject {
+    private fun build(
+        profile: String?,
+        rawJson: String = raw,
+        otherServers: List<DesktopStoredProxyServer> = emptyList(),
+        routing: RoutingConfigRecord = RoutingConfigRecord(),
+    ): JsonObject {
         val library = DesktopServerLibrary(
             selectedServerId = 41,
             servers = listOf(
@@ -41,7 +48,7 @@ class DesktopCustomOverrideProfileTest {
                     serverJson = Custom(remarks = "Raw", overrideInboundAndDns = true, configJson = rawJson)
                         .encodePersistedProxyServer(),
                 ),
-            ),
+            ) + otherServers,
         )
         val configs = if (profile == null) {
             DesktopConfigLibrary()
@@ -54,7 +61,7 @@ class DesktopCustomOverrideProfileTest {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = configs,
-            routing = RoutingConfigRecord(),
+            routing = routing,
             options = LocalProxyXrayConfigOptions(socksPort = 20_480),
             trafficConfigContentById = emptyMap(),
             subscriptionPingUrl = "",
@@ -113,6 +120,64 @@ class DesktopCustomOverrideProfileTest {
     }
 
     @Test
+    fun aProfileGroupAndAnotherServerBecomeRealOutboundsOfTheRawConfig() {
+        fun vless(id: Int, host: String, name: String) = DesktopStoredProxyServer(
+            id = id,
+            serverJson = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@$host:443#$name")
+                .encodePersistedProxyServer(),
+        )
+        val root = build(
+            GROUP_PROFILE,
+            rawJson = RAW_WITH_OWN_ROUTING,
+            otherServers = listOf(vless(1, "a.example", "Alpha"), vless(2, "b.example", "Beta")),
+        )
+        val routing = root.getValue("routing").jsonObject
+        val rules = routing.getValue("rules").jsonArray.map { it.jsonObject }
+        val tags = root.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
+
+        // The raw server's own outbound stays the default (first); the group's members and Beta join it.
+        assertEquals("my-proxy", tags.first())
+        assertEquals(setOf("skipi-group-member-1-1", "skipi-group-member-1-2", "skipi-server-2"), tags.filter { it.startsWith("skipi-") }.toSet())
+        assertEquals(listOf("skipi-group-1"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
+        val google = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:google" } == true }
+        assertEquals("skipi-group-1", google.getValue("balancerTag").jsonPrimitive.content)
+        val steam = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:steam" } == true }
+        assertEquals("skipi-server-2", steam.getValue("outboundTag").jsonPrimitive.content)
+        // The raw server itself, named by its remarks, and PROXY keep going to its own outbound.
+        val raw = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:claude" } == true }
+        assertEquals("my-proxy", raw.getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("my-proxy", rules.last().getValue("outboundTag").jsonPrimitive.content)
+        assertEquals(
+            listOf("skipi-group-member-1-"),
+            root.getValue("observatory").jsonObject.getValue("subjectSelector").jsonArray.map { it.jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun globalRulesMayNameAnotherServerOfTheLibrary() {
+        val beta = DesktopStoredProxyServer(
+            id = 2,
+            serverJson = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@b.example:443#Beta")
+                .encodePersistedProxyServer(),
+        )
+        val root = build(
+            profile = null,
+            rawJson = RAW_WITH_OWN_ROUTING,
+            otherServers = listOf(beta),
+            routing = RoutingConfigRecord(
+                rules = listOf(RouteRule(id = 1, domain = listOf("geosite:steam"), outboundTag = "2")),
+            ),
+        )
+        val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
+        val tags = root.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
+
+        assertEquals("my-proxy", tags.first())
+        assertEquals(true, "2" in tags)
+        assertEquals("2", rules.first { rule -> rule["domain"] != null }.getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("my-proxy", rules.last().getValue("outboundTag").jsonPrimitive.content)
+    }
+
+    @Test
     fun withoutProfileRulesTheRawRoutingStaysWhenTheGlobalRoutingIsEmpty() {
         val root = build(null, rawJson = RAW_WITH_OWN_ROUTING)
         val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
@@ -131,6 +196,17 @@ class DesktopCustomOverrideProfileTest {
                 {"domain": ["domain:ru"], "outboundTag": "direct"}
               ]}
             }
+        """.trimIndent()
+
+        val GROUP_PROFILE = """
+            [Proxy Group]
+            Fast = url-test, Alpha, Beta, url=https://example.com/ping, interval=60
+
+            [Rule]
+            DOMAIN-SET,geosite:google,Fast
+            DOMAIN-SET,geosite:steam,Beta
+            DOMAIN-SET,geosite:claude,Raw
+            FINAL,PROXY
         """.trimIndent()
 
         val ROUTING_PROFILE = """

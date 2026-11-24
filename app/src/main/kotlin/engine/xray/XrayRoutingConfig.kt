@@ -26,17 +26,19 @@ internal fun AppState.buildXrayRoutingPlan(
         routeDirectDns = routeDirectDns,
         dnsHijackInboundTags = dnsHijackInboundTags,
     ),
-    ruleValidator = object : XrayRoutingRuleValidator {
-        override fun isDomainRuleValid(rule: String): Boolean =
-            XrayGeoRuleSanitizer.isDomainRuleValid(rule, dataDir)
-
-        override fun isIpRuleValid(rule: String): Boolean =
-            XrayGeoRuleSanitizer.isIpRuleValid(rule, dataDir)
-
-        override fun filterValidDomainRules(rules: List<String>): List<String> =
-            XrayGeoRuleSanitizer.filterValidDomainRules(rules, dataDir)
-
-        override fun filterValidIpRules(rules: List<String>): List<String> =
-            XrayGeoRuleSanitizer.filterValidIpRules(rules, dataDir)
-    },
+    ruleValidator = xrayRoutingRuleValidator(dataDir),
 )
+
+internal fun xrayRoutingRuleValidator(dataDir: String?): XrayRoutingRuleValidator = object : XrayRoutingRuleValidator {
+    override fun isDomainRuleValid(rule: String): Boolean =
+        XrayGeoRuleSanitizer.isDomainRuleValid(rule, dataDir)
+
+    override fun isIpRuleValid(rule: String): Boolean =
+        XrayGeoRuleSanitizer.isIpRuleValid(rule, dataDir)
+
+    override fun filterValidDomainRules(rules: List<String>): List<String> =
+        XrayGeoRuleSanitizer.filterValidDomainRules(rules, dataDir)
+
+    override fun filterValidIpRules(rules: List<String>): List<String> =
+        XrayGeoRuleSanitizer.filterValidIpRules(rules, dataDir)
+}

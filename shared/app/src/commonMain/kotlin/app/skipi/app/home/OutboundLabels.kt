@@ -18,6 +18,13 @@ data class OutboundLabels(
     val selectedName: String?,
 ) {
     fun label(tag: String): String {
+        ProfileServerTag.matchEntire(tag)?.let { match ->
+            return serverNames[match.groupValues[1].toIntOrNull()] ?: tag
+        }
+        ProfileGroupMemberTag.matchEntire(tag)?.let { match ->
+            val server = serverNames[match.groupValues[2].toIntOrNull()] ?: return tag
+            return "$ProfileGroupLabel - $server"
+        }
         val member = MemberTag.matchEntire(tag)
         if (member != null) {
             val group = groupName(member.groupValues[1]) ?: return tag
@@ -33,5 +40,9 @@ data class OutboundLabels(
 
     private companion object {
         val MemberTag = Regex("""(.+)-policy-(\d+)""")
+        // A profile's servers and groups (TrafficProfileXrayPlanner); the group's own name is not in the tag.
+        val ProfileServerTag = Regex("""skipi-server-(\d+)""")
+        val ProfileGroupMemberTag = Regex("""skipi-group-member-(\d+)-(\d+)""")
+        const val ProfileGroupLabel = "Balancer"
     }
 }

@@ -40,4 +40,11 @@ class OutboundLabelsTest {
         assertEquals("100-policy-9", labels.label("100-policy-9"))
         assertEquals("default", labels.label("default"))
     }
+
+    @Test
+    fun aProfilesServerAndBalancerMemberAreNamedToo() {
+        assertEquals("Frankfurt", labels.label("skipi-server-20"))
+        assertEquals("Balancer - Frankfurt", labels.label("skipi-group-member-2-20"))
+        assertEquals("skipi-group-member-2-9", labels.label("skipi-group-member-2-9"))
+    }
 }

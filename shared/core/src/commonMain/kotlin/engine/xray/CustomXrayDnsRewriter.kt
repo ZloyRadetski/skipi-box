@@ -27,6 +27,20 @@ data class CustomXrayDnsRewriteRequest(
 class CustomSkipiRouting(
     val domainStrategy: String?,
     val rules: (proxyOutboundTag: String) -> List<JsonObject>,
+    /** The outbounds, balancers and health checks [rules] refer to besides the server's own proxy outbound. */
+    val extras: (proxyOutboundTag: String) -> CustomSkipiExtras = { CustomSkipiExtras() },
+)
+
+/**
+ * What a profile adds to a raw server so that its other servers and groups can be routed to: [outbounds] join the
+ * server's own, [balancers] go into its routing, and [observatory] probes the members the balancers pick from.
+ */
+class CustomSkipiExtras(
+    val outbounds: List<JsonObject> = emptyList(),
+    val balancers: List<JsonObject> = emptyList(),
+    val observatory: JsonObject? = null,
+    /** Hosts of the servers behind [outbounds], resolved before the tunnel is up like the server's own. */
+    val serverHosts: List<String> = emptyList(),
 )
 
 /**
@@ -53,10 +67,13 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
     // SKIPI's rules may send traffic to "block"; a raw server does not always carry that outbound.
     val skipiRulesNeedBlock = request.skipiRouting != null && outboundsRewrite.proxyOutboundTag != null &&
         outboundsRewrite.outbounds.none { (it as? JsonObject)?.stringValue("tag") == XrayTags.BLOCK }
-    val outbounds = if (skipiRulesNeedBlock) {
+    val extras = request.skipiRouting?.takeIf { outboundsRewrite.proxyOutboundTag != null }
+        ?.extras?.invoke(outboundsRewrite.proxyOutboundTag!!)
+    val outbounds = if (skipiRulesNeedBlock || extras?.outbounds?.isNotEmpty() == true) {
         buildJsonArray {
             outboundsRewrite.outbounds.forEach(::add)
-            add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
+            if (skipiRulesNeedBlock) add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
+            extras?.outbounds?.forEach(::add)
         }
     } else {
         outboundsRewrite.outbounds
@@ -69,7 +86,8 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         put("dns", buildXrayDnsConfig(request.dnsPlan))
         putIfNotNull("fakeDns", request.dnsPlan.fakeDns)
         put("outbounds", outbounds)
-        put("routing", routing)
+        put("routing", if (extras == null || extras.balancers.isEmpty()) routing else routing.withBalancers(extras.balancers))
+        extras?.observatory?.let { probe -> put("observatory", request.config.objectValue("observatory").mergedObservatory(probe)) }
     }
 }
 
@@ -78,6 +96,25 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
  * controls. An imported profile is untrusted input, so they are dropped.
  */
 private val UntrustedCustomTopLevelKeys = setOf("api", "metrics", "reverse")
+
+/** [added] after the balancers the JSON already has, which keep their tags. */
+private fun JsonObject.withBalancers(added: List<JsonObject>): JsonObject {
+    val own = arrayValue("balancers")?.mapNotNull { it as? JsonObject }.orEmpty()
+    val ownTags = own.mapNotNull { it.stringValue("tag") }.toSet()
+    return updated {
+        put("balancers", buildJsonArray {
+            own.forEach(::add)
+            added.filter { it.stringValue("tag") !in ownTags }.forEach(::add)
+        })
+    }
+}
+
+/** The JSON's own observatory keeps its settings and also probes [added]'s subjects. */
+private fun JsonObject?.mergedObservatory(added: JsonObject): JsonObject {
+    if (this == null) return added
+    val subjects = (arrayValue("subjectSelector").orEmpty() + added.arrayValue("subjectSelector").orEmpty()).distinct()
+    return updated { put("subjectSelector", JsonArray(subjects)) }
+}
 
 private data class CustomOutboundsRewrite(
     val outbounds: JsonArray,

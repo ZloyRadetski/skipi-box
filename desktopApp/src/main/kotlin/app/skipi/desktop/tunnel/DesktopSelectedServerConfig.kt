@@ -17,7 +17,22 @@ import engine.xray.XrayRouteTargetKind
 import engine.xray.XrayRoutingRequest
 import engine.xray.planXrayRouting
 import engine.xray.toXrayRoutingDomainStrategy
-import engine.xray.trafficProfileRulesForRawServer
+import app.skipi.app.proxy.ProxyServerRow
+import app.skipi.app.proxy.XrayOutboundPlanningInput
+import app.skipi.app.proxy.rawServerSkipiRouting
+import engine.xray.CustomSkipiExtras
+import features.proxy.server.model.stripLeadingCountryFlag
+import engine.xray.TrafficProfileServerRecord
+import engine.xray.TrafficProfileXrayPlan
+import engine.xray.TrafficProfileXrayPlanner
+import engine.xray.XrayOutboundTransportOptions
+import engine.xray.buildXrayBalancers
+import engine.xray.buildXrayObservatory
+import engine.xray.withXrayProxyOutboundTransport
+import engine.xray.xrayWireguardDomainStrategy
+import features.config.TrafficConfigReference
+import features.proxy.server.model.AmneziaWg
+import features.proxy.server.model.serverHost
 import engine.xray.buildFreedomOutbound
 import engine.xray.rewriteCustomXrayDnsConfig
 import engine.xray.xrayDirectOutboundDomainStrategy
@@ -101,12 +116,13 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     val profileRuntime = configLibrary.activeProfileRuntime()
     val effectiveTunDns = profileRuntime.tunVpnDnsOr(tunVpnDns)
     if (selectedServer is Custom) {
+        val dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns)
         return checkNotNull(selectedServerResult).mapCatching {
             DesktopGeneratedXrayConfig(
                 buildDesktopCustomXrayConfig(
                     server = selectedServer,
                     options = options,
-                    dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns),
+                    dnsInputs = dnsInputs,
                     sniffing = profileRuntime?.sniffingOptions(),
                     strictFullTunnel = strictFullTunnel,
                     answerTunDns = answerTunDns,
@@ -114,6 +130,20 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                         profile = configLibrary.activeProfile,
                         profileDomainStrategy = profileRuntime?.settings?.routeDomainStrategy,
                         routing = routing,
+                        profileServers = {
+                            serverLibrary.servers.mapNotNull { stored ->
+                                stored.decode().getOrNull()?.let { server -> TrafficProfileServerRecord(stored.id, server) }
+                            }
+                        },
+                        profileConfigs = configLibrary.configs.map { config -> TrafficConfigReference(config.id, config.content) },
+                        rawRoutePlanning = DesktopRawRoutePlanning(serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId),
+                        transport = options.tcpSockopt?.let { sockopt ->
+                            XrayOutboundTransportOptions(
+                                directDomainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                                wireguardDomainStrategy = xrayWireguardDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                                tcpSockopt = sockopt,
+                            )
+                        },
                     ),
                 ),
             )
@@ -213,8 +243,10 @@ internal fun buildDesktopCustomXrayConfig(
     val config = if (server.overrideInboundAndDns) {
         val dnsPlan = planDesktopXrayDns(
             inputs = dnsInputs,
-            startupProxyServerDomains = customXrayConfigProxyServerHosts(server.configJson)
-                .startupProxyServerHostDnsDomains(),
+            startupProxyServerDomains = (
+                customXrayConfigProxyServerHosts(server.configJson) +
+                    skipiRouting?.extras?.invoke(XrayTags.PROXY)?.serverHosts.orEmpty()
+                ).startupProxyServerHostDnsDomains(),
             ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
         )
         rewriteCustomXrayDnsConfig(
@@ -256,44 +288,96 @@ internal fun DesktopServerLibrary.selectedServerJsonAuth(): LocalProxyJsonAuth? 
     return (selected as? Custom)?.let { custom -> LocalProxyAuth.readJsonAuth(custom.configJson) }
 }
 
+/** The server list and settings the global routing rules are planned from when the selected server is a raw JSON. */
+internal class DesktopRawRoutePlanning(
+    private val serverLibrary: DesktopServerLibrary,
+    private val trafficConfigContentById: Map<Int, String>,
+    private val subscriptionPingUrl: String,
+    private val latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+) {
+    fun input(routing: RoutingConfigRecord): XrayOutboundPlanningInput {
+        val rows = serverLibrary.servers.mapNotNull { stored ->
+            stored.decode().getOrNull()?.let { server ->
+                ProxyServerRow(
+                    id = stored.id,
+                    groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                    server = server,
+                    latency = latencyByServerId[stored.id].toPlannerLatency(),
+                )
+            }
+        }
+        return XrayOutboundPlanningInput(
+            selectedServer = rows.first { row -> row.id == serverLibrary.selectedServerId },
+            servers = rows,
+            routeRules = routing.rules,
+            defaultRouteOutboundTag = routing.defaultOutboundTag,
+            shadowrocketPolicyGroups = emptyList(),
+            trafficConfigContentById = trafficConfigContentById,
+            enableLocalDns = false,
+            enableFragment = false,
+            subscriptionPingUrl = subscriptionPingUrl,
+            stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
+        )
+    }
+}
+
 /**
  * The routing SKIPI puts in a raw server that overrides inbound and DNS: the active profile's rules, or the
  * global routing rules when there is no profile. With neither, the JSON keeps the routing it came with.
+ *
+ * A profile may send traffic to other servers and to proxy groups. They are added to the raw config next to its own
+ * proxy outbound ([profileServers] are the servers they are taken from), so a balancer is a balancer here too; what
+ * names the raw server itself, or nothing known, goes to its own outbound.
  */
 internal fun customServerSkipiRouting(
     profile: DesktopStoredConfig?,
     profileDomainStrategy: Int?,
     routing: RoutingConfigRecord,
+    profileServers: () -> List<TrafficProfileServerRecord> = { emptyList() },
+    profileConfigs: List<TrafficConfigReference> = emptyList(),
+    transport: XrayOutboundTransportOptions? = null,
+    /** What the global rules need to name other servers and groups; without it they only reach the raw server. */
+    rawRoutePlanning: DesktopRawRoutePlanning? = null,
 ): CustomSkipiRouting? = when {
-    profile != null -> CustomSkipiRouting(
-        domainStrategy = profileDomainStrategy?.toXrayRoutingDomainStrategy(),
-        rules = { proxyTag ->
-            trafficProfileRulesForRawServer(profile.content, proxyTag, DesktopTrafficProfileXrayCapabilities)
-        },
-    )
-
-    routing.rules.any { rule -> rule.enabled } -> CustomSkipiRouting(
-        domainStrategy = routing.domainStrategy.toXrayRoutingDomainStrategy(),
-        rules = { proxyTag ->
-            planXrayRouting(
-                request = XrayRoutingRequest(
-                    routeDomainStrategy = routing.domainStrategy,
-                    routeRules = routing.rules,
-                    defaultRouteOutboundTag = routing.defaultOutboundTag,
-                    routeTargets = mapOf(
-                        XrayTags.PROXY to XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound),
-                        XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound),
-                        XrayTags.BLOCK to XrayRouteTarget(XrayTags.BLOCK, XrayRouteTargetKind.Outbound),
+    profile != null -> {
+        // The rules and what they need come from one plan; it is made once per proxy tag.
+        val plans = HashMap<String, TrafficProfileXrayPlan>()
+        fun planFor(proxyTag: String) = plans.getOrPut(proxyTag) {
+            TrafficProfileXrayPlanner.plan(
+                profileContent = profile.content,
+                servers = profileServers().filterNot { record -> record.server is AmneziaWg },
+                selectedServerId = null,
+                capabilities = DesktopTrafficProfileXrayCapabilities,
+                configs = profileConfigs,
+                rawProxyTag = proxyTag,
+            )
+        }
+        CustomSkipiRouting(
+            domainStrategy = profileDomainStrategy?.toXrayRoutingDomainStrategy(),
+            rules = { proxyTag -> planFor(proxyTag).routingRules },
+            extras = { proxyTag ->
+                val plan = planFor(proxyTag)
+                CustomSkipiExtras(
+                    outbounds = plan.proxyOutbounds.map { outbound ->
+                        transport?.let(outbound::withXrayProxyOutboundTransport) ?: outbound
+                    },
+                    balancers = buildXrayBalancers(plan.balancers),
+                    observatory = buildXrayObservatory(
+                        selectors = plan.observatorySelectors,
+                        probeUrl = plan.observatoryUrl,
+                        probeInterval = plan.observatoryInterval,
                     ),
-                    balancers = emptyList(),
-                    enableLocalDns = false,
-                    routeProxyDns = false,
-                    routeDirectDns = false,
-                    dnsHijackInboundTags = emptyList(),
-                ),
-                ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
-            ).rules.map { rule -> rule as JsonObject }
-        },
+                    serverHosts = plan.proxyServers.map { server -> server.serverHost() },
+                )
+            },
+        )
+    }
+
+    routing.rules.any { rule -> rule.enabled } && rawRoutePlanning != null -> rawServerSkipiRouting(
+        input = rawRoutePlanning.input(routing),
+        routeDomainStrategy = routing.domainStrategy,
+        transport = transport,
+        ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
     )
 
     else -> null

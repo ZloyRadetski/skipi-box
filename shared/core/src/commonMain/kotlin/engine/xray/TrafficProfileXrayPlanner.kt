@@ -40,7 +40,8 @@ data class TrafficProfileXrayCapabilities(
 
 data class TrafficProfileXrayPlan(
     val analysis: ShadowrocketConfigAnalysis,
-    val selectedServer: TrafficProfileServerRecord,
+    /** Null for a raw server, whose own proxy outbound is [TrafficProfileXrayPlanner.plan]'s `rawProxyTag`. */
+    val selectedServer: TrafficProfileServerRecord?,
     val proxyOutbounds: List<JsonObject>,
     /** Servers behind [proxyOutbounds], used for DNS bootstrap domains. */
     val proxyServers: List<ProxyServer<*>>,
@@ -61,18 +62,30 @@ object TrafficProfileXrayPlanner {
         configs: List<TrafficConfigReference> = emptyList(),
         /** Android's strict full tunnel: Direct rules are switched off and a Direct FINAL goes to the proxy. */
         strictFullTunnel: Boolean = false,
+        /**
+         * Set when the selected server is a raw JSON that keeps its own proxy outbound under this tag: PROXY and
+         * every policy that names that server go to it, and [TrafficProfileXrayPlan.proxyOutbounds] holds only the
+         * other servers and groups the profile names. Without it the selected server becomes `skipi-proxy`.
+         */
+        rawProxyTag: String? = null,
     ): TrafficProfileXrayPlan {
         val analysis = profileContent.analyzeShadowrocketConfig()
         analysis.diagnostics.firstOrNull { it.severity.name == "Error" }?.let { diagnostic ->
             error("Active profile has an error: ${diagnostic.message}")
         }
-        val selected = selectedServerId?.let { id -> servers.firstOrNull { it.id == id } }
-            ?: error("Select a server before connecting")
-        require(selected.server.isTrafficProfileUsable()) {
-            "Selected server '${selected.server.getInfo().remarks.trim()}' cannot be used with a traffic profile"
-        }
-        require(selected.server.validateFull().isEmpty()) {
-            "Selected server '${selected.server.getInfo().remarks.trim()}' is invalid"
+        val proxyTag = rawProxyTag ?: ProfileProxyTag
+        val selected = if (rawProxyTag != null) {
+            null
+        } else {
+            (selectedServerId?.let { id -> servers.firstOrNull { it.id == id } }
+                ?: error("Select a server before connecting")).also { chosen ->
+                require(chosen.server.isTrafficProfileUsable()) {
+                    "Selected server '${chosen.server.getInfo().remarks.trim()}' cannot be used with a traffic profile"
+                }
+                require(chosen.server.validateFull().isEmpty()) {
+                    "Selected server '${chosen.server.getInfo().remarks.trim()}' is invalid"
+                }
+            }
         }
 
         val usableServers = servers.filter { record -> record.server.isTrafficProfileUsable() }
@@ -88,7 +101,7 @@ object TrafficProfileXrayPlanner {
         val proxyOutbounds = mutableListOf<JsonObject>()
         val proxyServers = mutableListOf<ProxyServer<*>>()
         fun outboundTagFor(candidate: TrafficProfileServerRecord): String =
-            if (candidate.id == selected.id) ProfileProxyTag else "$ProfileServerTagPrefix${candidate.id}"
+            if (candidate.id == selected?.id) ProfileProxyTag else "$ProfileServerTagPrefix${candidate.id}"
         fun addOutbound(candidate: TrafficProfileServerRecord, tag: String) {
             if (addedOutboundTags.add(tag)) {
                 proxyOutbounds += candidate.server.toXrayOutbound(tag).toJsonObject()
@@ -101,7 +114,7 @@ object TrafficProfileXrayPlanner {
             return XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
         }
 
-        addOutbound(selected, ProfileProxyTag)
+        selected?.let { chosen -> addOutbound(chosen, ProfileProxyTag) }
         val builtGroupTargets = mutableMapOf<String, XrayRouteTarget>()
         val buildingGroups = mutableSetOf<String>()
         val balancers = mutableListOf<XrayBalancerPlan>()
@@ -142,6 +155,9 @@ object TrafficProfileXrayPlanner {
             check(buildingGroups.add(groupKey)) { "Proxy groups form a cycle at '${group.name}'" }
             try {
                 val members = membersFor(group, policyGroups, namespace)
+                if (members.isEmpty() && rawProxyTag != null) {
+                    return XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound).also { builtGroupTargets[groupKey] = it }
+                }
                 check(members.isNotEmpty()) { "Proxy group '${group.name}' has no matching local servers" }
                 val target = when (group.type.trim().lowercase()) {
                     "select" -> normalTarget(members.first())
@@ -189,7 +205,7 @@ object TrafficProfileXrayPlanner {
             }[normalized.lowercase()]
                 ?.let { group -> return groupTarget(group, policyGroups, namespace) }
             when {
-                normalized.equals("PROXY", ignoreCase = true) -> return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                normalized.equals("PROXY", ignoreCase = true) -> return XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
                 normalized.equals("DIRECT", ignoreCase = true) -> return XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
                 normalized.equals("BLOCK", ignoreCase = true) || normalized.startsWith("REJECT", ignoreCase = true) -> {
                     return XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
@@ -204,7 +220,7 @@ object TrafficProfileXrayPlanner {
                     }
                     val finalRule = referencedAnalysis?.rules?.lastOrNull(ShadowrocketRule::isFinal)
                     if (referencedAnalysis == null || finalRule == null) {
-                        return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                        return XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
                     }
                     return policyTarget(
                         policy = finalRule.policy,
@@ -218,10 +234,12 @@ object TrafficProfileXrayPlanner {
                 ?.let(::normalTarget)?.let { return it }
             val tag = normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
             return when {
-                tag.equals("PROXY", ignoreCase = true) -> XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                tag.equals("PROXY", ignoreCase = true) -> XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
                 tag.equals("DIRECT", ignoreCase = true) -> XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
                 tag.equals("BLOCK", ignoreCase = true) || tag.startsWith("REJECT", ignoreCase = true) ->
                     XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
+                // A raw server has no other outbound to name: what the profile calls by anything else is its proxy.
+                rawProxyTag != null -> XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
                 else -> XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
             }
         }
@@ -233,9 +251,9 @@ object TrafficProfileXrayPlanner {
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
                 ?.let { rule -> policyTarget(rule.policy) }
-                ?: XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                ?: XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
             val effectiveFinalTarget = if (strictFullTunnel && finalTarget.isDirect()) {
-                XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
             } else {
                 finalTarget
             }
@@ -253,40 +271,6 @@ object TrafficProfileXrayPlanner {
             observatoryUrl = observatoryUrl,
             observatoryInterval = observatoryInterval,
         )
-    }
-}
-
-/**
- * The rules of [profileContent] for a raw server that keeps its own proxy outbound, [proxyTag]. Direct and
- * block policies keep their meaning; every other policy (a proxy group or a server name) goes to that outbound,
- * the only one a raw server has. FINAL closes the list, as in a generated profile.
- */
-fun trafficProfileRulesForRawServer(
-    profileContent: String,
-    proxyTag: String,
-    capabilities: TrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(),
-): List<JsonObject> {
-    val analysis = profileContent.analyzeShadowrocketConfig()
-    analysis.diagnostics.firstOrNull { it.severity.name == "Error" }?.let { diagnostic ->
-        error("Active profile has an error: ${diagnostic.message}")
-    }
-    fun target(policy: String): XrayRouteTarget {
-        val normalized = policy.trim()
-        return when {
-            normalized.equals("DIRECT", ignoreCase = true) -> XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
-            normalized.equals("BLOCK", ignoreCase = true) || normalized.startsWith("REJECT", ignoreCase = true) ->
-                XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
-            else -> XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
-        }
-    }
-    return buildList {
-        analysis.rules.filterNot(ShadowrocketRule::isFinal)
-            .flatMap { rule -> rule.toTrafficProfileXrayRules(::target, capabilities) }
-            .forEach(::add)
-        val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
-            ?.let { rule -> target(rule.policy) }
-            ?: XrayRouteTarget(proxyTag, XrayRouteTargetKind.Outbound)
-        add(finalTarget.toFinalTrafficProfileRule())
     }
 }
 
