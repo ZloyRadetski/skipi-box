@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import app.AppState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
@@ -20,8 +19,6 @@ import app.R
 import app.collectAppState
 import app.navigation.Route
 import app.navigation.RouteOutboundSelectionResult
-import app.skipi.app.config.TrafficConfigEditorController
-import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.ui.config.SkipiTrafficConfigRuleEditorPage
 import app.skipi.ui.config.SkipiTrafficConfigRulesEditorScreen
 import app.skipi.ui.config.rememberSkipiTrafficConfigRuleEditorState
@@ -44,7 +41,7 @@ internal fun TrafficConfigRulesPage(
         navigator.pop()
         return
     }
-    val editor = rememberTrafficConfigRuleEditorController(updateAppState)
+    val editor = rememberTrafficConfigEditorController(updateAppState)
     val hapticFeedback = LocalHapticFeedback.current
 
     SkipiTrafficConfigRulesEditorScreen(
@@ -111,7 +108,7 @@ fun TrafficConfigRuleEditorPage(
         }
     }
 
-    val editor = rememberTrafficConfigRuleEditorController(updateAppState)
+    val editor = rememberTrafficConfigEditorController(updateAppState)
     val back = { navigator.pop() }
 
     SkipiTrafficConfigRuleEditorPage(
@@ -137,26 +134,6 @@ fun TrafficConfigRuleEditorPage(
         geoIpSuggestions = geoIpSuggestions,
         ruleSetSuggestions = ruleSetSuggestions,
         platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
-    )
-}
-
-@Composable
-private fun rememberTrafficConfigRuleEditorController(
-    updateAppState: ((AppState) -> AppState) -> Unit,
-): TrafficConfigEditorController = remember(updateAppState) {
-    TrafficConfigEditorController(
-        TrafficConfigEditorProfileStore { profileId, transform ->
-            var found = false
-            updateAppState { state ->
-                if (state.trafficConfigs.none { it.id == profileId }) {
-                    state
-                } else {
-                    found = true
-                    state.withUpdatedTrafficConfig(profileId, transform)
-                }
-            }
-            found
-        },
     )
 }
 

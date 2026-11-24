@@ -16,8 +16,6 @@ import app.LocalUpdateAppState
 import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
-import app.skipi.app.config.TrafficConfigEditorController
-import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroupsEditorScreen
 
 /** Full-screen editor for standard Shadowrocket [Proxy Group] aliases. */
@@ -30,7 +28,7 @@ internal fun TrafficConfigProxyGroupsPage(
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
-    val editor = rememberTrafficConfigProxyGroupEditorController(updateAppState)
+    val editor = rememberTrafficConfigEditorController(updateAppState)
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run {
         navigator.pop()
         return
@@ -155,7 +153,7 @@ internal fun HomeProfileProxyGroupEditResultHandler() {
     val stateStore = LocalAppStateStore.current
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
-    val editor = rememberTrafficConfigProxyGroupEditorController(updateAppState)
+    val editor = rememberTrafficConfigEditorController(updateAppState)
     LaunchedEffect(navigator, editor) {
         navigator.observeResult<ProxyServerEditResult>(HomeConfigProxyGroupEditResultKey).collect { result ->
             navigator.clearResult(HomeConfigProxyGroupEditResultKey)
@@ -167,22 +165,3 @@ internal fun HomeProfileProxyGroupEditResultHandler() {
     }
 }
 
-@Composable
-private fun rememberTrafficConfigProxyGroupEditorController(
-    updateAppState: ((AppState) -> AppState) -> Unit,
-): TrafficConfigEditorController = remember(updateAppState) {
-    TrafficConfigEditorController(
-        TrafficConfigEditorProfileStore { profileId, transform ->
-            var found = false
-            updateAppState { state ->
-                if (state.trafficConfigs.none { it.id == profileId }) {
-                    state
-                } else {
-                    found = true
-                    state.withUpdatedTrafficConfig(profileId, transform)
-                }
-            }
-            found
-        },
-    )
-}
