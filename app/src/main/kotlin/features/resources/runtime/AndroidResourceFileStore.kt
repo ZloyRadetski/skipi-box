@@ -261,28 +261,14 @@ internal fun writeAtomically(
     target: File,
     write: (java.io.OutputStream) -> Unit,
 ) {
-    val parent = target.parentFile ?: error("Parent directory is unavailable for ${target.absolutePath}")
-    parent.mkdirs()
-    withResourceFileWriteLock(target) {
-        val tempPrefix = "${target.name}.".let { prefix ->
-            if (prefix.length >= 3) prefix else prefix.padEnd(3, '_')
-        }
-        val tempFile = File.createTempFile(tempPrefix, ".tmp", parent)
-        try {
-            tempFile.outputStream().use(write)
-            if (tempFile.length() <= 0) {
-                tempFile.delete()
-                error("${target.name} is empty")
-            }
-            // POSIX rename replaces the old entry atomically.  Deleting the
-            // target first made Xray occasionally observe a missing geo file
-            // while a profile update was finishing.
-            Os.rename(tempFile.absolutePath, target.absolutePath)
-        } catch (error: Throwable) {
-            tempFile.delete()
-            throw error
-        }
-    }
+    // POSIX rename replaces the old entry atomically.  Deleting the target
+    // first made Xray occasionally observe a missing geo file while a
+    // profile update was finishing.  Files.move needs API 26 (minSdk is 24).
+    writeResourceFileAtomically(
+        target,
+        replace = { source, destination -> Os.rename(source.absolutePath, destination.absolutePath) },
+        write = write,
+    )
 }
 
 private fun ResourceFileKind.applyPermissions(file: File) {
