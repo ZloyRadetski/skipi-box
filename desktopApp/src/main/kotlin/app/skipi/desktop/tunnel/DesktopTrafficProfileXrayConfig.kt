@@ -11,7 +11,7 @@ import engine.xray.buildXrayDnsConfig
 import engine.xray.buildXrayDnsHijackRule
 import engine.xray.buildXrayDnsOutbound
 import engine.xray.startupProxyServerHostDnsDomains
-import features.proxy.server.model.serverHost
+import features.proxy.server.model.bootstrapHosts
 import engine.xray.XraySniffingOptions
 import platform.withSniffing
 import engine.xray.XrayFragmentOutboundOptions
@@ -125,7 +125,7 @@ object DesktopTrafficProfileXrayConfigFactory {
         val runtimePlan = profileRuntime.plan
         val dnsPlan = planDesktopXrayDns(
             inputs = profileRuntime.toDnsInputs(),
-            startupProxyServerDomains = plan.proxyServers.mapNotNull { it.serverHost() }.startupProxyServerHostDnsDomains(),
+            startupProxyServerDomains = plan.proxyServers.flatMap { it.bootstrapHosts() }.startupProxyServerHostDnsDomains(),
             ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
         )
         val ipv6Enabled = runtimePlan.enableIpv6

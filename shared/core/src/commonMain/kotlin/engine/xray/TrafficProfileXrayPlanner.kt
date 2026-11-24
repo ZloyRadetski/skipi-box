@@ -11,6 +11,8 @@ import features.config.analyzeShadowrocketConfig
 import features.config.convertToXrayRouteRules
 import features.config.logicalLeaves
 import features.proxy.server.model.Custom
+import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import features.proxy.server.model.customXrayConfigPrimaryProxyOutbound
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.isCompositeProxyServer
@@ -88,7 +90,10 @@ object TrafficProfileXrayPlanner {
             }
         }
 
-        val usableServers = servers.filter { record -> record.server.isTrafficProfileUsable() }
+        // A raw server that is itself selected is the proxy: it never joins as another outbound of its own.
+        val usableServers = servers.filter { record ->
+            record.server.isTrafficProfileUsable() && !(rawProxyTag != null && record.id == selectedServerId)
+        }
         // Rule-by-rule lookups would otherwise rescan every server and group (and re-parse every referenced
         // CONFIG profile) for each rule. First match wins, as the linear scans it replaces.
         val usableServersByRemarks = HashMap<String, TrafficProfileServerRecord>().also { index ->
@@ -104,7 +109,9 @@ object TrafficProfileXrayPlanner {
             if (candidate.id == selected?.id) ProfileProxyTag else "$ProfileServerTagPrefix${candidate.id}"
         fun addOutbound(candidate: TrafficProfileServerRecord, tag: String) {
             if (addedOutboundTags.add(tag)) {
-                proxyOutbounds += candidate.server.toXrayOutbound(tag).toJsonObject()
+                proxyOutbounds += (candidate.server as? Custom)
+                    ?.let { custom -> customXrayConfigPrimaryProxyOutbound(custom.configJson)?.updated { put("tag", tag) } }
+                    ?: candidate.server.toXrayOutbound(tag).toJsonObject()
                 proxyServers += candidate.server
             }
         }
@@ -280,8 +287,9 @@ private fun JsonObject.isDirectRule(): Boolean =
 private fun XrayRouteTarget.isDirect(): Boolean =
     kind == XrayRouteTargetKind.Outbound && tag.trim().equals(DirectTag, ignoreCase = true)
 
+/** A raw JSON server takes part through its primary proxy outbound, when it has one. */
 private fun ProxyServer<*>.isTrafficProfileUsable(): Boolean =
-    this !is Custom && this !is StrategyGroup && !isCompositeProxyServer()
+    (this !is Custom || canBeUsedInGeneratedProxyPlan()) && this !is StrategyGroup && !isCompositeProxyServer()
 
 private fun XrayRouteTarget.toFinalTrafficProfileRule(): JsonObject = buildJsonObject {
     put("network", "tcp,udp")

@@ -49,6 +49,12 @@ fun ProxyServer<*>.serverHost(): String {
     }
 }
 
+/** The hosts to resolve before the tunnel is up: a raw JSON server has its own, any other the one it names. */
+fun ProxyServer<*>.bootstrapHosts(): List<String> = when (this) {
+    is Custom -> customXrayConfigProxyServerHosts(configJson)
+    else -> listOf(serverHost()).filter(String::isNotBlank)
+}
+
 fun String.normalizedServerHost(): String {
     return trim().trim('[', ']')
 }

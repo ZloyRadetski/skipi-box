@@ -32,7 +32,7 @@ import engine.xray.withXrayProxyOutboundTransport
 import engine.xray.xrayWireguardDomainStrategy
 import features.config.TrafficConfigReference
 import features.proxy.server.model.AmneziaWg
-import features.proxy.server.model.serverHost
+import features.proxy.server.model.bootstrapHosts
 import engine.xray.buildFreedomOutbound
 import engine.xray.rewriteCustomXrayDnsConfig
 import engine.xray.xrayDirectOutboundDomainStrategy
@@ -135,6 +135,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                                 stored.decode().getOrNull()?.let { server -> TrafficProfileServerRecord(stored.id, server) }
                             }
                         },
+                        selectedServerId = serverLibrary.selectedServerId,
                         profileConfigs = configLibrary.configs.map { config -> TrafficConfigReference(config.id, config.content) },
                         rawRoutePlanning = DesktopRawRoutePlanning(serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId),
                         transport = options.tcpSockopt?.let { sockopt ->
@@ -338,6 +339,8 @@ internal fun customServerSkipiRouting(
     transport: XrayOutboundTransportOptions? = null,
     /** What the global rules need to name other servers and groups; without it they only reach the raw server. */
     rawRoutePlanning: DesktopRawRoutePlanning? = null,
+    /** The raw server itself: a profile that names it reaches its own outbound, not a copy. */
+    selectedServerId: Int? = null,
 ): CustomSkipiRouting? = when {
     profile != null -> {
         // The rules and what they need come from one plan; it is made once per proxy tag.
@@ -346,7 +349,7 @@ internal fun customServerSkipiRouting(
             TrafficProfileXrayPlanner.plan(
                 profileContent = profile.content,
                 servers = profileServers().filterNot { record -> record.server is AmneziaWg },
-                selectedServerId = null,
+                selectedServerId = selectedServerId,
                 capabilities = DesktopTrafficProfileXrayCapabilities,
                 configs = profileConfigs,
                 rawProxyTag = proxyTag,
@@ -367,7 +370,7 @@ internal fun customServerSkipiRouting(
                         probeUrl = plan.observatoryUrl,
                         probeInterval = plan.observatoryInterval,
                     ),
-                    serverHosts = plan.proxyServers.map { server -> server.serverHost() },
+                    serverHosts = plan.proxyServers.flatMap { server -> server.bootstrapHosts() },
                 )
             },
         )

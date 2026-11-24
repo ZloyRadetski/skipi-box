@@ -154,6 +154,33 @@ class DesktopCustomOverrideProfileTest {
     }
 
     @Test
+    fun aGroupOfRawJsonServersBecomesABalancerOfTheirOwnOutbounds() {
+        fun rawServer(id: Int, host: String, name: String) = DesktopStoredProxyServer(
+            id = id,
+            serverJson = Custom(remarks = name, overrideInboundAndDns = true, configJson = raw.replace("edge.example", host))
+                .encodePersistedProxyServer(),
+        )
+        val root = build(
+            GROUP_PROFILE,
+            rawJson = RAW_WITH_OWN_ROUTING,
+            otherServers = listOf(rawServer(1, "a.example", "Alpha"), rawServer(2, "b.example", "Beta")),
+        )
+        val routing = root.getValue("routing").jsonObject
+        val outbounds = root.getValue("outbounds").jsonArray.map { it.jsonObject }
+        val rules = routing.getValue("rules").jsonArray.map { it.jsonObject }
+
+        assertEquals(listOf("skipi-group-1"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
+        val alpha = outbounds.first { it.getValue("tag").jsonPrimitive.content == "skipi-group-member-1-1" }
+        assertEquals("vless", alpha.getValue("protocol").jsonPrimitive.content)
+        assertEquals(
+            "a.example",
+            alpha.getValue("settings").jsonObject.getValue("vnext").jsonArray.first().jsonObject.getValue("address").jsonPrimitive.content,
+        )
+        val google = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:google" } == true }
+        assertEquals("skipi-group-1", google.getValue("balancerTag").jsonPrimitive.content)
+    }
+
+    @Test
     fun globalRulesMayNameAnotherServerOfTheLibrary() {
         val beta = DesktopStoredProxyServer(
             id = 2,
