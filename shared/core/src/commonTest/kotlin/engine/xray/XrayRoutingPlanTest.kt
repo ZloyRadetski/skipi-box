@@ -80,7 +80,7 @@ class XrayRoutingPlanTest {
     }
 
     @Test
-    fun looks_each_geo_rule_up_once_and_ignores_blank_or_skipped_rules() {
+    fun looks_each_geo_rule_up_once_and_ignores_blank_values() {
         val lookups = mutableListOf<String>()
         val resourceValidator = XrayResourceRoutingRuleValidator(
             hasResourceTag = { _, tag, original -> lookups += original; tag != "bad" },
@@ -90,7 +90,7 @@ class XrayRoutingPlanTest {
             request = request(
                 routeRules = listOf(
                     RouteRule(id = 1, outboundTag = XrayTags.DIRECT, domain = listOf("geosite:cn", " ", "geosite:bad"), ip = listOf("geoip:private", "geoip:bad")),
-                    RouteRule(id = 2, outboundTag = "no-such-outbound", domain = listOf("geosite:skipped")),
+                    RouteRule(id = 2, outboundTag = XrayTags.DIRECT, domain = listOf("geosite:other")),
                 ),
             ),
             ruleValidator = resourceValidator,
@@ -98,7 +98,26 @@ class XrayRoutingPlanTest {
 
         assertEquals(listOf("geosite:bad", "geoip:bad"), plan.unappliedRules)
         assertEquals(lookups.distinct().sorted(), lookups.sorted(), "a tag was looked up more than once: $lookups")
-        assertFalse("geosite:skipped" in lookups)
+    }
+
+    @Test
+    fun a_rule_naming_an_unknown_target_goes_to_proxy_and_is_reported() {
+        val plan = planXrayRouting(
+            request = request(
+                routeRules = listOf(
+                    RouteRule(id = 2, remarks = "Skipped", outboundTag = "no-such-outbound", domain = listOf("geosite:skipped")),
+                ),
+            ),
+            ruleValidator = validator(),
+        )
+
+        val rule = plan.rules.first().jsonObject
+        assertEquals(XrayTags.PROXY, rule["outboundTag"]?.jsonPrimitive?.content)
+        assertEquals("[\"geosite:skipped\"]", rule["domain"].toString())
+        assertEquals(
+            listOf("Rule \"Skipped\": unknown target 'no-such-outbound', routed to proxy"),
+            plan.unappliedRules,
+        )
     }
 
     private fun request(

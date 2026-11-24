@@ -90,13 +90,10 @@
       "streamSettings": {
         "network": "raw"
       },
-      "tag": "skipi-proxy"
+      "tag": "proxy"
     },
     {
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "UseIPv4"
-      },
       "tag": "direct"
     },
     {
@@ -121,7 +118,7 @@
       },
       "streamSettings": {
         "sockopt": {
-          "dialerProxy": "skipi-proxy"
+          "dialerProxy": "proxy"
         }
       },
       "tag": "dns-out"
@@ -148,17 +145,18 @@
         "inboundTag": [
           "dns-proxy"
         ],
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       },
       {
         "domain": [
           "geosite:steam"
         ],
-        "outboundTag": "direct"
+        "outboundTag": "direct",
+        "ruleTag": "DOMAIN-SET,geosite:steam"
       },
       {
         "network": "tcp,udp",
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       }
     ]
   }

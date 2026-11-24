@@ -27,7 +27,7 @@ class DesktopProfileMuxFragmentTest {
 
     private fun build(content: String, options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions()): JsonObject =
         Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(
+            buildProfileConfig(
                 profile = DesktopStoredConfig(id = 1, name = "P", content = content),
                 serverLibrary = library,
                 options = options,

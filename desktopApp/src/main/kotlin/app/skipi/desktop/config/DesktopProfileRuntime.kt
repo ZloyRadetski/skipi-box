@@ -3,10 +3,13 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
+import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XraySniffingOptions
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigDnsInputs
 import features.config.TrafficConfigReference
+import features.config.TrafficConfigServerTarget
 import features.config.TrafficConfigRuntimePlan
 import features.config.TrafficConfigRuntimePlanInput
 import features.config.TrafficConfigRuntimePlanner
@@ -26,6 +29,8 @@ internal class DesktopProfileRuntime(
 internal fun planDesktopProfileRuntime(
     profile: DesktopStoredConfig,
     configs: List<DesktopStoredConfig>,
+    /** The servers a policy may name by remarks; their outbound tag is their id, as on Android. */
+    servers: List<DesktopStoredProxyServer> = emptyList(),
 ): DesktopProfileRuntime {
     val settings = TrafficConfigState(id = profile.id, name = profile.name, rawConfig = profile.content)
         .withSkipiSettingsReadFromRawConfig()
@@ -35,7 +40,11 @@ internal fun planDesktopProfileRuntime(
         TrafficConfigRuntimePlanInput(
             rawConfig = profile.content,
             configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
-            servers = emptyList(),
+            servers = servers.mapNotNull { stored ->
+                stored.decode().getOrNull()?.let { server ->
+                    TrafficConfigServerTarget(remarks = server.getInfo().remarks, outboundTag = stored.id.toString())
+                }
+            },
             enableIpv6Fallback = false,
             enableIpv6PreferFallback = false,
             dnsInputs = TrafficConfigDnsInputs(
@@ -54,8 +63,8 @@ internal fun planDesktopProfileRuntime(
 }
 
 /** The runtime of the selected profile; null when no profile is selected. */
-internal fun DesktopConfigLibrary.activeProfileRuntime(): DesktopProfileRuntime? =
-    activeProfile?.let { profile -> planDesktopProfileRuntime(profile, configs) }
+internal fun DesktopConfigLibrary.activeProfileRuntime(servers: List<DesktopStoredProxyServer> = emptyList()): DesktopProfileRuntime? =
+    activeProfile?.let { profile -> planDesktopProfileRuntime(profile, configs, servers) }
 
 internal fun DesktopProfileRuntime.toDnsInputs(): DesktopDnsInputs = DesktopDnsInputs(
     proxyDns = plan.proxyDns,
@@ -75,3 +84,33 @@ internal fun DesktopProfileRuntime.sniffingOptions() = XraySniffingOptions(
     enabled = settings.enableSniffing,
     routeOnly = settings.enableSniffingRouteOnly,
 )
+
+/** The profile's rules, final policy and domain strategy as the routing record the shared planner reads. */
+internal fun DesktopProfileRuntime.toRoutingRecord(): RoutingConfigRecord = RoutingConfigRecord(
+    domainStrategy = settings.routeDomainStrategy,
+    defaultOutboundTag = plan.defaultRouteOutboundTag,
+    rules = plan.routeRules,
+)
+
+/**
+ * Desktop's resource policy for routing rules. Values the bundled geo files cannot serve (`geoip:asNNN`, an
+ * `ext:` file Desktop does not ship) are reported as unapplied instead of failing the connect.
+ */
+internal fun desktopRoutingRuleValidator(
+    hasResourceTag: ((fileName: String, tag: String, originalRule: String) -> Boolean)? = null,
+): XrayResourceRoutingRuleValidator = XrayResourceRoutingRuleValidator(
+    hasResourceTag = hasResourceTag,
+    canServe = { rule ->
+        val value = rule.trim()
+        when {
+            AsnGeoIpRule.matches(value) -> false
+            value.startsWith("ext:", ignoreCase = true) && hasResourceTag == null -> {
+                val file = value.substringAfter(':').substringBefore(':').trim().removeSuffix(".dat").lowercase()
+                file == "geoip" || file == "geosite"
+            }
+            else -> true
+        }
+    },
+)
+
+private val AsnGeoIpRule = Regex("""geoip:as\d+""", RegexOption.IGNORE_CASE)

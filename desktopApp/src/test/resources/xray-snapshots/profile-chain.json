@@ -43,7 +43,9 @@
       {
         "address": "https://1.1.1.1/dns-query",
         "domains": [
-          "domain:a.example"
+          "domain:a.example",
+          "domain:c.example",
+          "domain:b.example"
         ],
         "skipFallback": true,
         "tag": "dns-direct"
@@ -51,7 +53,9 @@
       {
         "address": "https://8.8.8.8/dns-query",
         "domains": [
-          "domain:a.example"
+          "domain:a.example",
+          "domain:c.example",
+          "domain:b.example"
         ],
         "skipFallback": true,
         "tag": "dns-direct"
@@ -98,13 +102,39 @@
       "streamSettings": {
         "network": "raw"
       },
-      "tag": "skipi-proxy"
+      "tag": "proxy"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "address": "c.example",
+        "encryption": "none",
+        "id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "raw",
+        "sockopt": {
+          "dialerProxy": "95-chain-1"
+        }
+      },
+      "tag": "95"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "address": "b.example",
+        "encryption": "none",
+        "id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "raw"
+      },
+      "tag": "95-chain-1"
     },
     {
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "UseIPv4"
-      },
       "tag": "direct"
     },
     {
@@ -125,23 +155,25 @@
         "inboundTag": [
           "dns-proxy"
         ],
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       },
       {
         "domain": [
           "geosite:netflix"
         ],
-        "outboundTag": "Hops"
+        "outboundTag": "95",
+        "ruleTag": "DOMAIN-SET,geosite:netflix"
       },
       {
         "domain": [
           "geosite:steam"
         ],
-        "outboundTag": "direct"
+        "outboundTag": "direct",
+        "ruleTag": "DOMAIN-SET,geosite:steam"
       },
       {
         "network": "tcp,udp",
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       }
     ]
   }

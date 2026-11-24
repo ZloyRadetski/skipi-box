@@ -3,18 +3,11 @@
 
 package features.config
 
-import engine.xray.TrafficProfileServerRecord
-import engine.xray.TrafficProfileXrayCapabilities
-import engine.xray.TrafficProfileXrayPlanner
-import features.proxy.server.model.ProxyServer
 import features.routing.model.RouteRule
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Literal characterization of the Android runtime rule converter shared with the Desktop planner. */
+/** Literal characterization of the Android runtime rule converter shared by Android and Desktop. */
 class ShadowrocketRuleTranslationAndroidOracleTest {
     @Test
     fun android_runtime_planner_matches_frozen_rule_fixtures() {
@@ -33,17 +26,6 @@ class ShadowrocketRuleTranslationAndroidOracleTest {
         assertEquals(emptyList(), result.routeRules)
     }
 
-    @Test
-    fun desktop_profile_planner_matches_android_portable_rule_fixtures() {
-        val actual = desktopPlan(fixtures)
-            .routingRules
-            .dropLast(1) // The profile planner appends its host-specific FINAL catch-all rule.
-            .map { rule -> rule.toPortableMatch() }
-        val expected = fixtures.mapNotNull(Fixture::expected)
-
-        assertEquals(expected, actual)
-    }
-
     private fun androidPlan(rawConfig: String = fixtureConfig()) = TrafficConfigRuntimePlanner.plan(
         TrafficConfigRuntimePlanInput(
             rawConfig = rawConfig,
@@ -51,22 +33,6 @@ class ShadowrocketRuleTranslationAndroidOracleTest {
             servers = emptyList(),
             enableIpv6Fallback = false,
             enableIpv6PreferFallback = false,
-        ),
-    )
-
-    private fun desktopPlan(rules: List<Fixture>) = TrafficProfileXrayPlanner.plan(
-        profileContent = fixtureConfig(rules),
-        servers = listOf(
-            TrafficProfileServerRecord(
-                id = 1,
-                server = ProxyServer.parse(
-                    "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@profile.example:443#Selected",
-                ),
-            ),
-        ),
-        selectedServerId = 1,
-        capabilities = TrafficProfileXrayCapabilities(
-            supportedExternalRuleSetFiles = setOf("geosite.dat", "geoip.dat"),
         ),
     )
 
@@ -101,18 +67,6 @@ class ShadowrocketRuleTranslationAndroidOracleTest {
         protocol = protocol,
         network = network,
     )
-
-    private fun JsonObject.toPortableMatch() = PortableMatch(
-        domain = getValueList("domain"),
-        ip = getValueList("ip"),
-        process = getValueList("process"),
-        port = this["port"]?.jsonPrimitive?.content.orEmpty(),
-        protocol = getValueList("protocol").singleOrNull().orEmpty(),
-        network = this["network"]?.jsonPrimitive?.content.orEmpty(),
-    )
-
-    private fun JsonObject.getValueList(key: String): List<String> =
-        (this[key] as? JsonArray)?.map { it.jsonPrimitive.content }.orEmpty()
 
     private companion object {
         val fixtures = listOf(

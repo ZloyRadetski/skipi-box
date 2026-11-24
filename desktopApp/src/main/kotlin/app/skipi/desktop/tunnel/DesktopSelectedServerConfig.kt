@@ -22,9 +22,8 @@ import app.skipi.app.proxy.XrayOutboundPlanningInput
 import app.skipi.app.proxy.rawServerSkipiRouting
 import engine.xray.CustomSkipiExtras
 import features.proxy.server.model.stripLeadingCountryFlag
-import engine.xray.TrafficProfileServerRecord
-import engine.xray.TrafficProfileXrayPlan
-import engine.xray.TrafficProfileXrayPlanner
+import features.config.ShadowrocketPolicyGroup
+import features.config.analyzeShadowrocketConfig
 import engine.xray.XrayOutboundTransportOptions
 import engine.xray.buildXrayBalancers
 import engine.xray.buildXrayObservatory
@@ -60,6 +59,11 @@ import java.nio.file.Path
 internal data class DesktopGeneratedXrayConfig(
     val json: String,
     val amneziaWg: DesktopAmneziaWgBridge? = null,
+    /**
+     * Rules the configuration does not apply as written: a value Desktop's bundled resources cannot serve is
+     * skipped, a rule naming an unknown target goes to the proxy. Empty for a raw JSON server.
+     */
+    val unappliedRules: List<String> = emptyList(),
 )
 
 /** Desktop entry point shared by preview, runtime start plans, and FullJson export. */
@@ -113,7 +117,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
     val selectedServerResult = selectedStored?.decode()
     val selectedServer = selectedServerResult?.getOrNull()
-    val profileRuntime = configLibrary.activeProfileRuntime()
+    val profileRuntime = configLibrary.activeProfileRuntime(serverLibrary.servers)
     val effectiveTunDns = profileRuntime.tunVpnDnsOr(tunVpnDns)
     if (selectedServer is Custom) {
         val dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns)
@@ -127,16 +131,8 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                     strictFullTunnel = strictFullTunnel,
                     answerTunDns = answerTunDns,
                     skipiRouting = customServerSkipiRouting(
-                        profile = configLibrary.activeProfile,
-                        profileDomainStrategy = profileRuntime?.settings?.routeDomainStrategy,
+                        profile = profileRuntime,
                         routing = routing,
-                        profileServers = {
-                            serverLibrary.servers.mapNotNull { stored ->
-                                stored.decode().getOrNull()?.let { server -> TrafficProfileServerRecord(stored.id, server) }
-                            }
-                        },
-                        selectedServerId = serverLibrary.selectedServerId,
-                        profileConfigs = configLibrary.configs.map { config -> TrafficConfigReference(config.id, config.content) },
                         rawRoutePlanning = DesktopRawRoutePlanning(serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId),
                         transport = options.tcpSockopt?.let { sockopt ->
                             XrayOutboundTransportOptions(
@@ -152,17 +148,29 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     }
 
     val activeProfile = configLibrary.activeProfile
-    if (activeProfile != null) {
+    if (activeProfile != null && profileRuntime != null) {
+        // The profile's rules reach the shared planner as the routing the global rules would be.
         return runCatching {
-            DesktopTrafficProfileXrayConfigFactory.buildGenerated(
-                profile = activeProfile,
+            activeProfile.content.analyzeShadowrocketConfig().diagnostics
+                .firstOrNull { diagnostic -> diagnostic.severity.name == "Error" }
+                ?.let { diagnostic -> error("Active profile has an error: ${diagnostic.message}") }
+            if (selectedStored == null) error(desktopText(Res.string.desktop_select_server_before_connect))
+            checkNotNull(selectedServerResult).getOrThrow()
+            val profileRouting = profileRuntime.toRoutingRecord()
+            DesktopSelectedServerXrayConfigFactory.buildGenerated(
                 serverLibrary = serverLibrary,
+                routing = if (strictFullTunnel) profileRouting.withStrictFullTunnelApplied() else profileRouting,
+                trafficConfigContentById = trafficConfigContentById,
                 options = options,
-                configs = configLibrary.configs,
+                subscriptionPingUrl = subscriptionPingUrl,
+                latencyByServerId = latencyByServerId,
+                routingDataDirectory = routingDataDirectory,
                 amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
-                strictFullTunnel = strictFullTunnel,
+                tunVpnDns = effectiveTunDns,
                 answerTunDns = answerTunDns,
-            )
+                profile = profileRuntime,
+            )?.getOrThrow()
+                ?: error(desktopText(Res.string.desktop_select_server_before_connect))
         }
     }
 
@@ -296,7 +304,11 @@ internal class DesktopRawRoutePlanning(
     private val subscriptionPingUrl: String,
     private val latencyByServerId: Map<Int, DesktopServerLatencyResult>,
 ) {
-    fun input(routing: RoutingConfigRecord): XrayOutboundPlanningInput {
+    fun input(
+        routing: RoutingConfigRecord,
+        /** The active profile's proxy groups the rules may name. */
+        policyGroups: List<ShadowrocketPolicyGroup> = emptyList(),
+    ): XrayOutboundPlanningInput {
         val rows = serverLibrary.servers.mapNotNull { stored ->
             stored.decode().getOrNull()?.let { server ->
                 ProxyServerRow(
@@ -312,7 +324,7 @@ internal class DesktopRawRoutePlanning(
             servers = rows,
             routeRules = routing.rules,
             defaultRouteOutboundTag = routing.defaultOutboundTag,
-            shadowrocketPolicyGroups = emptyList(),
+            shadowrocketPolicyGroups = policyGroups,
             trafficConfigContentById = trafficConfigContentById,
             enableLocalDns = false,
             enableFragment = false,
@@ -326,61 +338,34 @@ internal class DesktopRawRoutePlanning(
  * The routing SKIPI puts in a raw server that overrides inbound and DNS: the active profile's rules, or the
  * global routing rules when there is no profile. With neither, the JSON keeps the routing it came with.
  *
- * A profile may send traffic to other servers and to proxy groups. They are added to the raw config next to its own
- * proxy outbound ([profileServers] are the servers they are taken from), so a balancer is a balancer here too; what
- * names the raw server itself, or nothing known, goes to its own outbound.
+ * Either set of rules may send traffic to other servers and to proxy groups. They are added to the raw config next
+ * to its own proxy outbound ([rawRoutePlanning] describes the servers they are taken from), so a balancer is a
+ * balancer here too; what names the raw server itself goes to its own outbound.
  */
 internal fun customServerSkipiRouting(
-    profile: DesktopStoredConfig?,
-    profileDomainStrategy: Int?,
+    profile: DesktopProfileRuntime?,
     routing: RoutingConfigRecord,
-    profileServers: () -> List<TrafficProfileServerRecord> = { emptyList() },
-    profileConfigs: List<TrafficConfigReference> = emptyList(),
     transport: XrayOutboundTransportOptions? = null,
-    /** What the global rules need to name other servers and groups; without it they only reach the raw server. */
+    /** What the rules need to name other servers and groups; without it nothing is applied. */
     rawRoutePlanning: DesktopRawRoutePlanning? = null,
-    /** The raw server itself: a profile that names it reaches its own outbound, not a copy. */
-    selectedServerId: Int? = null,
 ): CustomSkipiRouting? = when {
+    rawRoutePlanning == null -> null
+
     profile != null -> {
-        // The rules and what they need come from one plan; it is made once per proxy tag.
-        val plans = HashMap<String, TrafficProfileXrayPlan>()
-        fun planFor(proxyTag: String) = plans.getOrPut(proxyTag) {
-            TrafficProfileXrayPlanner.plan(
-                profileContent = profile.content,
-                servers = profileServers().filterNot { record -> record.server is AmneziaWg },
-                selectedServerId = selectedServerId,
-                capabilities = DesktopTrafficProfileXrayCapabilities,
-                configs = profileConfigs,
-                rawProxyTag = proxyTag,
-            )
-        }
-        CustomSkipiRouting(
-            domainStrategy = profileDomainStrategy?.toXrayRoutingDomainStrategy(),
-            rules = { proxyTag -> planFor(proxyTag).routingRules },
-            extras = { proxyTag ->
-                val plan = planFor(proxyTag)
-                CustomSkipiExtras(
-                    outbounds = plan.proxyOutbounds.map { outbound ->
-                        transport?.let(outbound::withXrayProxyOutboundTransport) ?: outbound
-                    },
-                    balancers = buildXrayBalancers(plan.balancers),
-                    observatory = buildXrayObservatory(
-                        selectors = plan.observatorySelectors,
-                        probeUrl = plan.observatoryUrl,
-                        probeInterval = plan.observatoryInterval,
-                    ),
-                    serverHosts = plan.proxyServers.flatMap { server -> server.bootstrapHosts() },
-                )
-            },
+        val profileRouting = profile.toRoutingRecord()
+        rawServerSkipiRouting(
+            input = rawRoutePlanning.input(profileRouting, profile.plan.policyGroups),
+            routeDomainStrategy = profileRouting.domainStrategy,
+            transport = transport,
+            ruleValidator = desktopRoutingRuleValidator(),
         )
     }
 
-    routing.rules.any { rule -> rule.enabled } && rawRoutePlanning != null -> rawServerSkipiRouting(
+    routing.rules.any { rule -> rule.enabled } -> rawServerSkipiRouting(
         input = rawRoutePlanning.input(routing),
         routeDomainStrategy = routing.domainStrategy,
         transport = transport,
-        ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
+        ruleValidator = desktopRoutingRuleValidator(),
     )
 
     else -> null

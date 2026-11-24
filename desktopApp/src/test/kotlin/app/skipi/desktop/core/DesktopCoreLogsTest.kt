@@ -110,7 +110,7 @@ class DesktopCoreLogsTest {
         )
 
         val profileLog = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(
+            buildProfileConfig(
                 profile = DesktopStoredConfig(id = 1, name = "P", content = "[Rule]\nFINAL,PROXY\n"),
                 serverLibrary = library,
                 options = options,

@@ -65,7 +65,7 @@ class DesktopTunDnsTest {
             serverId = 1,
         )
         return Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.buildGenerated(
+            buildProfileConfigGenerated(
                 profile = DesktopStoredConfig(id = 1, name = "P", content = "[Rule]\nFINAL,PROXY\n"),
                 serverLibrary = library,
                 options = DesktopAppSettings().toLocalProxyXrayConfigOptions(),
@@ -130,7 +130,7 @@ class DesktopTunDnsTest {
         assertAnswersTunDns(root)
         val dnsOut = root.getValue("outbounds").jsonArray.map { it.jsonObject }
             .single { it.getValue("tag").jsonPrimitive.content == "dns-out" }
-        assertTrue("skipi-proxy" in dnsOut.toString(), dnsOut.toString())
+        assertTrue("\"dialerProxy\":\"proxy\"" in dnsOut.toString(), dnsOut.toString())
 
         assertLeavesDnsAlone(profile(answerTunDns = false))
     }

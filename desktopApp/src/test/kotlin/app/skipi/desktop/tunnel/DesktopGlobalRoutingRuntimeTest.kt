@@ -115,11 +115,13 @@ class DesktopGlobalRoutingRuntimeTest {
         val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
 
         assertEquals("proxy", rules.last().getValue("outboundTag").jsonPrimitive.content)
-        assertFalse(rules.any { rule ->
+        // The rule is not dropped and does not dangle: it goes to the proxy.
+        val unresolved = rules.single { rule ->
             rule["domain"]?.jsonArray?.any { value ->
                 value.jsonPrimitive.content == "unresolved-target.example"
             } == true
-        })
+        }
+        assertEquals("proxy", unresolved.getValue("outboundTag").jsonPrimitive.content)
         assertFalse(outboundTags(root).contains("404"))
     }
 

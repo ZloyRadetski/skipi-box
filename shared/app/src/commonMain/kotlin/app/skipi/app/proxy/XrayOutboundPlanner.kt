@@ -120,15 +120,19 @@ object XrayOutboundPlanner {
                 .map(String::trim)
                 .filter { tag -> tag.startsWith(ShadowrocketPolicyGroupTagPrefix) }
                 .toSet()
+            val enabledTags = (input.routeRules.filter(RouteRule::enabled).map { rule -> rule.outboundTag } +
+                input.defaultRouteOutboundTag).map(String::trim).toSet()
             usedTags.forEach { tag ->
                 val group = input.shadowrocketPolicyGroups.firstOrNull { it.outboundTag == tag } ?: return@forEach
-                addShadowrocketPolicyGroup(tag, group)
+                addShadowrocketPolicyGroup(tag, group, required = tag in enabledTags)
             }
         }
 
         private fun addShadowrocketPolicyGroup(
             tag: String,
             group: ShadowrocketPolicyGroup,
+            /** A group only a disabled rule names is skipped when empty; one in use must not vanish silently. */
+            required: Boolean = true,
         ) {
             val matchingStrategy = input.servers.mapNotNull { it.server as? StrategyGroup }
                 .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
@@ -138,7 +142,8 @@ object XrayOutboundPlanner {
                 shadowrocketPolicyGroupMembers(group)
             }
             if (members.isEmpty()) {
-                return
+                if (!required) return
+                error("Proxy group '${group.name}' has no usable servers")
             }
             when (group.type.lowercase()) {
                 "select" -> {

@@ -137,18 +137,18 @@ class DesktopCustomOverrideProfileTest {
 
         // The raw server's own outbound stays the default (first); the group's members and Beta join it.
         assertEquals("my-proxy", tags.first())
-        assertEquals(setOf("skipi-group-member-1-1", "skipi-group-member-1-2", "skipi-server-2"), tags.filter { it.startsWith("skipi-") }.toSet())
-        assertEquals(listOf("skipi-group-1"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
+        assertEquals(setOf("shadowrocket-group:Fast-policy-1", "shadowrocket-group:Fast-policy-2", "2"), tags.filter { it != "my-proxy" && it != "direct" && it != "block" }.toSet())
+        assertEquals(listOf("shadowrocket-group:Fast"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
         val google = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:google" } == true }
-        assertEquals("skipi-group-1", google.getValue("balancerTag").jsonPrimitive.content)
+        assertEquals("shadowrocket-group:Fast", google.getValue("balancerTag").jsonPrimitive.content)
         val steam = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:steam" } == true }
-        assertEquals("skipi-server-2", steam.getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("2", steam.getValue("outboundTag").jsonPrimitive.content)
         // The raw server itself, named by its remarks, and PROXY keep going to its own outbound.
         val raw = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:claude" } == true }
         assertEquals("my-proxy", raw.getValue("outboundTag").jsonPrimitive.content)
         assertEquals("my-proxy", rules.last().getValue("outboundTag").jsonPrimitive.content)
         assertEquals(
-            listOf("skipi-group-member-1-"),
+            listOf("shadowrocket-group:Fast-policy-"),
             root.getValue("observatory").jsonObject.getValue("subjectSelector").jsonArray.map { it.jsonPrimitive.content },
         )
     }
@@ -169,15 +169,15 @@ class DesktopCustomOverrideProfileTest {
         val outbounds = root.getValue("outbounds").jsonArray.map { it.jsonObject }
         val rules = routing.getValue("rules").jsonArray.map { it.jsonObject }
 
-        assertEquals(listOf("skipi-group-1"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
-        val alpha = outbounds.first { it.getValue("tag").jsonPrimitive.content == "skipi-group-member-1-1" }
+        assertEquals(listOf("shadowrocket-group:Fast"), routing.getValue("balancers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
+        val alpha = outbounds.first { it.getValue("tag").jsonPrimitive.content == "shadowrocket-group:Fast-policy-1" }
         assertEquals("vless", alpha.getValue("protocol").jsonPrimitive.content)
         assertEquals(
             "a.example",
             alpha.getValue("settings").jsonObject.getValue("vnext").jsonArray.first().jsonObject.getValue("address").jsonPrimitive.content,
         )
         val google = rules.first { rule -> rule["domain"]?.jsonArray?.any { it.jsonPrimitive.content == "geosite:google" } == true }
-        assertEquals("skipi-group-1", google.getValue("balancerTag").jsonPrimitive.content)
+        assertEquals("shadowrocket-group:Fast", google.getValue("balancerTag").jsonPrimitive.content)
     }
 
     @Test

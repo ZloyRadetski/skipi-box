@@ -33,6 +33,20 @@ class XrayResourceRoutingRuleValidatorTest {
     }
 
     @Test
+    fun valuesTheHostCannotServeAreUnappliedWithOrWithoutAResourceLookup() {
+        fun asnFree(rule: String) = !rule.startsWith("geoip:as", ignoreCase = true)
+        listOf<((String, String, String) -> Boolean)?>(null, { _, _, _ -> true }).forEach { lookup ->
+            val validator = XrayResourceRoutingRuleValidator(hasResourceTag = lookup, canServe = ::asnFree)
+
+            val classified = validator.classifyIpRules(listOf("geoip:as13335", "geoip:cn", "10.0.0.0/8"))
+
+            assertEquals(listOf("geoip:cn", "10.0.0.0/8"), classified.kept)
+            assertEquals(listOf("geoip:as13335"), classified.unapplied)
+            assertFalse(validator.isIpRuleValid("GEOIP:AS1"))
+        }
+    }
+
+    @Test
     fun resourceLookupValidatesTagsFiltersRulesAndReportsInvalidRawIps() {
         val lookups = mutableListOf<Triple<String, String, String>>()
         val invalidIps = mutableListOf<String>()

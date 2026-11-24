@@ -93,7 +93,7 @@
     "probeInterval": "60s",
     "probeURL": "https://example.com/ping",
     "subjectSelector": [
-      "skipi-group-member-1-"
+      "shadowrocket-group:Fast-policy-"
     ]
   },
   "outbounds": [
@@ -108,7 +108,20 @@
       "streamSettings": {
         "network": "raw"
       },
-      "tag": "skipi-proxy"
+      "tag": "proxy"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "address": "b.example",
+        "encryption": "none",
+        "id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "raw"
+      },
+      "tag": "2"
     },
     {
       "protocol": "vless",
@@ -121,7 +134,7 @@
       "streamSettings": {
         "network": "raw"
       },
-      "tag": "skipi-group-member-1-1"
+      "tag": "shadowrocket-group:Fast-policy-1"
     },
     {
       "protocol": "vless",
@@ -134,26 +147,10 @@
       "streamSettings": {
         "network": "raw"
       },
-      "tag": "skipi-group-member-1-2"
-    },
-    {
-      "protocol": "vless",
-      "settings": {
-        "address": "b.example",
-        "encryption": "none",
-        "id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
-        "port": 443
-      },
-      "streamSettings": {
-        "network": "raw"
-      },
-      "tag": "skipi-server-2"
+      "tag": "shadowrocket-group:Fast-policy-2"
     },
     {
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "UseIPv4"
-      },
       "tag": "direct"
     },
     {
@@ -164,14 +161,14 @@
   "routing": {
     "balancers": [
       {
-        "fallbackTag": "skipi-group-member-1-1",
+        "fallbackTag": "shadowrocket-group:Fast-policy-1",
         "selector": [
-          "skipi-group-member-1-"
+          "shadowrocket-group:Fast-policy-"
         ],
         "strategy": {
           "type": "leastPing"
         },
-        "tag": "skipi-group-1"
+        "tag": "shadowrocket-group:Fast"
       }
     ],
     "domainStrategy": "AsIs",
@@ -186,41 +183,46 @@
         "inboundTag": [
           "dns-proxy"
         ],
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       },
       {
-        "balancerTag": "skipi-group-1",
+        "balancerTag": "shadowrocket-group:Fast",
         "domain": [
           "geosite:google"
-        ]
+        ],
+        "ruleTag": "DOMAIN-SET,geosite:google"
       },
       {
         "domain": [
           "geosite:steam"
         ],
-        "outboundTag": "skipi-server-2"
+        "outboundTag": "2",
+        "ruleTag": "DOMAIN-SET,geosite:steam"
       },
       {
         "domain": [
           "geosite:claude"
         ],
-        "outboundTag": "Raw"
+        "outboundTag": "proxy",
+        "ruleTag": "DOMAIN-SET,geosite:claude"
       },
       {
         "domain": [
           "geosite:discord"
         ],
-        "outboundTag": "direct"
+        "outboundTag": "direct",
+        "ruleTag": "DOMAIN-SET,geosite:discord"
       },
       {
         "domain": [
           "geosite:category-ads-all"
         ],
-        "outboundTag": "block"
+        "outboundTag": "block",
+        "ruleTag": "DOMAIN-SET,geosite:category-ads-all"
       },
       {
         "network": "tcp,udp",
-        "outboundTag": "skipi-proxy"
+        "outboundTag": "proxy"
       }
     ]
   }

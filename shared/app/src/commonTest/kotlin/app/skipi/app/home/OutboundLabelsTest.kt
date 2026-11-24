@@ -47,4 +47,12 @@ class OutboundLabelsTest {
         assertEquals("Balancer - Frankfurt", labels.label("skipi-group-member-2-20"))
         assertEquals("skipi-group-member-2-9", labels.label("skipi-group-member-2-9"))
     }
+
+    @Test
+    fun aShadowrocketGroupIsNamedByItsName() {
+        assertEquals("Fast", labels.label("shadowrocket-group:Fast"))
+        assertEquals("Fast - Frankfurt", labels.label("shadowrocket-group:Fast-policy-20"))
+        assertEquals("Auto-Select - Frankfurt", labels.label("shadowrocket-group:Auto-Select-policy-20"))
+        assertEquals("shadowrocket-group:Fast-policy-9", labels.label("shadowrocket-group:Fast-policy-9"))
+    }
 }

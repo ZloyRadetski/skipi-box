@@ -150,6 +150,30 @@ class XrayOutboundPlannerTest {
     }
 
     @Test
+    fun anEnabledShadowrocketGroupWithoutUsableMembersFailsNamingTheGroup() {
+        val selected = node(1, "Selected", "selected.example")
+        val group = ShadowrocketPolicyGroup(
+            lineNumber = 1,
+            name = "Missing",
+            type = "url-test",
+            members = listOf("No matching server"),
+        )
+
+        val failure = assertFailsWith<IllegalStateException> {
+            XrayOutboundPlanner.plan(
+                input(
+                    selected = selected,
+                    servers = listOf(selected),
+                    routeRules = listOf(RouteRule(outboundTag = group.outboundTag)),
+                    groups = listOf(group),
+                ),
+            )
+        }
+
+        assertTrue("'Missing'" in failure.message.orEmpty(), failure.message)
+    }
+
+    @Test
     fun customOutboundSelectsProxyAndContributesHostsOnlyWhenOverrideIsEnabled() {
         val selected = record(
             70,

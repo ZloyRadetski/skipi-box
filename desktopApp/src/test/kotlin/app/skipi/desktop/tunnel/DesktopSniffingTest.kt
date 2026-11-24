@@ -74,7 +74,7 @@ class DesktopSniffingTest {
             ),
             serverId = 1,
         )
-        fun build(content: String) = DesktopTrafficProfileXrayConfigFactory.build(
+        fun build(content: String) = buildProfileConfig(
             profile = DesktopStoredConfig(id = 1, name = "P", content = content),
             serverLibrary = library,
             options = DesktopAppSettings(enableSniffing = false).toLocalProxyXrayConfigOptions(),

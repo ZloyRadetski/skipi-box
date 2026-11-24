@@ -129,6 +129,8 @@ class DesktopXrayConfigSnapshotTest {
             vless(3, "c.example", "Gamma"),
         ),
         profile = PROFILE_WITH_GROUP,
+        // "Raw" names no server of this library: the rule goes to the proxy and says so.
+        expectedUnapplied = listOf("Rule \"DOMAIN-SET,geosite:claude\": unknown target 'Raw', routed to proxy"),
     )
 
     @Test
@@ -147,6 +149,31 @@ class DesktopXrayConfigSnapshotTest {
             DOMAIN-SET,geosite:steam,DIRECT
             FINAL,PROXY
         """.trimIndent() + "\n",
+    )
+
+    @Test
+    fun profileUnknownPolicy() = snapshot(
+        "profile-unknown-policy",
+        library(selected = 1, vless(1, "a.example", "Alpha")),
+        profile = """
+            [Rule]
+            DOMAIN-SET,geosite:steam,NoSuchPolicy
+            FINAL,PROXY
+        """.trimIndent() + "\n",
+        expectedUnapplied = listOf("Rule \"DOMAIN-SET,geosite:steam\": unknown target 'NoSuchPolicy', routed to proxy"),
+    )
+
+    @Test
+    fun profileIpAsnSkipped() = snapshot(
+        "profile-ip-asn-skipped",
+        library(selected = 1, vless(1, "a.example", "Alpha")),
+        profile = """
+            [Rule]
+            IP-ASN,13335,DIRECT
+            DOMAIN-SET,geosite:steam,DIRECT
+            FINAL,PROXY
+        """.trimIndent() + "\n",
+        expectedUnapplied = listOf("geoip:as13335"),
     )
 
     @Test
@@ -210,6 +237,7 @@ class DesktopXrayConfigSnapshotTest {
         profile: String? = null,
         strictFullTunnel: Boolean = false,
         answerTunDns: Boolean = false,
+        expectedUnapplied: List<String> = emptyList(),
     ) {
         val configs = if (profile == null) {
             DesktopConfigLibrary()
@@ -219,7 +247,7 @@ class DesktopXrayConfigSnapshotTest {
                 configs = listOf(DesktopStoredConfig(id = 7, name = "Profile", content = profile)),
             )
         }
-        val result = buildDesktopSelectedServerConfig(
+        val result = buildDesktopSelectedServerConfigWithBridge(
             serverLibrary = library,
             configLibrary = configs,
             routing = routing,
@@ -230,7 +258,9 @@ class DesktopXrayConfigSnapshotTest {
             strictFullTunnel = strictFullTunnel,
             answerTunDns = answerTunDns,
         )
-        val actual = normalize(assertNotNull(result, "$name: no config").getOrThrow())
+        val generated = assertNotNull(result, "$name: no config").getOrThrow()
+        assertEquals(expectedUnapplied, generated.unappliedRules, "$name: unapplied rules")
+        val actual = normalize(generated.json)
         val file = File("src/test/resources/xray-snapshots/$name.json")
         if (System.getenv("UPDATE_GOLDEN") == "1") {
             file.parentFile.mkdirs()

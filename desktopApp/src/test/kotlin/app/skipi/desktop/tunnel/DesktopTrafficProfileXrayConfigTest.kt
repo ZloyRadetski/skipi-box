@@ -10,7 +10,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import platform.DefaultLocalHttpProxyListenAddress
@@ -20,7 +19,7 @@ class DesktopTrafficProfileXrayConfigTest {
     private fun directSockopt(options: LocalProxyXrayConfigOptions): kotlinx.serialization.json.JsonObject? {
         val server = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha")
         val library = DesktopServerLibraries.select(DesktopServerLibraries.add(DesktopServerLibrary(), server), serverId = 1)
-        val config = DesktopTrafficProfileXrayConfigFactory.build(
+        val config = buildProfileConfig(
             profile = DesktopStoredConfig(id = 1, name = "P", content = "[Rule]\nFINAL,PROXY\n"),
             serverLibrary = library,
             options = options,
@@ -86,7 +85,7 @@ class DesktopTrafficProfileXrayConfigTest {
             """.trimIndent() + "\n",
         )
 
-        val config = DesktopTrafficProfileXrayConfigFactory.build(
+        val config = buildProfileConfig(
             profile = profile,
             serverLibrary = library,
             options = LocalProxyXrayConfigOptions(socksPort = 20_480),
@@ -109,7 +108,7 @@ class DesktopTrafficProfileXrayConfigTest {
                 .map { value -> value.jsonPrimitive.content },
         )
         assertTrue(rules.any { rule -> rule["outboundTag"]?.jsonPrimitive?.content == "direct" })
-        assertTrue(rules.any { rule -> rule["balancerTag"]?.jsonPrimitive?.content?.startsWith("skipi-group-") == true })
+        assertTrue(rules.any { rule -> rule["balancerTag"]?.jsonPrimitive?.content?.startsWith("shadowrocket-group:") == true })
         assertEquals(1, routing.getValue("balancers").jsonArray.size)
         assertTrue(root.containsKey("observatory"))
     }
@@ -152,7 +151,7 @@ class DesktopTrafficProfileXrayConfigTest {
 
         val configs = profiles.map { profile ->
             Json.parseToJsonElement(
-                DesktopTrafficProfileXrayConfigFactory.build(
+                buildProfileConfig(
                     profile = profile,
                     serverLibrary = library,
                     options = LocalProxyXrayConfigOptions(),
@@ -177,7 +176,7 @@ class DesktopTrafficProfileXrayConfigTest {
             "firefox.exe",
             secondRules.first { "process" in it }.getValue("process").jsonArray.single().jsonPrimitive.content,
         )
-        assertEquals("skipi-proxy", firstRules.last().getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("proxy", firstRules.last().getValue("outboundTag").jsonPrimitive.content)
         assertEquals("direct", secondRules.last().getValue("outboundTag").jsonPrimitive.content)
     }
 
@@ -200,7 +199,7 @@ class DesktopTrafficProfileXrayConfigTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+            buildProfileConfig(profile, library, LocalProxyXrayConfigOptions()),
         ).jsonObject
         // Plain entries are the proxy DNS list; direct-DNS bootstrap entries are objects.
         val dnsServers = root.getValue("dns").jsonObject.getValue("servers").jsonArray
@@ -223,7 +222,7 @@ class DesktopTrafficProfileXrayConfigTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(
+            buildProfileConfig(
                 profile = profile,
                 serverLibrary = library,
                 options = LocalProxyXrayConfigOptions(
@@ -257,7 +256,7 @@ class DesktopTrafficProfileXrayConfigTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(
+            buildProfileConfig(
                 profile = profile,
                 serverLibrary = library,
                 options = LocalProxyXrayConfigOptions(
@@ -284,19 +283,25 @@ class DesktopTrafficProfileXrayConfigTest {
         val profile = DesktopStoredConfig(
             id = 1,
             name = "Routing",
-            content = "[Proxy Group]\\nEurope = select, Amsterdam\\n\\n[Rule]\\nFINAL,Europe\\n",
+            content = "[Proxy Group]\nEurope = select, Amsterdam\n\n[Rule]\nFINAL,Europe\n",
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+            buildProfileConfig(profile, library, LocalProxyXrayConfigOptions()),
         ).jsonObject
         val finalRule = root.getValue("routing").jsonObject.getValue("rules").jsonArray.last().jsonObject
 
-        assertEquals("skipi-proxy", finalRule.getValue("outboundTag").jsonPrimitive.content)
+        // The group is a real outbound of its own, named like Android names it.
+        assertEquals("shadowrocket-group:Europe", finalRule.getValue("outboundTag").jsonPrimitive.content)
+        assertTrue(
+            root.getValue("outbounds").jsonArray.any { outbound ->
+                outbound.jsonObject["tag"]?.jsonPrimitive?.content == "shadowrocket-group:Europe"
+            },
+        )
     }
 
     @Test
-    fun preservesAndroidOutboundTagForPolicyWithoutLocalServerOrGroup() {
+    fun aPolicyWithoutLocalServerOrGroupGoesToTheProxyAndIsReported() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
         )
@@ -307,17 +312,19 @@ class DesktopTrafficProfileXrayConfigTest {
             content = "[Rule]\nDOMAIN,example.com,Missing\nFINAL,PROXY\n",
         )
 
-        val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
-        ).jsonObject
+        val generated = buildProfileConfigGenerated(profile, library, LocalProxyXrayConfigOptions())
+        val root = Json.parseToJsonElement(generated.json).jsonObject
         val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray
 
         // DNS upstream rules precede user rules, as in Android's routing plan.
+        val missing = rules.first { rule -> rule.jsonObject["inboundTag"] == null }.jsonObject
+        assertEquals("proxy", missing.getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("full:example.com", missing.getValue("domain").jsonArray.single().jsonPrimitive.content)
+        assertEquals("proxy", rules.last().jsonObject.getValue("outboundTag").jsonPrimitive.content)
         assertEquals(
-            "Missing",
-            rules.first { rule -> rule.jsonObject["inboundTag"] == null }.jsonObject.getValue("outboundTag").jsonPrimitive.content,
+            listOf("Rule \"DOMAIN,example.com\": unknown target 'Missing', routed to proxy"),
+            generated.unappliedRules,
         )
-        assertEquals("skipi-proxy", rules.last().jsonObject.getValue("outboundTag").jsonPrimitive.content)
     }
 
     @Test
@@ -333,7 +340,7 @@ class DesktopTrafficProfileXrayConfigTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+            buildProfileConfig(profile, library, LocalProxyXrayConfigOptions()),
         ).jsonObject
         val processRule = root.getValue("routing").jsonObject
             .getValue("rules").jsonArray
@@ -357,7 +364,7 @@ class DesktopTrafficProfileXrayConfigTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+            buildProfileConfig(profile, library, LocalProxyXrayConfigOptions()),
         ).jsonObject
         val domainRule = root.getValue("routing").jsonObject
             .getValue("rules").jsonArray
@@ -368,13 +375,13 @@ class DesktopTrafficProfileXrayConfigTest {
     }
 
     @Test
-    fun failsFastForRulesThatNeedDesktopResourcesNotBundledWithXray() {
+    fun rulesThatNeedResourcesDesktopDoesNotBundleAreSkippedAndReported() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
         )
         val library = DesktopServerLibraries.add(DesktopServerLibrary(), server)
 
-        fun build(rule: String): String = DesktopTrafficProfileXrayConfigFactory.build(
+        fun build(rule: String) = buildProfileConfigGenerated(
             profile = DesktopStoredConfig(
                 id = 1,
                 name = "Unsupported rule",
@@ -384,11 +391,12 @@ class DesktopTrafficProfileXrayConfigTest {
             options = LocalProxyXrayConfigOptions(),
         )
 
-        assertFailsWith<IllegalArgumentException> {
-            build("IP-ASN,13335,PROXY")
-        }
-        assertFailsWith<IllegalArgumentException> {
-            build("RULE-SET,ext:custom.dat:blocked,PROXY")
-        }
+        val asn = build("IP-ASN,13335,PROXY")
+        assertEquals(listOf("geoip:as13335"), asn.unappliedRules)
+        assertFalse("geoip:as13335" in asn.json)
+
+        val external = build("RULE-SET,ext:custom.dat:blocked,PROXY")
+        assertEquals(listOf("ext:custom.dat:blocked"), external.unappliedRules)
+        assertFalse("custom.dat" in external.json)
     }
 }

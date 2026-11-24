@@ -30,7 +30,7 @@ class DesktopLocalProxyRuntimeContractTest {
         )
 
         val root = Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, options),
+            buildProfileConfig(profile, library, options),
         ).jsonObject
         val socks = root.getValue("inbounds").jsonArray.single().jsonObject
         val settings = socks.getValue("settings").jsonObject

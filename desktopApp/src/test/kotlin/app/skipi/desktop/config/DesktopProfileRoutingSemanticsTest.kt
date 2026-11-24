@@ -29,7 +29,7 @@ class DesktopProfileRoutingSemanticsTest {
             DesktopServerLibraries.add(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), beta),
             serverId = 1,
         )
-        val config = DesktopTrafficProfileXrayConfigFactory.build(
+        val config = buildProfileConfig(
             profile = DesktopStoredConfig(id = 7, name = "P", content = PROFILE),
             serverLibrary = library,
             options = LocalProxyXrayConfigOptions(socksPort = 20_480),
@@ -53,7 +53,7 @@ class DesktopProfileRoutingSemanticsTest {
     fun geoPortRejectAndFinalDirectRulesKeepTheirMeaning() {
         val alpha = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha")
         val library = DesktopServerLibraries.select(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), serverId = 1)
-        val config = DesktopTrafficProfileXrayConfigFactory.build(
+        val config = buildProfileConfig(
             profile = DesktopStoredConfig(id = 7, name = "P", content = SPECIAL),
             serverLibrary = library,
             options = LocalProxyXrayConfigOptions(socksPort = 20_480),
@@ -80,7 +80,7 @@ class DesktopProfileRoutingSemanticsTest {
             DesktopServerLibraries.add(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), beta),
             serverId = 1,
         )
-        val config = DesktopTrafficProfileXrayConfigFactory.build(
+        val config = buildProfileConfig(
             profile = DesktopStoredConfig(id = 7, name = "P", content = profile),
             serverLibrary = library,
             options = LocalProxyXrayConfigOptions(socksPort = 20_480),
@@ -116,7 +116,7 @@ class DesktopProfileRoutingSemanticsTest {
         val library = DesktopServerLibraries.select(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), serverId = 1)
         fun projection(strict: Boolean) = routingProjection(
             Json.parseToJsonElement(
-                DesktopTrafficProfileXrayConfigFactory.buildGenerated(
+                buildProfileConfigGenerated(
                     profile = DesktopStoredConfig(id = 7, name = "P", content = STRICT_PROFILE),
                     serverLibrary = library,
                     options = LocalProxyXrayConfigOptions(socksPort = 20_480),

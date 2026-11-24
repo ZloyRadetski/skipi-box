@@ -194,7 +194,9 @@ private fun RouteRule.toXrayRule(
     unapplied: MutableList<String>,
 ): JsonObject? {
     val targetOutboundTag = outboundTag.trim().ifBlank { XrayTags.PROXY }
-    val target = routeTargets[targetOutboundTag] ?: return null
+    val knownTarget = routeTargets[targetOutboundTag]
+    // A rule must not disappear or dangle because it names something unknown: it goes to the proxy, and says so.
+    val target = knownTarget ?: routeTargets[XrayTags.PROXY] ?: return null
     val domains = ruleValidator.classifyDomainRules(domain.toTrimmedNonEmptyDistinctList())
     val ips = ruleValidator.classifyIpRules(ip.toTrimmedNonEmptyDistinctList())
     unapplied += domains.unapplied
@@ -213,6 +215,9 @@ private fun RouteRule.toXrayRule(
         sanitizedNetwork.isNotEmpty() ||
         sanitizedProtocol.isNotEmpty()
     if (!hasConditions) return null
+    if (knownTarget == null) {
+        unapplied += "Rule \"${remarks.trim()}\": unknown target '$targetOutboundTag', routed to proxy"
+    }
 
     val resolvedTag = resolveUniqueRuleTag(remarks, id, usedRuleTags)
     return buildJsonObject {

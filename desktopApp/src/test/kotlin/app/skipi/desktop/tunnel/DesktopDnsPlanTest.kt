@@ -50,7 +50,7 @@ class DesktopDnsPlanTest {
             serverId = 1,
         )
         return Json.parseToJsonElement(
-            DesktopTrafficProfileXrayConfigFactory.build(
+            buildProfileConfig(
                 profile = DesktopStoredConfig(id = 1, name = "P", content = content),
                 serverLibrary = library,
                 options = DesktopAppSettings().toLocalProxyXrayConfigOptions(),

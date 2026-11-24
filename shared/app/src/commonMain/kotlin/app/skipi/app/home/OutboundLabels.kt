@@ -25,6 +25,14 @@ data class OutboundLabels(
             val server = serverNames[match.groupValues[2].toIntOrNull()] ?: return tag
             return "$ProfileGroupLabel - $server"
         }
+        // A profile group: `shadowrocket-group:<Name>`, its members `shadowrocket-group:<Name>-policy-<id>`.
+        ShadowrocketGroupMemberTag.matchEntire(tag)?.let { match ->
+            val server = serverNames[match.groupValues[2].toIntOrNull()] ?: return tag
+            return "${match.groupValues[1]} - $server"
+        }
+        if (tag.startsWith(ShadowrocketGroupPrefix)) {
+            return tag.removePrefix(ShadowrocketGroupPrefix).ifBlank { tag }
+        }
         val member = MemberTag.matchEntire(tag)
         if (member != null) {
             val group = groupName(member.groupValues[1]) ?: return tag
@@ -39,6 +47,8 @@ data class OutboundLabels(
         if (tag == XrayTags.PROXY) selectedName else tag.toIntOrNull()?.let(serverNames::get)
 
     private companion object {
+        const val ShadowrocketGroupPrefix = "shadowrocket-group:"
+        val ShadowrocketGroupMemberTag = Regex("""shadowrocket-group:(.+)-policy-(\d+)""")
         val MemberTag = Regex("""(.+)-policy-(\d+)""")
         // A profile's servers and groups (TrafficProfileXrayPlanner); the group's own name is not in the tag.
         val ProfileServerTag = Regex("""skipi-server-(\d+)""")

@@ -71,6 +71,6 @@ class DesktopTransportSockoptTest {
             configs = listOf(DesktopStoredConfig(id = 1, name = "P", content = "[Rule]\nFINAL,PROXY\n")),
         )
 
-        assertTransport(outboundsOf(profiles), proxyTag = "skipi-proxy")
+        assertTransport(outboundsOf(profiles), proxyTag = "proxy")
     }
 }

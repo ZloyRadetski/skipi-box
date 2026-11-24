@@ -10,11 +10,12 @@ import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
+import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayMuxOutboundOptions
 import engine.xray.XrayOutboundRenderingOptions
 import engine.xray.XrayOutboundTransportOptions
 import engine.xray.xrayDirectOutboundDomainStrategy
 import engine.xray.xrayWireguardDomainStrategy
-import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XrayRoutingRequest
 import engine.xray.XrayTags
 import engine.xray.buildXrayBalancers
@@ -67,6 +68,11 @@ object DesktopSelectedServerXrayConfigFactory {
         tunVpnDns: String = VpnDefaults.IPV4_DNS,
         /** TUN mode: Core's DNS answers port 53 on the SOCKS inbound, see [buildDesktopSelectedServerConfigWithBridge]. */
         answerTunDns: Boolean = false,
+        /**
+         * The active Shadowrocket profile. Its groups, DNS, IPv6, sniffing, Mux and Fragment replace the
+         * global ones, as Android's `withActiveTrafficConfigApplied`; [routing] then is the profile's own routing.
+         */
+        profile: DesktopProfileRuntime? = null,
     ): Result<DesktopGeneratedXrayConfig>? {
         val selectedId = serverLibrary.selectedServerId ?: return null
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
@@ -80,7 +86,6 @@ object DesktopSelectedServerXrayConfigFactory {
                         answerTunDns = answerTunDns,
                         skipiRouting = customServerSkipiRouting(
                             profile = null,
-                            profileDomainStrategy = null,
                             routing = routing,
                             rawRoutePlanning = DesktopRawRoutePlanning(
                                 serverLibrary, trafficConfigContentById, subscriptionPingUrl, latencyByServerId,
@@ -89,7 +94,8 @@ object DesktopSelectedServerXrayConfigFactory {
                     ),
                 )
             }
-            routingDataDirectory?.let { dataDirectory ->
+            // A profile's external rule-sets are skipped and reported when the file is missing, never an error.
+            routingDataDirectory?.takeIf { profile == null }?.let { dataDirectory ->
                 validateXrayExternalDomainResources(routing.rules) { fileName ->
                     val file = dataDirectory.resolve(fileName).toFile()
                     file.isFile && file.length() > 0
@@ -124,10 +130,10 @@ object DesktopSelectedServerXrayConfigFactory {
                     servers = records,
                     routeRules = routing.rules,
                     defaultRouteOutboundTag = routing.defaultOutboundTag,
-                    shadowrocketPolicyGroups = emptyList(),
+                    shadowrocketPolicyGroups = profile?.plan?.policyGroups.orEmpty(),
                     trafficConfigContentById = trafficConfigContentById,
                     enableLocalDns = answerTunDns,
-                    enableFragment = false,
+                    enableFragment = profile?.settings?.enableFragment == true,
                     subscriptionPingUrl = subscriptionPingUrl,
                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
                 ),
@@ -139,9 +145,10 @@ object DesktopSelectedServerXrayConfigFactory {
                 reservedPorts = options.reservedLocalPorts(),
             )
             val plan = amneziaWgPlan?.let(rawPlan::withAmneziaWgBridge) ?: rawPlan
-            val ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag)
+            val ruleValidator = desktopRoutingRuleValidator(hasResourceTag)
+            val dnsInputs = profile?.toDnsInputs() ?: DesktopDnsInputs(tunDns = tunVpnDns)
             val dnsPlan = planDesktopXrayDns(
-                inputs = DesktopDnsInputs(tunDns = tunVpnDns),
+                inputs = dnsInputs,
                 startupProxyServerDomains = plan.proxyOutbounds.startupProxyServerDnsDomains(),
                 ruleValidator = ruleValidator,
             )
@@ -163,29 +170,45 @@ object DesktopSelectedServerXrayConfigFactory {
             )
             plan.proxyOutbounds.forEach { outbound -> outbound.server?.let(::validateServer) }
 
+            val settings = profile?.settings
+            val muxOptions = settings?.takeIf { it.enableMux }?.let {
+                XrayMuxOutboundOptions(it.muxConcurrency, it.muxXudpConcurrency, it.muxXudpProxyUdp443)
+            }
+            val fragmentOptions = settings?.takeIf { it.enableFragment }?.let {
+                XrayFragmentOutboundOptions(
+                    domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                    packets = it.fragmentPackets,
+                    length = it.fragmentLength,
+                    interval = it.fragmentInterval,
+                )
+            }
             val json = LocalProxyXrayConfigFactory.buildFromPlan(
                 plan = plan,
-                options = options,
+                options = if (profile == null) options else options.copy(sniffing = profile.sniffingOptions(), mux = null, fragment = null),
                 renderingOptions = XrayOutboundRenderingOptions(
                     primaryOutboundTag = plan.routeTargets[XrayTags.PROXY]?.tag ?: XrayTags.PROXY,
                     enableLocalDns = answerTunDns,
                     dnsPlan = dnsPlan,
                     // Like Android: queries Core's DNS does not answer itself go out through the proxy.
                     dnsProxyOutboundTag = if (answerTunDns) plan.dnsDialerProxyTag() else null,
-                    // No profile, so no IPv6: the same strategy Android's defaults select.
+                    // Without a profile there is no IPv6: the strategy Android's defaults select.
                     transport = options.tcpSockopt?.let { sockopt ->
                         XrayOutboundTransportOptions(
-                            directDomainStrategy = xrayDirectOutboundDomainStrategy(enableIpv6 = false, enableIpv6Prefer = false),
-                            wireguardDomainStrategy = xrayWireguardDomainStrategy(enableIpv6 = false, enableIpv6Prefer = false),
+                            directDomainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                            wireguardDomainStrategy = xrayWireguardDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
                             tcpSockopt = sockopt,
                         )
                     },
-                    mux = null,
-                    fragment = null,
+                    mux = muxOptions,
+                    fragment = fragmentOptions,
                 ),
                 routingPlan = routingPlan,
             )
-            DesktopGeneratedXrayConfig(json = json, amneziaWg = amneziaWgPlan?.toDesktopBridge())
+            DesktopGeneratedXrayConfig(
+                json = json,
+                amneziaWg = amneziaWgPlan?.toDesktopBridge(),
+                unappliedRules = routingPlan.unappliedRules,
+            )
         }
     }
 
