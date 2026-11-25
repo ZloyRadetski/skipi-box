@@ -88,12 +88,6 @@ internal class AndroidResourceFileStore(
         kind.applyPermissions(file(kind))
     }
 
-    private fun bundledXrayCoreFileOrNull(): File? {
-        if (currentRuntimeAbi() != Arm64Abi) return null
-        return File(appContext.applicationInfo.nativeLibraryDir, XrayCoreLibraryName)
-            .takeIf { it.isFile && it.length() > 0 }
-    }
-
     fun replace(kind: ResourceFileKind, uri: Uri) {
         snapshotFiles.replace(kind) {
             appContext.contentResolver.openInputStream(uri) ?: throw FileNotFoundException(uri.toString())
@@ -213,11 +207,6 @@ internal fun Context.prepareXrayResourceFilePaths(
     )
 }
 
-private fun currentRuntimeAbi(): String {
-    return Build.SUPPORTED_ABIS.firstOrNull { abi -> abi in SupportedAndroidAbis }
-        ?: error("Unsupported CPU ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
-}
-
 @Volatile
 private var cachedPackageUpdatedAtMillis: Long? = null
 
@@ -236,12 +225,6 @@ private fun Context.packageUpdatedAtMillis(): Long {
         time
     }.getOrDefault(0L)
 }
-
-private const val Arm64Abi = "arm64-v8a"
-private const val XrayCoreLibraryName = "libxray.so"
-private const val XrayExecutableMode = 493
-
-private val SupportedAndroidAbis = setOf(Arm64Abi, "armeabi-v7a", "x86", "x86_64")
 
 
 private fun syncDirectory(directory: File) {

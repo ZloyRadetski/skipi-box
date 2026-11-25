@@ -45,4 +45,28 @@ class CoreMemoryKilobytesTest {
         assertNull(coreMemoryKilobytes("""{"allocBytes": 0, "sysBytes": 0}"""))
         assertNull(coreMemoryKilobytes("not json"))
     }
+
+    @Test
+    fun addsTheMemoryHevHoldsOutsideTheGoHeap() {
+        // 20 MB held by Go plus 6 MB in the tunnel runtime (hev) that the Go runtime never sees.
+        val raw = """{"allocBytes": 17825792, "sysBytes": 33554432, "heapReleased": 12582912, "externalBytes": 6291456}"""
+
+        assertEquals(26_624L, coreMemoryKilobytes(raw))
+    }
+
+    @Test
+    fun addsTheTunnelRuntimeEvenWhenTheGoTotalFallsBackToTheLiveHeap() {
+        assertEquals(19_456L, coreMemoryKilobytes("""{"allocBytes": 17825792, "externalBytes": 2097152}"""))
+    }
+
+    @Test
+    fun ignoresANegativeOrMissingExternalFigure() {
+        assertEquals(17_408L, coreMemoryKilobytes("""{"allocBytes": 17825792, "externalBytes": -1}"""))
+        assertEquals(17_408L, coreMemoryKilobytes("""{"allocBytes": 17825792}"""))
+    }
+
+    @Test
+    fun hevMemoryAloneIsStillAFigureWhenTheGoPartIsEmpty() {
+        assertEquals(2_048L, coreMemoryKilobytes("""{"externalBytes": 2097152}"""))
+    }
 }

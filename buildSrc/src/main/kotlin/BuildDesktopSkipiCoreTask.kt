@@ -11,6 +11,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
+import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.inject.Inject
 
@@ -53,6 +54,7 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         destination.parentFile.mkdirs()
 
         stageHevRuntime(sourceDirectory)
+        val xrayModfile = prepareXrayPatches(sourceDirectory)
 
         val cc = resolveCompiler(cCompiler.get())
         require(cc.isFile) {
@@ -80,6 +82,15 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
                 "./cmd/skipicore-desktop",
             )
             environment("CGO_ENABLED", "1")
+            if (xrayModfile != null) {
+                // The patched xray-core (patches/xray-geodata in the Core): go.mod stays as it is.
+                environment(
+                    "GOFLAGS",
+                    listOf(System.getenv("GOFLAGS").orEmpty(), "-modfile=${xrayModfile.absolutePath}")
+                        .filter { it.isNotBlank() }
+                        .joinToString(" "),
+                )
+            }
             environment("CC", cc.absolutePath)
             environment("CXX", cxx.absolutePath)
             // Windows spells the variable "Path"; a second "PATH" key would leave Go and gcc with the
@@ -117,6 +128,25 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         } catch (error: Exception) {
             logger.warn("The HEV TUN runtime could not be staged into the SKIPI Core build ($platform): ${error.message}")
         }
+    }
+
+    /**
+     * The Core builds against a patched xray-core (faster, leaner geo loading). Its tools/xrayoverlay applies the
+     * patches to the xray-core version pinned in go.mod and prints the go.mod variant to build with. A patch that no
+     * longer applies fails the build here: it is never skipped, so an xray-core update cannot ship half-patched.
+     * An older Core checkout without the tool builds as before.
+     */
+    private fun prepareXrayPatches(sourceDirectory: File): File? {
+        if (!File(sourceDirectory, "tools/xrayoverlay").isDirectory) return null
+        val output = ByteArrayOutputStream()
+        execOperations.exec {
+            workingDir = sourceDirectory
+            commandLine(goExecutable.get(), "run", "./tools/xrayoverlay")
+            standardOutput = output
+        }.rethrowFailure().assertNormalExitValue()
+        val modfile = File(output.toString().trim().lineSequence().last())
+        require(modfile.isFile) { "tools/xrayoverlay did not produce a go.mod: ${modfile.path}" }
+        return modfile
     }
 
     private fun resolveCompiler(configured: String): File {

@@ -16,7 +16,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val androidTestJavaHome = providers.gradleProperty("skipiAndroidTestJavaHome").orNull
 // Release signing secrets come from the user-level ~/.gradle/gradle.properties or, for CI, from environment
@@ -194,7 +193,6 @@ androidComponents {
 
     onVariants { variant ->
         variant.sources.assets?.addStaticSourceDirectory("build/generated/sharedBundledAssets")
-        variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
         variant.sources.res?.addStaticSourceDirectory("build/generated/sharedRes")
     }
 }

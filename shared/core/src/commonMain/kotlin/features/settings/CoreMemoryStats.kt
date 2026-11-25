@@ -17,6 +17,8 @@ data class CoreMemoryStats(
     val heapReleased: Long = 0L,
     val numGoroutines: Int = 0,
     val numGc: Long = 0L,
+    /** Memory the tunnel runtime (hev) holds outside the Go runtime's own figures; 0 where it cannot be read. */
+    val externalBytes: Long = 0L,
 )
 
 private val memoryJson = Json {
@@ -31,13 +33,15 @@ fun parseCoreMemoryStats(raw: String): CoreMemoryStats? {
 
 /**
  * The core's own memory as the home tile shows it: what the Go runtime holds from the OS (everything it
- * mapped minus the heap it gave back), or null when the core gave no figure. Live objects alone leave out
- * free heap not yet returned, goroutine stacks and runtime metadata, and jump with every GC. A core that
- * reports no usable total falls back to its live heap.
+ * mapped minus the heap it gave back) plus what the tunnel runtime (hev) holds outside Go's accounting,
+ * or null when the core gave no figure. Live objects alone leave out free heap not yet returned, goroutine
+ * stacks and runtime metadata, and jump with every GC. A core that reports no usable Go total falls back
+ * to its live heap.
  */
 fun coreMemoryKilobytes(raw: String): Long? {
     val stats = parseCoreMemoryStats(raw) ?: return null
     val held = stats.sysBytes - stats.heapReleased
-    val bytes = if (held > stats.allocBytes) held else stats.allocBytes
+    val goBytes = if (held > stats.allocBytes) held else stats.allocBytes
+    val bytes = goBytes.coerceAtLeast(0L) + stats.externalBytes.coerceAtLeast(0L)
     return bytes.takeIf { it > 0L }?.div(1_024L)
 }
