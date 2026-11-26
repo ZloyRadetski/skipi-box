@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Speed
@@ -177,8 +180,11 @@ fun SkipiVpnSettingsScreen(
     capabilities: VpnSettingsCapabilities = VpnSettingsCapabilities(),
     /** Host-owned rows shown above the shared ones, for settings only that host has. */
     hostContent: (@Composable () -> Unit)? = null,
+    /** The host words the boot switch as launching on login, and the search finds it under that name. */
+    autoConnectOnBootIsLaunchOnLogin: Boolean = false,
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.Vpn, listState)
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -198,93 +204,113 @@ fun SkipiVpnSettingsScreen(
                 item(key = "vpn_tun") {
                     SmallTitle(text = labels.vpnSectionTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(
-                            title = labels.tunTitle,
-                            startAction = settingIcon(Icons.Rounded.SettingsEthernet),
-                            summary = state.tunSummary,
-                            onClick = onOpenTunSettings,
-                        )
-                        if (capabilities.hevTun) SwitchPreference(
-                            title = labels.hevTunTitle,
-                            startAction = settingIcon(Icons.Rounded.Speed),
-                            summary = labels.hevTunSummary,
-                            checked = state.hevTunEnabled,
-                            onCheckedChange = onHevTunChange,
-                        )
-                        if (capabilities.strictFullTunnel) SwitchPreference(
-                            title = labels.strictFullTunnelTitle,
-                            startAction = settingIcon(Icons.Rounded.Lock),
-                            summary = labels.strictFullTunnelSummary,
-                            checked = state.strictFullTunnelEnabled,
-                            onCheckedChange = onStrictFullTunnelChange,
-                        )
+                        SettingsSearchAnchor("settings_tun") {
+                            ArrowPreference(
+                                title = labels.tunTitle,
+                                startAction = settingIcon(Icons.Rounded.SettingsEthernet),
+                                summary = state.tunSummary,
+                                onClick = onOpenTunSettings,
+                            )
+                        }
+                        if (capabilities.hevTun) SettingsSearchAnchor("configs_hevtun") {
+                            SwitchPreference(
+                                title = labels.hevTunTitle,
+                                startAction = settingIcon(Icons.Rounded.Speed),
+                                summary = labels.hevTunSummary,
+                                checked = state.hevTunEnabled,
+                                onCheckedChange = onHevTunChange,
+                            )
+                        }
+                        if (capabilities.strictFullTunnel) SettingsSearchAnchor("settings_strict_full_tunnel") {
+                            SwitchPreference(
+                                title = labels.strictFullTunnelTitle,
+                                startAction = settingIcon(Icons.Rounded.Lock),
+                                summary = labels.strictFullTunnelSummary,
+                                checked = state.strictFullTunnelEnabled,
+                                onCheckedChange = onStrictFullTunnelChange,
+                            )
+                        }
                     }
                 }
                 item(key = "vpn_auto_connect") {
                     SmallTitle(text = labels.autoConnectSectionTitle)
                     SkipiSettingsSectionCard {
-                        SwitchPreference(
-                            title = labels.autoConnectOnOpenTitle,
-                            startAction = settingIcon(Icons.Rounded.PlayCircle),
-                            summary = labels.autoConnectOnOpenSummary,
-                            checked = state.autoConnectOnAppOpen,
-                            onCheckedChange = onAutoConnectOnOpenChange,
-                        )
-                        if (capabilities.autoConnectOnBoot) SwitchPreference(
-                            title = labels.autoConnectOnBootTitle,
-                            startAction = settingIcon(Icons.Rounded.PowerSettingsNew),
-                            summary = labels.autoConnectOnBootSummary,
-                            checked = state.autoConnectOnBoot,
-                            onCheckedChange = onAutoConnectOnBootChange,
-                        )
+                        SettingsSearchAnchor("settings_auto_connect_on_app_open_title") {
+                            SwitchPreference(
+                                title = labels.autoConnectOnOpenTitle,
+                                startAction = settingIcon(Icons.Rounded.PlayCircle),
+                                summary = labels.autoConnectOnOpenSummary,
+                                checked = state.autoConnectOnAppOpen,
+                                onCheckedChange = onAutoConnectOnOpenChange,
+                            )
+                        }
+                        if (capabilities.autoConnectOnBoot) SettingsSearchAnchor(if (autoConnectOnBootIsLaunchOnLogin) "settings_launch_on_login_title" else "settings_auto_connect_on_boot_title") {
+                            SwitchPreference(
+                                title = labels.autoConnectOnBootTitle,
+                                startAction = settingIcon(Icons.Rounded.PowerSettingsNew),
+                                summary = labels.autoConnectOnBootSummary,
+                                checked = state.autoConnectOnBoot,
+                                onCheckedChange = onAutoConnectOnBootChange,
+                            )
+                        }
                     }
                 }
                 if (capabilities.killSwitch || capabilities.systemVpnSettings) item(key = "vpn_kill_switch") {
                     SmallTitle(text = labels.killSwitchSectionTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.killSwitch) SwitchPreference(
-                            title = labels.killSwitchTitle,
-                            startAction = settingIcon(Icons.Rounded.Block),
-                            summary = labels.killSwitchSummary,
-                            checked = state.killSwitchEnabled,
-                            onCheckedChange = onKillSwitchChange,
-                        )
-                        if (capabilities.systemVpnSettings) ArrowPreference(
-                            title = labels.systemVpnSettingsTitle,
-                            startAction = settingIcon(Icons.Rounded.VpnKey),
-                            summary = labels.systemVpnSettingsSummary,
-                            onClick = onOpenSystemVpnSettings,
-                        )
+                        if (capabilities.killSwitch) SettingsSearchAnchor("settings_kill_switch") {
+                            SwitchPreference(
+                                title = labels.killSwitchTitle,
+                                startAction = settingIcon(Icons.Rounded.Block),
+                                summary = labels.killSwitchSummary,
+                                checked = state.killSwitchEnabled,
+                                onCheckedChange = onKillSwitchChange,
+                            )
+                        }
+                        if (capabilities.systemVpnSettings) SettingsSearchAnchor("settings_system_vpn_settings") {
+                            ArrowPreference(
+                                title = labels.systemVpnSettingsTitle,
+                                startAction = settingIcon(Icons.Rounded.VpnKey),
+                                summary = labels.systemVpnSettingsSummary,
+                                onClick = onOpenSystemVpnSettings,
+                            )
+                        }
                     }
                 }
                 item(key = "vpn_stability") {
                     SmallTitle(text = labels.stabilitySectionTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.batteryOptimization) SwitchPreference(
-                            title = labels.batteryOptimizationTitle,
-                            startAction = settingIcon(Icons.Rounded.BatteryChargingFull),
-                            summary = if (state.batteryOptimizationUnrestricted) {
-                                labels.batteryUnrestrictedSummary
-                            } else {
-                                labels.batteryRestrictedSummary
-                            },
-                            checked = state.batteryOptimizationUnrestricted,
-                            onCheckedChange = onBatteryOptimizationChange,
-                        )
-                        if (capabilities.wakeLock) SwitchPreference(
-                            title = labels.wakeLockTitle,
-                            startAction = settingIcon(Icons.Rounded.Coffee),
-                            summary = labels.wakeLockSummary,
-                            checked = state.wakeLockEnabled,
-                            onCheckedChange = onWakeLockChange,
-                        )
-                        if (capabilities.seamlessSwitching) SwitchPreference(
-                            title = labels.seamlessSwitchingTitle,
-                            startAction = settingIcon(Icons.Rounded.SwapHoriz),
-                            summary = labels.seamlessSwitchingSummary,
-                            checked = state.seamlessNetworkSwitchingEnabled,
-                            onCheckedChange = onSeamlessSwitchingChange,
-                        )
+                        if (capabilities.batteryOptimization) SettingsSearchAnchor("settings_battery_optimization") {
+                            SwitchPreference(
+                                title = labels.batteryOptimizationTitle,
+                                startAction = settingIcon(Icons.Rounded.BatteryChargingFull),
+                                summary = if (state.batteryOptimizationUnrestricted) {
+                                    labels.batteryUnrestrictedSummary
+                                } else {
+                                    labels.batteryRestrictedSummary
+                                },
+                                checked = state.batteryOptimizationUnrestricted,
+                                onCheckedChange = onBatteryOptimizationChange,
+                            )
+                        }
+                        if (capabilities.wakeLock) SettingsSearchAnchor("settings_wake_lock") {
+                            SwitchPreference(
+                                title = labels.wakeLockTitle,
+                                startAction = settingIcon(Icons.Rounded.Coffee),
+                                summary = labels.wakeLockSummary,
+                                checked = state.wakeLockEnabled,
+                                onCheckedChange = onWakeLockChange,
+                            )
+                        }
+                        if (capabilities.seamlessSwitching) SettingsSearchAnchor("settings_seamless_network_switching") {
+                            SwitchPreference(
+                                title = labels.seamlessSwitchingTitle,
+                                startAction = settingIcon(Icons.Rounded.SwapHoriz),
+                                summary = labels.seamlessSwitchingSummary,
+                                checked = state.seamlessNetworkSwitchingEnabled,
+                                onCheckedChange = onSeamlessSwitchingChange,
+                            )
+                        }
                         ArrowPreference(
                             title = labels.networkAutomationTitle,
                             startAction = settingIcon(Icons.Rounded.AutoMode),

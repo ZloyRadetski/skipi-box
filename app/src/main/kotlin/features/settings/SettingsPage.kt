@@ -3,6 +3,7 @@
 
 package features.settings
 
+import app.skipi.ui.settings.search.SettingsSearchPage
 import app.LocalIsWideScreen
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -64,5 +65,22 @@ fun SettingsPage(
             }
             navigator.push(route)
         },
+        onOpenSearchResult = { page -> navigator.push(page.route()) },
     )
+}
+
+private fun SettingsSearchPage.route(): Route = when (this) {
+    SettingsSearchPage.Appearance -> Route.SettingsAppearance
+    SettingsSearchPage.Vpn -> Route.SettingsVpn
+    SettingsSearchPage.NetworkAutomation -> Route.SettingsNetworkAutomation
+    SettingsSearchPage.LocalProxy -> Route.LocalProxySettings
+    SettingsSearchPage.Subscriptions -> Route.SettingsSubscriptions
+    SettingsSearchPage.SubscriptionPing -> Route.SubscriptionPingSettings
+    SettingsSearchPage.General -> Route.SettingsGeneral
+    SettingsSearchPage.BackupReset -> Route.SettingsBackupReset
+    SettingsSearchPage.SpeedTest -> Route.SpeedTest
+    SettingsSearchPage.DnsLeakTest -> Route.DnsLeakTest
+    SettingsSearchPage.IpInfo -> Route.IpInfo
+    SettingsSearchPage.Logs -> Route.SettingsLogs
+    SettingsSearchPage.About -> Route.About
 }

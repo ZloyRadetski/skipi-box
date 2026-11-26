@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Memory
@@ -142,6 +145,7 @@ fun SkipiAboutScreen(
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.About, listState)
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -179,8 +183,8 @@ fun SkipiAboutScreen(
                 if (capabilities.runtime) item(key = "about_runtime") {
                     SmallTitle(text = labels.runtimeTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = "SKIPI Core", startAction = settingIcon(Icons.Rounded.Memory), summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo)
-                        BasicComponent(title = "Xray-core", startAction = settingIcon(Icons.Rounded.Hub), summary = runtime.xrayCoreVersion)
+                        SettingsSearchAnchor("about_skipi_core") { ArrowPreference(title = "SKIPI Core", startAction = settingIcon(Icons.Rounded.Memory), summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo) }
+                        SettingsSearchAnchor("about_xray_core") { BasicComponent(title = "Xray-core", startAction = settingIcon(Icons.Rounded.Hub), summary = runtime.xrayCoreVersion) }
                         if (runtime.hevTunnelVersion.isNotBlank()) {
                             BasicComponent(title = "hev-socks5-tunnel", startAction = settingIcon(Icons.Rounded.Lan), summary = runtime.hevTunnelVersion)
                         }
@@ -189,10 +193,10 @@ fun SkipiAboutScreen(
                 if (capabilities.replayOnboarding || capabilities.telegram || capabilities.bugReport || capabilities.source) item(key = "about_other") {
                     SmallTitle(text = labels.otherTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.replayOnboarding) ArrowPreference(title = labels.replayOnboardingTitle, startAction = settingIcon(Icons.Rounded.Replay), summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding)
-                        if (capabilities.telegram) ArrowPreference(title = labels.telegramTitle, startAction = settingIcon(Icons.Rounded.Send), summary = "@skipi_public", onClick = onOpenTelegram)
-                        if (capabilities.bugReport) ArrowPreference(title = labels.bugReportTitle, startAction = settingIcon(Icons.Rounded.BugReport), summary = labels.bugReportSummary, onClick = onOpenBugReport)
-                        if (capabilities.source) ArrowPreference(title = labels.sourceTitle, startAction = settingIcon(Icons.Rounded.Code), onClick = onOpenSource)
+                        if (capabilities.replayOnboarding) SettingsSearchAnchor("about_replay_onboarding") { ArrowPreference(title = labels.replayOnboardingTitle, startAction = settingIcon(Icons.Rounded.Replay), summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding) }
+                        if (capabilities.telegram) SettingsSearchAnchor("about_telegram_channel") { ArrowPreference(title = labels.telegramTitle, startAction = settingIcon(Icons.Rounded.Send), summary = "@skipi_public", onClick = onOpenTelegram) }
+                        if (capabilities.bugReport) SettingsSearchAnchor("about_bug_report") { ArrowPreference(title = labels.bugReportTitle, startAction = settingIcon(Icons.Rounded.BugReport), summary = labels.bugReportSummary, onClick = onOpenBugReport) }
+                        if (capabilities.source) SettingsSearchAnchor("about_view_skipi_source") { ArrowPreference(title = labels.sourceTitle, startAction = settingIcon(Icons.Rounded.Code), onClick = onOpenSource) }
                     }
                 }
                 platformContent?.let { content -> item(key = "about_platform_extension") { Column(content = content) } }

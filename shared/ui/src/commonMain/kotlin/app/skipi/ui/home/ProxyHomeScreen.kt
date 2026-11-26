@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.SkipiSearchField
 import app.skipi.ui.components.pullRefreshHeaderHeightPx
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -485,10 +486,10 @@ val easterEgg = rememberHeaderEasterEggState()
                             groupSelector = groupSelectorContent,
                             scrollingHeader = if (state.searchEnabled && state.isSearchVisible) {
                                 {
-                                    SkipiProxyHomeSearchField(
+                                    SkipiSearchField(
                                         value = state.searchQuery,
                                         onValueChange = { query -> send(ProxyHomeAction.SetSearchQuery(query)) },
-                                        label = stringResource(Res.string.home_search_servers),
+                                        placeholder = stringResource(Res.string.home_search_servers),
                                         modifier = Modifier.fillMaxWidth(),
                                     )
                                 }
@@ -605,10 +606,10 @@ val easterEgg = rememberHeaderEasterEggState()
                         enter = fadeIn() + expandVertically(),
                         exit = shrinkVertically() + fadeOut(),
                     ) {
-                        SkipiProxyHomeSearchField(
+                        SkipiSearchField(
                             value = state.searchQuery,
                             onValueChange = { query -> send(ProxyHomeAction.SetSearchQuery(query)) },
-                            label = stringResource(Res.string.home_search_servers),
+                            placeholder = stringResource(Res.string.home_search_servers),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -662,10 +663,10 @@ val easterEgg = rememberHeaderEasterEggState()
                                             enter = fadeIn() + expandVertically(),
                                             exit = shrinkVertically() + fadeOut(),
                                         ) {
-                                            SkipiProxyHomeSearchField(
+                                            SkipiSearchField(
                                                 value = state.searchQuery,
                                                 onValueChange = { query -> send(ProxyHomeAction.SetSearchQuery(query)) },
-                                                label = stringResource(Res.string.home_search_servers),
+                                                placeholder = stringResource(Res.string.home_search_servers),
                                                 modifier = Modifier.fillMaxWidth(),
                                             )
                                         }
@@ -713,10 +714,10 @@ val easterEgg = rememberHeaderEasterEggState()
                                                 enter = fadeIn() + expandVertically(),
                                                 exit = shrinkVertically() + fadeOut(),
                                             ) {
-                                                SkipiProxyHomeSearchField(
+                                                SkipiSearchField(
                                                     value = state.searchQuery,
                                                     onValueChange = { query -> send(ProxyHomeAction.SetSearchQuery(query)) },
-                                                    label = stringResource(Res.string.home_search_servers),
+                                                    placeholder = stringResource(Res.string.home_search_servers),
                                                     modifier = Modifier.fillMaxWidth(),
                                                 )
                                             }

@@ -101,6 +101,9 @@
     <string name="configs_lock_update">آپدیت نکنید</string>
     <string name="configs_lock_update_summary">تا زمانی که این گزینه را غیرفعال نکنید، جایگزینی از راه دور را مسدود می کند</string>
     <string name="nav_settings">تنظیمات</string>
+    <string name="settings_search_hint">جستجو در تنظیمات</string>
+    <string name="settings_search_empty">چیزی پیدا نشد</string>
+    <string name="search_clear">پاک کردن جستجو</string>
     <string name="settings_title">تنظیمات</string>
     <string name="settings_theme">تم</string>
     <string name="settings_color_mode">حالت رنگ</string>

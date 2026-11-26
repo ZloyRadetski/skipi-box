@@ -3,12 +3,42 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.components.SkipiSearchField
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.fillMaxHeight
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import app.skipi.ui.components.SkipiContentIcon
+import app.skipi.ui.resources.settings_search_empty
+import app.skipi.ui.resources.settings_search_hint
+import app.skipi.ui.settings.search.LocalSettingsSearchController
+import app.skipi.ui.settings.search.SettingsSearchHost
+import app.skipi.ui.settings.search.SettingsSearchPage
+import app.skipi.ui.settings.search.SettingsSearchResult
+import app.skipi.ui.settings.search.rememberSettingsSearchResults
+import app.skipi.ui.settings.search.settingsSearchEntries
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
-import app.skipi.ui.layout.pageScrollModifiers
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,7 +65,6 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -70,7 +99,6 @@ import app.skipi.ui.resources.settings_header_logs
 import app.skipi.ui.resources.settings_header_network
 import app.skipi.ui.resources.settings_header_subscriptions
 import app.skipi.ui.resources.settings_header_tools
-import app.skipi.ui.resources.settings_title
 import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -100,6 +128,8 @@ data class SkipiSettingsHomeState(
         SkipiSettingsDestination.entries
             .filter { it != SkipiSettingsDestination.NetworkAutomation }
             .toSet(),
+    /** What the settings search may offer; it also reaches pages the overview does not list. */
+    val searchHost: SettingsSearchHost = SettingsSearchHost(),
 )
 
 @Composable
@@ -109,27 +139,47 @@ fun SkipiSettingsHomeScreen(
     onNavigate: (SkipiSettingsDestination) -> Unit,
     modifier: Modifier = Modifier,
     isWideScreen: Boolean = false,
+    onOpenSearchResult: (SettingsSearchPage) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     OnNavigationReselect { listState.animateScrollToItem(0) }
     val categoryIconColor = settingIconBackgroundColor(SkipiTheme.colors.accent)
     val categoryIconGlyphColor = settingIconGlyphColor(SkipiTheme.colors.onAccent, state.categoryIconGlyphColor)
     val visible = state.visibleDestinations
-    val scrollBehavior = MiuixScrollBehavior()
+    val search = LocalSettingsSearchController.current
+    val searching = search.query.isNotBlank()
+    val searchEntries = remember(state.searchHost) { settingsSearchEntries(state.searchHost) }
+    val results = if (searching) rememberSettingsSearchResults(search.query, searchEntries) else emptyList()
+    val searchFocus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(search.searchFieldRequested) {
+        if (search.searchFieldRequested) {
+            listState.requestScrollToItem(0)
+            searchFocus.requestFocus()
+            search.searchFieldFocused()
+        }
+    }
+    // A new query shows its best results, not the place the previous list was left at.
+    var shownQuery by rememberSaveable { mutableStateOf(search.query) }
+    LaunchedEffect(search.query) {
+        if (shownQuery != search.query) {
+            shownQuery = search.query
+            listState.requestScrollToItem(0)
+        }
+    }
+    // An overview entry opens its page at the top, whatever an unfinished search asked for.
+    val open: (SkipiSettingsDestination) -> Unit = { destination ->
+        search.clearFocus()
+        onNavigate(destination)
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
         modifier = modifier.fillMaxSize(),
+        // No title bar: the search field opens the page. On a phone it still starts below the status bar.
         topBar = {
-            // A compact bar: the large collapsing title left a tall empty band between the status bar
-            // and the title. It still sits below the status bar on a phone.
-            SmallTopAppBar(
-                title = stringResource(Res.string.settings_title),
-                subtitle = state.versionLabel,
-                color = Color.Transparent,
-                scrollBehavior = scrollBehavior,
-                defaultWindowInsetsPadding = !isWideScreen,
-            )
+            if (!isWideScreen) Spacer(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars))
         },
     ) { innerPadding ->
         val contentPadding = pageContentPaddingWithCutout(
@@ -141,11 +191,36 @@ fun SkipiSettingsHomeScreen(
             state = listState,
             modifier = Modifier
                 .fadeUnderTopBar(contentPadding.calculateTopPadding())
-                .pageScrollModifiers(scrollBehavior),
+                .scrollEndHaptic()
+                .overScrollVertical()
+                .fillMaxHeight(),
             contentPadding = pageListPadding(contentPadding).withTopBarGap(),
         ) {
-            if (SkipiSettingsDestination.Appearance in visible) item(key = "section_appearance") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_appearance))
+            item(key = "settings_search") {
+                SkipiSearchField(
+                    value = search.query,
+                    onValueChange = { search.query = it },
+                    placeholder = stringResource(Res.string.settings_search_hint),
+                    modifier = Modifier
+                        .padding(horizontal = SkipiTheme.spacing.medium)
+                        .padding(bottom = SkipiTheme.spacing.small)
+                        .focusRequester(searchFocus),
+                )
+            }
+            if (searching) settingsSearchResults(
+                results = results,
+                iconBackgroundColor = categoryIconColor,
+                iconColor = categoryIconGlyphColor,
+                onOpen = { result ->
+                    // The page opens without the keyboard, and the way back does not bring it up again.
+                    focusManager.clearFocus()
+                    keyboard?.hide()
+                    search.open(result.entry, searchEntries)
+                    onOpenSearchResult(result.entry.page)
+                },
+            )
+            if (!searching && (SkipiSettingsDestination.Appearance in visible)) item(key = "section_appearance") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_appearance), Modifier.testTag("settings-home-section:appearance"))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
                         icon = Icons.Filled.Palette,
@@ -153,12 +228,12 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_appearance),
                         summary = stringResource(Res.string.settings_category_appearance_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.Appearance) },
+                        onClick = { open(SkipiSettingsDestination.Appearance) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.Vpn in visible || SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.NetworkAutomation in visible) item(key = "section_network") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_network))
+            if (!searching && (SkipiSettingsDestination.Vpn in visible || SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.NetworkAutomation in visible)) item(key = "section_network") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_network), Modifier.testTag("settings-home-section:network"))
                 SkipiSettingsCategoryGroupCard {
                     if (SkipiSettingsDestination.Vpn in visible) SettingsItem(
                         icon = Icons.Filled.Security,
@@ -167,7 +242,7 @@ fun SkipiSettingsHomeScreen(
                         title = stringResource(Res.string.settings_category_vpn),
                         summary = stringResource(Res.string.settings_category_vpn_summary),
                         value = "MTU: ${state.tunMtu}",
-                        onClick = { onNavigate(SkipiSettingsDestination.Vpn) },
+                        onClick = { open(SkipiSettingsDestination.Vpn) },
                         showDivider = SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.NetworkAutomation in visible,
                     )
                     if (SkipiSettingsDestination.LocalProxy in visible) SettingsItem(
@@ -177,7 +252,7 @@ fun SkipiSettingsHomeScreen(
                         title = stringResource(Res.string.settings_category_local_proxy),
                         summary = stringResource(Res.string.settings_category_local_proxy_summary),
                         value = ":${state.localProxyPort}",
-                        onClick = { onNavigate(SkipiSettingsDestination.LocalProxy) },
+                        onClick = { open(SkipiSettingsDestination.LocalProxy) },
                         showDivider = SkipiSettingsDestination.NetworkAutomation in visible,
                     )
                     if (SkipiSettingsDestination.NetworkAutomation in visible) SettingsItem(
@@ -186,12 +261,12 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_network_automation_title),
                         summary = stringResource(Res.string.settings_network_automation_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.NetworkAutomation) },
+                        onClick = { open(SkipiSettingsDestination.NetworkAutomation) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.Subscriptions in visible) item(key = "section_subscriptions") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_subscriptions))
+            if (!searching && (SkipiSettingsDestination.Subscriptions in visible)) item(key = "section_subscriptions") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_subscriptions), Modifier.testTag("settings-home-section:subscriptions"))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
                         icon = Icons.Filled.Sync,
@@ -199,12 +274,12 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_subscriptions),
                         summary = stringResource(Res.string.settings_category_subscriptions_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.Subscriptions) },
+                        onClick = { open(SkipiSettingsDestination.Subscriptions) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.General in visible || SkipiSettingsDestination.BackupReset in visible) item(key = "section_general") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_general))
+            if (!searching && (SkipiSettingsDestination.General in visible || SkipiSettingsDestination.BackupReset in visible)) item(key = "section_general") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_general), Modifier.testTag("settings-home-section:general"))
                 SkipiSettingsCategoryGroupCard {
                     if (SkipiSettingsDestination.General in visible) SettingsItem(
                         icon = Icons.Filled.Settings,
@@ -212,7 +287,7 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_general),
                         summary = stringResource(Res.string.settings_category_general_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.General) },
+                        onClick = { open(SkipiSettingsDestination.General) },
                         showDivider = true,
                     )
                     if (SkipiSettingsDestination.BackupReset in visible) SettingsItem(
@@ -221,12 +296,12 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_backup_reset),
                         summary = stringResource(Res.string.settings_category_backup_reset_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.BackupReset) },
+                        onClick = { open(SkipiSettingsDestination.BackupReset) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.SpeedTest in visible || SkipiSettingsDestination.DnsLeakTest in visible || SkipiSettingsDestination.IpInfo in visible) item(key = "section_tools") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_tools))
+            if (!searching && (SkipiSettingsDestination.SpeedTest in visible || SkipiSettingsDestination.DnsLeakTest in visible || SkipiSettingsDestination.IpInfo in visible)) item(key = "section_tools") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_tools), Modifier.testTag("settings-home-section:tools"))
                 SkipiSettingsCategoryGroupCard {
                     if (SkipiSettingsDestination.SpeedTest in visible) SettingsItem(
                         icon = Icons.Filled.Bolt,
@@ -234,7 +309,7 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_speed_test),
                         summary = stringResource(Res.string.settings_category_speed_test_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.SpeedTest) },
+                        onClick = { open(SkipiSettingsDestination.SpeedTest) },
                         showDivider = SkipiSettingsDestination.DnsLeakTest in visible || SkipiSettingsDestination.IpInfo in visible,
                     )
                     if (SkipiSettingsDestination.DnsLeakTest in visible) SettingsItem(
@@ -243,7 +318,7 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_dns_leak),
                         summary = stringResource(Res.string.settings_category_dns_leak_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.DnsLeakTest) },
+                        onClick = { open(SkipiSettingsDestination.DnsLeakTest) },
                         showDivider = SkipiSettingsDestination.IpInfo in visible,
                     )
                     if (SkipiSettingsDestination.IpInfo in visible) SettingsItem(
@@ -252,12 +327,12 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_category_ip_info),
                         summary = stringResource(Res.string.settings_category_ip_info_summary),
-                        onClick = { onNavigate(SkipiSettingsDestination.IpInfo) },
+                        onClick = { open(SkipiSettingsDestination.IpInfo) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.Logs in visible) item(key = "section_logs") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_logs))
+            if (!searching && (SkipiSettingsDestination.Logs in visible)) item(key = "section_logs") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_logs), Modifier.testTag("settings-home-section:logs"))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
                         icon = Icons.Filled.Description,
@@ -266,12 +341,12 @@ fun SkipiSettingsHomeScreen(
                         title = stringResource(Res.string.settings_category_logs),
                         summary = stringResource(Res.string.settings_category_logs_summary),
                         value = state.coreLogLevel,
-                        onClick = { onNavigate(SkipiSettingsDestination.Logs) },
+                        onClick = { open(SkipiSettingsDestination.Logs) },
                     )
                 }
             }
-            if (SkipiSettingsDestination.About in visible) item(key = "section_about") {
-                SettingsSectionTitle(stringResource(Res.string.settings_header_about))
+            if (!searching && (SkipiSettingsDestination.About in visible)) item(key = "section_about") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_about), Modifier.testTag("settings-home-section:about"))
                 SkipiSettingsCategoryGroupCard(bottomPadding = 0.dp) {
                     SettingsItem(
                         icon = Icons.Filled.Info,
@@ -279,7 +354,7 @@ fun SkipiSettingsHomeScreen(
                         iconColor = categoryIconGlyphColor,
                         title = stringResource(Res.string.settings_about_project),
                         summary = state.versionLabel,
-                        onClick = { onNavigate(SkipiSettingsDestination.About) },
+                        onClick = { open(SkipiSettingsDestination.About) },
                     )
                 }
             }
@@ -287,9 +362,58 @@ fun SkipiSettingsHomeScreen(
     }
 }
 
+private fun LazyListScope.settingsSearchResults(
+    results: List<SettingsSearchResult>,
+    iconBackgroundColor: Color,
+    iconColor: Color,
+    onOpen: (SettingsSearchResult) -> Unit,
+) {
+    if (results.isEmpty()) item(key = "settings_search_empty") {
+        Text(
+            text = stringResource(Res.string.settings_search_empty),
+            modifier = Modifier.fillMaxWidth().padding(SkipiTheme.spacing.medium).testTag("settings-search-empty"),
+            textAlign = TextAlign.Center,
+            style = SkipiTheme.typography.bodyMedium,
+            color = SkipiTheme.colors.onSurfaceVariant,
+        )
+    }
+    items(results, key = { "settings_search:" + it.entry.id }) { result ->
+        SkipiSettingsCategoryGroupCard(
+            modifier = Modifier.testTag("settings-search-result:" + result.entry.id),
+            bottomPadding = SkipiTheme.spacing.small,
+        ) {
+            SkipiSettingsCategoryEntry(
+                icon = result.entry.page.icon,
+                iconBackgroundColor = iconBackgroundColor,
+                iconColor = iconColor,
+                title = result.title,
+                titleHighlights = result.titleRanges,
+                summary = result.path,
+                onClick = { onOpen(result) },
+                trailingIcon = Icons.Filled.ChevronRight,
+            )
+        }
+    }
+}
+
+/** The icon the overview shows for the page a result leads to. */
+private val SettingsSearchPage.icon: ImageVector
+    get() = when (this) {
+        SettingsSearchPage.Appearance -> Icons.Filled.Palette
+        SettingsSearchPage.Vpn, SettingsSearchPage.NetworkAutomation, SettingsSearchPage.DnsLeakTest -> Icons.Filled.Security
+        SettingsSearchPage.LocalProxy -> Icons.Filled.Dns
+        SettingsSearchPage.Subscriptions, SettingsSearchPage.SubscriptionPing -> Icons.Filled.Sync
+        SettingsSearchPage.General -> Icons.Filled.Settings
+        SettingsSearchPage.BackupReset -> Icons.Filled.Backup
+        SettingsSearchPage.SpeedTest -> Icons.Filled.Bolt
+        SettingsSearchPage.IpInfo -> Icons.Filled.Public
+        SettingsSearchPage.Logs -> Icons.Filled.Description
+        SettingsSearchPage.About -> Icons.Filled.Info
+    }
+
 @Composable
-private fun SettingsSectionTitle(text: String) {
-    top.yukonga.miuix.kmp.basic.SmallTitle(text = text)
+private fun SettingsSectionTitle(text: String, modifier: Modifier = Modifier) {
+    top.yukonga.miuix.kmp.basic.SmallTitle(text = text, modifier = modifier)
 }
 
 @Composable

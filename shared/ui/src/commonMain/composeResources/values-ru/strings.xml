@@ -120,6 +120,9 @@
     <string name="configs_exported_base64">Конфигурация в Base64 скопирована в буфер обмена</string>
     <string name="nav_settings">Настройки</string>
 
+    <string name="settings_search_hint">Поиск по настройкам</string>
+    <string name="settings_search_empty">Ничего не найдено</string>
+    <string name="search_clear">Очистить поиск</string>
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема оформления</string>
     <string name="settings_color_mode">Цветовой режим</string>

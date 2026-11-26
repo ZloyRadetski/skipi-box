@@ -5,6 +5,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.withTopBarGap
 import app.skipi.ui.layout.fadeUnderTopBar
@@ -108,6 +111,7 @@ fun SkipiAppearanceSettingsScreen(
     val updateAppState = onSettingsChange
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val lazyListState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.Appearance, lazyListState)
 
     var activeAppearanceColorTarget by remember { mutableStateOf<AppearanceColorTarget?>(null) }
 

@@ -28,3 +28,7 @@ internal class DesktopEscapeHandler {
         return true
     }
 }
+
+/** Ctrl+F, or Command+F on macOS: the shortcut for the settings search. */
+internal fun isSettingsSearchShortcut(key: Key, type: KeyEventType, ctrl: Boolean, meta: Boolean): Boolean =
+    type == KeyEventType.KeyDown && key == Key.F && (ctrl || meta)

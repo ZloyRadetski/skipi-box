@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.HistoryToggleOff
 import androidx.compose.material.icons.rounded.Terminal
@@ -141,6 +144,7 @@ fun SkipiLogsSettingsScreen(
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.Logs, listState)
     val scrollBehavior = MiuixScrollBehavior()
     val retentionIndex = labels.retentionDays.indexOf(state.retentionDays).coerceAtLeast(0)
     Scaffold(
@@ -162,44 +166,50 @@ fun SkipiLogsSettingsScreen(
                     SmallTitle(text = labels.optionsSectionTitle)
                     SkipiSettingsSectionCard {
                         if (capabilities.logLevel) {
-                            SkipiDropdownPreference(
-                                title = labels.logLevelTitle,
-                                startAction = settingIcon(Icons.Rounded.Tune),
-                                items = labels.logLevels,
-                                selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
-                                onSelectedIndexChange = onLogLevelChange,
-                            )
+                            SettingsSearchAnchor("settings_log_level") {
+                                SkipiDropdownPreference(
+                                    title = labels.logLevelTitle,
+                                    startAction = settingIcon(Icons.Rounded.Tune),
+                                    items = labels.logLevels,
+                                    selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
+                                    onSelectedIndexChange = onLogLevelChange,
+                                )
+                            }
                         }
                         if (capabilities.retention) {
-                            SkipiDropdownPreference(
-                                title = labels.retentionTitle,
-                                startAction = settingIcon(Icons.Rounded.HistoryToggleOff),
-                                summary = labels.retentionSummary,
-                                items = labels.retentionOptions,
-                                selectedIndex = retentionIndex,
-                                onSelectedIndexChange = { index ->
-                                    labels.retentionDays.getOrNull(index)?.let(onRetentionDaysChange)
-                                },
-                            )
+                            SettingsSearchAnchor("settings_log_retention") {
+                                SkipiDropdownPreference(
+                                    title = labels.retentionTitle,
+                                    startAction = settingIcon(Icons.Rounded.HistoryToggleOff),
+                                    summary = labels.retentionSummary,
+                                    items = labels.retentionOptions,
+                                    selectedIndex = retentionIndex,
+                                    onSelectedIndexChange = { index ->
+                                        labels.retentionDays.getOrNull(index)?.let(onRetentionDaysChange)
+                                    },
+                                )
+                            }
                         }
                         if (capabilities.accessLog) {
-                            SwitchPreference(
-                                title = labels.accessLogTitle,
-                                startAction = settingIcon(Icons.Rounded.Receipt),
-                                checked = state.accessLogEnabled,
-                                onCheckedChange = onAccessLogChange,
-                            )
+                            SettingsSearchAnchor("settings_record_access_log") {
+                                SwitchPreference(
+                                    title = labels.accessLogTitle,
+                                    startAction = settingIcon(Icons.Rounded.Receipt),
+                                    checked = state.accessLogEnabled,
+                                    onCheckedChange = onAccessLogChange,
+                                )
+                            }
                         }
                     }
                 }
                 if (capabilities.coreLogs || (capabilities.accessLogs && showAccessLogs) || capabilities.logcat) item(key = "log_viewers") {
                     SmallTitle(text = labels.viewersSectionTitle)
                     SkipiSettingsSectionCard {
-                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, startAction = settingIcon(Icons.Rounded.Terminal), onClick = onOpenCoreLogs)
+                        if (capabilities.coreLogs) SettingsSearchAnchor("settings_core_logs") { ArrowPreference(title = labels.coreLogsTitle, startAction = settingIcon(Icons.Rounded.Terminal), onClick = onOpenCoreLogs) }
                         if (capabilities.accessLogs && showAccessLogs) {
-                            ArrowPreference(title = labels.accessLogsTitle, startAction = settingIcon(Icons.Rounded.ReceiptLong), onClick = onOpenAccessLogs)
+                            SettingsSearchAnchor("settings_access_logs") { ArrowPreference(title = labels.accessLogsTitle, startAction = settingIcon(Icons.Rounded.ReceiptLong), onClick = onOpenAccessLogs) }
                         }
-                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, startAction = settingIcon(Icons.Rounded.Article), onClick = onOpenLogcat)
+                        if (capabilities.logcat) SettingsSearchAnchor("settings_logcat") { ArrowPreference(title = labels.logcatTitle, startAction = settingIcon(Icons.Rounded.Article), onClick = onOpenLogcat) }
                     }
                 }
                 if (capabilities.bugReport) item(key = "logs_feedback") {

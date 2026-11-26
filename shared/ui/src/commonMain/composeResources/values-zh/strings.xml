@@ -101,6 +101,9 @@
     <string name="configs_lock_update">不更新</string>
     <string name="configs_lock_update_summary">阻止远程替换，直到您禁用此选项</string>
     <string name="nav_settings">设置</string>
+    <string name="settings_search_hint">搜索设置</string>
+    <string name="settings_search_empty">未找到结果</string>
+    <string name="search_clear">清除搜索</string>
     <string name="settings_title">设置</string>
     <string name="settings_theme">主题</string>
     <string name="settings_color_mode">颜色模式</string>

@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -99,6 +102,8 @@ fun SkipiSettingsCategoryEntry(
     showDivider: Boolean = false,
     selected: Boolean? = null,
     contentDescription: String? = null,
+    /** Parts of [title] to emphasise, such as what a search matched. */
+    titleHighlights: List<IntRange> = emptyList(),
 ) {
     val entryDescription = contentDescription
     Column(modifier = modifier.fillMaxWidth()) {
@@ -132,7 +137,7 @@ fun SkipiSettingsCategoryEntry(
             Spacer(Modifier.width(SkipiTheme.spacing.medium))
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = title,
+                    text = highlighted(title, titleHighlights, SkipiTheme.colors.accent),
                     style = SkipiTheme.typography.titleMedium,
                     color = SkipiTheme.colors.onSurface,
                     maxLines = 2,
@@ -175,5 +180,12 @@ fun SkipiSettingsCategoryEntry(
                 thickness = 0.5.dp,
             )
         }
+    }
+}
+
+private fun highlighted(text: String, ranges: List<IntRange>, color: Color) = buildAnnotatedString {
+    append(text)
+    ranges.forEach { range ->
+        addStyle(SpanStyle(color = color, fontWeight = FontWeight.Bold), range.first, range.last + 1)
     }
 }

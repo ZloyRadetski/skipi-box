@@ -3,6 +3,7 @@
 
 package app.skipi.ui.updater
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
 import app.skipi.ui.settings.SkipiSettingsReveal
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.Refresh
@@ -50,36 +51,44 @@ fun SkipiAppUpdatesSettingsCard(
     modifier: Modifier = Modifier,
 ) {
     SkipiSettingsSectionCard(modifier = modifier, bottomPadding = 12.dp) {
-        SwitchPreference(
-            title = stringResource(Res.string.settings_auto_check_updates_title),
-            startAction = settingIcon(Icons.Rounded.Update),
-            summary = stringResource(Res.string.settings_auto_check_updates_summary),
-            checked = autoCheckEnabled,
-            onCheckedChange = onAutoCheckChange,
-        )
-        SkipiSettingsReveal(visible = autoCheckEnabled && nightInstallEnabled != null) {
+        SettingsSearchAnchor("settings_auto_check_updates_title") {
             SwitchPreference(
-                title = stringResource(Res.string.settings_auto_install_night_title),
-                startAction = settingIcon(Icons.Rounded.NightsStay),
-                summary = stringResource(Res.string.settings_auto_install_night_summary),
-                checked = nightInstallEnabled == true,
-                onCheckedChange = onNightInstallChange,
+                title = stringResource(Res.string.settings_auto_check_updates_title),
+                startAction = settingIcon(Icons.Rounded.Update),
+                summary = stringResource(Res.string.settings_auto_check_updates_summary),
+                checked = autoCheckEnabled,
+                onCheckedChange = onAutoCheckChange,
             )
         }
-        SkipiDropdownPreference(
-            title = stringResource(Res.string.settings_update_channel_title),
-            startAction = settingIcon(Icons.Rounded.NewReleases),
-            summary = stringResource(channel.summaryRes()),
-            items = AppUpdateChannel.entries.map { stringResource(it.labelRes()) },
-            selectedIndex = AppUpdateChannel.entries.indexOf(channel),
-            onSelectedIndexChange = { index -> AppUpdateChannel.entries.getOrNull(index)?.let(onChannelChange) },
-        )
-        ArrowPreference(
-            title = stringResource(Res.string.settings_check_updates_now_action),
-            startAction = settingIcon(Icons.Rounded.Refresh),
-            summary = checkSummary,
-            onClick = onCheckNow,
-        )
+        SkipiSettingsReveal(visible = autoCheckEnabled && nightInstallEnabled != null) {
+            SettingsSearchAnchor("settings_auto_install_night_title") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_auto_install_night_title),
+                    startAction = settingIcon(Icons.Rounded.NightsStay),
+                    summary = stringResource(Res.string.settings_auto_install_night_summary),
+                    checked = nightInstallEnabled == true,
+                    onCheckedChange = onNightInstallChange,
+                )
+            }
+        }
+        SettingsSearchAnchor("settings_update_channel_title") {
+            SkipiDropdownPreference(
+                title = stringResource(Res.string.settings_update_channel_title),
+                startAction = settingIcon(Icons.Rounded.NewReleases),
+                summary = stringResource(channel.summaryRes()),
+                items = AppUpdateChannel.entries.map { stringResource(it.labelRes()) },
+                selectedIndex = AppUpdateChannel.entries.indexOf(channel),
+                onSelectedIndexChange = { index -> AppUpdateChannel.entries.getOrNull(index)?.let(onChannelChange) },
+            )
+        }
+        SettingsSearchAnchor("settings_check_updates_now_action") {
+            ArrowPreference(
+                title = stringResource(Res.string.settings_check_updates_now_action),
+                startAction = settingIcon(Icons.Rounded.Refresh),
+                summary = checkSummary,
+                onClick = onCheckNow,
+            )
+        }
     }
 }
 

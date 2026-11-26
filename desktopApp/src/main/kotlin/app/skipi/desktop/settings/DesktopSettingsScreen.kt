@@ -3,6 +3,11 @@
 
 package app.skipi.desktop
 
+import app.skipi.desktop.desktopVpnSettingsCapabilities
+import app.skipi.ui.settings.search.LocalSettingsSearchController
+import app.skipi.ui.settings.search.SettingsSearchHost
+import app.skipi.ui.settings.search.SettingsSearchPage
+import app.skipi.ui.settings.search.SettingsSearchAnchor
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Language
@@ -237,6 +242,64 @@ internal fun desktopSettingsParent(destination: DesktopSettingsDestination): Des
     else -> DesktopSettingsDestination.Overview
 }
 
+/** The desktop page that shows what the search found. */
+internal fun SettingsSearchPage.desktopDestination(): DesktopSettingsDestination = when (this) {
+    SettingsSearchPage.Appearance -> DesktopSettingsDestination.Appearance
+    SettingsSearchPage.Vpn -> DesktopSettingsDestination.Vpn
+    SettingsSearchPage.NetworkAutomation -> DesktopSettingsDestination.NetworkAutomation
+    SettingsSearchPage.LocalProxy -> DesktopSettingsDestination.LocalProxy
+    SettingsSearchPage.Subscriptions -> DesktopSettingsDestination.Subscriptions
+    SettingsSearchPage.SubscriptionPing -> DesktopSettingsDestination.SubscriptionPing
+    SettingsSearchPage.General -> DesktopSettingsDestination.General
+    SettingsSearchPage.BackupReset -> DesktopSettingsDestination.BackupReset
+    SettingsSearchPage.SpeedTest -> DesktopSettingsDestination.SpeedTest
+    SettingsSearchPage.DnsLeakTest -> DesktopSettingsDestination.DnsLeakTest
+    SettingsSearchPage.IpInfo -> DesktopSettingsDestination.IpInfo
+    SettingsSearchPage.Logs -> DesktopSettingsDestination.Diagnostics
+    SettingsSearchPage.About -> DesktopSettingsDestination.About
+}
+
+/** What the settings search may offer on this machine: the pages that open and the rows they show. */
+internal fun desktopSettingsSearchHost(vpnPage: Boolean, systemProxy: Boolean): SettingsSearchHost {
+    // Network automation is reached from the VPN page, so it comes and goes with it.
+    val unavailable = if (vpnPage) emptySet() else setOf(SettingsSearchPage.Vpn, SettingsSearchPage.NetworkAutomation)
+    return SettingsSearchHost(
+        pages = SettingsSearchPage.entries.toSet() - unavailable,
+        appearance = desktopAppearanceSettingsCapabilities(),
+        vpn = desktopVpnSettingsCapabilities(),
+        localProxy = desktopLocalProxySettingsCapabilities(),
+        subscriptions = desktopSubscriptionSettingsCapabilities(),
+        general = GeneralSettingsCapabilities.Desktop,
+        logs = desktopLogsSettingsCapabilities(),
+        about = AboutSettingsCapabilities(),
+        resetVpn = true,
+        nightUpdateInstall = false,
+        desktopVpnRows = true,
+        systemProxy = systemProxy,
+        desktopDiagnostics = true,
+    )
+}
+
+internal fun desktopLocalProxySettingsCapabilities() = LocalProxySettingsCapabilities(
+    dynamicPort = true,
+    httpInbound = true,
+    listenAllInterfaces = true,
+    authentication = true,
+    credentials = true,
+    lanEndpoints = true,
+)
+
+internal fun desktopSubscriptionSettingsCapabilities() = SubscriptionSettingsCapabilities(
+    fetchTimeout = true,
+    userAgents = true,
+    deviceHeaders = true,
+    expiryNotifications = false,
+    pingSettings = true,
+)
+
+/** Logcat is an Android-only log source. */
+internal fun desktopLogsSettingsCapabilities() = LogsSettingsCapabilities(logcat = false)
+
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
 @Composable
 internal fun DesktopSettingsScreen(
@@ -293,8 +356,24 @@ internal fun DesktopSettingsScreen(
             destination = DesktopSettingsDestination.Overview
         }
     }
-    DisposableEffect(destination, escapeHandler) {
-        escapeHandler.register(goBack.takeIf { destination != DesktopSettingsDestination.Overview })
+    val search = LocalSettingsSearchController.current
+    LaunchedEffect(search.searchFieldRequested) {
+        if (search.searchFieldRequested && destination != DesktopSettingsDestination.Overview) {
+            diagnostics.speedTest.stop()
+            diagnostics.dnsLeak.stop()
+            diagnostics.ipInfo.stop()
+            destination = DesktopSettingsDestination.Overview
+        }
+    }
+    val searching = search.query.isNotEmpty()
+    DisposableEffect(destination, searching, escapeHandler) {
+        escapeHandler.register(
+            when {
+                destination != DesktopSettingsDestination.Overview -> goBack
+                searching -> ({ search.query = "" })
+                else -> null
+            },
+        )
         onDispose { escapeHandler.register(null) }
     }
     when (destination) {
@@ -304,6 +383,7 @@ internal fun DesktopSettingsScreen(
             contentPadding = contentPadding,
             modifier = modifier,
             vpnPage = tunHost != null,
+            systemProxyReset = onClearSystemProxy != null,
             onNavigate = { destination = it },
         )
         DesktopSettingsDestination.Vpn -> {
@@ -543,6 +623,7 @@ private fun DesktopSettingsOverview(
     contentPadding: PaddingValues,
     modifier: Modifier,
     vpnPage: Boolean,
+    systemProxyReset: Boolean,
     onNavigate: (DesktopSettingsDestination) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -554,7 +635,12 @@ private fun DesktopSettingsOverview(
             coreLogLevel = settings.coreLogLevel.uppercase(),
             categoryIconGlyphColor = app.skipi.ui.theme.customColorIfEnabled(settings.customCategoryIconGlyphColor, settings.customColorsEnabled)?.let(::Color),
             visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
+            searchHost = desktopSettingsSearchHost(
+                vpnPage = vpnPage,
+                systemProxy = isDesktopSystemProxySupported() && systemProxyReset,
+            ),
         ),
+        onOpenSearchResult = { page -> onNavigate(page.desktopDestination()) },
         padding = contentPadding,
         isWideScreen = true,
         onNavigate = { selected ->
@@ -821,24 +907,19 @@ private fun DesktopLocalProxySettings(
                 onFailure = { feedbackMessage = desktopText(Res.string.desktop_settings_copy_failed, label, it.message.orEmpty()) },
             )
         },
-        capabilities = LocalProxySettingsCapabilities(
-            dynamicPort = true,
-            httpInbound = true,
-            listenAllInterfaces = true,
-            authentication = true,
-            credentials = true,
-            lanEndpoints = true,
-        ),
+        capabilities = desktopLocalProxySettingsCapabilities(),
         // The system proxy points at the HTTP inbound, so it is offered inside the HTTP card, where the inbound is on.
         httpPlatformContent = if (supportsSystemProxy) {
             {
-                SkipiSettingsSwitchRow(
-                    title = stringResource(Res.string.desktop_settings_use_system_proxy),
-                    icon = Icons.Rounded.Language,
-                    summary = stringResource(Res.string.desktop_settings_use_system_proxy_summary),
-                    checked = settings.useSystemProxy,
-                    onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
-                )
+                SettingsSearchAnchor("desktop_settings_use_system_proxy") {
+                    SkipiSettingsSwitchRow(
+                        title = stringResource(Res.string.desktop_settings_use_system_proxy),
+                        icon = Icons.Rounded.Language,
+                        summary = stringResource(Res.string.desktop_settings_use_system_proxy_summary),
+                        checked = settings.useSystemProxy,
+                        onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
+                    )
+                }
             }
         } else {
             null
@@ -846,12 +927,14 @@ private fun DesktopLocalProxySettings(
         platformContent = {
             if (supportsSystemProxy && onClearSystemProxy != null) {
                 SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_system_proxy_header)) {
-                    SkipiSettingsActionRow(
-                        title = stringResource(Res.string.desktop_settings_reset_system_proxy),
-                        icon = Icons.Rounded.RestartAlt,
-                        summary = stringResource(Res.string.desktop_settings_reset_system_proxy_summary),
-                        onClick = onClearSystemProxy,
-                    )
+                    SettingsSearchAnchor("desktop_settings_reset_system_proxy") {
+                        SkipiSettingsActionRow(
+                            title = stringResource(Res.string.desktop_settings_reset_system_proxy),
+                            icon = Icons.Rounded.RestartAlt,
+                            summary = stringResource(Res.string.desktop_settings_reset_system_proxy_summary),
+                            onClick = onClearSystemProxy,
+                        )
+                    }
                 }
             }
             SkipiSettingsStatusMessage(feedbackMessage)
@@ -901,13 +984,7 @@ private fun DesktopSubscriptionSettings(
             onPersist(next, desktopText(Res.string.desktop_settings_subscriptions_saved))
         },
         onOpenPingSettings = onOpenPingSettings,
-        capabilities = SubscriptionSettingsCapabilities(
-            fetchTimeout = true,
-            userAgents = true,
-            deviceHeaders = true,
-            expiryNotifications = false,
-            pingSettings = true,
-        ),
+        capabilities = desktopSubscriptionSettingsCapabilities(),
         platformContent = {
             SkipiSettingsStatusMessage(message)
         },
@@ -1011,8 +1088,7 @@ private fun DesktopLogsSettings(
         onOpenAccessLogs = onOpenAccessLogs,
         onOpenLogcat = {},
         onOpenBugReport = { browse(SkipiBugReportUri, onMessage) },
-        // Logcat is an Android-only log source.
-        capabilities = LogsSettingsCapabilities(logcat = false),
+        capabilities = desktopLogsSettingsCapabilities(),
         platformContent = {
             DesktopDiagnosticsContent(
                 isTunnelRunning = isTunnelRunning,
@@ -1067,30 +1143,36 @@ private fun DesktopDiagnosticsContent(
             summary = runtime?.directory?.toString()
                 ?: runtimeCheck.exceptionOrNull()?.message.orEmpty().ifBlank { stringResource(Res.string.desktop_settings_check_app_resources) },
         )
-        SkipiSettingsActionRow(
-            title = stringResource(Res.string.desktop_settings_recheck_runtime),
-            icon = Icons.Rounded.Refresh,
-            summary = stringResource(Res.string.desktop_settings_recheck_runtime_summary),
-            onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
-        )
+        SettingsSearchAnchor("desktop_settings_recheck_runtime") {
+            SkipiSettingsActionRow(
+                title = stringResource(Res.string.desktop_settings_recheck_runtime),
+                icon = Icons.Rounded.Refresh,
+                summary = stringResource(Res.string.desktop_settings_recheck_runtime_summary),
+                onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
+            )
+        }
     }
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_app_log_header)) {
-        SkipiSettingsActionRow(
-            title = stringResource(Res.string.desktop_settings_open_logs_folder),
-            icon = Icons.Rounded.FolderOpen,
-            summary = logDir.toString(),
-            onClick = {
-                val result = openDirectory(logDir)
-                onMessage(result.fold({ desktopText(Res.string.desktop_settings_logs_folder_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
-            },
-        )
-        SkipiSettingsActionRow(
-            title = if (showRecentLogs) stringResource(Res.string.desktop_settings_hide_log) else stringResource(Res.string.desktop_settings_show_recent_log),
-            summary = logSize?.let { stringResource(Res.string.desktop_settings_log_file_size, it) } ?: stringResource(Res.string.desktop_settings_log_not_created),
-            onClick = {
-                showRecentLogs = !showRecentLogs
-            },
-        )
+        SettingsSearchAnchor("desktop_settings_open_logs_folder") {
+            SkipiSettingsActionRow(
+                title = stringResource(Res.string.desktop_settings_open_logs_folder),
+                icon = Icons.Rounded.FolderOpen,
+                summary = logDir.toString(),
+                onClick = {
+                    val result = openDirectory(logDir)
+                    onMessage(result.fold({ desktopText(Res.string.desktop_settings_logs_folder_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
+                },
+            )
+        }
+        SettingsSearchAnchor("desktop_settings_show_recent_log") {
+            SkipiSettingsActionRow(
+                title = if (showRecentLogs) stringResource(Res.string.desktop_settings_hide_log) else stringResource(Res.string.desktop_settings_show_recent_log),
+                summary = logSize?.let { stringResource(Res.string.desktop_settings_log_file_size, it) } ?: stringResource(Res.string.desktop_settings_log_not_created),
+                onClick = {
+                    showRecentLogs = !showRecentLogs
+                },
+            )
+        }
         if (showRecentLogs) {
             Text(
                 text = recentLogs.ifEmpty { listOf(stringResource(Res.string.desktop_settings_log_empty)) }.joinToString("\n"),
@@ -1108,27 +1190,31 @@ private fun DesktopDiagnosticsContent(
         }
     }
     SkipiSettingsGroup(title = stringResource(Res.string.desktop_settings_data_header)) {
-        SkipiSettingsActionRow(
-            title = stringResource(Res.string.desktop_settings_data_dir),
-            icon = Icons.Rounded.Folder,
-            summary = dataDirectory?.toString().orEmpty(),
-            onClick = {
-                val result = dataDirectory?.let(::openDirectory)
-                    ?: Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_data_dir_not_found)))
-                onMessage(result.fold({ desktopText(Res.string.desktop_settings_data_dir_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
-            },
-        )
-        SkipiSettingsActionRow(
-            title = stringResource(Res.string.desktop_settings_copy_settings_path),
-            icon = Icons.Rounded.ContentCopy,
-            summary = settingsPath.toString(),
-            onClick = {
-                copyToClipboard(settingsPath.toString()).fold(
-                    onSuccess = { onMessage(desktopText(Res.string.desktop_settings_path_copied)) },
-                    onFailure = { onMessage(desktopText(Res.string.desktop_settings_path_copy_failed, it.message.orEmpty())) },
-                )
-            },
-        )
+        SettingsSearchAnchor("desktop_settings_data_dir") {
+            SkipiSettingsActionRow(
+                title = stringResource(Res.string.desktop_settings_data_dir),
+                icon = Icons.Rounded.Folder,
+                summary = dataDirectory?.toString().orEmpty(),
+                onClick = {
+                    val result = dataDirectory?.let(::openDirectory)
+                        ?: Result.failure(IllegalStateException(desktopText(Res.string.desktop_settings_data_dir_not_found)))
+                    onMessage(result.fold({ desktopText(Res.string.desktop_settings_data_dir_opened) }, { desktopText(Res.string.desktop_settings_folder_open_failed, it.message.orEmpty()) }))
+                },
+            )
+        }
+        SettingsSearchAnchor("desktop_settings_copy_settings_path") {
+            SkipiSettingsActionRow(
+                title = stringResource(Res.string.desktop_settings_copy_settings_path),
+                icon = Icons.Rounded.ContentCopy,
+                summary = settingsPath.toString(),
+                onClick = {
+                    copyToClipboard(settingsPath.toString()).fold(
+                        onSuccess = { onMessage(desktopText(Res.string.desktop_settings_path_copied)) },
+                        onFailure = { onMessage(desktopText(Res.string.desktop_settings_path_copy_failed, it.message.orEmpty())) },
+                    )
+                },
+            )
+        }
     }
     SkipiSettingsStatusMessage(message)
 }

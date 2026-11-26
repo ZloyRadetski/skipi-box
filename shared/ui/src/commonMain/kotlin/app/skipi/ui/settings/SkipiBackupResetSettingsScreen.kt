@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.VpnKeyOff
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.RestartAlt
@@ -64,6 +67,7 @@ fun SkipiBackupResetSettingsScreen(
     overlays: @Composable () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.BackupReset, listState)
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -82,18 +86,18 @@ fun SkipiBackupResetSettingsScreen(
                 item(key = "backup_restore") {
                     SmallTitle(text = labels.backupSectionTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = labels.backupTitle, startAction = settingIcon(Icons.Rounded.Backup), summary = labels.backupSummary, onClick = onBackup)
-                        ArrowPreference(title = labels.restoreTitle, startAction = settingIcon(Icons.Rounded.Restore), summary = labels.restoreSummary, onClick = onRestore)
+                        SettingsSearchAnchor("settings_backup_user_data") { ArrowPreference(title = labels.backupTitle, startAction = settingIcon(Icons.Rounded.Backup), summary = labels.backupSummary, onClick = onBackup) }
+                        SettingsSearchAnchor("settings_restore_user_data") { ArrowPreference(title = labels.restoreTitle, startAction = settingIcon(Icons.Rounded.Restore), summary = labels.restoreSummary, onClick = onRestore) }
                     }
                 }
                 item(key = "reset") {
                     SmallTitle(text = labels.resetSectionTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = labels.resetTunnelTitle, startAction = settingIcon(Icons.Rounded.RestartAlt), summary = labels.resetTunnelSummary, onClick = onResetTunnel)
+                        SettingsSearchAnchor("settings_reset_tunnel") { ArrowPreference(title = labels.resetTunnelTitle, startAction = settingIcon(Icons.Rounded.RestartAlt), summary = labels.resetTunnelSummary, onClick = onResetTunnel) }
                         if (showResetVpn) {
-                            ArrowPreference(title = labels.resetVpnTitle, startAction = settingIcon(Icons.Rounded.VpnKeyOff), summary = labels.resetVpnSummary, onClick = onResetVpn)
+                            SettingsSearchAnchor("settings_reset_vpn") { ArrowPreference(title = labels.resetVpnTitle, startAction = settingIcon(Icons.Rounded.VpnKeyOff), summary = labels.resetVpnSummary, onClick = onResetVpn) }
                         }
-                        ArrowPreference(title = labels.resetAppTitle, startAction = settingIcon(Icons.Rounded.DeleteSweep), summary = labels.resetAppSummary, onClick = onResetApp)
+                        SettingsSearchAnchor("settings_reset_app") { ArrowPreference(title = labels.resetAppTitle, startAction = settingIcon(Icons.Rounded.DeleteSweep), summary = labels.resetAppSummary, onClick = onResetApp) }
                     }
                 }
             }

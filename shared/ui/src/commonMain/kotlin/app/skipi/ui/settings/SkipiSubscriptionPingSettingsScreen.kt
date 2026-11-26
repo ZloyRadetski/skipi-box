@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.Icons
@@ -88,6 +91,7 @@ fun SkipiSubscriptionPingSettingsScreen(
     onPresetSelected: (String) -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.SubscriptionPing, lazyListState)
     val scrollBehavior = MiuixScrollBehavior()
 
     val currentTimeoutSeconds = ((state.timeoutMillis.toIntOrNull() ?: 5000) / 1000).coerceIn(1, 30)
@@ -142,70 +146,72 @@ fun SkipiSubscriptionPingSettingsScreen(
                 }
 
                 item(key = "section_mode_card") {
-                    SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                val isHttp = state.mode == SubscriptionPingModeHttp
-                                val isTcp = state.mode == SubscriptionPingModeTcp
-
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(
-                                            if (isHttp) MiuixTheme.colorScheme.primary
-                                            else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                        )
-                                        .clickable {
-                                            onModeChange(SubscriptionPingModeHttp)
-                                        }
-                                        .padding(vertical = 12.dp, horizontal = 10.dp),
-                                    contentAlignment = Alignment.Center,
+                    SettingsSearchAnchor("subscription_ping_mode_section") {
+                        SkipiSettingsSectionCard(bottomPadding = 12.dp) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = "HTTP",
-                                            fontSize = 14.sp,
-                                            fontWeight = if (isHttp) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isHttp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
-                                        )
-                                        Text(
-                                            text = stringResource(Res.string.subscription_ping_mode_real_connection),
-                                            fontSize = 11.sp,
-                                            color = if (isHttp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        )
+                                    val isHttp = state.mode == SubscriptionPingModeHttp
+                                    val isTcp = state.mode == SubscriptionPingModeTcp
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(
+                                                if (isHttp) MiuixTheme.colorScheme.primary
+                                                else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                            )
+                                            .clickable {
+                                                onModeChange(SubscriptionPingModeHttp)
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 10.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "HTTP",
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isHttp) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isHttp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
+                                            )
+                                            Text(
+                                                text = stringResource(Res.string.subscription_ping_mode_real_connection),
+                                                fontSize = 11.sp,
+                                                color = if (isHttp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            )
+                                        }
                                     }
-                                }
 
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(
-                                            if (isTcp) MiuixTheme.colorScheme.primary
-                                            else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                        )
-                                        .clickable {
-                                            onModeChange(SubscriptionPingModeTcp)
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(
+                                                if (isTcp) MiuixTheme.colorScheme.primary
+                                                else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                            )
+                                            .clickable {
+                                                onModeChange(SubscriptionPingModeTcp)
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 10.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "TCP",
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isTcp) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isTcp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
+                                            )
+                                            Text(
+                                                text = stringResource(Res.string.subscription_ping_mode_direct_connect),
+                                                fontSize = 11.sp,
+                                                color = if (isTcp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            )
                                         }
-                                        .padding(vertical = 12.dp, horizontal = 10.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = "TCP",
-                                            fontSize = 14.sp,
-                                            fontWeight = if (isTcp) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isTcp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
-                                        )
-                                        Text(
-                                            text = stringResource(Res.string.subscription_ping_mode_direct_connect),
-                                            fontSize = 11.sp,
-                                            color = if (isTcp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        )
                                     }
                                 }
                             }
@@ -219,21 +225,23 @@ fun SkipiSubscriptionPingSettingsScreen(
                 }
 
                 item(key = "section_concurrency_card") {
-                    SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        SkipiSliderPreference(
-                            title = stringResource(Res.string.subscription_ping_concurrency_label),
-                            startAction = settingIcon(Icons.Rounded.Bolt),
-                            valueLabel = "${concurrencySliderValue.roundToInt()}",
-                            value = concurrencySliderValue,
-                            onValueChange = { newValue -> concurrencySliderValue = newValue },
-                            onValueChangeFinished = {
-                                onConcurrencyChange(concurrencySliderValue.roundToInt().coerceIn(1, 32))
-                            },
-                            valueRange = 1f..32f,
-                            steps = 30,
-                            minLabel = "1",
-                            maxLabel = "32",
-                        )
+                    SettingsSearchAnchor("subscription_ping_concurrency_label") {
+                        SkipiSettingsSectionCard(bottomPadding = 12.dp) {
+                            SkipiSliderPreference(
+                                title = stringResource(Res.string.subscription_ping_concurrency_label),
+                                startAction = settingIcon(Icons.Rounded.Bolt),
+                                valueLabel = "${concurrencySliderValue.roundToInt()}",
+                                value = concurrencySliderValue,
+                                onValueChange = { newValue -> concurrencySliderValue = newValue },
+                                onValueChangeFinished = {
+                                    onConcurrencyChange(concurrencySliderValue.roundToInt().coerceIn(1, 32))
+                                },
+                                valueRange = 1f..32f,
+                                steps = 30,
+                                minLabel = "1",
+                                maxLabel = "32",
+                            )
+                        }
                     }
                 }
 
@@ -243,23 +251,25 @@ fun SkipiSubscriptionPingSettingsScreen(
                 }
 
                 item(key = "section_timeout_card") {
-                    SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        val secondsUnit = stringResource(Res.string.unit_seconds_short)
-                        SkipiSliderPreference(
-                            title = stringResource(Res.string.subscription_ping_timeout_label),
-                            startAction = settingIcon(Icons.Rounded.Timer),
-                            valueLabel = "${sliderValue.roundToInt()} $secondsUnit",
-                            value = sliderValue,
-                            onValueChange = { newValue -> sliderValue = newValue },
-                            onValueChangeFinished = {
-                                val seconds = sliderValue.roundToInt().coerceIn(1, 30)
-                                onTimeoutMillisChange("${seconds * 1000}")
-                            },
-                            valueRange = 1f..30f,
-                            steps = 28,
-                            minLabel = "1 $secondsUnit",
-                            maxLabel = "30 $secondsUnit",
-                        )
+                    SettingsSearchAnchor("subscription_ping_timeout_label") {
+                        SkipiSettingsSectionCard(bottomPadding = 12.dp) {
+                            val secondsUnit = stringResource(Res.string.unit_seconds_short)
+                            SkipiSliderPreference(
+                                title = stringResource(Res.string.subscription_ping_timeout_label),
+                                startAction = settingIcon(Icons.Rounded.Timer),
+                                valueLabel = "${sliderValue.roundToInt()} $secondsUnit",
+                                value = sliderValue,
+                                onValueChange = { newValue -> sliderValue = newValue },
+                                onValueChangeFinished = {
+                                    val seconds = sliderValue.roundToInt().coerceIn(1, 30)
+                                    onTimeoutMillisChange("${seconds * 1000}")
+                                },
+                                valueRange = 1f..30f,
+                                steps = 28,
+                                minLabel = "1 $secondsUnit",
+                                maxLabel = "30 $secondsUnit",
+                            )
+                        }
                     }
                 }
 
@@ -269,65 +279,67 @@ fun SkipiSubscriptionPingSettingsScreen(
                 }
 
                 item(key = "section_url_card") {
-                    SkipiSettingsSectionCard(bottomPadding = 12.dp) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            TextField(
-                                value = state.url,
-                                onValueChange = onUrlChange,
-                                label = stringResource(Res.string.subscription_ping_url_label),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-
-                            SkipiSettingsReveal(visible = urlError != null) {
-                                Text(
-                                    text = urlError.orEmpty(),
-                                    fontSize = 12.sp,
-                                    color = MiuixTheme.colorScheme.error,
-                                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                    SettingsSearchAnchor("subscription_ping_url") {
+                        SkipiSettingsSectionCard(bottomPadding = 12.dp) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                TextField(
+                                    value = state.url,
+                                    onValueChange = onUrlChange,
+                                    label = stringResource(Res.string.subscription_ping_url_label),
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
-                            }
 
-                            Spacer(modifier = Modifier.height(14.dp))
+                                SkipiSettingsReveal(visible = urlError != null) {
+                                    Text(
+                                        text = urlError.orEmpty(),
+                                        fontSize = 12.sp,
+                                        color = MiuixTheme.colorScheme.error,
+                                        modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                                    )
+                                }
 
-                            Text(
-                                text = stringResource(Res.string.subscription_ping_quick_select),
-                                fontSize = 12.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            )
+                                Spacer(modifier = Modifier.height(14.dp))
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(Res.string.subscription_ping_quick_select),
+                                    fontSize = 12.sp,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
+                                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                )
 
-                            // 3 Quick Preset Buttons
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                urlPresets.forEach { (name, presetUrl) ->
-                                    val isSelected = state.url == presetUrl
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(
-                                                if (isSelected) MiuixTheme.colorScheme.primary
-                                                else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // 3 Quick Preset Buttons
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    urlPresets.forEach { (name, presetUrl) ->
+                                        val isSelected = state.url == presetUrl
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    if (isSelected) MiuixTheme.colorScheme.primary
+                                                    else MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                )
+                                                .clickable {
+                                                    onUrlChange(presetUrl)
+                                                    onPresetSelected(name)
+                                                }
+                                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(
+                                                text = name,
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                                color = if (isSelected) MiuixTheme.colorScheme.onPrimary
+                                                else MiuixTheme.colorScheme.primary,
                                             )
-                                            .clickable {
-                                                onUrlChange(presetUrl)
-                                                onPresetSelected(name)
-                                            }
-                                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            text = name,
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                            color = if (isSelected) MiuixTheme.colorScheme.onPrimary
-                                            else MiuixTheme.colorScheme.primary,
-                                        )
+                                        }
                                     }
                                 }
                             }

@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.animation.animateContentSize
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.Shuffle
@@ -136,6 +139,7 @@ fun SkipiLocalProxySettingsScreen(
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.LocalProxy, listState)
     val scrollBehavior = MiuixScrollBehavior()
     val httpOn = capabilities.httpInbound && state.enableHttpEndpoint
     val portsEditable = !capabilities.dynamicPort || !state.dynamicPort
@@ -158,22 +162,26 @@ fun SkipiLocalProxySettingsScreen(
                         SkipiSettingsSectionCard {
                             Column(Modifier.padding(vertical = 4.dp)) {
                                 if (capabilities.dynamicPort) {
-                                    SwitchPreference(
-                                        title = labels.dynamicPortTitle,
-                                        startAction = settingIcon(Icons.Rounded.Shuffle),
-                                        summary = labels.dynamicPortSummary,
-                                        checked = state.dynamicPort,
-                                        onCheckedChange = onDynamicPortChange,
-                                    )
+                                    SettingsSearchAnchor("settings_local_proxy_dynamic_port") {
+                                        SwitchPreference(
+                                            title = labels.dynamicPortTitle,
+                                            startAction = settingIcon(Icons.Rounded.Shuffle),
+                                            summary = labels.dynamicPortSummary,
+                                            checked = state.dynamicPort,
+                                            onCheckedChange = onDynamicPortChange,
+                                        )
+                                    }
                                 }
                                 if (capabilities.listenAllInterfaces) {
-                                    SwitchPreference(
-                                        title = labels.listenAllTitle,
-                                        startAction = settingIcon(Icons.Rounded.Public),
-                                        summary = labels.listenAllSummary,
-                                        checked = state.listenAllInterfaces,
-                                        onCheckedChange = onListenAllInterfacesChange,
-                                    )
+                                    SettingsSearchAnchor("settings_local_proxy_listen_all_interfaces") {
+                                        SwitchPreference(
+                                            title = labels.listenAllTitle,
+                                            startAction = settingIcon(Icons.Rounded.Public),
+                                            summary = labels.listenAllSummary,
+                                            checked = state.listenAllInterfaces,
+                                            onCheckedChange = onListenAllInterfacesChange,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -184,20 +192,22 @@ fun SkipiLocalProxySettingsScreen(
                 item(key = "local_proxy_socks_card") {
                     SkipiSettingsSectionCard {
                         Column(Modifier.padding(vertical = 4.dp)) {
-                            PortRow(portsEditable, labels.portLabel, state.port, state.portError, onPortChange)
+                            SettingsSearchAnchor("settings_local_proxy_port") { PortRow(portsEditable, labels.portLabel, state.port, state.portError, onPortChange) }
                             if (capabilities.authentication) {
-                                AuthBlock(
-                                    title = labels.socksAuthModeTitle,
-                                    mode = state.socksAuthMode,
-                                    username = state.username,
-                                    password = state.password,
-                                    showCredentials = capabilities.credentials,
-                                    labels = labels,
-                                    onModeChange = onSocksAuthModeChange,
-                                    onCredentialsChange = onSocksCredentialsChange,
-                                    onGenerate = onGenerateSocksCredentials,
-                                    onCopy = onCopy,
-                                )
+                                SettingsSearchAnchor("settings_local_proxy_socks_auth_mode") {
+                                    AuthBlock(
+                                        title = labels.socksAuthModeTitle,
+                                        mode = state.socksAuthMode,
+                                        username = state.username,
+                                        password = state.password,
+                                        showCredentials = capabilities.credentials,
+                                        labels = labels,
+                                        onModeChange = onSocksAuthModeChange,
+                                        onCredentialsChange = onSocksCredentialsChange,
+                                        onGenerate = onGenerateSocksCredentials,
+                                        onCopy = onCopy,
+                                    )
+                                }
                             }
                         }
                     }
@@ -208,29 +218,33 @@ fun SkipiLocalProxySettingsScreen(
                     item(key = "local_proxy_http_card") {
                         SkipiSettingsSectionCard {
                             Column(Modifier.padding(vertical = 4.dp)) {
-                                SwitchPreference(
-                                    title = labels.httpInboundTitle,
-                                    startAction = settingIcon(Icons.Rounded.Http),
-                                    summary = labels.httpInboundSummary,
-                                    checked = state.enableHttpEndpoint,
-                                    onCheckedChange = onHttpEnabledChange,
-                                )
+                                SettingsSearchAnchor("settings_local_proxy_http_inbound") {
+                                    SwitchPreference(
+                                        title = labels.httpInboundTitle,
+                                        startAction = settingIcon(Icons.Rounded.Http),
+                                        summary = labels.httpInboundSummary,
+                                        checked = state.enableHttpEndpoint,
+                                        onCheckedChange = onHttpEnabledChange,
+                                    )
+                                }
                                 SkipiSettingsReveal(visible = httpOn) {
                                     Column {
-                                        PortRow(portsEditable, labels.httpPortLabel, state.httpPort, state.httpPortError, onHttpPortChange)
+                                        SettingsSearchAnchor("settings_local_proxy_http_port") { PortRow(portsEditable, labels.httpPortLabel, state.httpPort, state.httpPortError, onHttpPortChange) }
                                         if (capabilities.authentication) {
-                                            AuthBlock(
-                                                title = labels.httpAuthModeTitle,
-                                                mode = state.httpAuthMode,
-                                                username = state.httpUsername,
-                                                password = state.httpPassword,
-                                                showCredentials = capabilities.credentials,
-                                                labels = labels,
-                                                onModeChange = onHttpAuthModeChange,
-                                                onCredentialsChange = onHttpCredentialsChange,
-                                                onGenerate = onGenerateHttpCredentials,
-                                                onCopy = onCopy,
-                                            )
+                                            SettingsSearchAnchor("settings_local_proxy_http_auth_mode") {
+                                                AuthBlock(
+                                                    title = labels.httpAuthModeTitle,
+                                                    mode = state.httpAuthMode,
+                                                    username = state.httpUsername,
+                                                    password = state.httpPassword,
+                                                    showCredentials = capabilities.credentials,
+                                                    labels = labels,
+                                                    onModeChange = onHttpAuthModeChange,
+                                                    onCredentialsChange = onHttpCredentialsChange,
+                                                    onGenerate = onGenerateHttpCredentials,
+                                                    onCopy = onCopy,
+                                                )
+                                            }
                                             SkipiSettingsReveal(visible = state.httpAuthMode != LocalProxyAuthMode.Off) {
                                                 Text(
                                                     text = labels.httpAuthSystemNote,

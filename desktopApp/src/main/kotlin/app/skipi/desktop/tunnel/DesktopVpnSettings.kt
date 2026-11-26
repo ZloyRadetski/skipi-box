@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.SettingsEthernet
 import androidx.compose.material.icons.Icons
@@ -147,33 +148,38 @@ internal fun DesktopVpnSettings(
         onOpenSystemVpnSettings = {},
         onOpenNetworkAutomation = onOpenNetworkAutomation,
         capabilities = desktopVpnSettingsCapabilities(),
+        autoConnectOnBootIsLaunchOnLogin = true,
         hostContent = {
             val tunModeTitle = stringResource(Res.string.settings_tun_mode_title)
-            SkipiHostSwitchSection(
-                sectionTitle = tunModeTitle,
-                title = tunModeTitle,
-                icon = Icons.Rounded.SettingsEthernet,
-                summary = tunModeSummary,
-                checked = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
-                enabled = tunSwitchEnabled(tunAvailable, settings.enableTunMode, tunNeedsElevation),
-                onCheckedChange = { enabled ->
-                    when (tunSwitchChange(enabled, tunNeedsElevation)) {
-                        TunSwitchChange.RequestElevation -> onRequestTunElevation()
-                        TunSwitchChange.Save -> onPersist(settings.copy(enableTunMode = enabled), saved)
-                    }
-                },
-            )
+            SettingsSearchAnchor("settings_tun_mode_title") {
+                SkipiHostSwitchSection(
+                    sectionTitle = tunModeTitle,
+                    title = tunModeTitle,
+                    icon = Icons.Rounded.SettingsEthernet,
+                    summary = tunModeSummary,
+                    checked = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
+                    enabled = tunSwitchEnabled(tunAvailable, settings.enableTunMode, tunNeedsElevation),
+                    onCheckedChange = { enabled ->
+                        when (tunSwitchChange(enabled, tunNeedsElevation)) {
+                            TunSwitchChange.RequestElevation -> onRequestTunElevation()
+                            TunSwitchChange.Save -> onPersist(settings.copy(enableTunMode = enabled), saved)
+                        }
+                    },
+                )
+            }
             // Only TUN mode routes the system's DNS, so the switch follows the TUN one.
             val localDnsTitle = stringResource(Res.string.configs_local_dns)
-            SkipiHostSwitchSection(
-                sectionTitle = localDnsTitle,
-                title = localDnsTitle,
-                icon = Icons.Rounded.Dns,
-                summary = stringResource(Res.string.configs_local_dns_summary),
-                checked = settings.enableVpnLocalDns,
-                enabled = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
-                onCheckedChange = { enabled -> onPersist(settings.copy(enableVpnLocalDns = enabled), saved) },
-            )
+            SettingsSearchAnchor("configs_local_dns") {
+                SkipiHostSwitchSection(
+                    sectionTitle = localDnsTitle,
+                    title = localDnsTitle,
+                    icon = Icons.Rounded.Dns,
+                    summary = stringResource(Res.string.configs_local_dns_summary),
+                    checked = settings.enableVpnLocalDns,
+                    enabled = tunSwitchChecked(tunAvailable, settings.enableTunMode, tunNeedsElevation),
+                    onCheckedChange = { enabled -> onPersist(settings.copy(enableVpnLocalDns = enabled), saved) },
+                )
+            }
         },
     )
     TunSettingsBottomSheet(

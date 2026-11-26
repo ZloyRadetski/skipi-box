@@ -3,6 +3,7 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
 import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.Icons
@@ -132,16 +133,20 @@ internal fun CustomThemesSection(
                 onOptions = { dialog = ThemeDialog.Options(index) },
             )
         }
-        ArrowPreference(
-            title = stringResource(Res.string.custom_themes_save_current),
-            startAction = settingIcon(Icons.Rounded.SaveAlt),
-            onClick = { dialog = ThemeDialog.Save },
-        )
-        ArrowPreference(
-            title = stringResource(Res.string.custom_themes_import),
-            startAction = settingIcon(Icons.Rounded.FileDownload),
-            onClick = { dialog = ThemeDialog.Import },
-        )
+        SettingsSearchAnchor("custom_themes_save_current") {
+            ArrowPreference(
+                title = stringResource(Res.string.custom_themes_save_current),
+                startAction = settingIcon(Icons.Rounded.SaveAlt),
+                onClick = { dialog = ThemeDialog.Save },
+            )
+        }
+        SettingsSearchAnchor("custom_themes_import") {
+            ArrowPreference(
+                title = stringResource(Res.string.custom_themes_import),
+                startAction = settingIcon(Icons.Rounded.FileDownload),
+                onClick = { dialog = ThemeDialog.Import },
+            )
+        }
     }
 
     when (val shown = dialog) {

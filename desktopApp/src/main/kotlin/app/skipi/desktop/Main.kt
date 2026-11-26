@@ -5,6 +5,8 @@
 
 package app.skipi.desktop
 
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isCtrlPressed
 import app.skipi.ui.resources.desktop_active_group_server_changed
 import app.skipi.ui.resources.desktop_group_member_change_failed
 import app.skipi.ui.resources.desktop_group_member_save_failed
@@ -328,6 +330,7 @@ private fun runDesktopApplication(
     }
     val windowState = remember { WindowState(size = DpSize(DesktopInitialWindowWidth.dp, DesktopInitialWindowHeight.dp), isMinimized = hidden) }
     val escapeHandler = remember { DesktopEscapeHandler() }
+    val settingsSearch = remember { app.skipi.ui.settings.search.SettingsSearchController() }
     // Escape and the mouse's back button go to the newest screen that shows a back arrow, then to a page that
     // registered with the escape handler.
     val backActions = remember { app.skipi.ui.components.BackActions() }
@@ -1527,7 +1530,12 @@ private fun runDesktopApplication(
     if (windowShown) Window(
         state = windowState,
         onKeyEvent = { event ->
-            isEscapeBack(event.key, event.type) && goBack()
+            if (currentSection == SkipiMainDestination.Settings && isSettingsSearchShortcut(event.key, event.type, event.isCtrlPressed, event.isMetaPressed)) {
+                settingsSearch.requestSearchField()
+                true
+            } else {
+                isEscapeBack(event.key, event.type) && goBack()
+            }
         },
         // Closing is handled from the composable below so it can serialize with an
         // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
@@ -1559,6 +1567,7 @@ private fun runDesktopApplication(
             LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
             LocalNavigationReselectToken provides (reselectTokens[currentSection] ?: 0),
             app.skipi.ui.components.LocalBackActions provides backActions,
+            app.skipi.ui.settings.search.LocalSettingsSearchController provides settingsSearch,
             app.skipi.ui.components.LocalConfirmDeletion provides desktopSettings.confirmDeletion,
         ) {
             DesktopAppTheme {

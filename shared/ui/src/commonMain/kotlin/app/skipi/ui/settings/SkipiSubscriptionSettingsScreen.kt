@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material.icons.rounded.HourglassBottom
 import androidx.compose.material.icons.rounded.PhoneAndroid
@@ -131,6 +134,7 @@ fun SkipiSubscriptionSettingsScreen(
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.Subscriptions, listState)
     var showDisableHeadersConfirmation by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -151,31 +155,37 @@ fun SkipiSubscriptionSettingsScreen(
                     SmallTitle(text = labels.generalSectionTitle)
                     SkipiSettingsSectionCard {
                         if (capabilities.fetchTimeout) {
-                            FetchTimeoutSlider(
-                                title = labels.fetchTimeoutTitle,
-                                summary = labels.fetchTimeoutSummary,
-                                seconds = state.fetchTimeoutSeconds,
-                                onSecondsChange = onFetchTimeoutChange,
-                            )
+                            SettingsSearchAnchor("settings_subscription_fetch_timeout") {
+                                FetchTimeoutSlider(
+                                    title = labels.fetchTimeoutTitle,
+                                    summary = labels.fetchTimeoutSummary,
+                                    seconds = state.fetchTimeoutSeconds,
+                                    onSecondsChange = onFetchTimeoutChange,
+                                )
+                            }
                         }
                         if (capabilities.userAgents) {
-                            ArrowPreference(
-                                title = labels.userAgentsTitle,
-                                startAction = settingIcon(Icons.Rounded.Fingerprint),
-                                summary = labels.userAgentsSummary,
-                                onClick = onOpenUserAgents,
-                            )
+                            SettingsSearchAnchor("settings_user_agents") {
+                                ArrowPreference(
+                                    title = labels.userAgentsTitle,
+                                    startAction = settingIcon(Icons.Rounded.Fingerprint),
+                                    summary = labels.userAgentsSummary,
+                                    onClick = onOpenUserAgents,
+                                )
+                            }
                         }
                         if (capabilities.deviceHeaders) {
-                            SwitchPreference(
-                                title = labels.deviceHeadersTitle,
-                                startAction = settingIcon(Icons.Rounded.PhoneAndroid),
-                                summary = labels.deviceHeadersSummary,
-                                checked = state.deviceHeadersEnabled,
-                                onCheckedChange = { enabled ->
-                                    if (enabled) onDeviceHeadersChange(true) else showDisableHeadersConfirmation = true
-                                },
-                            )
+                            SettingsSearchAnchor("settings_subscription_device_headers") {
+                                SwitchPreference(
+                                    title = labels.deviceHeadersTitle,
+                                    startAction = settingIcon(Icons.Rounded.PhoneAndroid),
+                                    summary = labels.deviceHeadersSummary,
+                                    checked = state.deviceHeadersEnabled,
+                                    onCheckedChange = { enabled ->
+                                        if (enabled) onDeviceHeadersChange(true) else showDisableHeadersConfirmation = true
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -183,30 +193,34 @@ fun SkipiSubscriptionSettingsScreen(
                     SmallTitle(text = labels.expirySectionTitle)
                     SkipiSettingsSectionCard {
                         Column(Modifier.fillMaxWidth()) {
-                            SwitchPreference(
-                                title = labels.expiryEnabledTitle,
-                                startAction = settingIcon(Icons.Rounded.EventBusy),
-                                summary = labels.expiryEnabledSummary,
-                                checked = state.expiryNotificationsEnabled,
-                                onCheckedChange = onExpiryNotificationsChange,
-                            )
+                            SettingsSearchAnchor("subscription_expiry_notifications_enable") {
+                                SwitchPreference(
+                                    title = labels.expiryEnabledTitle,
+                                    startAction = settingIcon(Icons.Rounded.EventBusy),
+                                    summary = labels.expiryEnabledSummary,
+                                    checked = state.expiryNotificationsEnabled,
+                                    onCheckedChange = onExpiryNotificationsChange,
+                                )
+                            }
                             androidx.compose.animation.AnimatedVisibility(visible = state.expiryNotificationsEnabled) {
-                                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)) {
-                                    Text(
-                                        text = labels.expiryRemindersTitle,
-                                        style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
-                                        color = SkipiTheme.colors.onSurface,
-                                    )
-                                    Text(
-                                        text = labels.expiryRemindersSummary,
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = SkipiTheme.colors.onSurfaceVariant,
-                                        modifier = Modifier.padding(bottom = 8.dp),
-                                    )
-                                    SubscriptionExpiryReminderList(
-                                        reminders = state.expiryReminders,
-                                        onRemindersChange = onExpiryRemindersChange,
-                                    )
+                                SettingsSearchAnchor("subscription_expiry_reminders_title") {
+                                    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)) {
+                                        Text(
+                                            text = labels.expiryRemindersTitle,
+                                            style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
+                                            color = SkipiTheme.colors.onSurface,
+                                        )
+                                        Text(
+                                            text = labels.expiryRemindersSummary,
+                                            style = MiuixTheme.textStyles.body2,
+                                            color = SkipiTheme.colors.onSurfaceVariant,
+                                            modifier = Modifier.padding(bottom = 8.dp),
+                                        )
+                                        SubscriptionExpiryReminderList(
+                                            reminders = state.expiryReminders,
+                                            onRemindersChange = onExpiryRemindersChange,
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -3,6 +3,9 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
+import app.skipi.ui.settings.search.SettingsSearchFocusEffect
+import app.skipi.ui.settings.search.SettingsSearchPage
 import androidx.compose.material.icons.rounded.Timelapse
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Vibration
@@ -181,6 +184,7 @@ fun SkipiGeneralSettingsScreen(
     capabilities: GeneralSettingsCapabilities = GeneralSettingsCapabilities(),
 ) {
     val listState = rememberLazyListState()
+    SettingsSearchFocusEffect(SettingsSearchPage.General, listState)
     val scrollBehavior = MiuixScrollBehavior()
     val layoutDirection = LocalLayoutDirection.current
     val languageModes = listOf(
@@ -237,26 +241,30 @@ fun SkipiGeneralSettingsScreen(
                         SmallTitle(text = stringResource(Res.string.settings_localization_and_feedback))
                         SkipiSettingsSectionCard {
                             if (GeneralSettingsControl.Language in visibleControls) {
-                                SkipiDropdownPreference(
-                                    title = stringResource(Res.string.settings_language),
-                                    startAction = settingIcon(Icons.Rounded.Translate),
-                                    items = languageOptions,
-                                    selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),
-                                    onSelectedIndexChange = { index ->
-                                        languageModes.getOrNull(index)?.let { mode ->
-                                            onSettingsChange { it.copy(languageMode = mode) }
-                                        }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_language") {
+                                    SkipiDropdownPreference(
+                                        title = stringResource(Res.string.settings_language),
+                                        startAction = settingIcon(Icons.Rounded.Translate),
+                                        items = languageOptions,
+                                        selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),
+                                        onSelectedIndexChange = { index ->
+                                            languageModes.getOrNull(index)?.let { mode ->
+                                                onSettingsChange { it.copy(languageMode = mode) }
+                                            }
+                                        },
+                                    )
+                                }
                             }
                             if (GeneralSettingsControl.Haptics in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_enable_haptics),
-                                    startAction = settingIcon(Icons.Rounded.Vibration),
-                                    summary = stringResource(Res.string.settings_enable_haptics_summary),
-                                    checked = state.enableHaptics,
-                                    onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
-                                )
+                                SettingsSearchAnchor("settings_enable_haptics") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_enable_haptics),
+                                        startAction = settingIcon(Icons.Rounded.Vibration),
+                                        summary = stringResource(Res.string.settings_enable_haptics_summary),
+                                        checked = state.enableHaptics,
+                                        onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
+                                    )
+                                }
                             }
                         }
                     }
@@ -271,47 +279,55 @@ fun SkipiGeneralSettingsScreen(
                         SmallTitle(text = stringResource(Res.string.settings_notifications_title))
                         SkipiSettingsSectionCard {
                             if (GeneralSettingsControl.TrafficStatsNotifications in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_traffic_stats_notification),
-                                    startAction = settingIcon(Icons.Rounded.Insights),
-                                    summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
-                                    checked = state.enableTrafficStatsNotification,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(enableTrafficStatsNotification = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_traffic_stats_notification") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_traffic_stats_notification),
+                                        startAction = settingIcon(Icons.Rounded.Insights),
+                                        summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
+                                        checked = state.enableTrafficStatsNotification,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(enableTrafficStatsNotification = enabled) }
+                                        },
+                                    )
+                                }
                                 SkipiSettingsReveal(visible = state.enableTrafficStatsNotification) {
-                                    TrafficStatsRefreshIntervalPreference(
-                                        refreshIntervalSeconds = state.trafficStatsNotificationRefreshIntervalSeconds,
-                                        onRefreshIntervalSecondsChange = { seconds ->
-                                            onSettingsChange {
-                                                it.copy(trafficStatsNotificationRefreshIntervalSeconds = seconds)
-                                            }
+                                    SettingsSearchAnchor("settings_traffic_stats_notification_refresh_interval") {
+                                        TrafficStatsRefreshIntervalPreference(
+                                            refreshIntervalSeconds = state.trafficStatsNotificationRefreshIntervalSeconds,
+                                            onRefreshIntervalSecondsChange = { seconds ->
+                                                onSettingsChange {
+                                                    it.copy(trafficStatsNotificationRefreshIntervalSeconds = seconds)
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                            if (GeneralSettingsControl.ResourceFileNotifications in visibleControls) {
+                                SettingsSearchAnchor("settings_resource_files_notifications") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_resource_files_notifications),
+                                        startAction = settingIcon(Icons.Rounded.NotificationsActive),
+                                        summary = stringResource(Res.string.settings_resource_files_notifications_summary),
+                                        checked = state.enableResourceFileNotifications,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(enableResourceFileNotifications = enabled) }
                                         },
                                     )
                                 }
                             }
-                            if (GeneralSettingsControl.ResourceFileNotifications in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_resource_files_notifications),
-                                    startAction = settingIcon(Icons.Rounded.NotificationsActive),
-                                    summary = stringResource(Res.string.settings_resource_files_notifications_summary),
-                                    checked = state.enableResourceFileNotifications,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(enableResourceFileNotifications = enabled) }
-                                    },
-                                )
-                            }
                             if (GeneralSettingsControl.DeletionConfirmation in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_deletion_confirmation),
-                                    startAction = settingIcon(Icons.Rounded.Delete),
-                                    summary = stringResource(Res.string.settings_deletion_confirmation_summary),
-                                    checked = state.enableDeletionConfirmation,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(enableDeletionConfirmation = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_deletion_confirmation") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_deletion_confirmation),
+                                        startAction = settingIcon(Icons.Rounded.Delete),
+                                        summary = stringResource(Res.string.settings_deletion_confirmation_summary),
+                                        checked = state.enableDeletionConfirmation,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(enableDeletionConfirmation = enabled) }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -328,56 +344,66 @@ fun SkipiGeneralSettingsScreen(
                         SmallTitle(text = stringResource(Res.string.settings_category_integration))
                         SkipiSettingsSectionCard {
                             if (GeneralSettingsControl.UrlSchemes in visibleControls) {
-                                ArrowPreference(
-                                    title = stringResource(Res.string.settings_url_schemes),
-                                    startAction = settingIcon(Icons.Rounded.Link),
-                                    summary = stringResource(Res.string.settings_url_schemes_summary),
-                                    onClick = onOpenUrlSchemes,
-                                )
+                                SettingsSearchAnchor("settings_url_schemes") {
+                                    ArrowPreference(
+                                        title = stringResource(Res.string.settings_url_schemes),
+                                        startAction = settingIcon(Icons.Rounded.Link),
+                                        summary = stringResource(Res.string.settings_url_schemes_summary),
+                                        onClick = onOpenUrlSchemes,
+                                    )
+                                }
                             }
                             if (GeneralSettingsControl.BroadcastControl in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_broadcast_control),
-                                    startAction = settingIcon(Icons.Rounded.SettingsRemote),
-                                    summary = stringResource(Res.string.settings_broadcast_control_summary),
-                                    checked = state.enableBroadcastControl,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(enableBroadcastControl = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_broadcast_control") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_broadcast_control),
+                                        startAction = settingIcon(Icons.Rounded.SettingsRemote),
+                                        summary = stringResource(Res.string.settings_broadcast_control_summary),
+                                        checked = state.enableBroadcastControl,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(enableBroadcastControl = enabled) }
+                                        },
+                                    )
+                                }
                             }
                             if (GeneralSettingsControl.ExternalControl in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_external_control),
-                                    startAction = settingIcon(Icons.Rounded.SettingsRemote),
-                                    summary = stringResource(Res.string.settings_external_control_summary),
-                                    checked = state.enableExternalControl,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(enableExternalControl = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_external_control") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_external_control),
+                                        startAction = settingIcon(Icons.Rounded.SettingsRemote),
+                                        summary = stringResource(Res.string.settings_external_control_summary),
+                                        checked = state.enableExternalControl,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(enableExternalControl = enabled) }
+                                        },
+                                    )
+                                }
                             }
                             if (GeneralSettingsControl.CloseToBackground in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_close_to_background),
-                                    startAction = settingIcon(Icons.Rounded.Minimize),
-                                    summary = stringResource(Res.string.settings_close_to_background_summary),
-                                    checked = state.closeToBackground,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(closeToBackground = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_close_to_background") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_close_to_background),
+                                        startAction = settingIcon(Icons.Rounded.Minimize),
+                                        summary = stringResource(Res.string.settings_close_to_background_summary),
+                                        checked = state.closeToBackground,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(closeToBackground = enabled) }
+                                        },
+                                    )
+                                }
                             }
                             if (GeneralSettingsControl.GraphicsAcceleration in visibleControls) {
-                                SwitchPreference(
-                                    title = stringResource(Res.string.settings_graphics_acceleration),
-                                    startAction = settingIcon(Icons.Rounded.Speed),
-                                    summary = stringResource(Res.string.settings_graphics_acceleration_summary),
-                                    checked = state.graphicsAcceleration,
-                                    onCheckedChange = { enabled ->
-                                        onSettingsChange { it.copy(graphicsAcceleration = enabled) }
-                                    },
-                                )
+                                SettingsSearchAnchor("settings_graphics_acceleration") {
+                                    SwitchPreference(
+                                        title = stringResource(Res.string.settings_graphics_acceleration),
+                                        startAction = settingIcon(Icons.Rounded.Speed),
+                                        summary = stringResource(Res.string.settings_graphics_acceleration_summary),
+                                        checked = state.graphicsAcceleration,
+                                        onCheckedChange = { enabled ->
+                                            onSettingsChange { it.copy(graphicsAcceleration = enabled) }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

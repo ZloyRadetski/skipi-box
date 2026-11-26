@@ -108,6 +108,9 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Settings -->
+    <string name="settings_search_hint">Search settings</string>
+    <string name="settings_search_empty">Nothing found</string>
+    <string name="search_clear">Clear search</string>
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_color_mode">Color mode</string>

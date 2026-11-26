@@ -3,6 +3,7 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.settings.search.SettingsSearchAnchor
 import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.Wallpaper
 import androidx.compose.material.icons.rounded.TextFields
@@ -109,55 +110,65 @@ internal fun AppearanceThemeSection(
 
     SmallTitle(text = stringResource(Res.string.settings_theme))
     SkipiSettingsSectionCard {
-        SkipiDropdownPreference(
-            title = stringResource(Res.string.settings_color_mode),
-            startAction = settingIcon(Icons.Rounded.DarkMode),
-            summary = if (isNamedThemeSelected) {
-                stringResource(Res.string.settings_theme_preset_summary)
-            } else {
-                stringResource(Res.string.settings_color_mode_summary)
-            },
-            items = colorModeOptions.mapIndexed { index, (_, label) ->
-                if (index == selectedColorModeIndex) colorModeLabel(label, appState.enableCustomColors, customColorModeWord) else label
-            },
-            selectedIndex = selectedColorModeIndex,
-            onSelectedIndexChange = { index ->
-                colorModeOptions.getOrNull(index)?.first?.let { mode ->
-                    updateAppState { it.withColorMode(mode) }
-                }
-            },
-        )
-        if (capabilities.fonts) {
+        SettingsSearchAnchor("settings_color_mode") {
             SkipiDropdownPreference(
-                title = stringResource(Res.string.settings_font_family),
-                startAction = settingIcon(Icons.Rounded.TextFields),
-                items = fontFamilyOptions,
-                selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
-                onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
-            )
-            FontSizeSliderPreference(
-                fontSizeMode = appState.fontSizeMode,
-                onFontSizeModeChange = { mode ->
-                    updateAppState { it.copy(fontSizeMode = mode) }
+                title = stringResource(Res.string.settings_color_mode),
+                startAction = settingIcon(Icons.Rounded.DarkMode),
+                summary = if (isNamedThemeSelected) {
+                    stringResource(Res.string.settings_theme_preset_summary)
+                } else {
+                    stringResource(Res.string.settings_color_mode_summary)
+                },
+                items = colorModeOptions.mapIndexed { index, (_, label) ->
+                    if (index == selectedColorModeIndex) colorModeLabel(label, appState.enableCustomColors, customColorModeWord) else label
+                },
+                selectedIndex = selectedColorModeIndex,
+                onSelectedIndexChange = { index ->
+                    colorModeOptions.getOrNull(index)?.first?.let { mode ->
+                        updateAppState { it.withColorMode(mode) }
+                    }
                 },
             )
-            SkipiSettingsReveal(visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode)) {
+        }
+        if (capabilities.fonts) {
+            SettingsSearchAnchor("settings_font_family") {
                 SkipiDropdownPreference(
-                    title = stringResource(Res.string.settings_font_weight),
-                    startAction = settingIcon(Icons.Rounded.FormatBold),
-                    items = fontWeightOptions,
-                    selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
-                    onSelectedIndexChange = { index -> updateAppState { it.copy(fontWeightMode = index) } },
+                    title = stringResource(Res.string.settings_font_family),
+                    startAction = settingIcon(Icons.Rounded.TextFields),
+                    items = fontFamilyOptions,
+                    selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
+                    onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
                 )
+            }
+            SettingsSearchAnchor("settings_font_size") {
+                FontSizeSliderPreference(
+                    fontSizeMode = appState.fontSizeMode,
+                    onFontSizeModeChange = { mode ->
+                        updateAppState { it.copy(fontSizeMode = mode) }
+                    },
+                )
+            }
+            SkipiSettingsReveal(visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode)) {
+                SettingsSearchAnchor("settings_font_weight") {
+                    SkipiDropdownPreference(
+                        title = stringResource(Res.string.settings_font_weight),
+                        startAction = settingIcon(Icons.Rounded.FormatBold),
+                        items = fontWeightOptions,
+                        selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
+                        onSelectedIndexChange = { index -> updateAppState { it.copy(fontWeightMode = index) } },
+                    )
+                }
             }
         }
         if (capabilities.appIcon) {
-            ArrowPreference(
-                title = stringResource(Res.string.settings_app_icon),
-                startAction = settingIcon(Icons.Rounded.Apps),
-                summary = appIconTitle,
-                onClick = onRequestAppIconSelection,
-            )
+            SettingsSearchAnchor("settings_app_icon") {
+                ArrowPreference(
+                    title = stringResource(Res.string.settings_app_icon),
+                    startAction = settingIcon(Icons.Rounded.Apps),
+                    summary = appIconTitle,
+                    onClick = onRequestAppIconSelection,
+                )
+            }
         }
     }
 }
@@ -187,59 +198,69 @@ internal fun AppearanceBackgroundSection(
 
     SmallTitle(text = stringResource(Res.string.settings_background_title))
     SkipiSettingsSectionCard {
-        SkipiDropdownPreference(
-            title = stringResource(Res.string.settings_background_style),
-            startAction = settingIcon(Icons.Rounded.Wallpaper),
-            items = backgroundStyleOptions,
-            selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
-            onSelectedIndexChange = { index ->
-                val newStyle = AppearanceSettingValues.normalizeBackgroundStyle(index)
-                updateAppState { it.copy(backgroundStyle = newStyle) }
-                if (newStyle == AppearanceSettingValues.BackgroundStylePhoto && !hasCustomBackgroundPhoto) {
-                    onChooseBackgroundPhoto()
-                }
-            },
-        )
+        SettingsSearchAnchor("settings_background_style") {
+            SkipiDropdownPreference(
+                title = stringResource(Res.string.settings_background_style),
+                startAction = settingIcon(Icons.Rounded.Wallpaper),
+                items = backgroundStyleOptions,
+                selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
+                onSelectedIndexChange = { index ->
+                    val newStyle = AppearanceSettingValues.normalizeBackgroundStyle(index)
+                    updateAppState { it.copy(backgroundStyle = newStyle) }
+                    if (newStyle == AppearanceSettingValues.BackgroundStylePhoto && !hasCustomBackgroundPhoto) {
+                        onChooseBackgroundPhoto()
+                    }
+                },
+            )
+        }
         SkipiSettingsReveal(visible = appState.backgroundStyle == AppearanceSettingValues.BackgroundStylePhoto) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                ArrowPreference(
-                    title = stringResource(Res.string.settings_background_photo_pick),
-                    startAction = settingIcon(Icons.Rounded.Image),
-                    onClick = onChooseBackgroundPhoto,
-                )
-                SkipiDropdownPreference(
-                    title = stringResource(Res.string.settings_background_dim),
-                    startAction = settingIcon(Icons.Rounded.Contrast),
-                    items = backgroundDimLabels,
-                    selectedIndex = backgroundDimOptions.indexOf(appState.backgroundPhotoDimPercent).coerceIn(0, backgroundDimOptions.lastIndex),
-                    onSelectedIndexChange = { index ->
-                        updateAppState {
-                            it.copy(backgroundPhotoDimPercent = backgroundDimOptions[index])
-                        }
-                    },
-                )
-                SkipiSettingsReveal(visible = hasCustomBackgroundPhoto) {
+                SettingsSearchAnchor("settings_background_photo_pick") {
                     ArrowPreference(
-                        title = stringResource(Res.string.settings_background_photo_remove),
-                        startAction = settingIcon(Icons.Rounded.HideImage),
-                        onClick = {
-                            onRemoveBackgroundPhoto()
-                            updateAppState { it.copy(backgroundStyle = AppearanceSettingValues.BackgroundStyleClassic) }
+                        title = stringResource(Res.string.settings_background_photo_pick),
+                        startAction = settingIcon(Icons.Rounded.Image),
+                        onClick = onChooseBackgroundPhoto,
+                    )
+                }
+                SettingsSearchAnchor("settings_background_dim") {
+                    SkipiDropdownPreference(
+                        title = stringResource(Res.string.settings_background_dim),
+                        startAction = settingIcon(Icons.Rounded.Contrast),
+                        items = backgroundDimLabels,
+                        selectedIndex = backgroundDimOptions.indexOf(appState.backgroundPhotoDimPercent).coerceIn(0, backgroundDimOptions.lastIndex),
+                        onSelectedIndexChange = { index ->
+                            updateAppState {
+                                it.copy(backgroundPhotoDimPercent = backgroundDimOptions[index])
+                            }
                         },
                     )
+                }
+                SkipiSettingsReveal(visible = hasCustomBackgroundPhoto) {
+                    SettingsSearchAnchor("settings_background_photo_remove") {
+                        ArrowPreference(
+                            title = stringResource(Res.string.settings_background_photo_remove),
+                            startAction = settingIcon(Icons.Rounded.HideImage),
+                            onClick = {
+                                onRemoveBackgroundPhoto()
+                                updateAppState { it.copy(backgroundStyle = AppearanceSettingValues.BackgroundStyleClassic) }
+                            },
+                        )
+                    }
                 }
             }
         }
         if (capabilities.seasonalEvents) {
-            SwitchPreference(
-                title = stringResource(Res.string.settings_seasonal_events),
-                startAction = settingIcon(Icons.Rounded.AcUnit),
-                summary = stringResource(Res.string.settings_seasonal_events_summary),
-                checked = appState.enableSeasonalEvents,
-                onCheckedChange = { enabled ->
-                    updateAppState { it.copy(enableSeasonalEvents = enabled) }
-                },
-            )
+            SettingsSearchAnchor("settings_seasonal_events") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_seasonal_events),
+                    startAction = settingIcon(Icons.Rounded.AcUnit),
+                    summary = stringResource(Res.string.settings_seasonal_events_summary),
+                    checked = appState.enableSeasonalEvents,
+                    onCheckedChange = { enabled ->
+                        updateAppState { it.copy(enableSeasonalEvents = enabled) }
+                    },
+                )
+            }
         }
     }
 }
@@ -266,65 +287,81 @@ internal fun AppearanceCustomColorsSection(
             SkipiSettingsReveal(visible = capabilities.dynamicColors && !isNamedThemeSelected) {
                 // Only the system accent: no seed colour to choose. The seed index goes back to "system", which also
                 // clears a colour that onboarding picked.
+                SettingsSearchAnchor("settings_enable_material_you") {
+                    SwitchPreference(
+                        title = stringResource(Res.string.settings_enable_material_you),
+                        startAction = settingIcon(Icons.Rounded.ColorLens),
+                        summary = stringResource(Res.string.settings_enable_material_you_summary),
+                        checked = appState.enableMaterialYou,
+                        onCheckedChange = { enabled ->
+                            updateAppState { it.copy(enableMaterialYou = enabled, seedIndex = if (enabled) 0 else it.seedIndex) }
+                        },
+                    )
+                }
+            }
+            SkipiSettingsReveal(visible = appState.showsAccentPicker()) {
+                SettingsSearchAnchor("settings_color_accent") {
+                    SettingsColorItem(
+                        title = stringResource(Res.string.settings_color_accent),
+                        summary = stringResource(Res.string.settings_color_accent_summary),
+                        color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
+                        onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
+                    )
+                }
+            }
+            SettingsSearchAnchor("settings_enable_custom_colors") {
                 SwitchPreference(
-                    title = stringResource(Res.string.settings_enable_material_you),
-                    startAction = settingIcon(Icons.Rounded.ColorLens),
-                    summary = stringResource(Res.string.settings_enable_material_you_summary),
-                    checked = appState.enableMaterialYou,
+                    title = stringResource(Res.string.settings_enable_custom_colors),
+                    startAction = settingIcon(Icons.Rounded.Colorize),
+                    summary = stringResource(Res.string.settings_enable_custom_colors_summary),
+                    checked = appState.enableCustomColors,
                     onCheckedChange = { enabled ->
-                        updateAppState { it.copy(enableMaterialYou = enabled, seedIndex = if (enabled) 0 else it.seedIndex) }
+                        updateAppState { it.copy(enableCustomColors = enabled) }
                     },
                 )
             }
-            SkipiSettingsReveal(visible = appState.showsAccentPicker()) {
-                SettingsColorItem(
-                    title = stringResource(Res.string.settings_color_accent),
-                    summary = stringResource(Res.string.settings_color_accent_summary),
-                    color = appState.customAccentColor?.let { Color(it) } ?: SkipiTheme.colors.accent,
-                    onClick = { onPickColor(AppearanceColorTarget.ACCENT) },
-                )
-            }
-            SwitchPreference(
-                title = stringResource(Res.string.settings_enable_custom_colors),
-                startAction = settingIcon(Icons.Rounded.Colorize),
-                summary = stringResource(Res.string.settings_enable_custom_colors_summary),
-                checked = appState.enableCustomColors,
-                onCheckedChange = { enabled ->
-                    updateAppState { it.copy(enableCustomColors = enabled) }
-                },
-            )
             SkipiSettingsReveal(visible = appState.enableCustomColors) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_background),
-                        summary = stringResource(Res.string.settings_color_background_summary),
-                        color = appState.customBackgroundColor?.let { Color(it) } ?: SkipiTheme.colors.background,
-                        onClick = { onPickColor(AppearanceColorTarget.BACKGROUND) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_surface),
-                        summary = stringResource(Res.string.settings_color_surface_summary),
-                        color = appState.customSurfaceColor?.let { Color(it) } ?: SkipiTheme.colors.surface,
-                        onClick = { onPickColor(AppearanceColorTarget.SURFACE) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_surface_variant),
-                        summary = stringResource(Res.string.settings_color_surface_variant_summary),
-                        color = appState.customSurfaceVariantColor?.let { Color(it) } ?: SkipiTheme.colors.surfaceVariant,
-                        onClick = { onPickColor(AppearanceColorTarget.SURFACE_VARIANT) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_text),
-                        summary = stringResource(Res.string.settings_color_text_summary),
-                        color = appState.customTextColor?.let { Color(it) } ?: SkipiTheme.colors.onSurface,
-                        onClick = { onPickColor(AppearanceColorTarget.TEXT) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_text_secondary),
-                        summary = stringResource(Res.string.settings_color_text_secondary_summary),
-                        color = appState.customTextSecondaryColor?.let { Color(it) } ?: SkipiTheme.colors.onSurfaceVariant,
-                        onClick = { onPickColor(AppearanceColorTarget.TEXT_SECONDARY) },
-                    )
+                    SettingsSearchAnchor("settings_color_background") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_background),
+                            summary = stringResource(Res.string.settings_color_background_summary),
+                            color = appState.customBackgroundColor?.let { Color(it) } ?: SkipiTheme.colors.background,
+                            onClick = { onPickColor(AppearanceColorTarget.BACKGROUND) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_surface") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_surface),
+                            summary = stringResource(Res.string.settings_color_surface_summary),
+                            color = appState.customSurfaceColor?.let { Color(it) } ?: SkipiTheme.colors.surface,
+                            onClick = { onPickColor(AppearanceColorTarget.SURFACE) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_surface_variant") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_surface_variant),
+                            summary = stringResource(Res.string.settings_color_surface_variant_summary),
+                            color = appState.customSurfaceVariantColor?.let { Color(it) } ?: SkipiTheme.colors.surfaceVariant,
+                            onClick = { onPickColor(AppearanceColorTarget.SURFACE_VARIANT) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_text") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_text),
+                            summary = stringResource(Res.string.settings_color_text_summary),
+                            color = appState.customTextColor?.let { Color(it) } ?: SkipiTheme.colors.onSurface,
+                            onClick = { onPickColor(AppearanceColorTarget.TEXT) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_text_secondary") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_text_secondary),
+                            summary = stringResource(Res.string.settings_color_text_secondary_summary),
+                            color = appState.customTextSecondaryColor?.let { Color(it) } ?: SkipiTheme.colors.onSurfaceVariant,
+                            onClick = { onPickColor(AppearanceColorTarget.TEXT_SECONDARY) },
+                        )
+                    }
                 }
             }
         }
@@ -333,146 +370,184 @@ internal fun AppearanceCustomColorsSection(
             Column(modifier = Modifier.fillMaxWidth()) {
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_status_title))
                 SkipiSettingsSectionCard {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_status_running),
-                        summary = stringResource(Res.string.settings_color_status_running_summary),
-                        color = appState.customStatusRunningColor?.let { Color(it) } ?: StatusColorDefaults.statusRunning(isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.STATUS_RUNNING) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_status_stopped),
-                        summary = stringResource(Res.string.settings_color_status_stopped_summary),
-                        color = appState.customStatusStoppedColor?.let { Color(it) } ?: StatusColorDefaults.statusStopped(isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.STATUS_STOPPED) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_ping_fast),
-                        summary = stringResource(Res.string.settings_color_ping_fast_summary),
-                        color = appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PING_FAST) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_ping_medium),
-                        summary = stringResource(Res.string.settings_color_ping_medium_summary),
-                        color = appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PING_MEDIUM) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_ping_slow),
-                        summary = stringResource(Res.string.settings_color_ping_slow_summary),
-                        color = appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PING_SLOW) },
-                    )
+                    SettingsSearchAnchor("settings_color_status_running") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_status_running),
+                            summary = stringResource(Res.string.settings_color_status_running_summary),
+                            color = appState.customStatusRunningColor?.let { Color(it) } ?: StatusColorDefaults.statusRunning(isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.STATUS_RUNNING) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_status_stopped") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_status_stopped),
+                            summary = stringResource(Res.string.settings_color_status_stopped_summary),
+                            color = appState.customStatusStoppedColor?.let { Color(it) } ?: StatusColorDefaults.statusStopped(isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.STATUS_STOPPED) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_ping_fast") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_ping_fast),
+                            summary = stringResource(Res.string.settings_color_ping_fast_summary),
+                            color = appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PING_FAST) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_ping_medium") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_ping_medium),
+                            summary = stringResource(Res.string.settings_color_ping_medium_summary),
+                            color = appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PING_MEDIUM) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_ping_slow") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_ping_slow),
+                            summary = stringResource(Res.string.settings_color_ping_slow_summary),
+                            color = appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PING_SLOW) },
+                        )
+                    }
                 }
 
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_categories_title))
                 SkipiSettingsSectionCard {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_icons),
-                        summary = stringResource(Res.string.settings_color_icons_summary),
-                        color = shownIconColor(appState.customCategoryIconGlyphColor),
-                        onClick = { onPickColor(AppearanceColorTarget.ICONS) },
-                    )
+                    SettingsSearchAnchor("settings_color_icons") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_icons),
+                            summary = stringResource(Res.string.settings_color_icons_summary),
+                            color = shownIconColor(appState.customCategoryIconGlyphColor),
+                            onClick = { onPickColor(AppearanceColorTarget.ICONS) },
+                        )
+                    }
                 }
 
                 SmallTitle(text = stringResource(Res.string.settings_custom_colors_protocols_title))
                 SkipiSettingsSectionCard {
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_vless),
-                        color = appearanceProtocolColor("vless", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_VLESS) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_vmess),
-                        color = appearanceProtocolColor("vmess", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_VMESS) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_hysteria2),
-                        color = appearanceProtocolColor("hysteria2", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_HYSTERIA2) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_trojan),
-                        color = appearanceProtocolColor("trojan", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_TROJAN) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_shadowsocks),
-                        color = appearanceProtocolColor("shadowsocks", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_SHADOWSOCKS) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_wireguard),
-                        color = appearanceProtocolColor("wireguard", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_WIREGUARD) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_socks),
-                        color = appearanceProtocolColor("socks", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_SOCKS) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_http),
-                        color = appearanceProtocolColor("http", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_HTTP) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_strategy),
-                        color = appearanceProtocolColor("strategy", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_STRATEGY) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_chain),
-                        color = appearanceProtocolColor("chain", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_CHAIN) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_json),
-                        color = appearanceProtocolColor("json", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_JSON) },
-                    )
-                    SettingsColorItem(
-                        title = stringResource(Res.string.settings_color_protocol_masque),
-                        color = appearanceProtocolColor("masque", appState, isDark),
-                        onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_MASQUE) },
-                    )
-                    ArrowPreference(
-                        title = stringResource(Res.string.settings_colors_reset),
-                        startAction = settingIcon(Icons.Rounded.RestartAlt),
-                        summary = stringResource(Res.string.settings_colors_reset_summary),
-                        onClick = {
-                            updateAppState { state ->
-                                state.copy(
-                                    customAccentColor = null,
-                                    customBackgroundColor = null,
-                                    customSurfaceColor = null,
-                                    customSurfaceVariantColor = null,
-                                    customTextColor = null,
-                                    customTextSecondaryColor = null,
-                                    customStatusRunningColor = null,
-                                    customStatusStoppedColor = null,
-                                    customPingFastColor = null,
-                                    customPingMediumColor = null,
-                                    customPingSlowColor = null,
-                                    customCategoryIconGlyphColor = null,
-                                    customProtocolVlessColor = null,
-                                    customProtocolVmessColor = null,
-                                    customProtocolHysteria2Color = null,
-                                    customProtocolTrojanColor = null,
-                                    customProtocolShadowsocksColor = null,
-                                    customProtocolWireguardColor = null,
-                                    customProtocolSocksColor = null,
-                                    customProtocolHttpColor = null,
-                                    customProtocolStrategyColor = null,
-                                    customProtocolChainColor = null,
-                                    customProtocolJsonColor = null,
-                                    customProtocolMasqueColor = null,
-                                )
-                            }
-                            onColorsReset(resetCompletedMessage)
-                        },
-                    )
+                    SettingsSearchAnchor("settings_color_protocol_vless") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_vless),
+                            color = appearanceProtocolColor("vless", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_VLESS) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_vmess") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_vmess),
+                            color = appearanceProtocolColor("vmess", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_VMESS) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_hysteria2") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_hysteria2),
+                            color = appearanceProtocolColor("hysteria2", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_HYSTERIA2) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_trojan") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_trojan),
+                            color = appearanceProtocolColor("trojan", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_TROJAN) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_shadowsocks") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_shadowsocks),
+                            color = appearanceProtocolColor("shadowsocks", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_SHADOWSOCKS) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_wireguard") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_wireguard),
+                            color = appearanceProtocolColor("wireguard", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_WIREGUARD) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_socks") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_socks),
+                            color = appearanceProtocolColor("socks", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_SOCKS) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_http") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_http),
+                            color = appearanceProtocolColor("http", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_HTTP) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_strategy") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_strategy),
+                            color = appearanceProtocolColor("strategy", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_STRATEGY) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_chain") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_chain),
+                            color = appearanceProtocolColor("chain", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_CHAIN) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_json") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_json),
+                            color = appearanceProtocolColor("json", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_JSON) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_color_protocol_masque") {
+                        SettingsColorItem(
+                            title = stringResource(Res.string.settings_color_protocol_masque),
+                            color = appearanceProtocolColor("masque", appState, isDark),
+                            onClick = { onPickColor(AppearanceColorTarget.PROTOCOL_MASQUE) },
+                        )
+                    }
+                    SettingsSearchAnchor("settings_colors_reset") {
+                        ArrowPreference(
+                            title = stringResource(Res.string.settings_colors_reset),
+                            startAction = settingIcon(Icons.Rounded.RestartAlt),
+                            summary = stringResource(Res.string.settings_colors_reset_summary),
+                            onClick = {
+                                updateAppState { state ->
+                                    state.copy(
+                                        customAccentColor = null,
+                                        customBackgroundColor = null,
+                                        customSurfaceColor = null,
+                                        customSurfaceVariantColor = null,
+                                        customTextColor = null,
+                                        customTextSecondaryColor = null,
+                                        customStatusRunningColor = null,
+                                        customStatusStoppedColor = null,
+                                        customPingFastColor = null,
+                                        customPingMediumColor = null,
+                                        customPingSlowColor = null,
+                                        customCategoryIconGlyphColor = null,
+                                        customProtocolVlessColor = null,
+                                        customProtocolVmessColor = null,
+                                        customProtocolHysteria2Color = null,
+                                        customProtocolTrojanColor = null,
+                                        customProtocolShadowsocksColor = null,
+                                        customProtocolWireguardColor = null,
+                                        customProtocolSocksColor = null,
+                                        customProtocolHttpColor = null,
+                                        customProtocolStrategyColor = null,
+                                        customProtocolChainColor = null,
+                                        customProtocolJsonColor = null,
+                                        customProtocolMasqueColor = null,
+                                    )
+                                }
+                                onColorsReset(resetCompletedMessage)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -511,149 +586,175 @@ internal fun AppearanceLayoutSection(
     SmallTitle(text = stringResource(Res.string.settings_header_layout))
     SkipiSettingsSectionCard {
         if (capabilities.navigationStyle) {
-            SkipiDropdownPreference(
-                title = stringResource(Res.string.settings_navigation_style),
-                startAction = settingIcon(Icons.Rounded.Dock),
-                summary = stringResource(Res.string.settings_navigation_style_summary),
-                items = listOf(
-                    stringResource(Res.string.settings_navigation_style_bottom),
-                    stringResource(Res.string.settings_navigation_style_sidebar),
-                ),
-                selectedIndex = appState.navigationStyle.coerceIn(0, 1),
-                onSelectedIndexChange = { style ->
-                    updateAppState { it.copy(navigationStyle = style) }
-                },
-            )
+            SettingsSearchAnchor("settings_navigation_style") {
+                SkipiDropdownPreference(
+                    title = stringResource(Res.string.settings_navigation_style),
+                    startAction = settingIcon(Icons.Rounded.Dock),
+                    summary = stringResource(Res.string.settings_navigation_style_summary),
+                    items = listOf(
+                        stringResource(Res.string.settings_navigation_style_bottom),
+                        stringResource(Res.string.settings_navigation_style_sidebar),
+                    ),
+                    selectedIndex = appState.navigationStyle.coerceIn(0, 1),
+                    onSelectedIndexChange = { style ->
+                        updateAppState { it.copy(navigationStyle = style) }
+                    },
+                )
+            }
         }
         if (capabilities.bottomBarSize && appState.navigationStyle == 0) {
+            SettingsSearchAnchor("settings_bottom_bar_size") {
+                SkipiDropdownPreference(
+                    title = stringResource(Res.string.settings_bottom_bar_size),
+                    startAction = settingIcon(Icons.Rounded.Height),
+                    summary = stringResource(Res.string.settings_bottom_bar_size_summary),
+                    items = bottomBarSizeOptions,
+                    selectedIndex = appState.bottomBarSize,
+                    onSelectedIndexChange = { size ->
+                        updateAppState { it.copy(bottomBarSize = size) }
+                    },
+                )
+            }
+        }
+        SettingsSearchAnchor("settings_connection_display_mode") {
             SkipiDropdownPreference(
-                title = stringResource(Res.string.settings_bottom_bar_size),
-                startAction = settingIcon(Icons.Rounded.Height),
-                summary = stringResource(Res.string.settings_bottom_bar_size_summary),
-                items = bottomBarSizeOptions,
-                selectedIndex = appState.bottomBarSize,
-                onSelectedIndexChange = { size ->
-                    updateAppState { it.copy(bottomBarSize = size) }
+                title = stringResource(Res.string.settings_connection_display_mode),
+                startAction = settingIcon(Icons.Rounded.Dashboard),
+                summary = stringResource(Res.string.settings_connection_display_mode_summary),
+                items = connectionDisplayModeOptions,
+                selectedIndex = appState.connectionDisplayMode.coerceIn(0, connectionDisplayModeOptions.lastIndex),
+                onSelectedIndexChange = { index ->
+                    val mode = when (index) {
+                        0 -> AppearanceSettingValues.ConnectionDisplayModeCompact
+                        2 -> AppearanceSettingValues.ConnectionDisplayModeLegacy
+                        else -> AppearanceSettingValues.ConnectionDisplayModeClassic
+                    }
+                    updateAppState { it.copy(connectionDisplayMode = mode) }
                 },
             )
         }
-        SkipiDropdownPreference(
-            title = stringResource(Res.string.settings_connection_display_mode),
-            startAction = settingIcon(Icons.Rounded.Dashboard),
-            summary = stringResource(Res.string.settings_connection_display_mode_summary),
-            items = connectionDisplayModeOptions,
-            selectedIndex = appState.connectionDisplayMode.coerceIn(0, connectionDisplayModeOptions.lastIndex),
-            onSelectedIndexChange = { index ->
-                val mode = when (index) {
-                    0 -> AppearanceSettingValues.ConnectionDisplayModeCompact
-                    2 -> AppearanceSettingValues.ConnectionDisplayModeLegacy
-                    else -> AppearanceSettingValues.ConnectionDisplayModeClassic
-                }
-                updateAppState { it.copy(connectionDisplayMode = mode) }
-            },
-        )
         SkipiSettingsReveal(visible = appState.connectionDisplayMode != AppearanceSettingValues.ConnectionDisplayModeCompact) {
             Column {
                 // The size applies to the classic widget only; the legacy card has a fixed layout.
                 SkipiSettingsReveal(visible = appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeClassic) {
-                    SkipiDropdownPreference(
-                        title = stringResource(Res.string.settings_classic_button_size),
-                        startAction = settingIcon(Icons.Rounded.SmartButton),
-                        summary = stringResource(Res.string.settings_classic_button_size_summary),
-                        items = classicButtonSizeOptions,
-                        selectedIndex = appState.classicButtonSize.coerceIn(0, classicButtonSizeOptions.lastIndex),
-                        onSelectedIndexChange = { size ->
-                            updateAppState { it.copy(classicButtonSize = size) }
-                        },
-                    )
+                    SettingsSearchAnchor("settings_classic_button_size") {
+                        SkipiDropdownPreference(
+                            title = stringResource(Res.string.settings_classic_button_size),
+                            startAction = settingIcon(Icons.Rounded.SmartButton),
+                            summary = stringResource(Res.string.settings_classic_button_size_summary),
+                            items = classicButtonSizeOptions,
+                            selectedIndex = appState.classicButtonSize.coerceIn(0, classicButtonSizeOptions.lastIndex),
+                            onSelectedIndexChange = { size ->
+                                updateAppState { it.copy(classicButtonSize = size) }
+                            },
+                        )
+                    }
                 }
                 if (capabilities.floatingPowerButton) {
-                    SwitchPreference(
-                        title = stringResource(Res.string.settings_classic_show_floating_power_button),
-                        startAction = settingIcon(Icons.Rounded.PowerSettingsNew),
-                        summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
-                        checked = appState.classicShowFloatingPowerButton,
-                        onCheckedChange = { enabled ->
-                            updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
-                        },
-                    )
+                    SettingsSearchAnchor("settings_classic_show_floating_power_button") {
+                        SwitchPreference(
+                            title = stringResource(Res.string.settings_classic_show_floating_power_button),
+                            startAction = settingIcon(Icons.Rounded.PowerSettingsNew),
+                            summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
+                            checked = appState.classicShowFloatingPowerButton,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
+                            },
+                        )
+                    }
                 }
             }
         }
-        SwitchPreference(
-            title = stringResource(Res.string.settings_pin_connection_panel),
-            startAction = settingIcon(Icons.Rounded.PushPin),
-            summary = stringResource(Res.string.settings_pin_connection_panel_summary),
-            checked = appState.pinConnectionPanelOnHome,
-            onCheckedChange = { enabled ->
-                updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
-            },
-        )
-        if (capabilities.subscriptionSwipe) {
+        SettingsSearchAnchor("settings_pin_connection_panel") {
             SwitchPreference(
-                title = stringResource(Res.string.settings_enable_subscription_swipe),
-                startAction = settingIcon(Icons.Rounded.Swipe),
-                summary = stringResource(Res.string.settings_enable_subscription_swipe_summary),
-                checked = appState.enableSubscriptionSwipe,
+                title = stringResource(Res.string.settings_pin_connection_panel),
+                startAction = settingIcon(Icons.Rounded.PushPin),
+                summary = stringResource(Res.string.settings_pin_connection_panel_summary),
+                checked = appState.pinConnectionPanelOnHome,
                 onCheckedChange = { enabled ->
-                    updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
+                    updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
                 },
             )
         }
-        SwitchPreference(
-            title = stringResource(Res.string.settings_tunnel_memory_show_on_home),
-            startAction = settingIcon(Icons.Rounded.Memory),
-            summary = stringResource(Res.string.settings_tunnel_memory_show_on_home_summary),
-            checked = appState.showTunnelMemoryOnHome,
-            onCheckedChange = { enabled ->
-                updateAppState { it.copy(showTunnelMemoryOnHome = enabled) }
-            },
-        )
-        SwitchPreference(
-            title = stringResource(Res.string.settings_tunnel_ip_show_on_home),
-            startAction = settingIcon(Icons.Rounded.Language),
-            summary = stringResource(Res.string.settings_tunnel_ip_show_on_home_summary),
-            checked = appState.showTunnelIpOnHome,
-            onCheckedChange = { enabled ->
-                updateAppState { it.copy(showTunnelIpOnHome = enabled) }
-            },
-        )
-        SkipiSettingsReveal(visible = appState.showTunnelIpOnHome) {
+        if (capabilities.subscriptionSwipe) {
+            SettingsSearchAnchor("settings_enable_subscription_swipe") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_enable_subscription_swipe),
+                    startAction = settingIcon(Icons.Rounded.Swipe),
+                    summary = stringResource(Res.string.settings_enable_subscription_swipe_summary),
+                    checked = appState.enableSubscriptionSwipe,
+                    onCheckedChange = { enabled ->
+                        updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
+                    },
+                )
+            }
+        }
+        SettingsSearchAnchor("settings_tunnel_memory_show_on_home") {
             SwitchPreference(
-                title = stringResource(Res.string.settings_tunnel_ip_mask_on_home),
-                startAction = settingIcon(Icons.Rounded.VisibilityOff),
-                summary = stringResource(Res.string.settings_tunnel_ip_mask_on_home_summary),
-                checked = appState.maskTunnelIpOnHome,
+                title = stringResource(Res.string.settings_tunnel_memory_show_on_home),
+                startAction = settingIcon(Icons.Rounded.Memory),
+                summary = stringResource(Res.string.settings_tunnel_memory_show_on_home_summary),
+                checked = appState.showTunnelMemoryOnHome,
                 onCheckedChange = { enabled ->
-                    updateAppState { it.copy(maskTunnelIpOnHome = enabled) }
+                    updateAppState { it.copy(showTunnelMemoryOnHome = enabled) }
                 },
             )
+        }
+        SettingsSearchAnchor("settings_tunnel_ip_show_on_home") {
+            SwitchPreference(
+                title = stringResource(Res.string.settings_tunnel_ip_show_on_home),
+                startAction = settingIcon(Icons.Rounded.Language),
+                summary = stringResource(Res.string.settings_tunnel_ip_show_on_home_summary),
+                checked = appState.showTunnelIpOnHome,
+                onCheckedChange = { enabled ->
+                    updateAppState { it.copy(showTunnelIpOnHome = enabled) }
+                },
+            )
+        }
+        SkipiSettingsReveal(visible = appState.showTunnelIpOnHome) {
+            SettingsSearchAnchor("settings_tunnel_ip_mask_on_home") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_tunnel_ip_mask_on_home),
+                    startAction = settingIcon(Icons.Rounded.VisibilityOff),
+                    summary = stringResource(Res.string.settings_tunnel_ip_mask_on_home_summary),
+                    checked = appState.maskTunnelIpOnHome,
+                    onCheckedChange = { enabled ->
+                        updateAppState { it.copy(maskTunnelIpOnHome = enabled) }
+                    },
+                )
+            }
         }
         if (capabilities.connectionLog) {
+            SettingsSearchAnchor("settings_connection_log_show_on_home") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_connection_log_show_on_home),
+                    startAction = settingIcon(Icons.Rounded.Article),
+                    summary = stringResource(Res.string.settings_connection_log_show_on_home_summary),
+                    checked = appState.showConnectionLogOnHome,
+                    onCheckedChange = { enabled ->
+                        updateAppState { it.copy(showConnectionLogOnHome = enabled) }
+                    },
+                )
+            }
+        }
+        SettingsSearchAnchor("settings_enable_all_proxy_group") {
             SwitchPreference(
-                title = stringResource(Res.string.settings_connection_log_show_on_home),
-                startAction = settingIcon(Icons.Rounded.Article),
-                summary = stringResource(Res.string.settings_connection_log_show_on_home_summary),
-                checked = appState.showConnectionLogOnHome,
-                onCheckedChange = { enabled ->
-                    updateAppState { it.copy(showConnectionLogOnHome = enabled) }
-                },
+                title = stringResource(Res.string.settings_enable_all_proxy_group),
+                startAction = settingIcon(Icons.Rounded.AllInclusive),
+                summary = stringResource(Res.string.settings_enable_all_proxy_group_summary),
+                checked = appState.enableAllProxyGroup,
+                onCheckedChange = { enabled -> updateAppState { it.copy(enableAllProxyGroup = enabled) } },
             )
         }
-        SwitchPreference(
-            title = stringResource(Res.string.settings_enable_all_proxy_group),
-            startAction = settingIcon(Icons.Rounded.AllInclusive),
-            summary = stringResource(Res.string.settings_enable_all_proxy_group_summary),
-            checked = appState.enableAllProxyGroup,
-            onCheckedChange = { enabled -> updateAppState { it.copy(enableAllProxyGroup = enabled) } },
-        )
-        SwitchPreference(
-            title = stringResource(Res.string.settings_show_server_search),
-            startAction = settingIcon(Icons.Rounded.Search),
-            summary = stringResource(Res.string.settings_show_server_search_summary),
-            checked = appState.showServerSearch,
-            onCheckedChange = { enabled -> updateAppState { it.copy(showServerSearch = enabled) } },
-        )
+        SettingsSearchAnchor("settings_show_server_search") {
+            SwitchPreference(
+                title = stringResource(Res.string.settings_show_server_search),
+                startAction = settingIcon(Icons.Rounded.Search),
+                summary = stringResource(Res.string.settings_show_server_search_summary),
+                checked = appState.showServerSearch,
+                onCheckedChange = { enabled -> updateAppState { it.copy(showServerSearch = enabled) } },
+            )
+        }
     }
 }
 
