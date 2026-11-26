@@ -645,7 +645,7 @@ class XrayConfigTest {
         val vless = VLESS(
             remarks = "Node 1",
             id = "4219d973-8792-462f-8747-df766f70f137",
-            server = "hokey.tvaldsforge.online",
+            server = "nld-01.example.com",
             port = "443",
         )
         val serverState = ProxyServerState(
@@ -673,7 +673,7 @@ class XrayConfigTest {
         val xrayJson = XrayConfigFactory.buildXrayConfig(request)
 
         // Must route proxy domain and DoH domain to direct DNS
-        assertTrue(xrayJson.contains("domain:hokey.tvaldsforge.online"), "Config must include proxy server domain in direct DNS")
+        assertTrue(xrayJson.contains("domain:nld-01.example.com"), "Config must include proxy server domain in direct DNS")
         assertTrue(xrayJson.contains("domain:dns.quad9.net"), "Config must include DoH domain in direct DNS")
         assertTrue(xrayJson.contains("dns-direct"), "Config must include dns-direct tag")
         assertTrue(xrayJson.contains("9.9.9.9"), "Config hosts must contain bootstrap IP for quad9")
