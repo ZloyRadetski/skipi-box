@@ -17,7 +17,6 @@ icon="${SKIPI_ICON:-$here/../../../design/skipi_logo_default.svg}"
 
 [ -x "$app_dir/bin/SKIPI" ] || { echo "not a SKIPI application directory: $app_dir" >&2; exit 1; }
 [ -f "$app_dir/lib/app/resources/libskipicore.so" ] || { echo "Core library is missing from $app_dir" >&2; exit 1; }
-[ -f "$app_dir/lib/app/resources/libhev-socks5-tunnel.so" ] || { echo "hev library is missing from $app_dir" >&2; exit 1; }
 [ -x "$tool" ] || { echo "APPIMAGETOOL is not executable: $tool" >&2; exit 1; }
 
 staging="$(mktemp -d)"

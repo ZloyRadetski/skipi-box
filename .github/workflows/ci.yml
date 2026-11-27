@@ -201,7 +201,9 @@ jobs:
           -PskipiAndroidTestJavaHome='${{ steps.test-jdk.outputs.path }}'
 
       - name: Run desktop packaging checks
-        run: bash desktopApp/packaging/tests/verify-listing-test.sh
+        run: |
+          bash desktopApp/packaging/tests/verify-listing-test.sh
+          bash desktopApp/packaging/tests/build-appimage-test.sh
 
       - name: Run Desktop Home, JSON, and adapter tests
         run: >-
