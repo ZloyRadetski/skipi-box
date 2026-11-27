@@ -8,8 +8,8 @@
 set -u
 
 case "${1:-}" in
-  linux)   required=(bin/SKIPI libskipicore.so libhev-socks5-tunnel.so geoip.dat geosite.dat) ;;
-  windows) required=(SKIPI.exe skipicore.dll geoip.dat geosite.dat hev-socks5-tunnel.exe wintun.dll msys-2.0.dll msys-gcc_s-seh-1.dll) ;;
+  linux)   required=(bin/SKIPI libskipicore.so geoip.dat geosite.dat) ;;
+  windows) required=(SKIPI.exe skipicore.dll geoip.dat geosite.dat) ;;
   *) echo "usage: verify-listing.sh <linux|windows> < listing" >&2; exit 2 ;;
 esac
 
