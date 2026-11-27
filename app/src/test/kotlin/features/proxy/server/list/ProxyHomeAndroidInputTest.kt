@@ -655,6 +655,8 @@ class ProxyHomeAndroidInputTest {
             showServerSearch = false,
             enableSubscriptionSwipe = false,
             classicButtonSize = app.modes.ClassicButtonSizeGiant,
+            floatingButtonX = 0.25f,
+            floatingButtonY = 0.5f,
         )
         val groups = proxyServerListGroups(
             state = state.toProxyServerListState(),
@@ -676,6 +678,10 @@ class ProxyHomeAndroidInputTest {
         assertTrue(input.displayOptions.pinConnectionPanel)
         assertTrue(input.displayOptions.classicFloatingPowerButton)
         assertEquals(ProxyHomeButtonSize.Giant, input.displayOptions.classicButtonSize)
+        assertEquals(
+            app.skipi.app.home.ProxyHomeButtonPosition(0.25f, 0.5f),
+            input.displayOptions.floatingButtonPosition,
+        )
         assertTrue(input.displayOptions.showAllGroup)
         assertTrue(input.displayOptions.showTunnelMemory)
         // The search bar follows the Appearance setting.

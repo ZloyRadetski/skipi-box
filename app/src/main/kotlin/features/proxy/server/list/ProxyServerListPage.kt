@@ -1353,6 +1353,9 @@ fun ProxyServerListPage(
             } else {
                 maxOf(homeContentPadding.calculateBottomPadding(), floatingNavigationBottomInset)
             },
+            onFloatingButtonPositionChange = { position ->
+                updateAppState { it.copy(floatingButtonX = position.x, floatingButtonY = position.y) }
+            },
             // On a tablet the navigation rail lists the tools; the phone gets them as a menu in the header.
             pinnedTools = if (isWideScreen) emptyList() else SkipiTool.defaultPinned,
             onOpenPinnedTool = { tool ->

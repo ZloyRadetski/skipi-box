@@ -34,3 +34,12 @@ fun normalizeBackgroundStyle(style: Int): Int = when (style) {
     else -> BackgroundStyleClassic
 }
 
+
+/**
+ * Where the floating Home button rests on one axis, as a share of the room it can move in: 0 is the start or the
+ * top, 1 the end or the bottom. The default is the bottom-end corner.
+ */
+const val FloatingButtonDefaultFraction = 1f
+
+fun normalizeFloatingButtonFraction(value: Float): Float =
+    value.takeIf { it in 0f..1f } ?: FloatingButtonDefaultFraction

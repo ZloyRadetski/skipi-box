@@ -98,6 +98,8 @@ data class AppState(
     /** Allow switching subscription tabs via horizontal swipe gestures on home pager. */
     val enableSubscriptionSwipe: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = false,
+    val floatingButtonX: Float = app.modes.FloatingButtonDefaultFraction,
+    val floatingButtonY: Float = app.modes.FloatingButtonDefaultFraction,
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = BottomBarSizeLarge,

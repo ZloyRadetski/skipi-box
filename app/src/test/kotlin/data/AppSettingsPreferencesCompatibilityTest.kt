@@ -155,6 +155,8 @@ class AppSettingsPreferencesCompatibilityTest {
             showServerSearch = true,
             enableAllProxyGroup = true,
             showTunnelMemoryOnHome = true,
+            floatingButtonX = 0.25f,
+            floatingButtonY = 0.5f,
         )
 
         store.save(nonDefaultState)
@@ -168,6 +170,8 @@ class AppSettingsPreferencesCompatibilityTest {
         assertTrue(preferences.getBoolean("show_tunnel_memory_on_home", false))
 
         val restored = store.load()
+        assertEquals(0.25f, restored.floatingButtonX)
+        assertEquals(0.5f, restored.floatingButtonY)
         assertEquals(ConnectionDisplayModeCompact, restored.connectionDisplayMode)
         assertTrue(restored.pinConnectionPanelOnHome)
         assertTrue(restored.classicShowFloatingPowerButton)

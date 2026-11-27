@@ -404,6 +404,12 @@ internal class AppSettingsPreferences(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
             ),
+            floatingButtonX = app.modes.normalizeFloatingButtonFraction(
+                preferences.getFloat(KeyFloatingButtonX, defaults.floatingButtonX),
+            ),
+            floatingButtonY = app.modes.normalizeFloatingButtonFraction(
+                preferences.getFloat(KeyFloatingButtonY, defaults.floatingButtonY),
+            ),
             classicButtonSize = normalizeClassicButtonSize(
                 preferences.getInt(KeyClassicButtonSize, defaults.classicButtonSize),
             ),
@@ -620,6 +626,8 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putInt(KeyClassicButtonSize, state.classicButtonSize)
+            .putFloat(KeyFloatingButtonX, state.floatingButtonX)
+            .putFloat(KeyFloatingButtonY, state.floatingButtonY)
             .putBoolean(KeyEnableSeasonalEvents, state.enableSeasonalEvents)
             .putIfChanged(previous?.customThemes, state.customThemes) {
                 putString(KeyCustomThemes, state.customThemes)
@@ -1068,6 +1076,8 @@ private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicButtonSize = "classic_button_size"
+private const val KeyFloatingButtonX = "floating_button_x"
+private const val KeyFloatingButtonY = "floating_button_y"
 private const val KeyEnableSeasonalEvents = "enable_seasonal_events"
 private const val KeyCustomThemes = "custom_themes"
 private const val KeyEnableHaptics = "enable_haptics"

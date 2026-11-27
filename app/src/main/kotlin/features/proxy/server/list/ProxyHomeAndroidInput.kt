@@ -13,6 +13,7 @@ import app.modes.ConnectionDisplayModeLegacy
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.proxyHomeButtonSizeFromSetting
+import app.skipi.app.home.proxyHomeButtonPositionFromSettings
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.ProxyHomeDisplayOptions
@@ -146,6 +147,7 @@ internal fun AppState.toProxyHomeInput(
             pinConnectionPanel = pinConnectionPanelOnHome,
             classicFloatingPowerButton = classicShowFloatingPowerButton,
             classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize),
+            floatingButtonPosition = proxyHomeButtonPositionFromSettings(floatingButtonX, floatingButtonY),
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,
             showTunnelIp = showTunnelIpOnHome,

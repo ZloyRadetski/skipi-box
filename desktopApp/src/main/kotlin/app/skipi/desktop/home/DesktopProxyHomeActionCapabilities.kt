@@ -13,6 +13,7 @@ import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.proxyHomeButtonSizeFromSetting
+import app.skipi.app.home.proxyHomeButtonPositionFromSettings
 import app.skipi.app.home.ProxyHomeServerTool
 
 /** Capabilities backed by concrete Desktop callbacks and current subscription rows. */
@@ -129,6 +130,7 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
     // The floating button is a phone layout feature: a value saved or restored earlier must not show it here.
     classicFloatingPowerButton = false,
     classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 1),
+    floatingButtonPosition = proxyHomeButtonPositionFromSettings(floatingButtonX, floatingButtonY),
     showAllGroup = enableAllProxyGroup,
     showTunnelMemory = showTunnelMemory,
     showTunnelIp = showTunnelIp,

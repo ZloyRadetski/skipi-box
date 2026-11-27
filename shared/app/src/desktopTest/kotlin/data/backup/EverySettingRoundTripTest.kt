@@ -39,6 +39,8 @@ class EverySettingRoundTripTest {
         "fontSizeMode" to JsonPrimitive(FontSizeModeExtraLarge),
         "bottomBarSize" to JsonPrimitive(BottomBarSizeMedium),
         "classicButtonSize" to JsonPrimitive(ClassicButtonSizeGiant),
+        "floatingButtonX" to JsonPrimitive(0.25),
+        "floatingButtonY" to JsonPrimitive(0.5),
         "appUpdateChannel" to JsonPrimitive("nightly"),
         "localProxyAuthMode" to JsonPrimitive("Manual"),
         "localHttpProxyAuthMode" to JsonPrimitive("Manual"),

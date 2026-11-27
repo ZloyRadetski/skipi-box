@@ -345,6 +345,8 @@ private fun AppBackupData.toAppState(): AppState {
         enableHaptics = settings.enableHaptics,
         hasCompletedOnboarding = true,
         classicShowFloatingPowerButton = settings.classicShowFloatingPowerButton,
+        floatingButtonX = app.modes.normalizeFloatingButtonFraction(settings.floatingButtonX),
+        floatingButtonY = app.modes.normalizeFloatingButtonFraction(settings.floatingButtonY),
         showTunnelMemoryOnHome = settings.showTunnelMemoryOnHome,
         showTunnelIpOnHome = settings.showTunnelIpOnHome,
         maskTunnelIpOnHome = settings.maskTunnelIpOnHome,

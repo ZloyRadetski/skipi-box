@@ -106,6 +106,9 @@ data class HomeDisplaySettings(
     val pinConnectionPanel: Boolean = false,
     val subscriptionSwipeEnabled: Boolean = true,
     val showFloatingPowerButton: Boolean = false,
+    /** Saved place of the floating button, see ProxyHomeButtonPosition; null preserves the host's current value. */
+    val floatingButtonX: Float? = null,
+    val floatingButtonY: Float? = null,
     val confirmDeletion: Boolean = true,
     val showServerSearch: Boolean = false,
     /** Raw Android numeric setting; null preserves the host's current value. */

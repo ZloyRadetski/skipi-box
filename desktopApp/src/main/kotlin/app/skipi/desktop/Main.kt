@@ -2123,6 +2123,15 @@ private fun runDesktopApplication(
                                     }
                                 }
                             },
+                            onHomeFloatingButtonMoved = { position ->
+                                subscriptionScope.launch {
+                                    homeSortSaveMutex.withLock {
+                                        val updated = desktopSettings.copy(floatingButtonX = position.x, floatingButtonY = position.y)
+                                        withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) }
+                                            .onSuccess { desktopSettings = updated }
+                                    }
+                                }
+                            },
                             onHomeSortModeChange = { mode ->
                                 subscriptionScope.launch {
                                     homeSortSaveMutex.withLock {

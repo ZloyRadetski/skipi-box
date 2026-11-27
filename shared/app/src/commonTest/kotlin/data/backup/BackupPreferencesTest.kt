@@ -50,6 +50,29 @@ class BackupPreferencesTest {
     }
 
     @Test
+    fun theFloatingButtonPositionSurvivesABackupAndNonsenseOrAbsenceMeansBottomEnd() {
+        val moved = restore(AppState(floatingButtonX = 0.25f, floatingButtonY = 0f))
+        assertEquals(0.25f, moved.floatingButtonX)
+        assertEquals(0f, moved.floatingButtonY)
+
+        val file = AppState().toAppBackupFile(0L, "1.0", 1)
+        val broken = file.copy(
+            data = file.data.copy(settings = file.data.settings.copy(floatingButtonX = 42f, floatingButtonY = -1f)),
+        )
+        assertEquals(1f, broken.toRestorePreview().restoredState.floatingButtonX)
+        assertEquals(1f, broken.toRestorePreview().restoredState.floatingButtonY)
+
+        val document = Json.parseToJsonElement(encodeAppBackup(file)).jsonObject
+        val data = document.getValue("data").jsonObject
+        val settings = data.getValue("settings").jsonObject
+            .filterKeys { it != "floatingButtonX" && it != "floatingButtonY" }
+        val old = JsonObject(document + ("data" to JsonObject(data + ("settings" to JsonObject(settings))))).toString()
+        val restored = decodeAppBackup(old).toRestorePreview().restoredState
+        assertEquals(1f, restored.floatingButtonX)
+        assertEquals(1f, restored.floatingButtonY)
+    }
+
+    @Test
     fun aBackupFromBeforeTheseFieldsExistedRestoresTheDefaults() {
         val keys = listOf(
             "appUpdateChannel", "autoCheckAppUpdates", "autoInstallAppUpdatesAtNight", "bottomBarSize",

@@ -215,6 +215,8 @@ class DesktopSettingsLibraryTest {
                 enableAllProxyGroup = true,
                 showServerSearch = true,
                 enableSubscriptionSwipe = false,
+                floatingButtonX = 0.25f,
+                floatingButtonY = 0.5f,
             )
 
             DesktopSettingsLibraries.save(path, settings).getOrThrow()
@@ -227,6 +229,8 @@ class DesktopSettingsLibraryTest {
             assertTrue(loaded.enableAllProxyGroup)
             assertTrue(loaded.showServerSearch)
             assertFalse(loaded.enableSubscriptionSwipe)
+            assertEquals(0.25f, loaded.floatingButtonX)
+            assertEquals(0.5f, loaded.floatingButtonY)
             assertEquals(settings, loaded)
         } finally {
             deleteTree(directory)

@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -76,6 +78,8 @@ fun SkipiProxyHomeFloatingToolbar(
     modifier: Modifier = Modifier,
     /** Long press (right click on desktop) on the ping button: ping everything on the page. Null hides the gesture. */
     onTestAllLatency: (() -> Unit)? = null,
+    /** The gesture of the dotted grip the toolbar is dragged by; null shows no grip. */
+    dragGripModifier: Modifier? = null,
 ) {
     val buttons = floatingToolbarButtons(showToggleAction, showPingAction)
     if (!buttons.anyVisible) return
@@ -100,16 +104,25 @@ fun SkipiProxyHomeFloatingToolbar(
     )
 
     Surface(
-        modifier = modifier.padding(end = 20.dp, bottom = 20.dp),
+        modifier = modifier,
         shape = RoundedCornerShape(32.dp),
         color = animatedFabColor,
         shadowElevation = 6.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            // The grip reaches the capsule's edges, so it brings the start and vertical margins with it.
+            modifier = Modifier.padding(
+                start = if (dragGripModifier == null) 10.dp else 0.dp,
+                end = 10.dp,
+                top = if (dragGripModifier == null) 8.dp else 0.dp,
+                bottom = if (dragGripModifier == null) 8.dp else 0.dp,
+            ),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (dragGripModifier != null) {
+                DragGrip(dragGripModifier)
+            }
             if (buttons.ping) {
                 PingToolbarButton(
                     testing = isTestingLatency,
@@ -159,6 +172,30 @@ fun SkipiProxyHomeFloatingToolbar(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/** Two columns of dots, the usual sign of a surface to drag by. */
+@Composable
+private fun DragGrip(modifier: Modifier) {
+    val dot = settingIconGlyphColor(SkipiTheme.colors.onAccent, LocalIconColor.current).copy(alpha = 0.55f)
+    Box(
+        // As tall as the capsule, so a finger finds it although it looks slim.
+        modifier = modifier.size(width = 24.dp, height = 68.dp),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Canvas(Modifier.size(width = 10.dp, height = 18.dp)) {
+            val radius = 1.5.dp.toPx()
+            for (column in 0..1) {
+                for (row in 0..2) {
+                    drawCircle(
+                        color = dot,
+                        radius = radius,
+                        center = Offset(radius + column * 6.dp.toPx(), radius + row * 6.dp.toPx() + 1.5.dp.toPx()),
+                    )
                 }
             }
         }

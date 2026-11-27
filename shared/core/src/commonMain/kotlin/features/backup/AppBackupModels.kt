@@ -122,6 +122,8 @@ private object BackupDefaults {
     const val backgroundPhotoDimPercent = 45
     const val enableHaptics = true
     const val classicShowFloatingPowerButton = false
+    const val floatingButtonX = 1f
+    const val floatingButtonY = 1f
     const val showTunnelMemoryOnHome = false
     const val showTunnelIpOnHome = true
     const val maskTunnelIpOnHome = false
@@ -294,6 +296,8 @@ data class AppBackupSettings(
     val enableHaptics: Boolean = BackupDefaults.enableHaptics,
     val hasCompletedOnboarding: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = BackupDefaults.classicShowFloatingPowerButton,
+    val floatingButtonX: Float = BackupDefaults.floatingButtonX,
+    val floatingButtonY: Float = BackupDefaults.floatingButtonY,
     val showTunnelMemoryOnHome: Boolean = BackupDefaults.showTunnelMemoryOnHome,
     val showTunnelIpOnHome: Boolean = BackupDefaults.showTunnelIpOnHome,
     val maskTunnelIpOnHome: Boolean = BackupDefaults.maskTunnelIpOnHome,

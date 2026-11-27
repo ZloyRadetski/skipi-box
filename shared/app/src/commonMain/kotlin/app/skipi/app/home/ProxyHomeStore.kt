@@ -38,6 +38,27 @@ fun proxyHomeButtonSizeFromSetting(value: Int): ProxyHomeButtonSize = when (valu
     else -> ProxyHomeButtonSize.Medium
 }
 
+/**
+ * Where the floating button rests: [x] from start to end and [y] from top to bottom, as shares of the room it can
+ * move in, so a place saved on one screen size or text direction keeps its meaning on another.
+ */
+data class ProxyHomeButtonPosition(val x: Float, val y: Float) {
+    companion object {
+        val BottomEnd = ProxyHomeButtonPosition(1f, 1f)
+
+        /** The corners and side middles the button sticks to when it is dropped nearby. */
+        val StickyZones: List<ProxyHomeButtonPosition> = listOf(0f, 0.5f, 1f).flatMap { y ->
+            listOf(0f, 0.5f, 1f).map { x -> ProxyHomeButtonPosition(x, y) }
+        } - ProxyHomeButtonPosition(0.5f, 0.5f)
+    }
+}
+
+/** Each stored axis that is not a share of the screen takes its default. */
+fun proxyHomeButtonPositionFromSettings(x: Float, y: Float) = ProxyHomeButtonPosition(
+    x = app.modes.normalizeFloatingButtonFraction(x),
+    y = app.modes.normalizeFloatingButtonFraction(y),
+)
+
 /** Public address of the active tunnel and the flag emoji of its country, when resolved. */
 data class ProxyHomeTunnelIp(val value: String, val flag: String? = null)
 
@@ -46,6 +67,7 @@ data class ProxyHomeDisplayOptions(
     val pinConnectionPanel: Boolean = false,
     val classicFloatingPowerButton: Boolean = false,
     val classicButtonSize: ProxyHomeButtonSize = ProxyHomeButtonSize.Medium,
+    val floatingButtonPosition: ProxyHomeButtonPosition = ProxyHomeButtonPosition.BottomEnd,
     val showAllGroup: Boolean = false,
     val showTunnelMemory: Boolean = false,
     /** Show the tunnel's public IP tile in the connection panel. */

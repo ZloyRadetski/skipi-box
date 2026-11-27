@@ -83,6 +83,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import app.skipi.app.home.ProxyHomeAction
+import app.skipi.app.home.ProxyHomeButtonPosition
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxyHomeEffect
@@ -243,6 +244,7 @@ internal fun DesktopProxyHome(
     onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     onHomeSortModeChange: (ProxyHomeSortMode) -> Unit = {},
     onHomeLeftColumnExtraChange: (Float) -> Unit = {},
+    onHomeFloatingButtonMoved: (ProxyHomeButtonPosition) -> Unit = {},
     /** Tools listed as a menu in the Home header; the sidebar lists them itself, so it passes none. */
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
@@ -712,6 +714,7 @@ internal fun DesktopProxyHome(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 leftColumnExtra = androidx.compose.ui.unit.Dp(desktopSettings.homeLeftColumnExtraDp),
                 onLeftColumnExtraChange = { extra -> onHomeLeftColumnExtraChange(extra.value) },
+                onFloatingButtonPositionChange = onHomeFloatingButtonMoved,
                 pinnedTools = pinnedTools,
                 onOpenPinnedTool = onOpenPinnedTool,
                 extraPinnedActions = extraPinnedActions,

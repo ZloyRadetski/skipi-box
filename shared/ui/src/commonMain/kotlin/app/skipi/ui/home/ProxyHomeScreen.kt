@@ -73,6 +73,7 @@ import app.skipi.app.home.ProxyHomePageUiState
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
+import app.skipi.app.home.ProxyHomeButtonPosition
 import app.skipi.app.home.compactPingAction
 import app.skipi.app.home.groupHeader
 import app.skipi.ui.components.longPressReorderDragHandle
@@ -127,6 +128,7 @@ fun ProxyHomeScreen(
     wideSidePanel: (@Composable (Modifier) -> Unit)? = null,
     leftColumnExtra: Dp = 0.dp,
     onLeftColumnExtraChange: (Dp) -> Unit = {},
+    onFloatingButtonPositionChange: (ProxyHomeButtonPosition) -> Unit = {},
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
     extraPinnedActions: List<SkipiNavigationAction> = emptyList(),
@@ -144,6 +146,7 @@ fun ProxyHomeScreen(
         wideSidePanel = wideSidePanel,
         leftColumnExtra = leftColumnExtra,
         onLeftColumnExtraChange = onLeftColumnExtraChange,
+        onFloatingButtonPositionChange = onFloatingButtonPositionChange,
         pinnedTools = pinnedTools,
         onOpenPinnedTool = onOpenPinnedTool,
         extraPinnedActions = extraPinnedActions,
@@ -167,6 +170,8 @@ fun ProxyHomeScreenContent(
     /** How much wider than its base the wide Home's left column starts; the host saves what [onLeftColumnExtraChange] reports. */
     leftColumnExtra: Dp = 0.dp,
     onLeftColumnExtraChange: (Dp) -> Unit = {},
+    /** The user dragged the floating button elsewhere; the host saves the place. */
+    onFloatingButtonPositionChange: (ProxyHomeButtonPosition) -> Unit = {},
     /** Tools shown as a menu in the header; empty hides the button. */
     pinnedTools: List<SkipiTool> = emptyList(),
     onOpenPinnedTool: (SkipiTool) -> Unit = {},
@@ -728,30 +733,42 @@ val easterEgg = rememberHeaderEasterEggState()
                             )
                         }
                     }
-
-                    SkipiProxyHomeFloatingToolbar(
-                        running = state.isRunning,
-                        isConnecting = state.isConnecting,
-                        isTestingLatency = state.isTestingLatency,
-                        canToggleTunnel = state.canToggleTunnel && canUseHomeAction(state, ProxyHomeActionId.ToggleTunnel, allowBusy = true),
-                        canTestLatency = if (state.isTestingLatency) {
-                            canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
-                        } else {
-                            compactPingEnabled
-                        },
-                        showToggleAction = showFloatingPower,
-                        showPingAction = showFloatingPower,
-                        onToggleRunning = { send(ProxyHomeAction.ToggleTunnel) },
-                        onTestLatency = {
-                            if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
-                            else compactPing?.let(send)
-                        },
-                        onTestAllLatency = pagePing?.let { action -> { send(action) } },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(bottom = bottomInsetTreatment.floatingToolbarBottomPadding),
-                    )
                 }
+            }
+        }
+        // The wide layout has no floating button. The dock spans the screen so the button can rest anywhere on it.
+        if (!isWide) {
+            FloatingToolbarDock(
+                position = state.displayOptions.floatingButtonPosition,
+                onPositionChange = onFloatingButtonPositionChange,
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(
+                        horizontal = SkipiTheme.spacing.screenHorizontal + 20.dp,
+                        vertical = SkipiTheme.spacing.screenVertical + 20.dp,
+                    )
+                    .padding(bottom = bottomInsetTreatment.floatingToolbarBottomPadding),
+            ) { gripModifier ->
+                SkipiProxyHomeFloatingToolbar(
+                    running = state.isRunning,
+                    isConnecting = state.isConnecting,
+                    isTestingLatency = state.isTestingLatency,
+                    canToggleTunnel = state.canToggleTunnel && canUseHomeAction(state, ProxyHomeActionId.ToggleTunnel, allowBusy = true),
+                    canTestLatency = if (state.isTestingLatency) {
+                        canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
+                    } else {
+                        compactPingEnabled
+                    },
+                    showToggleAction = showFloatingPower,
+                    showPingAction = showFloatingPower,
+                    onToggleRunning = { send(ProxyHomeAction.ToggleTunnel) },
+                    onTestLatency = {
+                        if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
+                        else compactPing?.let(send)
+                    },
+                    onTestAllLatency = pagePing?.let { action -> { send(action) } },
+                    dragGripModifier = gripModifier,
+                )
             }
         }
         HeaderEasterEggOverlay(easterEgg)

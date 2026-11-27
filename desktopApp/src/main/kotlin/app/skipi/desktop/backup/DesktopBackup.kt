@@ -348,6 +348,8 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         enableSubscriptionSwipe = enableSubscriptionSwipe,
         hapticsEnabled = enableHaptics,
         classicShowFloatingPowerButton = classicShowFloatingPowerButton,
+        floatingButtonX = app.modes.normalizeFloatingButtonFraction(floatingButtonX),
+        floatingButtonY = app.modes.normalizeFloatingButtonFraction(floatingButtonY),
         enableSeasonalEvents = enableSeasonalEvents,
         showTunnelMemory = showTunnelMemoryOnHome,
         showTunnelIp = showTunnelIpOnHome,

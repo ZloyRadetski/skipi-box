@@ -93,6 +93,8 @@ data class DesktopAppSettings(
     val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
+    val floatingButtonX: Float = app.modes.FloatingButtonDefaultFraction,
+    val floatingButtonY: Float = app.modes.FloatingButtonDefaultFraction,
     val enableAllProxyGroup: Boolean = false,
     val showServerSearch: Boolean = false,
     val enableSubscriptionSwipe: Boolean = true,

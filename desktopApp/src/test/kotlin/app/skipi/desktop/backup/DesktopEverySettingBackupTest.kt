@@ -34,6 +34,8 @@ class DesktopEverySettingBackupTest {
         // A step of the font-size slider: a backup writes the nearest step, as Android always did.
         "fontSizeMode" to JsonPrimitive(120),
         "classicButtonSize" to JsonPrimitive(3),
+        "floatingButtonX" to JsonPrimitive(0.25),
+        "floatingButtonY" to JsonPrimitive(0.5),
         "coreLogLevel" to JsonPrimitive("warning"),
         "localProxyListenAddress" to JsonPrimitive("0.0.0.0"),
         "localProxyPort" to JsonPrimitive(12_345),
