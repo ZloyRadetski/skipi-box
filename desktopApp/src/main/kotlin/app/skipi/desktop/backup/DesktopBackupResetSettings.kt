@@ -93,7 +93,20 @@ internal fun DesktopBackupResetSettings(
     fun <T> runExclusive(block: suspend () -> T) {
         if (busy) return
         busy = true
-        scope.launch { try { block() } finally { busy = false } }
+        scope.launch {
+            try {
+                block()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                // An Error here (a failed native dialog, a missing class) would otherwise reach the coroutine
+                // machinery as a fatal exception with the cause hidden.
+                features.logs.AppLog.error("Backup", "Backup page action failed", failure)
+                onMessage("${failure::class.simpleName}: ${failure.message.orEmpty()}")
+            } finally {
+                busy = false
+            }
+        }
     }
 
     SkipiBackupResetSettingsScreen(

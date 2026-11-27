@@ -63,6 +63,21 @@ class BackActions {
 
 val LocalBackActions = compositionLocalOf<BackActions?> { null }
 
+/**
+ * While [enabled], [onBack] is what the host's Back (Escape, the mouse's back button) does, ahead of every screen
+ * registered earlier. Dialogs and sheets use it, so Back closes them instead of leaving the screen under them.
+ */
+@Composable
+fun BackScope(enabled: Boolean = true, onBack: () -> Unit) {
+    val registry = LocalBackActions.current
+    val latest by rememberUpdatedState(onBack)
+    DisposableEffect(registry, enabled) {
+        val action: () -> Unit = { latest() }
+        if (enabled) registry?.push(action)
+        onDispose { registry?.remove(action) }
+    }
+}
+
 /** The top-bar back arrow; while it is on screen its action is also what the host's Back does. */
 @Composable
 fun BackNavigationIcon(onClick: () -> Unit, modifier: Modifier = Modifier) {

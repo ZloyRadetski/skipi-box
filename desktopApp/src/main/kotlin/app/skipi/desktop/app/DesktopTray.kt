@@ -68,25 +68,27 @@ internal fun desktopTrayMenuEntries(
     /** The TUN mode switch; null when this host has no TUN mode. */
     tunLabel: String? = null,
     onToggleTun: () -> Unit = {},
+    /** Whether the tunnel runs, which decides the icon of the connect/disconnect entry. */
+    connected: Boolean = false,
     /** Link merging's switch and its links; null where the host has none. */
     multilink: DesktopTrayMultilink? = null,
 ): List<DesktopTrayMenuEntry> = buildList {
     if (!serverName.isNullOrBlank()) {
-        add(DesktopTrayMenuEntry.Info(serverName))
+        add(DesktopTrayMenuEntry.Info(serverName, DesktopTrayMenuIcon.Server))
         add(DesktopTrayMenuEntry.Separator)
     }
-    add(DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel))
-    if (tunLabel != null) add(DesktopTrayMenuEntry.Action(tunLabel, onToggleTun))
+    add(DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel, if (connected) DesktopTrayMenuIcon.Disconnect else DesktopTrayMenuIcon.Connect))
+    if (tunLabel != null) add(DesktopTrayMenuEntry.Action(tunLabel, onToggleTun, DesktopTrayMenuIcon.Tun))
     if (multilink != null) {
         add(DesktopTrayMenuEntry.Separator)
-        add(DesktopTrayMenuEntry.Action(multilink.toggleLabel, multilink.onToggle))
+        add(DesktopTrayMenuEntry.Action(multilink.toggleLabel, multilink.onToggle, DesktopTrayMenuIcon.Merge))
         // The menu has no check boxes, so a mark in front of the name says whether the link takes connections.
         multilink.links.forEach { link ->
-            add(DesktopTrayMenuEntry.Action((if (link.used) "✓ " else "   ") + link.label, link.onToggle))
+            add(DesktopTrayMenuEntry.Action((if (link.used) "✓ " else "   ") + link.label, link.onToggle, link.icon))
         }
     }
     add(DesktopTrayMenuEntry.Separator)
-    add(DesktopTrayMenuEntry.Action(exitLabel, onExit))
+    add(DesktopTrayMenuEntry.Action(exitLabel, onExit, DesktopTrayMenuIcon.Exit))
 }
 
 /** Link merging in the tray: the switch, and one entry per link that switches whether it is used. */
@@ -96,7 +98,12 @@ internal data class DesktopTrayMultilink(
     val links: List<DesktopTrayLink> = emptyList(),
 )
 
-internal data class DesktopTrayLink(val label: String, val used: Boolean, val onToggle: () -> Unit)
+internal data class DesktopTrayLink(
+    val label: String,
+    val used: Boolean,
+    val onToggle: () -> Unit,
+    val icon: DesktopTrayMenuIcon = DesktopTrayMenuIcon.Network,
+)
 
 /** The tooltip: the app and its state, then the active server. */
 internal fun desktopTrayTooltip(status: String, serverName: String?): String =
@@ -200,10 +207,10 @@ internal fun ApplicationScope.DesktopTrayIcon(
         val currentMultilink by rememberUpdatedState(multilink)
         // Keyed on what the entries show: the actions are new lambdas on every composition.
         val multilinkShown = multilink?.let { it.toggleLabel to it.links.map { link -> link.label to link.used } }
-        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel, tunLabel, multilinkShown) {
+        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel, tunLabel, connected, multilinkShown) {
             val menu = desktopTrayMenuEntries(
                 serverName, toggleLabel, exitLabel, { toggleTunnel() }, { exit() },
-                tunLabel = tunLabel, onToggleTun = { toggleTun() },
+                tunLabel = tunLabel, onToggleTun = { toggleTun() }, connected = connected,
                 multilink = currentMultilink?.let { shown ->
                     shown.copy(
                         onToggle = { currentMultilink?.onToggle?.invoke() },
@@ -249,7 +256,7 @@ internal fun ApplicationScope.DesktopTrayIcon(
     menuClick?.let { click ->
         val entries = desktopTrayMenuEntries(
             serverName, toggleLabel, exitLabel, onToggleTunnel, onExit,
-            tunLabel = tunLabel, onToggleTun = onToggleTunMode, multilink = multilink,
+            tunLabel = tunLabel, onToggleTun = onToggleTunMode, connected = connected, multilink = multilink,
         )
         key(click) {
             DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })
@@ -337,4 +344,12 @@ private class TrayStatePainter(private val base: Painter, connected: Boolean) : 
     override fun DrawScope.onDraw() {
         with(base) { draw(size, 1f, filter) }
     }
+}
+
+internal fun features.multilink.MultilinkLinkKind.trayIcon(): DesktopTrayMenuIcon = when (this) {
+    features.multilink.MultilinkLinkKind.WiFi -> DesktopTrayMenuIcon.WiFi
+    features.multilink.MultilinkLinkKind.Ethernet -> DesktopTrayMenuIcon.Ethernet
+    features.multilink.MultilinkLinkKind.Mobile -> DesktopTrayMenuIcon.Mobile
+    features.multilink.MultilinkLinkKind.Phone -> DesktopTrayMenuIcon.Phone
+    features.multilink.MultilinkLinkKind.Other -> DesktopTrayMenuIcon.Network
 }

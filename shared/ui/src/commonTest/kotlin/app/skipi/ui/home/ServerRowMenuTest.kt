@@ -37,9 +37,17 @@ class ServerRowMenuTest {
     @Test
     fun middleRowOffersCopyOneQrEditDeleteAndBothMoves() {
         assertEquals(
-            listOf("copy:Url", "show-qr", "edit", "delete", "move-up", "move-down"),
+            listOf("ping", "copy:Url", "show-qr", "edit", "delete", "move-up", "move-down"),
             serverMenuActionIds(server, context(), serverIndex = 1, totalServers = 3),
         )
+    }
+
+    @Test
+    fun pingIsOfferedForThisServerUnlessItIsBeingMeasuredOrCannotBeTested() {
+        assertEquals(true, "ping" in serverMenuActionIds(server, context(), 1, 3))
+        assertEquals(false, "ping" in serverMenuActionIds(server.copy(latencyTesting = true), context(), 1, 3))
+        assertEquals(false, "ping" in serverMenuActionIds(server.copy(canTest = false), context(), 1, 3))
+        assertEquals(false, "ping" in serverMenuActionIds(server, context(busy = setOf(ProxyHomeActionId.TestServer)), 1, 3))
     }
 
     @Test

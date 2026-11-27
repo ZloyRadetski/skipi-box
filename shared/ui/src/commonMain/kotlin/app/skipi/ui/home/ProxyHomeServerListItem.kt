@@ -36,6 +36,7 @@ import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.home_latency_milliseconds
 import app.skipi.ui.resources.home_move_down
 import app.skipi.ui.resources.home_move_up
+import app.skipi.ui.resources.home_ping_server
 import app.skipi.ui.resources.proxy_server_list_latency_failed
 import app.skipi.ui.resources.home_server_testing_latency
 import app.skipi.ui.resources.home_show_qr_code
@@ -51,6 +52,7 @@ internal fun serverMenuActionTitle(id: String): String = when {
     id.startsWith("copy:") -> copyFormatTitle(
         ProxyHomeCopyFormat.entries.first { it.name == id.substringAfter("copy:") },
     )
+    id == "ping" -> stringResource(Res.string.home_ping_server)
     id == "show-qr" -> stringResource(Res.string.home_show_qr_code)
     id == "edit" -> stringResource(Res.string.common_edit)
     id == "delete" -> stringResource(Res.string.common_delete)
@@ -68,6 +70,7 @@ internal fun handleServerMenuAction(
         actionId.startsWith("copy:") -> ProxyHomeCopyFormat.entries
             .firstOrNull { it.name == actionId.substringAfter("copy:") }
             ?.let { format -> onAction(ProxyHomeAction.CopyServer(server.id, format)) }
+        actionId == "ping" -> onAction(ProxyHomeAction.TestServer(server.id))
         actionId == "show-qr" -> onAction(ProxyHomeAction.ShowServerQr(server.id))
         actionId == "edit" -> onAction(ProxyHomeAction.EditServer(server.id))
         actionId == "delete" -> onAction(ProxyHomeAction.DeleteServer(server.id))

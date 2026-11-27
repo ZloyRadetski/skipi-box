@@ -18,6 +18,7 @@ import app.skipi.app.tools.JvmDnsTxtResolver
 import app.skipi.app.tools.JvmSpeedTestTransport
 import app.skipi.app.tools.SpeedTestConfig
 import app.skipi.app.tools.SpeedTestConnectionFactory
+import app.skipi.app.tools.directSpeedTestConnectionFactory
 import app.skipi.app.tools.SpeedTestController
 import app.skipi.app.tools.SpeedTestJob
 import app.skipi.app.tools.SpeedTestRunner
@@ -175,11 +176,18 @@ private class AndroidDiagnosticsEnvironment(
 private class TunnelSpeedTestConnectionFactory(context: Context) : SpeedTestConnectionFactory {
     private val appContext = context.applicationContext
 
+    private val direct = directSpeedTestConnectionFactory()
+
+    // Through the tunnel while there is one, otherwise over the device's own network: the test then measures the line.
     override fun connect(url: String, configure: (HttpURLConnection) -> Unit): HttpURLConnection =
-        TunnelNetworks.withLocalProxyAuthenticator {
-            TunnelNetworks.openTunnelHttpConnection(appContext, URL(url)).apply {
-                configure(this)
-                connect()
+        if (!TunnelNetworks.isTunnelAvailable(appContext)) {
+            direct.connect(url, configure)
+        } else {
+            TunnelNetworks.withLocalProxyAuthenticator {
+                TunnelNetworks.openTunnelHttpConnection(appContext, URL(url)).apply {
+                    configure(this)
+                    connect()
+                }
             }
         }
 }

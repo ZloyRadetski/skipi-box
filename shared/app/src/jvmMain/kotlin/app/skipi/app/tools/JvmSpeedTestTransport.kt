@@ -34,6 +34,17 @@ fun socksSpeedTestConnectionFactory(route: DiagnosticsRoute.Socks) = SpeedTestCo
     }
 }
 
+/**
+ * Connection factory for a run without a tunnel: the request leaves the device by its own route, bypassing any proxy
+ * the system names, so the result is the line's speed and not a proxy's.
+ */
+fun directSpeedTestConnectionFactory() = SpeedTestConnectionFactory { url, configure ->
+    (URI(url).toURL().openConnection(java.net.Proxy.NO_PROXY) as HttpURLConnection).apply {
+        configure(this)
+        connect()
+    }
+}
+
 /** HttpURLConnection-based speed test transfers over a host-provided [connectionFactory]. */
 class JvmSpeedTestTransport(
     private val connectionFactory: SpeedTestConnectionFactory,

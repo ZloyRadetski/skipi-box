@@ -56,6 +56,7 @@ fun WarningConfirmDialog(
     details: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     if (!show) return
+    BackScope(onBack = onDismissRequest)
 
     val warningColor = MiuixTheme.colorScheme.error
     Dialog(

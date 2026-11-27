@@ -25,11 +25,22 @@ import kotlin.test.assertTrue
 
 /** Renders the speed test dial to a PNG so its look can be checked without a running app. */
 class SpeedGaugeSnapshotTest {
-    private fun render(name: String, phase: SpeedTestUiPhase, mbps: Double?, result: SpeedTestUiResult?) {
-        val scene = ImageComposeScene(width = 520, height = 900, density = Density(1f))
+    private fun render(
+        name: String,
+        phase: SpeedTestUiPhase,
+        mbps: Double?,
+        result: SpeedTestUiResult?,
+        width: Int = 420,
+        height: Int = 1000,
+        progress: Float = 0.5f,
+        down: List<Float>? = null,
+        up: List<Float>? = null,
+        dark: Boolean = true,
+    ) {
+        val scene = ImageComposeScene(width = width, height = height, density = Density(1f))
         scene.setContent {
             ProvideSkipiTheme(
-                colors = resolveBaseAppearanceColors(isDark = true),
+                colors = resolveBaseAppearanceColors(isDark = dark),
                 fontFamily = null,
                 fontSizeMode = null,
                 fontWeightMode = null,
@@ -38,12 +49,14 @@ class SpeedGaugeSnapshotTest {
                 Box(Modifier.fillMaxSize().background(SkipiTheme.colors.background).padding(16.dp)) {
                     SkipiSpeedTestContent(
                         phase = phase,
-                        progress = 0.5f,
+                        progress = progress,
                         currentMbps = mbps,
                         result = result,
                         errorMessage = null,
                         onStart = {},
                         onStop = {},
+                        downloadSamples = down,
+                        uploadSamples = up,
                     )
                 }
             }
@@ -59,11 +72,20 @@ class SpeedGaugeSnapshotTest {
         scene.close()
     }
 
+    private val curveDown = listOf(5f, 40f, 120f, 260f, 380f, 450f, 520f, 560f, 600f, 590f, 612f, 605f, 618f)
+    private val curveUp = listOf(4f, 20f, 48f, 70f, 82f, 90f, 86f, 91f, 88f, 89f)
+
     @Test
-    fun rendersTheDial() {
-        render("download", SpeedTestUiPhase.Download, 89.36, null)
-        render("idle", SpeedTestUiPhase.Idle, null, null)
-        render("finished", SpeedTestUiPhase.Finished, 612.4, SpeedTestUiResult(23.0, 4.1, 612.4, 88.2))
-        assertTrue(File("build/speedgauge/download.png").length() > 0)
+    fun rendersTheSpeedTest() {
+        val done = SpeedTestUiResult(23.0, 4.1, 612.4, 88.2)
+        render("phone-idle", SpeedTestUiPhase.Idle, null, null)
+        render("phone-download", SpeedTestUiPhase.Download, 289.4, null, progress = 0.6f, down = curveDown.take(8))
+        render("phone-upload", SpeedTestUiPhase.Upload, 61.2, SpeedTestUiResult(23.0, 4.1, 612.4, 0.0), progress = 0.4f, down = curveDown, up = curveUp.take(6))
+        render("phone-finished", SpeedTestUiPhase.Finished, 612.4, done, down = curveDown, up = curveUp)
+        render("desktop-finished", SpeedTestUiPhase.Finished, 612.4, done, width = 1040, height = 640, down = curveDown, up = curveUp)
+        render("desktop-download", SpeedTestUiPhase.Download, 289.4, null, width = 1040, height = 640, progress = 0.6f, down = curveDown.take(8))
+        render("light-phone-finished", SpeedTestUiPhase.Finished, 612.4, done, down = curveDown, up = curveUp, dark = false)
+        render("light-desktop-download", SpeedTestUiPhase.Download, 289.4, null, width = 1040, height = 640, progress = 0.6f, down = curveDown.take(8), dark = false)
+        assertTrue(File("build/speedgauge/phone-finished.png").length() > 0)
     }
 }

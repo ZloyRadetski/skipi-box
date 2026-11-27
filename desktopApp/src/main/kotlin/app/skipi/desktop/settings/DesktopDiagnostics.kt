@@ -17,6 +17,7 @@ import app.skipi.app.tools.JvmDnsTxtResolver
 import app.skipi.app.tools.JvmSpeedTestTransport
 import app.skipi.app.tools.SpeedTestConfig
 import app.skipi.app.tools.SpeedTestConnectionFactory
+import app.skipi.app.tools.directSpeedTestConnectionFactory
 import app.skipi.app.tools.SpeedTestController
 import app.skipi.app.tools.SpeedTestJob
 import app.skipi.app.tools.SpeedTestRunner
@@ -145,8 +146,8 @@ internal class DesktopDiagnostics(
     }
 }
 
-/** Speed test connections are tunnel-only: without a running tunnel they fail rather than measure the direct path. */
+/** Through the running tunnel's proxy when there is one; without a tunnel the test measures the line itself. */
 private fun desktopSpeedTestConnections(route: DiagnosticsRoute): SpeedTestConnectionFactory = when (route) {
     is DiagnosticsRoute.Socks -> socksSpeedTestConnectionFactory(route)
-    DiagnosticsRoute.Direct -> SpeedTestConnectionFactory { _, _ -> throw IOException("No active VPN tunnel is available") }
+    DiagnosticsRoute.Direct -> directSpeedTestConnectionFactory()
 }

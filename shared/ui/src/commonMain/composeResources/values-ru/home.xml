@@ -6,6 +6,7 @@
     <string name="home_action_refreshing">Обновление…</string>
     <string name="home_action_search">Поиск</string>
     <string name="home_action_hide_search">Скрыть поиск</string>
+    <string name="home_ping_server">Пинг</string>
     <string name="home_move_up">↑</string>
     <string name="home_move_down">↓</string>
     <string name="home_add_group">Добавить группу прокси</string>

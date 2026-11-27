@@ -794,49 +794,55 @@ internal fun DesktopConfigsScreen(
         visualEditor = null
     }
 
+    var rejectedLeaveSnapshot by remember { mutableStateOf<List<Any>?>(null) }
+    fun saveEditor(name: String, content: String, sourceUrl: String, updateLocked: Boolean): Boolean {
+        val draft = editorDraft ?: return false
+        return persist(
+                transform = { latest ->
+                    when (
+                        val save = applyDesktopConfigEditorSave(
+                            library = latest,
+                            id = draft.id,
+                            lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
+                            name = name,
+                            content = content,
+                            sourceUrl = sourceUrl,
+                            updateLocked = updateLocked,
+                        )
+                    ) {
+                        is DesktopConfigEditorSaveResult.Rejected -> throw DesktopConfigEditorSaveRejected(save.message)
+                        is DesktopConfigEditorSaveResult.Saved -> save.library
+                    }
+                },
+                successMessage = desktopText(Res.string.desktop_config_saved),
+                afterSave = {
+                    editorSaveError = null
+                    editorDraft = null
+                },
+            )
+    }
     val openDraft = editorDraft
     if (openDraft != null) {
         DesktopConfigEditor(
             draft = openDraft,
             contentPadding = contentPadding,
             statusMessage = editorSaveError,
-            onBack = { content ->
+            // Leaving saves everything Save saves: name, text, source and lock. A draft the save rejects stays open
+            // with the reason shown; leaving again with the same text gives it up.
+            onBack = { name, content, sourceUrl, updateLocked ->
                 val draft = editorDraft ?: return@DesktopConfigEditor
-                if (draft.id == null) {
+                val snapshot = listOf(name, content, sourceUrl, updateLocked)
+                val unchanged = snapshot == listOf(draft.name, draft.content, draft.sourceUrl, draft.updateLocked)
+                if (unchanged || (editorSaveError != null && snapshot == rejectedLeaveSnapshot)) {
+                    rejectedLeaveSnapshot = null
                     editorSaveError = null
                     editorDraft = null
                 } else {
-                    editorController.leaveRaw(draft.id, content) {
-                        editorDraft = null
-                    }
+                    rejectedLeaveSnapshot = snapshot
+                    saveEditor(name, content, sourceUrl, updateLocked)
                 }
             },
-            onSave = { name, content, sourceUrl, updateLocked ->
-                val draft = editorDraft ?: return@DesktopConfigEditor false
-                persist(
-                    transform = { latest ->
-                        when (
-                            val save = applyDesktopConfigEditorSave(
-                                library = latest,
-                                id = draft.id,
-                                lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
-                                name = name,
-                                content = content,
-                                sourceUrl = sourceUrl,
-                                updateLocked = updateLocked,
-                            )
-                        ) {
-                            is DesktopConfigEditorSaveResult.Rejected -> throw DesktopConfigEditorSaveRejected(save.message)
-                            is DesktopConfigEditorSaveResult.Saved -> save.library
-                        }
-                    },
-                    successMessage = desktopText(Res.string.desktop_config_saved),
-                    afterSave = {
-                        editorSaveError = null
-                        editorDraft = null
-                    },
-                )
-            },
+            onSave = { name, content, sourceUrl, updateLocked -> saveEditor(name, content, sourceUrl, updateLocked) },
         )
         return
     }
@@ -1106,7 +1112,7 @@ private fun DesktopConfigEditor(
     draft: DesktopConfigDraft,
     contentPadding: PaddingValues,
     statusMessage: String? = null,
-    onBack: (content: String) -> Unit,
+    onBack: (name: String, content: String, sourceUrl: String, updateLocked: Boolean) -> Unit,
     onSave: (name: String, content: String, sourceUrl: String, updateLocked: Boolean) -> Boolean,
 ) {
     var name by remember(draft.id) { mutableStateOf(draft.name) }
@@ -1153,7 +1159,7 @@ private fun DesktopConfigEditor(
         onSourceUrlChange = { sourceUrl = it },
         onUpdateLockedChange = { updateLocked = it },
         onContentChange = { content = it },
-        onBack = { onBack(content) },
+        onBack = { onBack(name, content, sourceUrl, updateLocked) },
         onSave = { onSave(name, content, sourceUrl, updateLocked) },
         statusContent = statusMessage?.let { message ->
             { DesktopEditorStatusContent(message) }

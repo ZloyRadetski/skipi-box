@@ -6,6 +6,7 @@
     <string name="home_action_refreshing">Refreshing…</string>
     <string name="home_action_search">Search</string>
     <string name="home_action_hide_search">Hide search</string>
+    <string name="home_ping_server">Ping</string>
     <string name="home_move_up">↑</string>
     <string name="home_move_down">↓</string>
     <string name="home_add_group">Add proxy group</string>

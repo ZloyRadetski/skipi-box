@@ -1506,6 +1506,7 @@ private fun runDesktopApplication(
                             label = entry.label,
                             used = entry.used,
                             onToggle = { updateMultilink { it.withLinkUsed(entry.id, !entry.used) } },
+                            icon = entry.kind.trayIcon(),
                         )
                     },
                 ).takeUnless { desktopMultilink.unsupported }

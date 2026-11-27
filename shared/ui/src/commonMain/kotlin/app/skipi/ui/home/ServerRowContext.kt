@@ -49,6 +49,8 @@ internal fun serverMenuActionIds(
     val canMove = context.sortMode == ProxyHomeSortMode.Default && context.searchQuery.isBlank() &&
         context.canUse(ProxyHomeActionId.MoveServer)
     return buildList {
+        // Pinging this one server: offered while it is not being measured already.
+        if (server.canTest && !server.latencyTesting && context.canUse(ProxyHomeActionId.TestServer)) add("ping")
         if (context.canUse(ProxyHomeActionId.CopyServer)) {
             // The QR code has its own "show-qr" entry; offering it here too listed it twice.
             (server.availableCopyFormats.intersect(context.availableCopyFormats) - ProxyHomeCopyFormat.QrCode)

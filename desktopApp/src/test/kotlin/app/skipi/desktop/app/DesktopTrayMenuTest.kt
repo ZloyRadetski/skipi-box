@@ -10,9 +10,9 @@ import kotlin.test.assertNull
 
 class DesktopTrayMenuTest {
     private val entries = listOf(
-        DesktopTrayMenuEntry.Action("Connect") {},
+        DesktopTrayMenuEntry.Action("Connect", {}),
         DesktopTrayMenuEntry.Separator,
-        DesktopTrayMenuEntry.Action("Exit") {},
+        DesktopTrayMenuEntry.Action("Exit", {}),
     )
 
     @Test
@@ -113,5 +113,43 @@ class DesktopTrayMultilinkMenuTest {
     @Test
     fun withoutLinkMergingTheMenuIsUnchanged() {
         assertEquals(3, desktopTrayMenuEntries(null, "Connect", "Exit", {}, {}, multilink = null).size)
+    }
+}
+
+class DesktopTrayMenuIconsTest {
+    private fun iconOf(entry: DesktopTrayMenuEntry): DesktopTrayMenuIcon? = when (entry) {
+        is DesktopTrayMenuEntry.Action -> entry.icon
+        is DesktopTrayMenuEntry.Info -> entry.icon
+        DesktopTrayMenuEntry.Separator -> null
+    }
+
+    @Test
+    fun everyEntryHasAnIconAndTheToggleFollowsTheTunnelState() {
+        val running = desktopTrayMenuEntries("Berlin", "Disconnect", "Exit", {}, {}, tunLabel = "TUN", connected = true)
+        assertEquals(
+            listOf(DesktopTrayMenuIcon.Server, null, DesktopTrayMenuIcon.Disconnect, DesktopTrayMenuIcon.Tun, null, DesktopTrayMenuIcon.Exit),
+            running.map(::iconOf),
+        )
+        val stopped = desktopTrayMenuEntries(null, "Connect", "Exit", {}, {}, connected = false)
+        assertEquals(DesktopTrayMenuIcon.Connect, iconOf(stopped.first()))
+    }
+
+    @Test
+    fun linkEntriesTakeTheIconOfTheirKindAndMergingHasItsOwn() {
+        val entries = desktopTrayMenuEntries(
+            null, "Connect", "Exit", {}, {},
+            multilink = DesktopTrayMultilink(
+                toggleLabel = "Merge",
+                onToggle = {},
+                links = listOf(
+                    DesktopTrayLink("Wi-Fi", used = true, onToggle = {}, icon = features.multilink.MultilinkLinkKind.WiFi.trayIcon()),
+                    DesktopTrayLink("Mobile", used = true, onToggle = {}, icon = features.multilink.MultilinkLinkKind.Mobile.trayIcon()),
+                ),
+            ),
+        )
+        assertEquals(
+            listOf(DesktopTrayMenuIcon.Merge, DesktopTrayMenuIcon.WiFi, DesktopTrayMenuIcon.Mobile),
+            entries.map(::iconOf).filterNotNull().drop(1).dropLast(1),
+        )
     }
 }

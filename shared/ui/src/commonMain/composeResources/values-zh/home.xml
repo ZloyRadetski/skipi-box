@@ -6,6 +6,7 @@
     <string name="home_action_refreshing">正在刷新…</string>
     <string name="home_action_search">搜索</string>
     <string name="home_action_hide_search">隐藏搜索</string>
+    <string name="home_ping_server">测延迟</string>
     <string name="home_move_up">↑</string>
     <string name="home_move_down">↓</string>
     <string name="home_add_group">添加代理组</string>

@@ -18,20 +18,31 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import utils.runCatchingCancellable
 
-/** Android's speed test parameters; tests shrink them to keep runs instantaneous. */
+private const val MinSteadyMillis = 1_000L
+
+/** The speed test's parameters; tests shrink them to keep runs instantaneous. */
 data class SpeedTestConfig(
-    val pingSamples: Int = 6,
-    val downloadStreams: Int = 4,
-    val uploadStreams: Int = 3,
-    val downloadMaxDurationMillis: Long = 12_000L,
-    val uploadMaxDurationMillis: Long = 10_000L,
-    val downloadByteBudget: Long = 48L * 1024 * 1024,
-    val uploadByteBudget: Long = 16L * 1024 * 1024,
-    val downloadPayloadBytes: Int = 8 * 1024 * 1024,
+    val pingSamples: Int = 12,
+    /** Pause between ping samples, so they do not measure one burst of the same queue. */
+    val pingIntervalMillis: Long = 80L,
+    val downloadStreams: Int = 6,
+    val uploadStreams: Int = 4,
+    val downloadMaxDurationMillis: Long = 15_000L,
+    val uploadMaxDurationMillis: Long = 12_000L,
+    /**
+     * A safety stop against spending a lot of traffic on a very fast link, not what ends a normal run: a test that
+     * ends on its byte budget lasts a second on a gigabit line and says little about it.
+     */
+    val downloadByteBudget: Long = 2L * 1024 * 1024 * 1024,
+    val uploadByteBudget: Long = 512L * 1024 * 1024,
+    val downloadPayloadBytes: Int = 16 * 1024 * 1024,
     val uploadPayloadBytes: Long = 8L * 1024 * 1024,
+    /** The start of a transfer, while TCP is still opening its window, is left out of the result. */
+    val warmupMillis: Long = 2_000L,
     val sampleIntervalMillis: Long = 200L,
     val retryDelayMillis: Long = 250L,
 )
@@ -108,6 +119,7 @@ class SpeedTestRunner(
                     progress = (index + 1).toFloat() / config.pingSamples,
                 ),
             )
+            if (index < config.pingSamples - 1) delay(config.pingIntervalMillis)
         }
         return samples
     }
@@ -130,8 +142,14 @@ class SpeedTestRunner(
         var emaMbps: Double? = null
         var lastSampleBytes = 0L
         var lastSampleAt = started
+        // The bytes and the time when the warm-up ended: the result counts only what came after.
+        val afterWarmup = MutableStateFlow<Pair<Long, TimeMark>?>(null)
 
         coroutineScope {
+            val warmup = launch {
+                delay(config.warmupMillis)
+                afterWarmup.value = transferred.value to TimeSource.Monotonic.markNow()
+            }
             val sampler = launch {
                 while (true) {
                     delay(config.sampleIntervalMillis)
@@ -174,11 +192,22 @@ class SpeedTestRunner(
             deadline.cancel()
             budget.cancel()
             sampler.cancel()
+            warmup.cancel()
         }
 
-        val elapsedMillis = started.elapsedNow().inWholeMilliseconds.coerceAtLeast(1)
         val totalBytes = transferred.value
-        return if (totalBytes <= 0) 0.0 else totalBytes * 8.0 * 1000.0 / elapsedMillis / 1_000_000.0
+        if (totalBytes <= 0) return 0.0
+        // Steady state: from the end of the warm-up, when at least a second of it is left to measure.
+        val steady = afterWarmup.value
+        if (steady != null) {
+            val steadyMillis = steady.second.elapsedNow().inWholeMilliseconds
+            val steadyBytes = totalBytes - steady.first
+            if (steadyMillis >= MinSteadyMillis && steadyBytes > 0) {
+                return steadyBytes * 8.0 * 1000.0 / steadyMillis / 1_000_000.0
+            }
+        }
+        val elapsedMillis = started.elapsedNow().inWholeMilliseconds.coerceAtLeast(1)
+        return totalBytes * 8.0 * 1000.0 / elapsedMillis / 1_000_000.0
     }
 
     private fun downloadUrl(bytes: Int) = "https://speed.cloudflare.com/__down?bytes=$bytes&r=${Random.nextLong()}"

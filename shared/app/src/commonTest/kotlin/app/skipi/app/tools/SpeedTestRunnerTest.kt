@@ -140,4 +140,15 @@ class SpeedTestRunnerTest {
         assertTrue(result.downloadMbps > 0.0)
         assertTrue(result.uploadMbps > 0.0)
     }
+
+    @Test
+    fun theDefaultRunLastsLongEnoughToReachSteadyStateAndIsNotEndedByTheByteBudgetOnAFastLink() {
+        val defaults = SpeedTestConfig()
+        assertTrue(defaults.downloadMaxDurationMillis >= 15_000L)
+        assertTrue(defaults.uploadMaxDurationMillis >= 12_000L)
+        assertTrue(defaults.warmupMillis in 1_000L..3_000L)
+        // At a gigabit the budget outlasts the time cap: a gigabit moves 125 MB a second.
+        assertTrue(defaults.downloadByteBudget > 125L * 1024 * 1024 * (defaults.downloadMaxDurationMillis / 1000))
+        assertTrue(defaults.pingSamples >= 10)
+    }
 }

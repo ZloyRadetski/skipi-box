@@ -44,6 +44,9 @@ object TunnelNetworks {
         )
     }
 
+    /** Whether a tunnel is up: the local proxy runs, or the device has an active VPN network. */
+    fun isTunnelAvailable(context: Context?): Boolean = LocalProxyRuntime.current() != null || locateVpnNetwork(context) != null
+
     /** The device's active VPN network, or null when no tunnel is up or socket cannot be bound. */
     fun locateVpnNetwork(context: Context?): Network? {
         val connectivity = context?.getSystemService(ConnectivityManager::class.java) ?: return null

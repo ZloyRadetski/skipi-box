@@ -11,12 +11,25 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cable
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.Lan
+import androidx.compose.material.icons.rounded.MergeType
+import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.PowerOff
+import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.SignalCellularAlt
+import androidx.compose.material.icons.rounded.VpnKey
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -24,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,12 +50,27 @@ import top.yukonga.miuix.kmp.basic.Text
 
 /** What the tray menu lists, in order. */
 internal sealed interface DesktopTrayMenuEntry {
-    class Action(val label: String, val onClick: () -> Unit) : DesktopTrayMenuEntry
+    class Action(val label: String, val onClick: () -> Unit, val icon: DesktopTrayMenuIcon? = null) : DesktopTrayMenuEntry
 
     /** A line of text that is not clickable, e.g. the active server. */
-    class Info(val label: String) : DesktopTrayMenuEntry
+    class Info(val label: String, val icon: DesktopTrayMenuIcon? = null) : DesktopTrayMenuEntry
 
     data object Separator : DesktopTrayMenuEntry
+}
+
+/** The icon in front of an entry. The Compose menu draws it; a panel that draws its own menu ignores it. */
+internal enum class DesktopTrayMenuIcon(val vector: ImageVector) {
+    Server(Icons.Rounded.Dns),
+    Connect(Icons.Rounded.PowerSettingsNew),
+    Disconnect(Icons.Rounded.PowerOff),
+    Tun(Icons.Rounded.VpnKey),
+    Merge(Icons.Rounded.MergeType),
+    WiFi(Icons.Rounded.Wifi),
+    Ethernet(Icons.Rounded.Cable),
+    Mobile(Icons.Rounded.SignalCellularAlt),
+    Phone(Icons.Rounded.PhoneAndroid),
+    Network(Icons.Rounded.Lan),
+    Exit(Icons.Rounded.Close),
 }
 
 /** A size in dp, which on desktop is the same unit AWT positions windows in. */
@@ -120,7 +150,7 @@ internal fun DesktopTrayMenuContent(entries: List<DesktopTrayMenuEntry>, onDismi
         ) {
             entries.forEach { entry ->
                 when (entry) {
-                    is DesktopTrayMenuEntry.Action -> DesktopTrayMenuRow(entry.label) {
+                    is DesktopTrayMenuEntry.Action -> DesktopTrayMenuRow(entry.label, entry.icon) {
                         onDismiss()
                         entry.onClick()
                     }
@@ -129,14 +159,16 @@ internal fun DesktopTrayMenuContent(entries: List<DesktopTrayMenuEntry>, onDismi
                         Modifier.padding(horizontal = 6.dp).fillMaxWidth().height(RowHeight.dp),
                         contentAlignment = Alignment.CenterStart,
                     ) {
-                        Text(
-                            text = entry.label,
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            fontSize = 13.sp,
-                            color = colors.onSurface.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            entry.icon?.let { icon -> DesktopTrayMenuIconImage(icon, colors.onSurface.copy(alpha = 0.6f)) }
+                            Text(
+                                text = entry.label,
+                                fontSize = 13.sp,
+                                color = colors.onSurface.copy(alpha = 0.6f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
 
                     DesktopTrayMenuEntry.Separator -> Box(
@@ -152,7 +184,7 @@ internal fun DesktopTrayMenuContent(entries: List<DesktopTrayMenuEntry>, onDismi
 }
 
 @Composable
-private fun DesktopTrayMenuRow(label: String, onClick: () -> Unit) {
+private fun DesktopTrayMenuRow(label: String, icon: DesktopTrayMenuIcon?, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val colors = SkipiTheme.colors
@@ -175,12 +207,24 @@ private fun DesktopTrayMenuRow(label: String, onClick: () -> Unit) {
             },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 12.dp),
-            fontSize = 14.sp,
-            color = colors.onSurface,
-            maxLines = 1,
-        )
+        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            icon?.let { DesktopTrayMenuIconImage(it, colors.onSurface.copy(alpha = 0.8f)) }
+            Text(
+                text = label,
+                fontSize = 14.sp,
+                color = colors.onSurface,
+                maxLines = 1,
+            )
+        }
     }
+}
+
+@Composable
+private fun DesktopTrayMenuIconImage(icon: DesktopTrayMenuIcon, tint: Color) {
+    top.yukonga.miuix.kmp.basic.Icon(
+        imageVector = icon.vector,
+        contentDescription = null,
+        tint = tint,
+        modifier = Modifier.padding(end = 10.dp).size(18.dp),
+    )
 }

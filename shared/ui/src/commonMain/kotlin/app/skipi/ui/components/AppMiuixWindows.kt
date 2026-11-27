@@ -51,6 +51,7 @@ fun AppWindowDialog(
     defaultWindowInsetsPadding: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    BackScope(enabled = show && onDismissRequest != null) { onDismissRequest?.invoke() }
     AppMiuixWindowTheme {
         WindowDialog(
             show = show,
@@ -96,6 +97,7 @@ fun AppWindowBottomSheet(
     enableNestedScroll: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    BackScope(enabled = show && allowDismiss && onDismissRequest != null) { onDismissRequest?.invoke() }
     AppMiuixWindowTheme {
         WindowBottomSheet(
             show = show,
