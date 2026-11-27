@@ -7,6 +7,7 @@ import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.isCompositeProxyServer
@@ -97,11 +98,10 @@ fun reconcileConfigProxyGroups(
                 showInAutoBalancerList = source.group.displayMode != StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
-                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "1m",
+                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: StrategyGroupConstants.DEFAULT_PROBE_INTERVAL,
                 probeTimeout = source.group.timeoutSeconds?.let { "${it}s" } ?: existingStrategy?.probeTimeout ?: "5s",
                 probeUrl = source.group.url,
                 enableBurstProbe = source.group.enableBurstProbe,
-                tolerance = source.group.tolerance,
             ),
         )
     }

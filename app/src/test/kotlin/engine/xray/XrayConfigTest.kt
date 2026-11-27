@@ -461,7 +461,6 @@ class XrayConfigTest {
         assertEquals("30s", decoded.probeInterval)
         assertEquals("https://www.gstatic.com/generate_204", decoded.probeUrl)
         assertEquals(StrategyGroupDisplayMode.ALWAYS, decoded.displayMode)
-        assertEquals("50ms", decoded.tolerance)
     }
 
     @Test
@@ -483,7 +482,6 @@ class XrayConfigTest {
             strategy = StrategyGroupConstants.TYPE_FALLBACK,
             proxyServerIds = listOf(10, 20),
             selectedMemberId = 20,
-            tolerance = "100ms",
         )
         val groupState = ProxyServerState(
             id = 100,

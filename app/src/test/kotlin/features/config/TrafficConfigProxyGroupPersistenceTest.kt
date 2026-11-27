@@ -94,7 +94,6 @@ class TrafficConfigProxyGroupPersistenceTest {
             probeUrl = "https://probe.example/204",
             probeInterval = "30s",
             enableBurstProbe = true,
-            tolerance = "150ms",
             displayMode = StrategyGroupDisplayMode.ALWAYS,
         )
         val rawConfig = """
@@ -109,7 +108,6 @@ class TrafficConfigProxyGroupPersistenceTest {
 
         val group = rawConfig.analyzeShadowrocketConfig().proxyGroups.single()
         assertTrue(group.enableBurstProbe)
-        assertEquals("150ms", group.tolerance)
 
         val state = AppState(
             activeTrafficConfigId = 1,
@@ -123,7 +121,6 @@ class TrafficConfigProxyGroupPersistenceTest {
 
         val reflected = state.proxyServers.single { server -> server.groupId == AutoBalancerGroupId }.server as StrategyGroup
         assertTrue(reflected.enableBurstProbe)
-        assertEquals("150ms", reflected.tolerance)
     }
 
     @Test
@@ -162,7 +159,6 @@ class TrafficConfigProxyGroupPersistenceTest {
         assertEquals("https://probe.example/204", editorModel.probeUrl)
         assertEquals("30s", editorModel.probeInterval)
         assertEquals(false, editorModel.enableBurstProbe)
-        assertEquals("150ms", editorModel.tolerance)
         assertEquals(StrategyGroupDisplayMode.ALWAYS, editorModel.displayMode)
     }
 }

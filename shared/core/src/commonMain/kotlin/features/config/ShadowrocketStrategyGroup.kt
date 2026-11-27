@@ -43,9 +43,6 @@ fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServerChoice>
             StrategyGroupDisplayMode.NEVER -> append(", skipi-display=never")
         }
         append(", skipi-burst-probe=").append(enableBurstProbe)
-        tolerance.takeIf { it != "50ms" }?.let { value ->
-            append(", skipi-tolerance=").append(value)
-        }
     }
 }
 
@@ -67,10 +64,9 @@ fun ShadowrocketPolicyGroup.toEditableStrategyGroup(
         displayMode = displayMode,
         sourceTrafficConfigId = trafficConfigId,
         sourcePolicyGroupName = name,
-        probeInterval = intervalSeconds?.let { "${it}s" } ?: "1m",
+        probeInterval = intervalSeconds?.let { "${it}s" } ?: StrategyGroupConstants.DEFAULT_PROBE_INTERVAL,
         probeTimeout = timeoutSeconds?.let { "${it}s" } ?: "5s",
         probeUrl = url,
         enableBurstProbe = enableBurstProbe,
-        tolerance = tolerance,
     )
 }

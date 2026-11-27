@@ -61,7 +61,9 @@ internal fun AppState.strategyGroupMembers(
         stripLeadingFlag = CountryFlagUtils::stripLeadingCountryFlag,
         visitingStrategyGroupIds = visitingStrategyGroupIds,
     )
-    return resolved.mapNotNull { record -> proxyServers.firstOrNull { it.id == record.id } }
+    // First row wins for a repeated id; indexed so a large subscription is not scanned once per member.
+    val serversById = proxyServers.asReversed().associateBy { it.id }
+    return resolved.mapNotNull { record -> serversById[record.id] }
 }
 
 private fun ProxyServerState.toProxyServerRecord() = ProxyServerRow(

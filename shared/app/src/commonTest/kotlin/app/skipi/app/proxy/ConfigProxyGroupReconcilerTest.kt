@@ -13,6 +13,24 @@ import kotlin.test.assertEquals
 
 class ConfigProxyGroupReconcilerTest {
     @Test
+    fun aReflectedGroupWithoutAnIntervalProbesEveryFifteenSeconds() {
+        val config = profile(
+            """[Proxy Group]
+                Auto = url-test, Node A, skipi-display=always
+            """.trimIndent(),
+        )
+
+        val reconciled = reconcile(
+            trafficConfigs = listOf(config),
+            activeConfigId = config.id,
+            servers = listOf(node(10, "Node A")),
+            nextServerId = 30,
+        )
+
+        assertEquals("15s", (reconciled.servers.single { it.id == 30 }.server as StrategyGroup).probeInterval)
+    }
+
+    @Test
     fun refreshKeepsGeneratedIdentityAndSelectedMemberWhileResolvingLatestProfileMembers() {
         val before = profile(
             """[Proxy Group]

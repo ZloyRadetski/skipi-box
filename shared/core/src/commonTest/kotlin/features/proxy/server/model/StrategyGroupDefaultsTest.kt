@@ -31,4 +31,26 @@ class StrategyGroupDefaultsTest {
             assertFalse(strategyGroupSpreadsConnections(strategy), strategy)
         }
     }
+
+    @Test
+    fun updatingAGroupCopiesEveryHealthCheckSetting() {
+        val target = StrategyGroup(remarks = "Old")
+
+        target.update(StrategyGroup(remarks = "New", probeInterval = "30s", probeTimeout = "9s"))
+
+        assertEquals("30s", target.probeInterval)
+        assertEquals("9s", target.probeTimeout)
+    }
+
+    @Test
+    fun aGroupSavedWithTheRemovedToleranceSettingStillLoadsAndNoLongerStoresIt() {
+        val saved = """{"protocol":"strategyGroup","payload":{"remarks":"Old","probeInterval":"30s","tolerance":"150ms"}}"""
+            .replace("strategyGroup", ProxyServerConstants.PROTOCOL_STRATEGY_GROUP)
+
+        val loaded = saved.decodePersistedProxyServer() as StrategyGroup
+
+        assertEquals("Old", loaded.remarks)
+        assertEquals("30s", loaded.probeInterval)
+        assertFalse("tolerance" in loaded.encodePersistedProxyServer())
+    }
 }

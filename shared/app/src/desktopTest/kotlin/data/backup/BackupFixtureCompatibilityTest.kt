@@ -60,7 +60,10 @@ class BackupFixtureCompatibilityTest {
         Regex("""\.subscriptionGroups\[\d+]\.userAgent$""").containsMatchIn(path)
 
     /** Settings the app no longer has: an old file may hold them, a new export does not write them. */
-    private fun isRetired(path: String): Boolean = path in retiredSettings
+    private fun isRetired(path: String): Boolean = path in retiredSettings || retiredGroupSetting.matches(path)
+
+    // A balancer's switching tolerance was removed: Xray never read it.
+    private val retiredGroupSetting = Regex("""\.data\.proxyServers\[\d+]\.payload\.tolerance""")
 
     private val retiredSettings = setOf(
         // The server list columns setting was removed: the list is always one column.

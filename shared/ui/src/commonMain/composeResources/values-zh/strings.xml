@@ -568,7 +568,6 @@
     <string name="proxy_editor_strategy_group_health_check">健康检查</string>
     <string name="proxy_editor_strategy_group_probe_interval">探测间隔</string>
     <string name="proxy_editor_strategy_group_spread_warning">每个新连接可能使用不同的服务器，因此将会话绑定到 IP 地址的网站可能无法正常使用。用于规则时建议选择最低延迟。</string>
-    <string name="proxy_editor_strategy_group_tolerance">切换容差 (Tolerance)</string>
     <string name="proxy_editor_strategy_group_probe_url">探测网址</string>
     <string name="proxy_editor_strategy_group_burst_probe">启动时突发探测</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">在启动或网络切换时快速并行探测所有成员</string>

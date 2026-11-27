@@ -40,7 +40,6 @@ data class ShadowrocketPolicyGroup(
     /** SKIPI extension: use the faster burst observatory for health checks. */
     val enableBurstProbe: Boolean = false,
     /** SKIPI extension: maximum latency difference allowed before switching. */
-    val tolerance: String = "50ms",
     val raw: String = "",
 ) {
     val outboundTag: String
@@ -611,10 +610,6 @@ private fun parseProxyGroupLine(
         ?.lowercase()
         ?.let { value -> value in setOf("true", "yes", "1") }
         ?: true
-    val tolerance = options["skipi-tolerance"]
-        ?.trim()
-        ?.takeIf { value -> value.matches(Regex("\\d+ms")) }
-        ?: "50ms"
     val timeoutSeconds = options["timeout"]?.toIntOrNull()?.takeIf { it in 1..30 }
         ?: options["skipi-timeout"]?.removeSuffix("s")?.toIntOrNull()?.takeIf { it in 1..30 }
     return ShadowrocketPolicyGroup(
@@ -630,7 +625,6 @@ private fun parseProxyGroupLine(
         timeoutSeconds = timeoutSeconds,
         displayMode = displayMode,
         enableBurstProbe = burstProbeEnabled,
-        tolerance = tolerance,
         raw = raw,
     )
 }

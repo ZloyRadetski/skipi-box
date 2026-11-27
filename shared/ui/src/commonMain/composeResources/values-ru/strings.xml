@@ -599,7 +599,6 @@
     <string name="proxy_editor_strategy_group_health_check">Проверка здоровья (Health Check)</string>
     <string name="proxy_editor_strategy_group_probe_interval">Интервал проверки</string>
     <string name="proxy_editor_strategy_group_spread_warning">Каждое новое соединение может идти через другой сервер, поэтому сайты, привязывающие сессию к IP-адресу, могут не работать. Для правил лучше выбрать минимальный пинг.</string>
-    <string name="proxy_editor_strategy_group_tolerance">Порог переключения (Tolerance)</string>
     <string name="proxy_editor_strategy_group_probe_url">URL проверки (Probe URL)</string>
     <string name="proxy_editor_strategy_group_burst_probe">Экспресс-проверка при старте</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">Мгновенно опрашивать все узлы пачкой при запуске соединения или смене сети</string>

@@ -624,7 +624,6 @@
      <string name="proxy_editor_strategy_group_health_check">Health check</string>
     <string name="proxy_editor_strategy_group_probe_interval">Probe interval</string>
     <string name="proxy_editor_strategy_group_spread_warning">Each new connection may use a different server, so sites that tie a session to your IP address can break. Prefer Least ping for rules.</string>
-    <string name="proxy_editor_strategy_group_tolerance">Switching tolerance</string>
     <string name="proxy_editor_strategy_group_probe_url">Probe URL</string>
     <string name="proxy_editor_strategy_group_burst_probe">Burst probe on startup</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">Quickly probe all members in parallel on startup or network switch</string>

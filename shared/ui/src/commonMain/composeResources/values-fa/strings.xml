@@ -558,7 +558,6 @@
     <string name="proxy_editor_strategy_group_health_check">بررسی سلامت</string>
     <string name="proxy_editor_strategy_group_probe_interval">فاصله کاوشگر</string>
     <string name="proxy_editor_strategy_group_spread_warning">هر اتصال جدید ممکن است از سرور دیگری عبور کند، بنابراین سایت‌هایی که نشست را به نشانی IP متصل می‌کنند ممکن است کار نکنند. برای قوانین، کمترین پینگ را ترجیح دهید.</string>
-    <string name="proxy_editor_strategy_group_tolerance">آستانه تغییر (Tolerance)</string>
     <string name="proxy_editor_strategy_group_probe_url">URL کاوشگر</string>
     <string name="proxy_editor_strategy_group_burst_probe">بررسی انفجاری هنگام راه‌اندازی</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">در هنگام راه اندازی یا سوئیچ شبکه، به سرعت همه اعضا را به صورت موازی بررسی کنید</string>

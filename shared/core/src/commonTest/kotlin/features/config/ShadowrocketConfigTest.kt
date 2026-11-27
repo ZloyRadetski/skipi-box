@@ -66,7 +66,6 @@ class ShadowrocketConfigTest {
         assertEquals(listOf("One", "Two"), group.members)
         assertEquals(StrategyGroupDisplayMode.ACTIVE_CONFIG, group.displayMode)
         assertFalse(group.enableBurstProbe)
-        assertEquals("75ms", group.tolerance)
         assertEquals(8, group.timeoutSeconds)
     }
 

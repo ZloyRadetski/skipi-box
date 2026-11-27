@@ -172,7 +172,6 @@ class ProxyServerDraftFactoryTest {
                 probeInterval = "15s",
                 probeUrl = "",
                 enableBurstProbe = false,
-                tolerance = "50ms",
                 probeTimeout = "5s",
             ),
             ProxyHomeServerKind.ChainProxy to ChainProxy(

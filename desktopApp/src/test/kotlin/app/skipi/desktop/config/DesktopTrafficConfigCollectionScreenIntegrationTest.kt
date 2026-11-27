@@ -270,7 +270,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             probeInterval = "30s",
             probeUrl = "https://probe.example.test/check",
             enableBurstProbe = true,
-            tolerance = "125ms",
             probeTimeout = "9s",
         )
         val originalSnapshot = originalGroup.copy(proxyServerIds = originalGroup.proxyServerIds.toList())

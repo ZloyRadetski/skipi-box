@@ -3,6 +3,7 @@
 
 package app.skipi.app.proxy
 
+import app.ProxyServerLatencyTesting
 import engine.xray.XrayRouteTargetKind
 import engine.xray.buildXrayObservatory
 import features.config.ShadowrocketPolicyGroup
@@ -551,6 +552,138 @@ class XrayOutboundPlannerTest {
         )
 
         assertEquals("15s", plan.observatoryProbeInterval)
+    }
+
+    @Test
+    fun aCappedBalancerTakesNeverMeasuredMembersBeforeTheOnesThatFailed() {
+        val selected = node(1, "Selected", "selected.example")
+        // Group order: 20 failed members, then 10 never measured ones, then one still being measured.
+        val failed = (10..29).map { id -> node(id, "F$id", "f$id.example", latency = if (id % 2 == 0) "Timeout" else "Ошибка") }
+        val unknown = (30..39).map { id -> node(id, "U$id", "u$id.example") }
+        val testing = node(40, "T", "t.example", latency = ProxyServerLatencyTesting)
+        val measured = node(41, "M", "m.example", latency = "900 ms")
+        val members = failed + unknown + testing + measured
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Auto",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = members.map { it.id },
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group) + members, listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        val memberTags = plan.proxyOutbounds.map { it.tag }.filter { it.startsWith("100-policy-") }
+        // 1 measured, 11 unknown, then only 4 failed ones fill the rest.
+        assertEquals((listOf(41) + (30..40) + (10..13)).map { "100-policy-$it" }, memberTags)
+    }
+
+    @Test
+    fun aBalancerNeverFallsBackToAFailedMemberWhileAnUntestedOneExists() {
+        val selected = node(1, "Selected", "selected.example")
+        val dead = node(10, "Dead", "dead.example", latency = "Timeout")
+        val unknown = node(20, "Unknown", "unknown.example")
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Auto",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10, 20),
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group, dead, unknown), listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        assertEquals("100-policy-20", plan.balancers.single().fallbackTag)
+    }
+
+    @Test
+    fun aCappedOrderedFallbackStillFallsBackToItsFirstMember() {
+        val selected = node(1, "Selected", "selected.example")
+        // The first member is the slowest of 40.
+        val members = (10..49).map { id -> node(id, "N$id", "n$id.example", latency = "${500 - id}ms") }
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "Ordered",
+                strategy = StrategyGroupConstants.TYPE_FALLBACK,
+                proxyServerIds = members.map { it.id },
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected, group) + members, listOf(RouteRule(outboundTag = "100"))),
+        )
+
+        val memberTags = plan.proxyOutbounds.map { it.tag }.filter { it.startsWith("100-policy-") }
+        assertEquals(BalancerProbeMemberLimit, memberTags.size)
+        assertEquals("100-policy-10", plan.balancers.single().fallbackTag)
+        assertTrue("100-policy-10" in memberTags)
+    }
+
+    @Test
+    fun aRuleNamingTheSelectedBalancerReusesItInsteadOfProbingEveryMemberTwice() {
+        val a = node(10, "A", "a.example")
+        val b = node(20, "B", "b.example")
+        val group = record(
+            100,
+            StrategyGroup(remarks = "Auto", strategy = StrategyGroupConstants.TYPE_LEAST_PING, proxyServerIds = listOf(10, 20)),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(group, listOf(group, a, b), listOf(RouteRule(outboundTag = "100")), defaultRouteOutboundTag = "100"),
+        )
+
+        assertEquals(listOf("proxy"), plan.balancers.map { it.tag })
+        assertEquals(listOf("proxy-policy-10", "proxy-policy-20"), plan.proxyOutbounds.map { it.tag })
+        assertEquals(listOf("proxy-policy-"), plan.observatorySelectors)
+        assertEquals(plan.routeTargets.getValue("proxy"), plan.routeTargets.getValue("100"))
+    }
+
+    @Test
+    fun aRuleNamingTheSelectedServerReusesItsOutbound() {
+        val selected = node(1, "Selected", "selected.example")
+
+        val plan = XrayOutboundPlanner.plan(
+            input(selected, listOf(selected), listOf(RouteRule(outboundTag = "1"))),
+        )
+
+        assertEquals(listOf("proxy"), plan.proxyOutbounds.map { it.tag })
+        assertEquals(plan.routeTargets.getValue("proxy"), plan.routeTargets.getValue("1"))
+    }
+
+    @Test
+    fun twoGroupsThatWouldBuildTheSameBalancerShareIt() {
+        val selected = node(1, "Selected", "selected.example")
+        val a = node(10, "A", "a.example")
+        val b = node(20, "B", "b.example")
+        fun group(id: Int, interval: String) = record(
+            id,
+            StrategyGroup(
+                remarks = "G$id",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10, 20),
+                probeInterval = interval,
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(
+            input(
+                selected,
+                listOf(selected, group(100, "1m"), group(200, "10s"), a, b),
+                listOf(RouteRule(outboundTag = "100"), RouteRule(outboundTag = "200")),
+            ),
+        )
+
+        assertEquals(listOf("100"), plan.balancers.map { it.tag })
+        assertEquals(plan.routeTargets.getValue("100"), plan.routeTargets.getValue("200"))
+        // The shortest interval still wins, even from the group that shares the balancer.
+        assertEquals("10s", plan.observatoryProbeInterval)
     }
 
     private fun input(

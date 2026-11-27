@@ -171,25 +171,6 @@ fun LazyListScope.strategyGroupProxyServer(
             mutableStateOf(strategyGroupEdit.enableBurstProbe)
         }
 
-        val toleranceValues = remember {
-            listOf("0ms", "20ms", "50ms", "100ms", "150ms", "200ms", "300ms", "500ms")
-        }
-        val toleranceLabels = listOf(
-            "0 ms",
-            "20 ms",
-            "50 ms",
-            "100 ms",
-            "150 ms",
-            "200 ms",
-            "300 ms",
-            "500 ms",
-        )
-        val toleranceIndex = remember(strategyGroupEdit.tolerance) {
-            mutableIntStateOf(
-                toleranceValues.indexOf(strategyGroupEdit.tolerance).let { if (it >= 0) it else 2 },
-            )
-        }
-
         SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
         TextField(
             label = stringResource(Res.string.proxy_editor_remarks),
@@ -278,7 +259,6 @@ fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.filter = filterState.text.toString()
                     strategyGroupEdit.strategy = currentStrategy
                     strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "15s" }
-                    strategyGroupEdit.tolerance = toleranceValues.getOrElse(toleranceIndex.intValue) { "50ms" }
                     strategyGroupEdit.enableBurstProbe = burstProbeState.value
                     strategyGroupEdit.probeUrl = probeUrlState.text.toString()
                     onOpenMembers?.invoke()
@@ -349,15 +329,6 @@ fun LazyListScope.strategyGroupProxyServer(
                     onSelectedIndexChange = { index ->
                         probeIntervalIndex.intValue = index
                         strategyGroupEdit.probeInterval = probeIntervalValues[index]
-                    },
-                )
-                SkipiDropdownPreference(
-                    title = stringResource(Res.string.proxy_editor_strategy_group_tolerance),
-                    items = toleranceLabels,
-                    selectedIndex = toleranceIndex.intValue,
-                    onSelectedIndexChange = { index ->
-                        toleranceIndex.intValue = index
-                        strategyGroupEdit.tolerance = toleranceValues[index]
                     },
                 )
                 SwitchPreference(

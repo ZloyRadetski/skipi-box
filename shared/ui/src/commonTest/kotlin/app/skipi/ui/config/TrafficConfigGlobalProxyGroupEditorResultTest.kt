@@ -80,7 +80,6 @@ class TrafficConfigGlobalProxyGroupEditorResultTest {
             probeInterval = "17s",
             probeUrl = "https://probe.example.test/status",
             enableBurstProbe = true,
-            tolerance = "23ms",
             probeTimeout = "4s",
         )
         val originalBefore = original.encodePersistedProxyServer()

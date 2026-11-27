@@ -3,6 +3,7 @@
 
 package app.skipi.app.proxy
 
+import app.ProxyServerLatencyTesting
 import engine.xray.XrayBalancerPlan
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayProxyOutboundServer
@@ -55,6 +56,7 @@ object XrayOutboundPlanner {
         private val observatorySelectors = mutableListOf<String>()
         private val routeTargets = linkedMapOf<String, XrayRouteTarget>()
         private val addedOutboundTags = mutableSetOf<String>()
+        private val balancerTagsByShape = mutableMapOf<BalancerShape, String>()
         private val dnsHostServers = mutableListOf<String>()
         private var observatoryProbeUrl: String? = null
         private var observatoryProbeInterval: String? = null
@@ -70,7 +72,14 @@ object XrayOutboundPlanner {
                 routeTargets[input.selectedServer.id.toString()] = rawTarget
             }
             routeTargetServers().forEach { server ->
-                addRouteTarget(server.id.toString(), server)
+                val id = server.id.toString()
+                // A rule naming the selected server means what `proxy` already is: a second copy would
+                // probe every member twice and open a second tunnel with the same keys.
+                if (server.id == input.selectedServer.id) {
+                    routeTargets[id] = routeTargets.getValue(XrayTags.PROXY)
+                } else {
+                    addRouteTarget(id, server)
+                }
             }
             addShadowrocketPolicyGroupTargets()
             addFixedRouteTargets()
@@ -259,6 +268,7 @@ object XrayOutboundPlanner {
          * best [BalancerProbeMemberLimit] join it: probing a whole subscription at once saturates the link,
          * times the probes out and marks healthy servers dead. A leastPing balancer only consumes the regular
          * Observatory, which probes members concurrently and lets fallbackTag carry traffic until its first result.
+         * A [tag] that would build the same balancer as an earlier one routes to that one instead.
          */
         private fun addBalancer(
             tag: String,
@@ -268,15 +278,29 @@ object XrayOutboundPlanner {
             keepsOrder: Boolean,
             probe: BalancerProbe,
         ) {
-            val selector = "$tag-policy-"
-            val joined = if (strategy.isLatencyDriven()) members.fastestFirst(selectedMemberId, BalancerProbeMemberLimit) else members
-            joined.forEach { member -> addNormalOutbound(tag = "$selector${member.id}", server = member) }
+            val selected = members.firstOrNull { it.id == selectedMemberId }
+            // An ordered fallback falls back to the head of its list, so the head must join a capped balancer.
+            val orderedHead = members.first().takeIf { keepsOrder }
+            val joined = if (strategy.isLatencyDriven()) {
+                members.fastestFirst(listOfNotNull(selected, orderedHead).distinct(), BalancerProbeMemberLimit)
+            } else {
+                members
+            }
+            val fallbackMember = selected ?: orderedHead ?: joined.minBy { it.latency.latencyRank() }
 
-            val fallbackMember = joined.firstOrNull { it.id == selectedMemberId }
-                ?: if (keepsOrder) joined.first() else joined.minBy { it.latency.latencySortKey() }
             observatoryProbeUrl = observatoryProbeUrl ?: probe.url
             observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, probe.interval)
             observatoryProbeTimeout = observatoryProbeTimeout ?: probe.timeout
+
+            val shape = BalancerShape(strategy, joined.map { it.id }, fallbackMember.id)
+            balancerTagsByShape[shape]?.let { existingTag ->
+                routeTargets[tag] = XrayRouteTarget(existingTag, XrayRouteTargetKind.Balancer)
+                return
+            }
+            balancerTagsByShape[shape] = tag
+
+            val selector = "$tag-policy-"
+            joined.forEach { member -> addNormalOutbound(tag = "$selector${member.id}", server = member) }
             observatorySelectors += selector
             balancers += XrayBalancerPlan(
                 tag = tag,
@@ -344,7 +368,10 @@ internal const val BalancerProbeMemberLimit = 16
  * A dead member stays out of rotation until the next probe round, so a long default leaves every new
  * connection waiting on it. Used when no group asks for its own interval.
  */
-private const val DefaultBalancerProbeInterval = "15s"
+private const val DefaultBalancerProbeInterval = StrategyGroupConstants.DEFAULT_PROBE_INTERVAL
+
+/** What makes two balancers interchangeable. */
+private data class BalancerShape(val strategy: String, val memberIds: List<Int>, val fallbackMemberId: Int)
 
 private class BalancerProbe(val url: String?, val interval: String?, val timeout: String?)
 
@@ -352,14 +379,13 @@ private fun String.isLatencyDriven(): Boolean =
     this == StrategyGroupConstants.TYPE_LEAST_PING || this == StrategyGroupConstants.TYPE_LEAST_LOAD
 
 /**
- * At most [limit] members, the fastest known first. The member the user chose always stays; members never
+ * At most [limit] members, the fastest known first. [pinned] members always stay; members never
  * measured keep their order behind the measured ones, and failed ones come last.
  */
-private fun List<ProxyServerRow>.fastestFirst(selectedMemberId: Int?, limit: Int): List<ProxyServerRow> {
+private fun List<ProxyServerRow>.fastestFirst(pinned: List<ProxyServerRow>, limit: Int): List<ProxyServerRow> {
     if (size <= limit) return this
-    val chosen = firstOrNull { it.id == selectedMemberId }
-    val ranked = sortedBy { it.latency.latencySortKey() }.filter { it !== chosen }
-    return (listOfNotNull(chosen) + ranked).take(limit)
+    val ranked = sortedBy { it.latency.latencyRank() }.filter { member -> pinned.none { it === member } }
+    return (pinned + ranked).take(limit)
 }
 
 /**
@@ -387,13 +413,19 @@ private fun String.probeIntervalSeconds(): Long? {
 private fun chainProxyOutboundTag(tag: String, index: Int): String =
     if (index == 0) tag else "$tag-chain-$index"
 
-private fun String.latencySortKey(): Int {
+/**
+ * Lower is better: a measured latency, then never measured (or being measured), then failed. Any other text
+ * without a number is a failure, since the host's failure message is localized.
+ */
+private fun String.latencyRank(): Long {
     val trimmed = trim()
-    if (trimmed.isBlank() || trimmed.startsWith("-") || trimmed.contains("Failed", ignoreCase = true) || trimmed.contains("Timeout", ignoreCase = true) || trimmed.contains("Error", ignoreCase = true)) {
-        return Int.MAX_VALUE
-    }
-    val number = latencyRegex.find(trimmed)?.value?.toIntOrNull()
-    return number ?: Int.MAX_VALUE
+    if (trimmed.isEmpty() || trimmed == ProxyServerLatencyTesting) return UnknownLatencyRank
+    if (trimmed.startsWith("-") || FailureWords.any { trimmed.contains(it, ignoreCase = true) }) return FailedLatencyRank
+    return latencyRegex.find(trimmed)?.value?.toLongOrNull() ?: FailedLatencyRank
 }
+
+private const val UnknownLatencyRank = Long.MAX_VALUE - 1
+private const val FailedLatencyRank = Long.MAX_VALUE
+private val FailureWords = listOf("Failed", "Timeout", "Error")
 
 private val latencyRegex = Regex("""\d+""")

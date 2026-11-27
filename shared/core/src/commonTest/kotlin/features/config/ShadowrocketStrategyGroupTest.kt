@@ -21,12 +21,11 @@ class ShadowrocketStrategyGroupTest {
             probeTimeout = "7s",
             displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
             enableBurstProbe = true,
-            tolerance = "75ms",
         )
 
         assertEquals(
             "Fastest = fallback, Node A, Node B, url=https://probe.example/204, interval=120, timeout=7, " +
-                "skipi-display=active_config, skipi-burst-probe=true, skipi-tolerance=75ms",
+                "skipi-display=active_config, skipi-burst-probe=true",
             strategy.toShadowrocketLine(
                 listOf(
                     ProxyGroupServerChoice(10, "Node A"),
@@ -48,7 +47,6 @@ class ShadowrocketStrategyGroupTest {
             timeoutSeconds = 8,
             displayMode = StrategyGroupDisplayMode.ALWAYS,
             enableBurstProbe = false,
-            tolerance = "150ms",
         )
 
         val editable = parsed.toEditableStrategyGroup(
@@ -68,6 +66,14 @@ class ShadowrocketStrategyGroupTest {
         assertEquals("https://probe.example/204", editable.probeUrl)
         assertEquals(StrategyGroupDisplayMode.ALWAYS, editable.displayMode)
         assertEquals(false, editable.enableBurstProbe)
-        assertEquals("150ms", editable.tolerance)
+    }
+
+    @Test
+    fun aProfileGroupWithoutAnIntervalProbesEveryFifteenSecondsLikeAGroupMadeInTheApp() {
+        val parsed = ShadowrocketPolicyGroup(lineNumber = 1, name = "Auto", type = "url-test", members = listOf("Node A"))
+
+        val editable = parsed.toEditableStrategyGroup(trafficConfigId = 1, serverChoices = emptyList())
+
+        assertEquals("15s", editable.probeInterval)
     }
 }

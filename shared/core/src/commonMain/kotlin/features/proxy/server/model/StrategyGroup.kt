@@ -13,6 +13,12 @@ object StrategyGroupConstants {
     const val TYPE_RANDOM = "random"
     const val TYPE_ROUND_ROBIN = "roundRobin"
 
+    /**
+     * Xray switches a balancer away from a dead member only after the next probe round, so a long
+     * interval leaves every new connection failing for that long. 15 s keeps the outage short.
+     */
+    const val DEFAULT_PROBE_INTERVAL = "15s"
+
     val TYPES = setOf(
         TYPE_SELECT,
         TYPE_LEAST_PING,
@@ -86,15 +92,10 @@ data class StrategyGroup(
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
     var sourcePolicyGroupName: String = "",
-    /**
-     * Xray switches a balancer away from a dead member only after the next probe round, so a long
-     * interval leaves every new connection failing for that long. 15 s keeps the outage short.
-     */
-    var probeInterval: String = "15s",
+    var probeInterval: String = StrategyGroupConstants.DEFAULT_PROBE_INTERVAL,
     var probeUrl: String = "",
     /** An explicit opt-in for the expensive first-start parallel probe race. */
     var enableBurstProbe: Boolean = false,
-    var tolerance: String = "50ms",
     var probeTimeout: String = "5s",
 ) : ProxyServer<StrategyGroup> {
     override fun getInfo(): ProxyServerInfo {
@@ -130,7 +131,7 @@ data class StrategyGroup(
         probeInterval = other.probeInterval
         probeUrl = other.probeUrl
         enableBurstProbe = other.enableBurstProbe
-        tolerance = other.tolerance
+        probeTimeout = other.probeTimeout
     }
 
     override fun validateBasic(): List<ProxyServerValidationIssue> = validateFull()
@@ -142,7 +143,7 @@ data class StrategyGroup(
     }
 
     override fun connectionFingerprint(): String {
-        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$wholeGroupIds|$filter|$filterGroupIds|$selectedMemberId|$displayMode|$tolerance"
+        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$wholeGroupIds|$filter|$filterGroupIds|$selectedMemberId|$displayMode"
     }
 }
 
