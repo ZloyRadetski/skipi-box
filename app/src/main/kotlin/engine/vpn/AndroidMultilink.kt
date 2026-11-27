@@ -7,16 +7,15 @@ import android.content.Context
 import app.skipi.core.skipicore.Skipicore
 import engine.network.AndroidLinkMonitor
 import features.logs.AppLog
+import features.multilink.MultilinkController
+import features.multilink.MultilinkLinksReporter
 import features.multilink.MultilinkSettings
 import features.multilink.MultilinkSync
 import features.multilink.toCoreLinksJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOf
 
 /** SKIPI Core's link merging on Android, the way the application reaches it. Core and the tunnel live in one process. */
 internal object AndroidMultilinkCore {
@@ -35,55 +34,63 @@ internal object AndroidMultilinkCore {
 }
 
 /**
- * Runs link merging for one tunnel: while the tunnel runs it follows the saved settings. The networks are watched
- * (and kept connected) only while merging is on, and Core is told to stop merging when the tunnel stops.
+ * Runs link merging for one tunnel: while the tunnel runs it follows the saved settings ([MultilinkController]). The
+ * networks are watched (and kept connected) only after Core accepted merging being on, and Core is told to stop
+ * merging when the tunnel stops.
  */
 internal class AndroidMultilink(
     private val context: Context,
-    private val scope: CoroutineScope,
-    private val settings: Flow<MultilinkSettings>,
+    scope: CoroutineScope,
+    settings: Flow<MultilinkSettings>,
 ) {
     private val sync = AndroidMultilinkCore.newSync()
+    private val controller = MultilinkController(
+        scope = scope,
+        sync = sync,
+        settings = settings,
+        tunnelRunning = flowOf(true),
+        ioDispatcher = Dispatchers.IO,
+        onResult = { current, running, result -> onApplied(current, running, result) },
+    )
     private var monitor: AndroidLinkMonitor? = null
-    private var job: Job? = null
+    private var reporter: MultilinkLinksReporter? = null
+    private var stopped = false
 
-    @Synchronized
-    fun start() {
-        if (job != null) return
-        job = scope.launch {
-            settings.distinctUntilChanged().collect { current -> apply(current) }
-        }
-    }
+    fun start() = controller.start()
 
-    @Synchronized
     fun stop() {
-        job?.cancel()
-        job = null
-        stopMonitor()
-        // Core stops with the tunnel and its merging goes with it; this also makes the next start apply afresh.
-        runCatching { sync.sync(MultilinkSettings(), tunnelRunning = false) }
+        synchronized(this) {
+            stopped = true
+            stopMonitor()
+        }
+        // Core stops with the tunnel and its merging goes with it; this also makes the next start apply afresh. It stays
+        // synchronous so Core is certain to be told before the tunnel goes; a failure makes the next sync apply again.
+        controller.stop().onFailure { error -> AppLog.warn(LogTag, "Link merging was not stopped: ${error.message}") }
     }
 
-    private suspend fun apply(current: MultilinkSettings) {
-        if (current.enabled) startMonitor()
-        withContext(Dispatchers.IO) {
-            sync.sync(current, tunnelRunning = true)
-                .onFailure { error -> AppLog.warn(LogTag, "Link merging settings were not applied: ${error.message}") }
-        }
-        if (!current.enabled) stopMonitor()
+    private fun onApplied(current: MultilinkSettings, running: Boolean, result: Result<Unit>) {
+        result.onFailure { error -> AppLog.warn(LogTag, "Link merging settings were not applied: ${error.message}") }
+        if (result.isSuccess && !sync.unsupported && current.enabled && running) startMonitor() else stopMonitor()
     }
 
     @Synchronized
     private fun startMonitor() {
-        if (monitor != null) return
-        monitor = AndroidLinkMonitor(context) { links ->
+        if (stopped || monitor != null) return
+        val newReporter = MultilinkLinksReporter { links ->
             AndroidMultilinkCore.setLinks(links.toCoreLinksJson())
                 .onFailure { error -> AppLog.warn(LogTag, "Core refused the links: ${error.message}") }
-        }.also(AndroidLinkMonitor::start)
+        }
+        val newMonitor = AndroidLinkMonitor(context, newReporter::report)
+        if (newMonitor.start()) {
+            reporter = newReporter
+            monitor = newMonitor
+        }
     }
 
     @Synchronized
     private fun stopMonitor() {
+        reporter?.close()
+        reporter = null
         monitor?.stop()
         monitor = null
     }

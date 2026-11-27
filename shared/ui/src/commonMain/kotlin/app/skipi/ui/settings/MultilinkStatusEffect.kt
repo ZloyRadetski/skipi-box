@@ -7,15 +7,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import features.logs.AppLog
-import features.multilink.MultilinkOffDelayMillis
+import features.multilink.MultilinkController
 import features.multilink.MultilinkSettings
 import features.multilink.MultilinkStatus
 import features.multilink.MultilinkStatusEveryMillis
 import features.multilink.MultilinkSync
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * Applies [settings] to Core while [tunnelRunning] and returns Core's view of the links, refreshed every second while
@@ -29,10 +33,19 @@ fun rememberMultilinkStatus(
     tunnelRunning: Boolean,
     onError: (Throwable) -> Unit,
 ): State<MultilinkStatus> {
-    LaunchedEffect(multilink, settings, tunnelRunning) {
-        if (!tunnelRunning) delay(MultilinkOffDelayMillis)
-        withContext(Dispatchers.IO) { multilink.sync(settings, tunnelRunning) }
-            .onFailure { error ->
+    val controller = remember(multilink) {
+        MultilinkController(
+            scope = CoroutineScope(EmptyCoroutineContext),
+            sync = multilink,
+            settings = emptyFlow(),
+            tunnelRunning = emptyFlow(),
+            ioDispatcher = Dispatchers.IO,
+        )
+    }
+    LaunchedEffect(controller, settings, tunnelRunning) {
+        // The controller owns the grace period and the apply; this effect only hands it the current state.
+        controller.applyOnce(settings, tunnelRunning)
+            ?.onFailure { error ->
                 AppLog.warn("Multilink", "Link merging settings were not applied: ${error.message}")
                 if (error !is UnsupportedOperationException) onError(error)
             }

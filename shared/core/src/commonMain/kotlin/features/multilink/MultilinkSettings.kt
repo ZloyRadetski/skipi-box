@@ -171,3 +171,18 @@ fun encodeMultilinkSettings(settings: MultilinkSettings): String =
 fun decodeMultilinkSettings(json: String?): MultilinkSettings =
     if (json.isNullOrBlank()) MultilinkSettings()
     else runCatching { StoredJson.decodeFromString(MultilinkSettings.serializer(), json) }.getOrDefault(MultilinkSettings())
+
+/** One link in the tray menu: [id] to switch it, [label] to show, [used] when it takes connections. */
+data class MultilinkTrayEntry(val id: String, val label: String, val used: Boolean)
+
+/** The tray's entries: one per link while merging is on, none otherwise. */
+fun MultilinkSettings.trayEntries(status: MultilinkStatus): List<MultilinkTrayEntry> {
+    if (!enabled) return emptyList()
+    return status.links.map { link ->
+        MultilinkTrayEntry(
+            id = link.id,
+            label = displayName(link.id, link.name) + " · ↓ " + formatMbps(link.mbpsDown()),
+            used = !link.excluded && link.id !in excluded,
+        )
+    }
+}

@@ -130,3 +130,33 @@ class MultilinkSettingsTest {
         assertEquals("12", (mobile["handle"] as kotlinx.serialization.json.JsonPrimitive).content)
     }
 }
+
+class MultilinkTrayEntriesTest {
+    private val status = MultilinkStatus(
+        enabled = true,
+        links = listOf(
+            MultilinkLink(id = "a", name = "Ethernet", rateIn = 2_500_000.0),
+            MultilinkLink(id = "b", name = "Wi-Fi", linkIn = 1_250_000.0),
+            MultilinkLink(id = "c", name = "Phone", excluded = true),
+        ),
+    )
+
+    @Test
+    fun noEntriesWhileMergingIsOff() {
+        assertEquals(emptyList(), MultilinkSettings(enabled = false).trayEntries(status))
+    }
+
+    @Test
+    fun oneEntryPerLinkWithNameSpeedAndUse() {
+        val settings = MultilinkSettings(enabled = true).withLinkUsed("b", false).withName("a", "Desk")
+        val entries = settings.trayEntries(status)
+        assertEquals(
+            listOf(
+                MultilinkTrayEntry("a", "Desk · ↓ 20", used = true),
+                MultilinkTrayEntry("b", "Wi-Fi · ↓ 10", used = false),
+                MultilinkTrayEntry("c", "Phone · ↓ 0", used = false),
+            ),
+            entries,
+        )
+    }
+}

@@ -25,7 +25,11 @@ class MultilinkSync(
         if (json == applied) return Result.success(Unit)
         apply(json)
             .onSuccess { applied = json }
-            .onFailure { error -> if (error is UnsupportedOperationException) unsupported = true }
+            .onFailure { error ->
+                // A refused or failed apply leaves Core in a state this class cannot vouch for: the next sync applies afresh.
+                applied = null
+                if (error is UnsupportedOperationException) unsupported = true
+            }
     }
 
     fun status(): MultilinkStatus {

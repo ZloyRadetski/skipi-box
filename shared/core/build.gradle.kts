@@ -55,6 +55,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.ktor.http)
             implementation(libs.kotlinx.serialization.json)
+            api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
             // Stability hints (@Stable) on the models Compose hosts render.
             implementation(libs.compose.runtime)
         }
@@ -64,6 +65,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
         }
         getByName("desktopTest").dependencies {
             implementation(libs.kage)

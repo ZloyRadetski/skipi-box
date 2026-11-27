@@ -8,7 +8,7 @@ package app.skipi.desktop
 import features.multilink.MultilinkSettings
 import features.multilink.MultilinkSync
 import app.skipi.ui.settings.rememberMultilinkStatus
-import features.multilink.formatMbps
+import features.multilink.trayEntries
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import app.skipi.ui.resources.desktop_active_group_server_changed
@@ -1501,17 +1501,12 @@ private fun runDesktopApplication(
                 val trayMultilink = DesktopTrayMultilink(
                     toggleLabel = multilinkToggleText,
                     onToggle = { updateMultilink { it.copy(enabled = !it.enabled) } },
-                    links = if (desktopSettings.multilink.enabled) {
-                        multilinkStatus.links.map { link ->
-                            val used = !link.excluded && link.id !in desktopSettings.multilink.excluded
-                            DesktopTrayLink(
-                                label = desktopSettings.multilink.displayName(link.id, link.name) + " · ↓ " + formatMbps(link.mbpsDown()),
-                                used = used,
-                                onToggle = { updateMultilink { it.withLinkUsed(link.id, !used) } },
-                            )
-                        }
-                    } else {
-                        emptyList()
+                    links = desktopSettings.multilink.trayEntries(multilinkStatus).map { entry ->
+                        DesktopTrayLink(
+                            label = entry.label,
+                            used = entry.used,
+                            onToggle = { updateMultilink { it.withLinkUsed(entry.id, !entry.used) } },
+                        )
                     },
                 ).takeUnless { desktopMultilink.unsupported }
                 val trayConnectText = stringResource(Res.string.tray_connect)

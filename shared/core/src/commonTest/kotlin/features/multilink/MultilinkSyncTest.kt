@@ -64,6 +64,19 @@ class MultilinkSyncTest {
         assertEquals(1, core.applied.size, "the refused settings are sent again once Core accepts them")
     }
 
+    /** A failed apply may have changed Core; going back to the earlier settings must apply them again. */
+    @Test
+    fun aFailedApplyForgetsWhatWasApplied() {
+        val core = FakeCore()
+        val multilink = multilink(core)
+        multilink.sync(on, tunnelRunning = true).getOrThrow()
+        core.failWith = IllegalStateException("boom")
+        assertTrue(multilink.sync(on.withLimit("{eth}", 5.0), tunnelRunning = true).isFailure)
+        core.failWith = null
+        multilink.sync(on, tunnelRunning = true).getOrThrow()
+        assertEquals(2, core.applied.size)
+    }
+
     /** An older Core library has no link merging: the app says so once instead of failing on every change. */
     @Test
     fun anOlderCoreIsReportedAsUnsupported() {

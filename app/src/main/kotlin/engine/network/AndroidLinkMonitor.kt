@@ -11,11 +11,10 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import app.R
 import features.logs.AppLog
+import features.multilink.HostNetworkSnapshot
+import features.multilink.HostTransport
 import features.multilink.MultilinkHostLink
-import features.multilink.MultilinkLinkKind
-import java.net.Inet4Address
-import java.net.Inet6Address
-import java.net.InetAddress
+import features.multilink.buildHostLinks
 
 /**
  * Watches the networks the phone is connected to and reports them as the links link merging can spread connections
@@ -49,20 +48,29 @@ internal class AndroidLinkMonitor(
     private val keepCallbacks = listOf(NetworkCapabilities.TRANSPORT_WIFI, NetworkCapabilities.TRANSPORT_CELLULAR)
         .associateWith { object : ConnectivityManager.NetworkCallback() {} }
 
-    fun start() {
-        val manager = connectivity ?: return
+    /**
+     * Starts watching. False when the networks cannot be watched at all (the callback was refused): the monitor is then
+     * not running, so a later start may try again.
+     */
+    fun start(): Boolean {
+        val manager = connectivity ?: return false
         synchronized(lock) {
-            if (running) return
+            if (running) return true
             running = true
         }
-        runCatching {
+        val watching = runCatching {
             manager.registerNetworkCallback(baseRequest().build(), listCallback)
-        }.onFailure { error -> AppLog.warn(LogTag, "Could not watch the networks for link merging", error) }
+        }.onFailure { error -> AppLog.warn(LogTag, "Could not watch the networks for link merging", error) }.isSuccess
+        if (!watching) {
+            synchronized(lock) { running = false; networks.clear() }
+            return false
+        }
         keepCallbacks.forEach { (transport, callback) ->
             runCatching {
                 manager.requestNetwork(baseRequest().addTransportType(transport).build(), callback)
             }.onFailure { error -> AppLog.warn(LogTag, "Could not keep transport $transport connected", error) }
         }
+        return true
     }
 
     fun stop() {
@@ -97,58 +105,30 @@ internal class AndroidLinkMonitor(
     }
 
     private fun buildLinks(snapshot: Map<Network, NetworkSnapshot>): List<MultilinkHostLink> {
-        val used = HashSet<String>()
-        val out = ArrayList<MultilinkHostLink>()
-        for ((network, info) in snapshot) {
-            val capabilities = info.capabilities ?: continue
-            if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) continue
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
-            val (baseId, kind) = when {
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi" to MultilinkLinkKind.WiFi
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "mobile" to MultilinkLinkKind.Mobile
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet" to MultilinkLinkKind.Ethernet
-                else -> continue
-            }
-            val properties = info.properties ?: continue
-            val interfaceName = properties.interfaceName.orEmpty()
-            // The id outlives a reconnect (a new Network every time), so settings stay with the link; a second
-            // network of the same kind is told apart by its interface.
-            val id = if (used.add(baseId)) baseId else "$baseId:$interfaceName"
-            if (id != baseId && !used.add(id)) continue
-            val addresses = addressesOf(properties)
-            val ipv4 = addresses.filterIsInstance<Inet4Address>().firstOrNull { !it.isLinkLocalAddress && !it.isLoopbackAddress }
-            val ipv6 = addresses.filterIsInstance<Inet6Address>().firstOrNull(::isGlobalIpv6)
-            if (ipv4 == null && ipv6 == null) continue
-            out += MultilinkHostLink(
-                id = id,
-                name = nameOf(kind, interfaceName, id != baseId),
-                kind = kind,
-                ipv4 = ipv4?.hostAddress.orEmpty(),
-                ipv6 = ipv6?.hostAddress?.substringBefore("%").orEmpty(),
-                handle = network.networkHandle,
-                phone = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
-            )
-        }
-        return out.sortedBy { it.id }
+        val hostNetworks = snapshot.mapNotNull { (network, info) -> hostNetworkOf(network, info) }
+        return buildHostLinks(hostNetworks, mobileName = appContext.getString(R.string.multilink_kind_mobile))
     }
 
-    private fun nameOf(kind: MultilinkLinkKind, interfaceName: String, second: Boolean): String {
-        val base = when (kind) {
-            MultilinkLinkKind.WiFi -> "Wi-Fi"
-            MultilinkLinkKind.Mobile -> appContext.getString(R.string.multilink_kind_mobile)
-            MultilinkLinkKind.Ethernet -> "Ethernet"
-            else -> interfaceName
+    private fun hostNetworkOf(network: Network, info: NetworkSnapshot): HostNetworkSnapshot? {
+        val capabilities = info.capabilities ?: return null
+        if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return null
+        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return null
+        val transport = when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> HostTransport.WiFi
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> HostTransport.Cellular
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> HostTransport.Ethernet
+            else -> return null
         }
-        return if (second && interfaceName.isNotEmpty()) "$base ($interfaceName)" else base
+        val properties = info.properties ?: return null
+        // An IPv6-only mobile network (NAT64) shows no IPv4 address here, so it takes part in merging over IPv6 only.
+        return HostNetworkSnapshot(
+            handle = network.networkHandle,
+            transport = transport,
+            metered = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+            interfaceName = properties.interfaceName.orEmpty(),
+            addresses = properties.linkAddresses.mapNotNull { it.address.hostAddress },
+        )
     }
-
-    // An IPv6-only mobile network (NAT64) shows no IPv4 address here, so it takes part in merging over IPv6 only.
-    private fun addressesOf(properties: LinkProperties): List<InetAddress> = properties.linkAddresses.map { it.address }
-
-    /** A global unicast address: not link-local, not a unique local one (fc00::/7), not loopback. */
-    private fun isGlobalIpv6(address: Inet6Address): Boolean =
-        !address.isLinkLocalAddress && !address.isLoopbackAddress && !address.isSiteLocalAddress &&
-            !address.isMulticastAddress && (address.address[0].toInt() and 0xFE) != 0xFC
 
     private companion object {
         const val LogTag = "LinkMonitor"
