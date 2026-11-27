@@ -30,6 +30,10 @@ val releaseKeyAlias = releaseSigningValue("SKIPI_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = releaseSigningValue("SKIPI_RELEASE_KEY_PASSWORD")
 val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
 
+// The app updates itself from GitHub releases unless a store does that job: F-Droid builds with
+// -PskipiSelfUpdate=false, which switches the updater off and drops the install permission.
+val skipiSelfUpdate = providers.gradleProperty("skipiSelfUpdate").orNull?.toBooleanStrict() ?: true
+
 android {
     namespace = "app"
     compileSdk = ProjectConfig.TARGET_SDK
@@ -40,6 +44,7 @@ android {
         targetSdk = ProjectConfig.TARGET_SDK
         versionCode = getGitVersionCode()
         versionName = ProjectConfig.VERSION_NAME
+        buildConfigField("boolean", "SELF_UPDATE", skipiSelfUpdate.toString())
     }
 
     // Miuix navigation inlines JVM 21 bytecode into the app, as the shared modules already target it.
@@ -72,6 +77,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     splits {
@@ -192,6 +198,9 @@ androidComponents {
     }
 
     onVariants { variant ->
+        if (!skipiSelfUpdate) {
+            variant.sources.manifests.addStaticManifestFile("src/noSelfUpdate/AndroidManifest.xml")
+        }
         variant.sources.assets?.addStaticSourceDirectory("build/generated/sharedBundledAssets")
         variant.sources.res?.addStaticSourceDirectory("build/generated/sharedRes")
     }

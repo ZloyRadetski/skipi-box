@@ -65,6 +65,12 @@ internal class AppUpdateScheduleGateway(
         )
     }
 
+    /** Drops every check and download a build with self-update may have queued. */
+    fun cancelAll() {
+        listOf(AppUpdatePeriodicWorkName, AppUpdateAutomaticWorkName, AppUpdateManualWorkName, AppUpdateDownloadWorkName)
+            .forEach(workManager::cancelUniqueWork)
+    }
+
     private fun checkConstraints(): Constraints {
         return Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

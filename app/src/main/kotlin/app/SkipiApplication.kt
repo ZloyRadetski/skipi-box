@@ -94,8 +94,6 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 retentionDays = { stateStore.state.value.logRetentionDays },
             )
         }
-        features.updater.AppUpdateNotifier.createChannel(applicationContext)
-        appUpdateDownloadCoordinator.restorePendingDownload()
         networkAutomationMonitor.start()
         proxyWidgetRuntime.start()
         appScope.launch {
@@ -162,30 +160,10 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     }
                 }
         }
-        val cachedUpdate = stateStore.state.value.availableAppUpdate
-        if (cachedUpdate != null && !features.updater.AppReleaseVersions.isVersionNewer(
-                currentVersionName = ProjectInfo.VERSION_NAME,
-                currentVersionCode = ProjectInfo.VERSION_CODE,
-                remoteVersionName = cachedUpdate.versionName,
-                remoteVersionCode = cachedUpdate.versionCode,
-            )
-        ) {
-            stateStore.update { it.updatingAppUpdate { cleared() } }
-        }
-        appScope.launch {
-            stateStore.state
-                .map { it.autoCheckAppUpdates to it.appUpdateChannel }
-                .distinctUntilChanged()
-                .collect { (autoCheck, channel) ->
-                    appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck)
-                    if (autoCheck) {
-                        // Application may be created by a tile, receiver or
-                        // widget. Queue at most one TTL-gated WorkManager job;
-                        // never perform a network request on every process
-                        // start.
-                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue(channel)
-                    }
-                }
+        if (features.updater.SelfUpdateEnabled) {
+            startSelfUpdate()
+        } else {
+            features.updater.runtime.retireSelfUpdate(stateStore, appUpdateScheduleGateway::cancelAll)
         }
         appScope.launch {
             stateStore.state
@@ -209,6 +187,36 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     val currentState = stateStore.state.value
                     features.subscription.notification.SubscriptionExpiryNotifier.checkAndNotify(applicationContext, currentState)
                     features.subscription.notification.SubscriptionExpiryScheduler.schedule(applicationContext, currentState)
+                }
+        }
+    }
+
+    private fun startSelfUpdate() {
+        features.updater.AppUpdateNotifier.createChannel(applicationContext)
+        appUpdateDownloadCoordinator.restorePendingDownload()
+        val cachedUpdate = stateStore.state.value.availableAppUpdate
+        if (cachedUpdate != null && !features.updater.AppReleaseVersions.isVersionNewer(
+                currentVersionName = ProjectInfo.VERSION_NAME,
+                currentVersionCode = ProjectInfo.VERSION_CODE,
+                remoteVersionName = cachedUpdate.versionName,
+                remoteVersionCode = cachedUpdate.versionCode,
+            )
+        ) {
+            stateStore.update { it.updatingAppUpdate { cleared() } }
+        }
+        appScope.launch {
+            stateStore.state
+                .map { it.autoCheckAppUpdates to it.appUpdateChannel }
+                .distinctUntilChanged()
+                .collect { (autoCheck, channel) ->
+                    appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck)
+                    if (autoCheck) {
+                        // Application may be created by a tile, receiver or
+                        // widget. Queue at most one TTL-gated WorkManager job;
+                        // never perform a network request on every process
+                        // start.
+                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue(channel)
+                    }
                 }
         }
     }

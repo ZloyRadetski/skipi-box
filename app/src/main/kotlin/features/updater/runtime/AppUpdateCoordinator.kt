@@ -19,6 +19,7 @@ import features.updater.AppUpdateRestoreAction
 import features.updater.AppUpdateInfo
 import features.updater.isSameReleaseAs
 import features.updater.AppUpdateNotifier
+import features.updater.SelfUpdateEnabled
 import features.updater.UpdateCheckResult
 import features.updater.GitHubReleaseChecker
 import kotlinx.coroutines.sync.Mutex
@@ -39,6 +40,7 @@ internal sealed interface AppUpdateCheckOutcome {
 internal class AppUpdateCheckCoordinator(
     context: Context,
     private val stateStore: AppStateStore,
+    private val enabled: Boolean = SelfUpdateEnabled,
 ) {
     private val appContext = context.applicationContext
     private val checkMutex = Mutex()
@@ -54,6 +56,7 @@ internal class AppUpdateCheckCoordinator(
     }
 
     suspend fun checkLatestRelease(): AppUpdateCheckOutcome = checkMutex.withLock {
+        if (!enabled) return@withLock AppUpdateCheckOutcome.UpToDate
         val channel = stateStore.currentState.appUpdateChannel
         val checkStore = AppUpdateCheckStore(appContext, channel)
         val checker = GitHubReleaseChecker(appContext)
@@ -100,11 +103,13 @@ internal class AppUpdateCheckCoordinator(
 internal class AppUpdateDownloadCoordinator(
     context: Context,
     private val stateStore: AppStateStore,
+    private val enabled: Boolean = SelfUpdateEnabled,
 ) {
     private val appContext = context.applicationContext
-    private val workManager = WorkManager.getInstance(appContext)
+    private val workManager by lazy { WorkManager.getInstance(appContext) }
 
     fun enqueue(update: AppUpdateInfo, automatic: Boolean) {
+        if (!enabled) return
         if (!stateStore.currentState.appUpdateState().needsDownloadWork(update, automatic)) return
 
         stateStore.update { state -> state.updatingAppUpdate { withQueuedDownload(update, automatic) } }
@@ -113,6 +118,7 @@ internal class AppUpdateDownloadCoordinator(
 
     /** Reattaches WorkManager to a persisted transfer after process recreation. */
     fun restorePendingDownload() {
+        if (!enabled) return
         val state = stateStore.currentState
         val update = state.availableAppUpdate ?: return
         val updateState = state.appUpdateState()

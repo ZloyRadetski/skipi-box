@@ -17,6 +17,9 @@ import app.ProjectInfo
 import app.collectAppState
 import app.modes.RunModeVpnService
 import app.navigation.Route
+import app.skipi.ui.settings.AboutSettingsCapabilities
+import app.skipi.ui.settings.search.SettingsSearchHost
+import features.updater.SelfUpdateEnabled
 import app.skipi.ui.settings.SkipiSettingsDestination
 import app.skipi.ui.settings.SkipiSettingsHomeScreen
 import app.skipi.ui.settings.SkipiSettingsHomeState
@@ -45,6 +48,7 @@ fun SettingsPage(
             localProxyPort = appState.localProxyPort,
             coreLogLevel = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
             categoryIconGlyphColor = app.skipi.ui.theme.customColorIfEnabled(appState.customCategoryIconGlyphColor, appState.enableCustomColors)?.let(::Color),
+            searchHost = SettingsSearchHost(about = AboutSettingsCapabilities(updates = SelfUpdateEnabled)),
         ),
         padding = padding,
         isWideScreen = LocalIsWideScreen.current,

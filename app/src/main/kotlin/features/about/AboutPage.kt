@@ -12,12 +12,14 @@ import app.ProjectInfo
 import app.navigation.Route
 import app.skipi.core.skipicore.Skipicore
 import app.skipi.ui.settings.AboutRuntimeInfo
+import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.SkipiBugReportUri
 import app.skipi.ui.settings.SkipiCoreSourceUri
 import app.skipi.ui.settings.SkipiSourceUri
 import app.skipi.ui.settings.SkipiTelegramChannelUri
 import app.skipi.ui.settings.rememberAboutSettingsLabels
 import app.skipi.ui.settings.SkipiAboutScreen
+import features.updater.SelfUpdateEnabled
 
 @Composable
 fun AboutPage(
@@ -47,5 +49,6 @@ fun AboutPage(
         onOpenBugReport = { uriHandler.openUri(SkipiBugReportUri) },
         onOpenSource = { uriHandler.openUri(SkipiSourceUri) },
         updatesContent = { AboutUpdatesCard() },
+        capabilities = AboutSettingsCapabilities(updates = SelfUpdateEnabled),
     )
 }

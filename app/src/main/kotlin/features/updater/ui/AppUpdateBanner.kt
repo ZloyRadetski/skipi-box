@@ -13,6 +13,7 @@ import app.LocalUpdateAppState
 import app.collectAppState
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.updater.AppUpdateInstaller
+import features.updater.SelfUpdateEnabled
 import features.updater.bannerModel
 import features.updater.runtime.appUpdateState
 import features.updater.runtime.updatingAppUpdate
@@ -23,6 +24,7 @@ import java.io.File
 fun AppUpdateBanner(
     modifier: Modifier = Modifier,
 ) {
+    if (!SelfUpdateEnabled) return
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
     val banner = appState.appUpdateState().bannerModel() ?: return
