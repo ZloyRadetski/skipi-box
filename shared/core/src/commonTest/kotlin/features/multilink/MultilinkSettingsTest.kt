@@ -109,4 +109,24 @@ class MultilinkSettingsTest {
     fun unreadableStatusIsOff() {
         assertEquals(MultilinkStatus(), parseMultilinkStatus("not json"))
     }
+
+    @Test
+    fun storedSettingsReadBackAndAnythingUnreadableIsOff() {
+        val settings = MultilinkSettings(enabled = true).withLimit("mobile", 5.0).withLinkUsed("wifi", used = false)
+        assertEquals(settings, decodeMultilinkSettings(encodeMultilinkSettings(settings)))
+        assertEquals(MultilinkSettings(), decodeMultilinkSettings(null))
+        assertEquals(MultilinkSettings(), decodeMultilinkSettings("not json"))
+    }
+
+    @Test
+    fun linksReportedByAndroidCarryTheirNetworkHandle() {
+        val json = listOf(
+            MultilinkHostLink(id = "wifi", name = "Wi-Fi", kind = MultilinkLinkKind.WiFi, ipv4 = "192.0.2.10", handle = 11),
+            MultilinkHostLink(id = "mobile", name = "Mobile data", kind = MultilinkLinkKind.Mobile, ipv6 = "2001:db8::7", handle = 12, phone = true),
+        ).toCoreLinksJson()
+        val parsed = Json.parseToJsonElement(json) as kotlinx.serialization.json.JsonArray
+        val mobile = parsed[1] as JsonObject
+        assertEquals("mobile", (mobile["kind"] as kotlinx.serialization.json.JsonPrimitive).content)
+        assertEquals("12", (mobile["handle"] as kotlinx.serialization.json.JsonPrimitive).content)
+    }
 }

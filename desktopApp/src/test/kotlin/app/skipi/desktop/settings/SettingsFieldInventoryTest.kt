@@ -197,6 +197,8 @@ class SettingsFieldInventoryTest {
 
     /** On both clients, but PersistedSettings has no section for them yet: the routing rule counter, which waits for the routing stage. */
     private val onBothClientsNotYetShared = setOf(
+        // Link merging: the settings are one type, each client keeps them in its own store.
+        "multilink",
         "nextRouteRuleId",
     )
 
@@ -262,8 +264,6 @@ class SettingsFieldInventoryTest {
         "homeLeftColumnExtraDp",
         "installationUuid",
         "launchOnLogin",
-        // Link merging: Core spreads its connections over this machine's network adapters.
-        "multilink",
         "routeDomainStrategy",
         "routeRules",
         "sidebarCollapsed",

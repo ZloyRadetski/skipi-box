@@ -1693,6 +1693,7 @@
     <string name="multilink_kind_wifi">Wi-Fi</string>
     <string name="multilink_kind_ethernet">Ethernet</string>
     <string name="multilink_kind_phone">Phone</string>
+    <string name="multilink_kind_mobile">Mobile data</string>
     <string name="multilink_kind_other">Network</string>
     <string name="multilink_state_up">online</string>
     <string name="multilink_state_checking">checking</string>

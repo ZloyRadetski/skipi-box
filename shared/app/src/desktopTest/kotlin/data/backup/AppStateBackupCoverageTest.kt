@@ -55,6 +55,8 @@ class AppStateBackupCoverageTest {
     private val deviceBound = setOf(
         "autoConnectOnAppOpen",
         "autoConnectOnBoot",
+        // Link merging names this device's adapters and networks: limits and exclusions mean nothing elsewhere.
+        "multilink",
         "runMode",
     )
 

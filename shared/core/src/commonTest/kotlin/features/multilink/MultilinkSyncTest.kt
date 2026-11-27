@@ -1,18 +1,13 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package app.skipi.desktop
+package features.multilink
 
-import features.multilink.MultilinkSettings
-import features.multilink.MultilinkStatus
-import java.nio.file.Files
-import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class DesktopMultilinkTest {
+class MultilinkSyncTest {
     private class FakeCore(
         var failWith: Throwable? = null,
         var status: String = """{"enabled":true,"merging":true,"links":[{"id":"{eth}","name":"Ethernet 2"}]}""",
@@ -32,32 +27,9 @@ class DesktopMultilinkTest {
         }
     }
 
-    private fun multilink(core: FakeCore) = DesktopMultilink(apply = core::apply, readStatus = core::readStatus)
+    private fun multilink(core: FakeCore) = MultilinkSync(apply = core::apply, readStatus = core::readStatus)
 
     private val on = MultilinkSettings(enabled = true)
-
-    @Test
-    fun settingsStartOffAndOlderFilesLoadAsOff() {
-        assertEquals(MultilinkSettings(), DesktopAppSettings().multilink)
-        val file = Files.createTempFile("skipi-settings", ".json")
-        try {
-            file.writeText("""{"enableTunMode":true}""")
-            val loaded = DesktopSettingsLibraries.load(file).getOrThrow()
-            assertEquals(MultilinkSettings(), loaded.multilink)
-            DesktopSettingsLibraries.save(file, loaded.copy(multilink = on.withLimit("{eth}", 5.0))).getOrThrow()
-            assertEquals(on.withLimit("{eth}", 5.0), DesktopSettingsLibraries.load(file).getOrThrow().multilink)
-        } finally {
-            Files.deleteIfExists(file)
-        }
-    }
-
-    /** Merging is switched in Core while the tunnel runs; nothing of the tunnel is rebuilt for it. */
-    @Test
-    fun changingLinkMergingNeverReconnects() {
-        val base = DesktopAppSettings()
-        val changed = base.copy(multilink = on.withLinkUsed("{wifi}", used = false).withLimit("{eth}", 10.0))
-        assertFalse(desktopSettingsNeedReconnect(base, changed))
-    }
 
     @Test
     fun appliesOnlyWhatChanged() {

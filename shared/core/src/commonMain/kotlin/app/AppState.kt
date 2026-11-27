@@ -184,6 +184,8 @@ data class AppState(
     val coreLogLevel: Int = 3,
     val enableAccessLog: Boolean = false,
     val logRetentionDays: Int = 7,
+    /** Link merging: Core spreads its connections over the networks the phone is connected to. */
+    val multilink: features.multilink.MultilinkSettings = features.multilink.MultilinkSettings(),
     val resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
     val customResourceFileGeoIpUrl: String = ResourceFileLoyalsoldierGeoIpUrl,
     val customResourceFileGeoSiteUrl: String = ResourceFileLoyalsoldierGeoSiteUrl,

@@ -38,6 +38,9 @@ sealed interface Route : NavKey {
     data object SettingsLogs : Route
 
     @Serializable
+    data object SettingsMultilink : Route
+
+    @Serializable
     data object SettingsBackupReset : Route
 
     @Serializable

@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import features.multilink.MultilinkSettings
+import features.multilink.MultilinkSync
 import features.multilink.parseMultilinkStatus
 import java.nio.file.Path
 import kotlin.test.Test
@@ -18,7 +19,7 @@ class DesktopMultilinkRealCoreTest {
         val runtime = DesktopCoreRuntimes.fromDirectory(Path.of(directory)).getOrThrow()
         val controller = DesktopCoreController(runtimeProvider = { Result.success(runtime) })
         try {
-            val multilink = DesktopMultilink(apply = controller::applyMultilink, readStatus = controller::multilinkStatus)
+            val multilink = MultilinkSync(apply = controller::applyMultilink, readStatus = controller::multilinkStatus)
             multilink.sync(MultilinkSettings(enabled = true), tunnelRunning = true).getOrThrow()
             val on = multilink.status()
             assertTrue(on.enabled, "Core does not report merging on")

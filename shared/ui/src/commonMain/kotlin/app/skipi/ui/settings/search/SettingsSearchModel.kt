@@ -33,7 +33,7 @@ enum class SettingsSearchPage {
 
 /** What a host can show, described with the capabilities its pages already receive. The defaults are Android's. */
 data class SettingsSearchHost(
-    val pages: Set<SettingsSearchPage> = SettingsSearchPage.entries.toSet() - SettingsSearchPage.Multilink,
+    val pages: Set<SettingsSearchPage> = SettingsSearchPage.entries.toSet(),
     val appearance: AppearanceSettingsCapabilities = AppearanceSettingsCapabilities(),
     val vpn: VpnSettingsCapabilities = VpnSettingsCapabilities(),
     val localProxy: LocalProxySettingsCapabilities = LocalProxySettingsCapabilities(),

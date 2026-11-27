@@ -307,6 +307,7 @@ internal class AppSettingsPreferences(
             coreLogLevel = preferences.getInt(KeyCoreLogLevel, defaults.coreLogLevel),
             enableAccessLog = preferences.getBoolean(KeyEnableAccessLog, defaults.enableAccessLog),
             logRetentionDays = preferences.getInt(KeyLogRetentionDays, defaults.logRetentionDays),
+            multilink = features.multilink.decodeMultilinkSettings(preferences.getString(KeyMultilink, null)),
             resourceFileSource = preferences.getInt(KeyResourceFileSource, defaults.resourceFileSource),
             customResourceFileGeoIpUrl = preferences.getString(
                 KeyCustomResourceFileGeoIpUrl,
@@ -590,6 +591,7 @@ internal class AppSettingsPreferences(
             .putInt(KeyCoreLogLevel, state.coreLogLevel)
             .putBoolean(KeyEnableAccessLog, state.enableAccessLog)
             .putInt(KeyLogRetentionDays, state.logRetentionDays)
+            .putString(KeyMultilink, features.multilink.encodeMultilinkSettings(state.multilink))
             .putInt(KeyResourceFileSource, state.resourceFileSource)
             .putString(KeyCustomResourceFileGeoIpUrl, state.customResourceFileGeoIpUrl)
             .putString(KeyCustomResourceFileGeoSiteUrl, state.customResourceFileGeoSiteUrl)
@@ -1045,6 +1047,7 @@ private const val KeyNextRouteRuleId = "next_route_rule_id"
 private const val KeyCoreLogLevel = "core_log_level"
 private const val KeyEnableAccessLog = "enable_access_log"
 private const val KeyLogRetentionDays = "log_retention_days"
+private const val KeyMultilink = "multilink"
 private const val KeyResourceFileSource = "resource_file_source"
 private const val KeyCustomResourceFileGeoIpUrl = "custom_resource_file_geoip_url"
 private const val KeyCustomResourceFileGeoSiteUrl = "custom_resource_file_geosite_url"

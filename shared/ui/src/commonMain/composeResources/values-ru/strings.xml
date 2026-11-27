@@ -1683,6 +1683,7 @@
     <string name="multilink_kind_wifi">Wi-Fi</string>
     <string name="multilink_kind_ethernet">Ethernet</string>
     <string name="multilink_kind_phone">Телефон</string>
+    <string name="multilink_kind_mobile">Мобильный интернет</string>
     <string name="multilink_kind_other">Сеть</string>
     <string name="multilink_state_up">работает</string>
     <string name="multilink_state_checking">проверка</string>

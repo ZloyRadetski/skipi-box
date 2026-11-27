@@ -31,9 +31,9 @@ class DesktopWindowChromeTest {
     }
 
     @Test
-    fun theMinimumWindowIsAboutAPhoneAndFitsInsideTheStartingWindow() {
-        assertTrue(DesktopMinimumWindowWidth in 320..420, "phone-like width, got $DesktopMinimumWindowWidth")
-        assertTrue(DesktopMinimumWindowHeight in 560..720, "phone-like height, got $DesktopMinimumWindowHeight")
+    fun theMinimumWindowIsTheCheckedNarrowSizeAndFitsInsideTheStartingWindow() {
+        assertEquals(625, DesktopMinimumWindowWidth)
+        assertEquals(922, DesktopMinimumWindowHeight)
         assertTrue(DesktopMinimumWindowWidth < DesktopInitialWindowWidth)
         assertTrue(DesktopMinimumWindowHeight < DesktopInitialWindowHeight)
     }

@@ -49,8 +49,7 @@ class SettingsSearchCatalogTest {
     @Test
     fun everyPageIsFoundOnAndroid() {
         val pages = settingsSearchEntries(android).filter { it.isPage }.map { it.page }
-        // Link merging is the one Desktop-only page.
-        assertEquals(SettingsSearchPage.entries.toSet() - SettingsSearchPage.Multilink, pages.toSet())
+        assertEquals(SettingsSearchPage.entries.toSet(), pages.toSet())
         assertEquals(pages.size, pages.toSet().size)
     }
 
@@ -134,11 +133,11 @@ class SettingsSearchCatalogTest {
 
 class SettingsSearchMultilinkTest {
     @Test
-    fun linkMergingIsFoundOnDesktopOnly() {
-        val desktop = settingsSearchEntries(SettingsSearchHost(pages = SettingsSearchPage.entries.toSet()))
-        val android = settingsSearchEntries(SettingsSearchHost())
-        assertTrue(desktop.any { it.page == SettingsSearchPage.Multilink && it.isPage })
-        assertTrue(desktop.any { it.id == "multilink_enabled" })
-        assertFalse(android.any { it.page == SettingsSearchPage.Multilink })
+    fun linkMergingIsFoundOnEveryHostThatListsItsPage() {
+        val listed = settingsSearchEntries(SettingsSearchHost())
+        val unlisted = settingsSearchEntries(SettingsSearchHost(pages = SettingsSearchPage.entries.toSet() - SettingsSearchPage.Multilink))
+        assertTrue(listed.any { it.page == SettingsSearchPage.Multilink && it.isPage })
+        assertTrue(listed.any { it.id == "multilink_enabled" })
+        assertFalse(unlisted.any { it.page == SettingsSearchPage.Multilink })
     }
 }

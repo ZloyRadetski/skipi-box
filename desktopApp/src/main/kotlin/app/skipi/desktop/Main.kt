@@ -6,6 +6,8 @@
 package app.skipi.desktop
 
 import features.multilink.MultilinkSettings
+import features.multilink.MultilinkSync
+import app.skipi.ui.settings.rememberMultilinkStatus
 import features.multilink.formatMbps
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -512,9 +514,9 @@ private fun runDesktopApplication(
                 val resourceFileStatusMessage by resourceFileFeedback.collectAsState()
                 LaunchedEffect(tunnel.coreState.isRunning) { backgroundConnected = tunnel.coreState.isRunning }
                 val desktopMultilink = remember(coreController) {
-                    DesktopMultilink(apply = coreController::applyMultilink, readStatus = coreController::multilinkStatus)
+                    MultilinkSync(apply = coreController::applyMultilink, readStatus = coreController::multilinkStatus)
                 }
-                val multilinkStatus by rememberDesktopMultilinkStatus(
+                val multilinkStatus by rememberMultilinkStatus(
                     multilink = desktopMultilink,
                     settings = desktopSettings.multilink,
                     tunnelRunning = tunnel.coreState.isRunning,

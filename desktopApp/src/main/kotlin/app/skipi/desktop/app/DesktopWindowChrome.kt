@@ -16,11 +16,11 @@ import java.lang.foreign.Linker
 import java.lang.foreign.SymbolLookup
 import java.lang.foreign.ValueLayout
 
-/** The window opens large but cannot be squeezed below about a phone, where the layout still reads. */
+/** The window opens large but cannot be squeezed below the narrow size the layout was checked at. */
 internal const val DesktopInitialWindowWidth = 1180
-internal const val DesktopInitialWindowHeight = 860
-internal const val DesktopMinimumWindowWidth = 360
-internal const val DesktopMinimumWindowHeight = 640
+internal const val DesktopInitialWindowHeight = 960
+internal const val DesktopMinimumWindowWidth = 625
+internal const val DesktopMinimumWindowHeight = 922
 
 /** Colors are `0x00BBGGRR` on Windows; alpha is dropped. */
 internal fun windowsColorRef(color: Color): Int {

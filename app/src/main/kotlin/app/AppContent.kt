@@ -86,6 +86,7 @@ import features.settings.SettingsAppearancePage
 import features.settings.SettingsBackupResetPage
 import features.settings.SettingsGeneralPage
 import features.settings.SettingsLogsPage
+import features.settings.SettingsMultilinkPage
 import features.settings.SettingsPage
 import features.settings.SettingsSubscriptionsPage
 import features.settings.SettingsVpnPage
@@ -239,6 +240,11 @@ fun AppContent(
             appEntry<Route.SettingsSubscriptions> {
                 key(languageMode) {
                     SettingsSubscriptionsPage(padding = padding)
+                }
+            }
+            appEntry<Route.SettingsMultilink> {
+                key(languageMode) {
+                    SettingsMultilinkPage(padding = padding)
                 }
             }
             appEntry<Route.SettingsLogs> {

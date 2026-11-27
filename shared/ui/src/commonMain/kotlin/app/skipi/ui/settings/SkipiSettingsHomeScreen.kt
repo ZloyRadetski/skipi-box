@@ -110,7 +110,7 @@ enum class SkipiSettingsDestination {
     Vpn,
     NetworkAutomation,
     LocalProxy,
-    /** Link merging; Desktop only. */
+    /** Link merging. */
     Multilink,
     Subscriptions,
     General,
@@ -131,7 +131,7 @@ data class SkipiSettingsHomeState(
     val categoryIconGlyphColor: Color? = null,
     val visibleDestinations: Set<SkipiSettingsDestination> =
         SkipiSettingsDestination.entries
-            .filter { it != SkipiSettingsDestination.NetworkAutomation && it != SkipiSettingsDestination.Multilink }
+            .filter { it != SkipiSettingsDestination.NetworkAutomation }
             .toSet(),
     /** What the settings search may offer; it also reaches pages the overview does not list. */
     val searchHost: SettingsSearchHost = SettingsSearchHost(),

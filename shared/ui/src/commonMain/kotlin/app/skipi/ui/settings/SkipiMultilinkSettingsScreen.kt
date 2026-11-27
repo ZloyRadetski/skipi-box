@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Cable
 import androidx.compose.material.icons.rounded.Lan
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.SignalCellularAlt
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Wifi
@@ -314,8 +315,10 @@ private fun MultilinkHeroCard(
                         fontWeight = FontWeight.SemiBold,
                         color = SkipiTheme.colors.onSurface,
                     )
-                    Spacer(Modifier.height(4.dp))
-                    PhasePill(overview)
+                    if (overview.phase != MultilinkPhase.Merging) {
+                        Spacer(Modifier.height(4.dp))
+                        PhasePill(overview)
+                    }
                 }
                 Switch(
                     checked = settings.enabled,
@@ -323,29 +326,27 @@ private fun MultilinkHeroCard(
                     enabled = overview.phase != MultilinkPhase.Unsupported,
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(Res.string.multilink_enabled_summary),
+                style = MiuixTheme.textStyles.body2,
+                color = SkipiTheme.colors.onSurfaceVariant,
+            )
             AnimatedVisibility(
                 visible = overview.phase == MultilinkPhase.Merging,
                 enter = fadeIn() + expandVertically(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
                 Column(Modifier.padding(top = SkipiTheme.spacing.medium)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.large)) {
-                        HeroFigure(stringResource(Res.string.multilink_download), formatMbps(overview.downMbps), Res.string.multilink_mbps)
-                        HeroFigure(stringResource(Res.string.multilink_upload), formatMbps(overview.upMbps), Res.string.multilink_mbps)
-                        HeroFigure(stringResource(Res.string.multilink_connections), overview.flows.toString(), null)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        HeroFigure(stringResource(Res.string.multilink_download), formatMbps(overview.downMbps), Res.string.multilink_mbps, Modifier.weight(1f))
+                        HeroFigure(stringResource(Res.string.multilink_upload), formatMbps(overview.upMbps), Res.string.multilink_mbps, Modifier.weight(1f))
+                        HeroFigure(stringResource(Res.string.multilink_connections), overview.flows.toString(), null, Modifier.weight(1f))
                     }
                     Spacer(Modifier.height(SkipiTheme.spacing.medium))
-                    ShareBar(overview, linkColors)
-                    Spacer(Modifier.height(10.dp))
-                    ShareLegend(overview, links, settings, linkColors)
+                    ShareRows(overview, links, settings, linkColors)
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = stringResource(Res.string.multilink_enabled_summary),
-                style = MiuixTheme.textStyles.body2,
-                color = SkipiTheme.colors.onSurfaceVariant,
-            )
         }
     }
 }
@@ -357,8 +358,7 @@ private fun PhasePill(overview: MultilinkOverview) {
         MultilinkPhase.Off -> stringResource(Res.string.multilink_phase_off) to SkipiTheme.colors.onSurfaceVariant
         MultilinkPhase.Waiting -> stringResource(Res.string.multilink_phase_waiting) to SkipiTheme.colors.warning
         MultilinkPhase.OneLink -> stringResource(Res.string.multilink_phase_one_link) to SkipiTheme.colors.warning
-        MultilinkPhase.Merging -> stringResource(Res.string.multilink_phase_merging)
-            .formatTemplate("count" to overview.usedLinks.toString()) to SkipiTheme.colors.success
+        MultilinkPhase.Merging -> return
     }
     val shown by animateColorAsState(color)
     Row(
@@ -368,73 +368,72 @@ private fun PhasePill(overview: MultilinkOverview) {
             .padding(horizontal = 10.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(shown))
-        Spacer(Modifier.width(6.dp))
         Text(text = text, style = MiuixTheme.textStyles.body2, fontWeight = FontWeight.Medium, color = shown, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
-private fun HeroFigure(label: String, value: String, unit: StringResource?) {
-    Column {
-        Text(text = label, style = MiuixTheme.textStyles.body2, color = SkipiTheme.colors.onSurfaceVariant)
+private fun HeroFigure(label: String, value: String, unit: StringResource?, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(SkipiTheme.colors.surfaceVariant.copy(alpha = 0.55f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Text(text = label, style = MiuixTheme.textStyles.body2, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(text = value, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = SkipiTheme.colors.onSurface)
+            Text(text = value, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = SkipiTheme.colors.onSurface, maxLines = 1)
             if (unit != null) {
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = stringResource(unit),
                     style = MiuixTheme.textStyles.body2,
                     color = SkipiTheme.colors.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp),
+                    maxLines = 1,
+                    modifier = Modifier.padding(bottom = 3.dp),
                 )
             }
         }
     }
 }
 
-/** One bar split by the links' parts of the traffic. */
+/** One row per link: its name and part of the traffic, over a bar in the link's color. */
 @Composable
-private fun ShareBar(overview: MultilinkOverview, linkColors: Map<String, Color>) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(10.dp)
-            .clip(RoundedCornerShape(50))
-            .background(SkipiTheme.colors.surfaceVariant),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        overview.shares.forEach { share ->
-            key(share.id) {
-                val weight by animateFloatAsState(share.fraction.toFloat().coerceAtLeast(0.02f))
-                Box(Modifier.weight(weight).fillMaxHeight().background(linkColors[share.id] ?: SkipiTheme.colors.accent))
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ShareLegend(
+private fun ShareRows(
     overview: MultilinkOverview,
     links: List<MultilinkLink>,
     settings: MultilinkSettings,
     linkColors: Map<String, Color>,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         overview.shares.forEach { share ->
             val link = links.firstOrNull { it.id == share.id } ?: return@forEach
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(linkColors[share.id] ?: SkipiTheme.colors.accent))
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "${settings.displayName(link.id, link.name)} · ${kotlin.math.round(share.fraction * 100).toInt()}%",
-                    style = MiuixTheme.textStyles.body2,
-                    color = SkipiTheme.colors.onSurfaceVariant,
-                )
+            key(share.id) {
+                val color = linkColors[share.id] ?: SkipiTheme.colors.accent
+                val fraction by animateFloatAsState(share.fraction.toFloat().coerceIn(0f, 1f))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = settings.displayName(link.id, link.name),
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = FontWeight.Medium,
+                            color = SkipiTheme.colors.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "${kotlin.math.round(share.fraction * 100).toInt()}%",
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SkipiTheme.colors.onSurface,
+                        )
+                    }
+                    Spacer(Modifier.height(5.dp))
+                    Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(SkipiTheme.colors.surfaceVariant)) {
+                        Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().clip(RoundedCornerShape(50)).background(color))
+                    }
+                }
             }
         }
     }
@@ -478,16 +477,18 @@ private fun MultilinkLinkRow(
             ) {
                 SkipiContentIcon(imageVector = link.kind.icon(), contentDescription = null, tint = color.brighter(), modifier = Modifier.size(22.dp))
             }
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(SkipiTheme.colors.surface)
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(link.stateColor()),
-            )
+            if (!used) {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(SkipiTheme.colors.surface)
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(link.stateColor()),
+                )
+            }
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f).alpha(dim)) {
@@ -581,6 +582,7 @@ private fun MultilinkLinkKind.label(): String = when (this) {
     MultilinkLinkKind.WiFi -> stringResource(Res.string.multilink_kind_wifi)
     MultilinkLinkKind.Ethernet -> stringResource(Res.string.multilink_kind_ethernet)
     MultilinkLinkKind.Phone -> stringResource(Res.string.multilink_kind_phone)
+    MultilinkLinkKind.Mobile -> stringResource(Res.string.multilink_kind_mobile)
     MultilinkLinkKind.Other -> stringResource(Res.string.multilink_kind_other)
 }
 
@@ -588,6 +590,7 @@ private fun MultilinkLinkKind.icon(): ImageVector = when (this) {
     MultilinkLinkKind.WiFi -> Icons.Rounded.Wifi
     MultilinkLinkKind.Ethernet -> Icons.Rounded.Cable
     MultilinkLinkKind.Phone -> Icons.Rounded.PhoneAndroid
+    MultilinkLinkKind.Mobile -> Icons.Rounded.SignalCellularAlt
     MultilinkLinkKind.Other -> Icons.Rounded.Lan
 }
 

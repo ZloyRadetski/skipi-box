@@ -66,6 +66,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -102,6 +103,7 @@ class SkipiVpnService : VpnService() {
     private var currentConfig: VpnServiceStartConfig? = null
     @Volatile
     private var networkHandoverCallback: ConnectivityManager.NetworkCallback? = null
+    private var multilink: AndroidMultilink? = null
     private var pendingNetworkHandover: PendingNetworkHandover? = null
     private val physicalNetworkHandoverTracker = PhysicalNetworkHandoverTracker<Network>()
     @Volatile
@@ -418,6 +420,17 @@ class SkipiVpnService : VpnService() {
         )
         registerNetworkHandoverCallback(config)
         startConnectionAccessLog(config)
+        startMultilink()
+    }
+
+    /** Link merging follows the saved settings for as long as this tunnel runs. */
+    private fun startMultilink() {
+        multilink?.stop()
+        multilink = AndroidMultilink(
+            context = applicationContext,
+            scope = serviceScope,
+            settings = stateStore.state.map { state -> state.multilink },
+        ).also(AndroidMultilink::start)
     }
 
     /** Feeds the Access logs page from Core's connection log while the tunnel runs. */
@@ -589,6 +602,8 @@ class SkipiVpnService : VpnService() {
     }
 
     private fun stopVpnBounded(notificationDisposition: ForegroundNotificationDisposition) {
+        multilink?.stop()
+        multilink = null
         unregisterNetworkHandoverCallback()
         NetworkHandoverRecoveryGate.clear()
         releaseWakeLock()
