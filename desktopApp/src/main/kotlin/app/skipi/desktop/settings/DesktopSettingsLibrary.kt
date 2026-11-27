@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.multilink.MultilinkSettings
 import features.subscription.DefaultSubscriptionUserAgents
 import features.subscription.normalizeSkipiUserAgents
 import features.networkautomation.model.NetworkAutomationRule
@@ -198,6 +199,11 @@ data class DesktopAppSettings(
     val autoCheckAppUpdates: Boolean = true,
     /** [AppUpdateChannel.id]; kept as text so a value this build does not know still loads (as Stable). */
     val appUpdateChannelId: String = AppUpdateChannel.Stable.id,
+    /**
+     * Link merging: Core spreads its connections over every network link. This machine's adapters are named by id,
+     * so it is not backed up.
+     */
+    val multilink: MultilinkSettings = MultilinkSettings(),
 ) {
     val appUpdateChannel: AppUpdateChannel get() = AppUpdateChannel.fromId(appUpdateChannelId)
 }

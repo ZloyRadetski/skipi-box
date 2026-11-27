@@ -5,6 +5,8 @@
 
 package app.skipi.desktop
 
+import features.multilink.MultilinkSettings
+import features.multilink.formatMbps
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import app.skipi.ui.resources.desktop_active_group_server_changed
@@ -126,6 +128,8 @@ import app.skipi.ui.resources.tray_disconnect
 import app.skipi.ui.resources.tray_exit
 import app.skipi.ui.resources.tray_tun_disable
 import app.skipi.ui.resources.tray_tun_enable
+import app.skipi.ui.resources.tray_multilink_disable
+import app.skipi.ui.resources.tray_multilink_enable
 import app.skipi.ui.resources.settings_tun_mode_unavailable
 import app.skipi.ui.resources.desktop_settings_admin_rights_failed
 import androidx.compose.material.icons.Icons
@@ -507,6 +511,15 @@ private fun runDesktopApplication(
                 val resourceFileFeedback = remember { MutableStateFlow("") }
                 val resourceFileStatusMessage by resourceFileFeedback.collectAsState()
                 LaunchedEffect(tunnel.coreState.isRunning) { backgroundConnected = tunnel.coreState.isRunning }
+                val desktopMultilink = remember(coreController) {
+                    DesktopMultilink(apply = coreController::applyMultilink, readStatus = coreController::multilinkStatus)
+                }
+                val multilinkStatus by rememberDesktopMultilinkStatus(
+                    multilink = desktopMultilink,
+                    settings = desktopSettings.multilink,
+                    tunnelRunning = tunnel.coreState.isRunning,
+                    onError = { error -> tunnel.coreMessage = error.message.orEmpty() },
+                )
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
                 val desktopCoreLogs = remember { DesktopCoreLogs() }
@@ -1472,6 +1485,33 @@ private fun runDesktopApplication(
                     SkipiNavigationAction(label = label, icon = Icons.Rounded.SettingsEthernet, onClick = desktopToggleTunMode)
                 }
                 LaunchedEffect(tunnel.coreState.isRunning) { connectionClock.update(tunnel.coreState.isRunning) }
+                // Link merging from the tray: the switch, and while it runs one entry per link. Core follows the saved setting.
+                val updateMultilink: ((MultilinkSettings) -> MultilinkSettings) -> Unit = { change ->
+                    subscriptionScope.launch {
+                        val updated = desktopSettings.copy(multilink = change(desktopSettings.multilink))
+                        desktopSettings = updated
+                        homeSortSaveMutex.withLock { withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) } }
+                    }
+                }
+                val multilinkToggleText = stringResource(
+                    if (desktopSettings.multilink.enabled) Res.string.tray_multilink_disable else Res.string.tray_multilink_enable,
+                )
+                val trayMultilink = DesktopTrayMultilink(
+                    toggleLabel = multilinkToggleText,
+                    onToggle = { updateMultilink { it.copy(enabled = !it.enabled) } },
+                    links = if (desktopSettings.multilink.enabled) {
+                        multilinkStatus.links.map { link ->
+                            val used = !link.excluded && link.id !in desktopSettings.multilink.excluded
+                            DesktopTrayLink(
+                                label = desktopSettings.multilink.displayName(link.id, link.name) + " · ↓ " + formatMbps(link.mbpsDown()),
+                                used = used,
+                                onToggle = { updateMultilink { it.withLinkUsed(link.id, !used) } },
+                            )
+                        }
+                    } else {
+                        emptyList()
+                    },
+                ).takeUnless { desktopMultilink.unsupported }
                 val trayConnectText = stringResource(Res.string.tray_connect)
                 val trayDisconnectText = stringResource(Res.string.tray_disconnect)
                 val trayExitText = stringResource(Res.string.tray_exit)
@@ -1484,6 +1524,7 @@ private fun runDesktopApplication(
                 }
                 DesktopTrayIcon(
                     connected = tunnel.coreState.isRunning,
+                    multilink = trayMultilink,
                     tooltip = desktopTrayTooltip(trayStatusText, trayServerName),
                     serverName = trayServerName,
                     toggleLabel = when (desktopTrayToggle(tunnel.coreState.isRunning)) {
@@ -2321,6 +2362,8 @@ private fun runDesktopApplication(
                             isTunnelRunning = tunnel.coreState.isRunning,
                             tunHost = desktopTunHost,
                             escapeHandler = escapeHandler,
+                            multilinkStatus = multilinkStatus,
+                            multilinkSupported = !desktopMultilink.unsupported,
                             onExitApplication = { tunnel.closeRequested = true },
                             onClearSystemProxy = {
                                 subscriptionScope.launch {

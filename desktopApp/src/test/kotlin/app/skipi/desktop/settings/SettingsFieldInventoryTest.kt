@@ -262,6 +262,8 @@ class SettingsFieldInventoryTest {
         "homeLeftColumnExtraDp",
         "installationUuid",
         "launchOnLogin",
+        // Link merging: Core spreads its connections over this machine's network adapters.
+        "multilink",
         "routeDomainStrategy",
         "routeRules",
         "sidebarCollapsed",

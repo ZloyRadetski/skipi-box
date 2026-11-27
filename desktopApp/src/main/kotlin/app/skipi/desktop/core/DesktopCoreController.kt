@@ -433,6 +433,17 @@ internal class DesktopCoreController(
      * Measures one TCP connect inside Core, so it follows Core's own sockets around the tunnel. Like
      * [measureOutboundDelay] it holds no controller lock and works whether or not the tunnel runs.
      */
+    /** Link merging lives in the loaded library, independent of any session. */
+    fun applyMultilink(settingsJson: String): Result<Unit> = runCatching {
+        val core = synchronized(this) { loadNative(runtimeProvider().getOrThrow()) }
+        core.applyMultilink(settingsJson)
+    }
+
+    fun multilinkStatus(): Result<String> = runCatching {
+        val core = synchronized(this) { loadNative(runtimeProvider().getOrThrow()) }
+        core.multilinkStatus()
+    }
+
     fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Result<Long> = runCatching {
         val core = synchronized(this) { loadNative(runtimeProvider().getOrThrow()) }
         core.measureTcpDelay(host, port, timeoutMillis)

@@ -114,6 +114,8 @@ data class AboutRuntimeInfo(
     val skipiCoreVersion: String,
     val xrayCoreVersion: String,
     val hevTunnelVersion: String,
+    /** Shown where SKIPI Core carries link merging, which started from net-merge (MIT). */
+    val showNetMerge: Boolean = false,
 )
 
 data class AboutSettingsCapabilities(
@@ -187,6 +189,9 @@ fun SkipiAboutScreen(
                         SettingsSearchAnchor("about_xray_core") { BasicComponent(title = "Xray-core", startAction = settingIcon(Icons.Rounded.Hub), summary = runtime.xrayCoreVersion) }
                         if (runtime.hevTunnelVersion.isNotBlank()) {
                             BasicComponent(title = "hev-socks5-tunnel", startAction = settingIcon(Icons.Rounded.Lan), summary = runtime.hevTunnelVersion)
+                        }
+                        if (runtime.showNetMerge) {
+                            BasicComponent(title = "net-merge", startAction = settingIcon(Icons.Rounded.Lan), summary = "Rohit Mahto · MIT License")
                         }
                     }
                 }

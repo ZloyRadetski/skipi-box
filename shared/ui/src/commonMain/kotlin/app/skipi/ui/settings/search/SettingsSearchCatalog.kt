@@ -17,6 +17,7 @@ fun settingsSearchEntries(host: SettingsSearchHost): List<SettingsSearchEntry> =
     vpn(host)
     networkAutomation(host)
     localProxy(host)
+    multilink(host)
     subscriptions(host)
     general(host)
     backupReset(host)
@@ -490,4 +491,22 @@ private fun MutableList<SettingsSearchEntry>.about(host: SettingsSearchHost) = p
         keywords = "bug report feedback issue ошибка баг отзыв сообщить", shown = can.bugReport)
     row("about_view_skipi_source", Res.string.about_view_skipi_source,
         keywords = "source code github исходный код", shown = can.source)
+}
+
+private fun MutableList<SettingsSearchEntry>.multilink(host: SettingsSearchHost) = page(
+    host,
+    SettingsSearchPage.Multilink,
+    title = Res.string.settings_category_multilink,
+    summary = Res.string.settings_category_multilink_summary,
+    section = Res.string.settings_header_network,
+    keywords = "multilink net-merge merge links bonding wifi ethernet phone tether speed объединение каналов два интернета " +
+        "вайфай модем телефон скорость",
+) {
+    row("multilink_enabled", Res.string.multilink_enabled, Res.string.multilink_enabled_summary,
+        keywords = "merge links объединять каналы")
+    row("multilink_phone_cooling", Res.string.multilink_phone_cooling, keywords = "phone hot cool телефон греется охлаждение")
+    row("multilink_cool_rate", Res.string.multilink_cool_rate, keywords = "phone speed телефон скорость",
+        parent = "multilink_phone_cooling")
+    row("multilink_probe_targets", Res.string.multilink_probe_targets, Res.string.multilink_probe_targets_help,
+        keywords = "probe check internet blocked проверка интернета адреса блокировка")
 }

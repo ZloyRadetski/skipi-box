@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.settings.MultilinkSettingsState
+import app.skipi.ui.settings.SkipiMultilinkSettingsScreen
+import features.multilink.MultilinkStatus
 import app.skipi.desktop.desktopVpnSettingsCapabilities
 import app.skipi.ui.settings.search.LocalSettingsSearchController
 import app.skipi.ui.settings.search.SettingsSearchHost
@@ -211,6 +214,7 @@ import app.modes.SubscriptionPingModeHttp
 internal enum class DesktopSettingsDestination {
     Overview, General, Appearance, Vpn, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
     NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
+    Multilink,
 }
 
 /** Where Desktop takes a tool of the navigation: a page of the settings, or the rules of the selected profile. */
@@ -248,6 +252,7 @@ internal fun SettingsSearchPage.desktopDestination(): DesktopSettingsDestination
     SettingsSearchPage.Vpn -> DesktopSettingsDestination.Vpn
     SettingsSearchPage.NetworkAutomation -> DesktopSettingsDestination.NetworkAutomation
     SettingsSearchPage.LocalProxy -> DesktopSettingsDestination.LocalProxy
+    SettingsSearchPage.Multilink -> DesktopSettingsDestination.Multilink
     SettingsSearchPage.Subscriptions -> DesktopSettingsDestination.Subscriptions
     SettingsSearchPage.SubscriptionPing -> DesktopSettingsDestination.SubscriptionPing
     SettingsSearchPage.General -> DesktopSettingsDestination.General
@@ -317,6 +322,9 @@ internal fun DesktopSettingsScreen(
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck = { DesktopAppUpdateCheck.Failed },
     onAppUpdateAction: () -> Unit = {},
     onClearSystemProxy: (() -> Unit)? = null,
+    /** Core's live view of the links for the link merging page. */
+    multilinkStatus: MultilinkStatus = MultilinkStatus(),
+    multilinkSupported: Boolean = true,
     onExitApplication: () -> Unit = {},
     modifier: Modifier = Modifier,
     /** The page the screen opens on; a pinned tool opens Settings straight on its page. */
@@ -600,6 +608,18 @@ internal fun DesktopSettingsScreen(
             onClear = coreLogs::clearAccess,
             onMessage = { message = it },
         )
+        DesktopSettingsDestination.Multilink -> SkipiMultilinkSettingsScreen(
+            state = MultilinkSettingsState(
+                settings = currentSettings.multilink,
+                status = multilinkStatus,
+                tunnelRunning = isTunnelRunning,
+                coreSupported = multilinkSupported,
+            ),
+            padding = contentPadding,
+            isWideScreen = true,
+            onBack = goBack,
+            onSettingsChange = { multilink -> persist(currentSettings.copy(multilink = multilink), "") },
+        )
         DesktopSettingsDestination.About -> DesktopAboutSettings(
             settings = currentSettings,
             appUpdateState = appUpdateState,
@@ -649,6 +669,7 @@ private fun DesktopSettingsOverview(
                 SkipiSettingsDestination.Vpn -> onNavigate(DesktopSettingsDestination.Vpn)
                 SkipiSettingsDestination.General -> onNavigate(DesktopSettingsDestination.General)
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
+                SkipiSettingsDestination.Multilink -> onNavigate(DesktopSettingsDestination.Multilink)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
                 SkipiSettingsDestination.NetworkAutomation -> onNavigate(DesktopSettingsDestination.NetworkAutomation)
                 SkipiSettingsDestination.BackupReset -> onNavigate(DesktopSettingsDestination.BackupReset)
@@ -1242,6 +1263,7 @@ private fun DesktopAboutSettings(
             skipiCoreVersion = ProjectInfo.SKIPI_CORE_VERSION,
             xrayCoreVersion = ProjectInfo.XRAY_CORE_VERSION,
             hevTunnelVersion = "",
+            showNetMerge = true,
         ),
         padding = contentPadding,
         isWideScreen = true,

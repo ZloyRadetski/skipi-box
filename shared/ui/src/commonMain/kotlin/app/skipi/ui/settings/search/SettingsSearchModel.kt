@@ -18,6 +18,8 @@ enum class SettingsSearchPage {
     Vpn,
     NetworkAutomation,
     LocalProxy,
+    /** Link merging; Desktop only. */
+    Multilink,
     Subscriptions,
     SubscriptionPing,
     General,
@@ -31,7 +33,7 @@ enum class SettingsSearchPage {
 
 /** What a host can show, described with the capabilities its pages already receive. The defaults are Android's. */
 data class SettingsSearchHost(
-    val pages: Set<SettingsSearchPage> = SettingsSearchPage.entries.toSet(),
+    val pages: Set<SettingsSearchPage> = SettingsSearchPage.entries.toSet() - SettingsSearchPage.Multilink,
     val appearance: AppearanceSettingsCapabilities = AppearanceSettingsCapabilities(),
     val vpn: VpnSettingsCapabilities = VpnSettingsCapabilities(),
     val localProxy: LocalProxySettingsCapabilities = LocalProxySettingsCapabilities(),

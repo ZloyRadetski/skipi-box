@@ -60,6 +60,14 @@ internal interface DesktopCoreNative : AutoCloseable {
         error("This SKIPI Core library cannot measure a TCP connect")
     }
 
+    /** Applies the link merging settings (Core's JSON); a library without link merging reports that it has none. */
+    fun applyMultilink(settingsJson: String) {
+        throw UnsupportedOperationException(NoMultilink)
+    }
+
+    /** The links and what link merging does with them, as JSON. */
+    fun multilinkStatus(): String = throw UnsupportedOperationException(NoMultilink)
+
     /** Switches the session's in-memory connection log; an older library reports that it has none. */
     fun setConnectionLogEnabled(handle: Long, enabled: Boolean) {
         error("This SKIPI Core library has no connection log")
@@ -205,6 +213,13 @@ internal class DesktopCoreFfmNative(
             "SkipiCoreDesktopMeasureOutboundDelay",
             FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
         )
+    }
+    // Looked up on first use: a library from before link merging lacks them, and the app reports that instead.
+    private val multilinkApplyFunction by lazy {
+        downcallOrNull("SkipiCoreDesktopMultilinkApply", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+    }
+    private val multilinkStatusFunction by lazy {
+        downcallOrNull("SkipiCoreDesktopMultilinkStatus", FunctionDescriptor.of(ValueLayout.ADDRESS))
     }
     private val measureTcpDelayFunction by lazy {
         downcall(
@@ -375,6 +390,18 @@ internal class DesktopCoreFfmNative(
             invokePointer(readConnectionLogFunction, handle, afterSeq)
         }
 
+    override fun applyMultilink(settingsJson: String) {
+        val function = multilinkApplyFunction ?: throw UnsupportedOperationException(NoMultilink)
+        withUtf8(settingsJson) { settings ->
+            errorResult("apply the link merging settings") { invokePointer(function, settings) }
+        }
+    }
+
+    override fun multilinkStatus(): String {
+        val function = multilinkStatusFunction ?: throw UnsupportedOperationException(NoMultilink)
+        return ownedString("read the link merging status") { invokePointer(function) }
+    }
+
     override fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Long =
         withUtf8(host) { target ->
             checkOpen()
@@ -484,6 +511,9 @@ internal class DesktopCoreFfmNative(
     private fun downcall(name: String, descriptor: FunctionDescriptor): MethodHandle =
         linker.downcallHandle(lookup.findOrThrow(name), descriptor)
 
+    private fun downcallOrNull(name: String, descriptor: FunctionDescriptor): MethodHandle? =
+        lookup.find(name).map { linker.downcallHandle(it, descriptor) }.orElse(null)
+
     private fun invoke(function: MethodHandle, vararg arguments: Any?): Any? {
         checkOpen()
         return try {
@@ -548,3 +578,4 @@ internal class DesktopCoreFfmNative(
         check(!closed) { "SKIPI Core native library is already closed" }
     }
 }
+internal const val NoMultilink = "This SKIPI Core library has no link merging"

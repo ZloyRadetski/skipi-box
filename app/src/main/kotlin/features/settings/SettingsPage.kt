@@ -58,6 +58,8 @@ fun SettingsPage(
                 SkipiSettingsDestination.Vpn -> Route.SettingsVpn
                 SkipiSettingsDestination.NetworkAutomation -> Route.SettingsNetworkAutomation
                 SkipiSettingsDestination.LocalProxy -> Route.LocalProxySettings
+                // Link merging is Desktop only; Android never lists it.
+                SkipiSettingsDestination.Multilink -> null
                 SkipiSettingsDestination.Subscriptions -> Route.SettingsSubscriptions
                 SkipiSettingsDestination.General -> Route.SettingsGeneral
                 SkipiSettingsDestination.BackupReset -> Route.SettingsBackupReset
@@ -67,17 +69,19 @@ fun SettingsPage(
                 SkipiSettingsDestination.Logs -> Route.SettingsLogs
                 SkipiSettingsDestination.About -> Route.About
             }
-            navigator.push(route)
+            route?.let(navigator::push)
         },
-        onOpenSearchResult = { page -> navigator.push(page.route()) },
+        onOpenSearchResult = { page -> page.route()?.let(navigator::push) },
     )
 }
 
-private fun SettingsSearchPage.route(): Route = when (this) {
+private fun SettingsSearchPage.route(): Route? = when (this) {
     SettingsSearchPage.Appearance -> Route.SettingsAppearance
     SettingsSearchPage.Vpn -> Route.SettingsVpn
     SettingsSearchPage.NetworkAutomation -> Route.SettingsNetworkAutomation
     SettingsSearchPage.LocalProxy -> Route.LocalProxySettings
+    // Link merging is Desktop only; the Android search never offers its page.
+    SettingsSearchPage.Multilink -> null
     SettingsSearchPage.Subscriptions -> Route.SettingsSubscriptions
     SettingsSearchPage.SubscriptionPing -> Route.SubscriptionPingSettings
     SettingsSearchPage.General -> Route.SettingsGeneral

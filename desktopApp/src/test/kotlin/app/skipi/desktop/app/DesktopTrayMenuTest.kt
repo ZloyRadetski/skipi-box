@@ -85,3 +85,33 @@ class DesktopTrayMenuTest {
         assertNotNull(desktopTrayScreenAt(listOf(left), x = 1919, y = 1039))
     }
 }
+
+class DesktopTrayMultilinkMenuTest {
+    @Test
+    fun linkMergingAddsItsSwitchAndOneCheckEntryPerLinkAboveExit() {
+        var toggled = 0
+        val usedWifi = mutableListOf<Boolean>()
+        val entries = desktopTrayMenuEntries(
+            null, "Disconnect", "Exit", {}, {},
+            multilink = DesktopTrayMultilink(
+                toggleLabel = "Stop merging links",
+                onToggle = { toggled++ },
+                links = listOf(
+                    DesktopTrayLink("Ethernet 2 · ↓ 12.3", used = true, onToggle = {}),
+                    DesktopTrayLink("Wi-Fi · ↓ 4", used = false, onToggle = { usedWifi += true }),
+                ),
+            ),
+        )
+        val labels = entries.map { (it as? DesktopTrayMenuEntry.Action)?.label ?: (it as? DesktopTrayMenuEntry.Info)?.label ?: "-" }
+        assertEquals(listOf("Disconnect", "-", "Stop merging links", "✓ Ethernet 2 · ↓ 12.3", "   Wi-Fi · ↓ 4", "-", "Exit"), labels)
+        (entries[2] as DesktopTrayMenuEntry.Action).onClick()
+        (entries[4] as DesktopTrayMenuEntry.Action).onClick()
+        assertEquals(1, toggled)
+        assertEquals(listOf(true), usedWifi)
+    }
+
+    @Test
+    fun withoutLinkMergingTheMenuIsUnchanged() {
+        assertEquals(3, desktopTrayMenuEntries(null, "Connect", "Exit", {}, {}, multilink = null).size)
+    }
+}

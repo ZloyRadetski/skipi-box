@@ -68,6 +68,8 @@ internal fun desktopTrayMenuEntries(
     /** The TUN mode switch; null when this host has no TUN mode. */
     tunLabel: String? = null,
     onToggleTun: () -> Unit = {},
+    /** Link merging's switch and its links; null where the host has none. */
+    multilink: DesktopTrayMultilink? = null,
 ): List<DesktopTrayMenuEntry> = buildList {
     if (!serverName.isNullOrBlank()) {
         add(DesktopTrayMenuEntry.Info(serverName))
@@ -75,9 +77,26 @@ internal fun desktopTrayMenuEntries(
     }
     add(DesktopTrayMenuEntry.Action(toggleLabel, onToggleTunnel))
     if (tunLabel != null) add(DesktopTrayMenuEntry.Action(tunLabel, onToggleTun))
+    if (multilink != null) {
+        add(DesktopTrayMenuEntry.Separator)
+        add(DesktopTrayMenuEntry.Action(multilink.toggleLabel, multilink.onToggle))
+        // The menu has no check boxes, so a mark in front of the name says whether the link takes connections.
+        multilink.links.forEach { link ->
+            add(DesktopTrayMenuEntry.Action((if (link.used) "✓ " else "   ") + link.label, link.onToggle))
+        }
+    }
     add(DesktopTrayMenuEntry.Separator)
     add(DesktopTrayMenuEntry.Action(exitLabel, onExit))
 }
+
+/** Link merging in the tray: the switch, and one entry per link that switches whether it is used. */
+internal data class DesktopTrayMultilink(
+    val toggleLabel: String,
+    val onToggle: () -> Unit,
+    val links: List<DesktopTrayLink> = emptyList(),
+)
+
+internal data class DesktopTrayLink(val label: String, val used: Boolean, val onToggle: () -> Unit)
 
 /** The tooltip: the app and its state, then the active server. */
 internal fun desktopTrayTooltip(status: String, serverName: String?): String =
@@ -159,6 +178,8 @@ internal fun ApplicationScope.DesktopTrayIcon(
     onToggleTunMode: () -> Unit,
     /** The active server's name, shown at the top of the menu; null when none is selected. */
     serverName: String?,
+    /** Link merging's entries; null hides them. */
+    multilink: DesktopTrayMultilink? = null,
     statusNotifier: DesktopStatusNotifier?,
     statusNotifierShown: Boolean,
     actions: DesktopTrayActions,
@@ -176,10 +197,21 @@ internal fun ApplicationScope.DesktopTrayIcon(
         val toggleTunnel by rememberUpdatedState(onToggleTunnel)
         val exit by rememberUpdatedState(onExit)
         val toggleTun by rememberUpdatedState(onToggleTunMode)
-        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel, tunLabel) {
+        val currentMultilink by rememberUpdatedState(multilink)
+        // Keyed on what the entries show: the actions are new lambdas on every composition.
+        val multilinkShown = multilink?.let { it.toggleLabel to it.links.map { link -> link.label to link.used } }
+        LaunchedEffect(statusNotifier, icons, tooltip, serverName, toggleLabel, exitLabel, tunLabel, multilinkShown) {
             val menu = desktopTrayMenuEntries(
                 serverName, toggleLabel, exitLabel, { toggleTunnel() }, { exit() },
                 tunLabel = tunLabel, onToggleTun = { toggleTun() },
+                multilink = currentMultilink?.let { shown ->
+                    shown.copy(
+                        onToggle = { currentMultilink?.onToggle?.invoke() },
+                        links = shown.links.mapIndexed { index, link ->
+                            link.copy(onToggle = { currentMultilink?.links?.getOrNull(index)?.onToggle?.invoke() })
+                        },
+                    )
+                },
             )
             withContext(Dispatchers.IO) {
                 statusNotifier.update(DesktopStatusNotifierState(tooltip, menu, icons))
@@ -217,7 +249,7 @@ internal fun ApplicationScope.DesktopTrayIcon(
     menuClick?.let { click ->
         val entries = desktopTrayMenuEntries(
             serverName, toggleLabel, exitLabel, onToggleTunnel, onExit,
-            tunLabel = tunLabel, onToggleTun = onToggleTunMode,
+            tunLabel = tunLabel, onToggleTun = onToggleTunMode, multilink = multilink,
         )
         key(click) {
             DesktopTrayMenuWindow(click, entries, theme, onDismiss = { menuClick = null })

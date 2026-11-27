@@ -52,6 +52,7 @@ import app.skipi.ui.navigation.OnNavigationReselect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Dns
@@ -83,6 +84,8 @@ import app.skipi.ui.resources.settings_category_ip_info
 import app.skipi.ui.resources.settings_category_ip_info_summary
 import app.skipi.ui.resources.settings_category_local_proxy
 import app.skipi.ui.resources.settings_category_local_proxy_summary
+import app.skipi.ui.resources.settings_category_multilink
+import app.skipi.ui.resources.settings_category_multilink_summary
 import app.skipi.ui.resources.settings_category_logs
 import app.skipi.ui.resources.settings_category_logs_summary
 import app.skipi.ui.resources.settings_category_subscriptions
@@ -107,6 +110,8 @@ enum class SkipiSettingsDestination {
     Vpn,
     NetworkAutomation,
     LocalProxy,
+    /** Link merging; Desktop only. */
+    Multilink,
     Subscriptions,
     General,
     BackupReset,
@@ -126,7 +131,7 @@ data class SkipiSettingsHomeState(
     val categoryIconGlyphColor: Color? = null,
     val visibleDestinations: Set<SkipiSettingsDestination> =
         SkipiSettingsDestination.entries
-            .filter { it != SkipiSettingsDestination.NetworkAutomation }
+            .filter { it != SkipiSettingsDestination.NetworkAutomation && it != SkipiSettingsDestination.Multilink }
             .toSet(),
     /** What the settings search may offer; it also reaches pages the overview does not list. */
     val searchHost: SettingsSearchHost = SettingsSearchHost(),
@@ -232,7 +237,7 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            if (!searching && (SkipiSettingsDestination.Vpn in visible || SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.NetworkAutomation in visible)) item(key = "section_network") {
+            if (!searching && (SkipiSettingsDestination.Vpn in visible || SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.Multilink in visible || SkipiSettingsDestination.NetworkAutomation in visible)) item(key = "section_network") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_network), Modifier.testTag("settings-home-section:network"))
                 SkipiSettingsCategoryGroupCard {
                     if (SkipiSettingsDestination.Vpn in visible) SettingsItem(
@@ -243,7 +248,7 @@ fun SkipiSettingsHomeScreen(
                         summary = stringResource(Res.string.settings_category_vpn_summary),
                         value = "MTU: ${state.tunMtu}",
                         onClick = { open(SkipiSettingsDestination.Vpn) },
-                        showDivider = SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.NetworkAutomation in visible,
+                        showDivider = SkipiSettingsDestination.LocalProxy in visible || SkipiSettingsDestination.Multilink in visible || SkipiSettingsDestination.NetworkAutomation in visible,
                     )
                     if (SkipiSettingsDestination.LocalProxy in visible) SettingsItem(
                         icon = Icons.Filled.Dns,
@@ -253,6 +258,15 @@ fun SkipiSettingsHomeScreen(
                         summary = stringResource(Res.string.settings_category_local_proxy_summary),
                         value = ":${state.localProxyPort}",
                         onClick = { open(SkipiSettingsDestination.LocalProxy) },
+                        showDivider = SkipiSettingsDestination.Multilink in visible || SkipiSettingsDestination.NetworkAutomation in visible,
+                    )
+                    if (SkipiSettingsDestination.Multilink in visible) SettingsItem(
+                        icon = Icons.Filled.Lan,
+                        iconBackgroundColor = categoryIconColor,
+                        iconColor = categoryIconGlyphColor,
+                        title = stringResource(Res.string.settings_category_multilink),
+                        summary = stringResource(Res.string.settings_category_multilink_summary),
+                        onClick = { open(SkipiSettingsDestination.Multilink) },
                         showDivider = SkipiSettingsDestination.NetworkAutomation in visible,
                     )
                     if (SkipiSettingsDestination.NetworkAutomation in visible) SettingsItem(
@@ -402,6 +416,7 @@ private val SettingsSearchPage.icon: ImageVector
         SettingsSearchPage.Appearance -> Icons.Filled.Palette
         SettingsSearchPage.Vpn, SettingsSearchPage.NetworkAutomation, SettingsSearchPage.DnsLeakTest -> Icons.Filled.Security
         SettingsSearchPage.LocalProxy -> Icons.Filled.Dns
+        SettingsSearchPage.Multilink -> Icons.Filled.Lan
         SettingsSearchPage.Subscriptions, SettingsSearchPage.SubscriptionPing -> Icons.Filled.Sync
         SettingsSearchPage.General -> Icons.Filled.Settings
         SettingsSearchPage.BackupReset -> Icons.Filled.Backup

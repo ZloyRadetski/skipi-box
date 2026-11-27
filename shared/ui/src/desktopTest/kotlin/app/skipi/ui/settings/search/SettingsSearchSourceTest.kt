@@ -21,7 +21,7 @@ class SettingsSearchSourceTest {
     }
 
     private val entries = settingsSearchEntries(SettingsSearchHost()) +
-        settingsSearchEntries(SettingsSearchHost(desktopVpnRows = true, systemProxy = true, desktopDiagnostics = true,
+        settingsSearchEntries(SettingsSearchHost(pages = SettingsSearchPage.entries.toSet(), desktopVpnRows = true, systemProxy = true, desktopDiagnostics = true,
             general = app.skipi.ui.settings.GeneralSettingsCapabilities.Desktop,
             appearance = app.skipi.ui.settings.AppearanceSettingsCapabilities(navigationStyle = true, connectionLog = true)))
 
@@ -44,7 +44,7 @@ class SettingsSearchSourceTest {
         // The overview's entries are the pages themselves.
         "settings_category_appearance", "settings_category_vpn", "settings_category_local_proxy",
         "settings_category_subscriptions", "settings_category_general", "settings_category_speed_test",
-        "settings_category_dns_leak", "settings_category_ip_info", "settings_category_logs",
+        "settings_category_dns_leak", "settings_category_ip_info", "settings_category_logs", "settings_category_multilink",
         "settings_about_project", "settings_title",
         // Titles of pages and of the groups on them.
         "about_title", "about_other", "about_runtime", "settings_updates_title", "settings_local_proxy",
