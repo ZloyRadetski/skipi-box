@@ -254,6 +254,22 @@ compose.desktop {
                 bundleID = "app.skipi.desktop"
                 dockName = ProjectConfig.PROJECT_NAME
                 packageVersion = macPackageVersion
+                // Windows and Linux are registered by the app at start; macOS reads the scheme from the bundle.
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                          <dict>
+                            <key>CFBundleURLName</key>
+                            <string>app.skipi.desktop</string>
+                            <key>CFBundleURLSchemes</key>
+                            <array>
+                              <string>skipi</string>
+                            </array>
+                          </dict>
+                        </array>
+                    """.trimIndent()
+                }
             }
         }
     }

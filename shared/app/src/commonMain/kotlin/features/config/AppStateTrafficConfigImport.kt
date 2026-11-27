@@ -25,24 +25,6 @@ fun AppState.withImportedTrafficConfig(
     fallbackName: String = "Config",
     sourceUrl: String = "",
 ): AppState {
-    // Happ/Incy providers embed routing as a JSON payload (optionally base64).
-    // Convert it to a regular profile so the normal import path can handle it.
-    val converted = content.toRoscomRoutingJsonOrNull()
-        ?.toRoscomRoutingShadowrocketConf(fallbackName)
-    return withImportedTrafficConfigDocument(
-        content = converted ?: content,
-        activate = activate,
-        fallbackName = fallbackName,
-        sourceUrl = sourceUrl,
-    )
-}
-
-private fun AppState.withImportedTrafficConfigDocument(
-    content: String,
-    activate: Boolean,
-    fallbackName: String,
-    sourceUrl: String,
-): AppState {
     val result = importTrafficConfigDocument(
         trafficConfigs = trafficConfigs,
         nextTrafficConfigId = nextTrafficConfigId,

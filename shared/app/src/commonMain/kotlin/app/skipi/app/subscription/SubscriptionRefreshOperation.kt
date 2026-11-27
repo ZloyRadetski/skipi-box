@@ -7,7 +7,8 @@ import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.proxy.ProxyServerRow
 import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
 import app.skipi.app.proxy.reconcileSubscriptionServerCollection
-import features.config.decodeSkipiPayload
+import features.config.isSingleHttpUrl
+import features.config.resolveSkipiConfigPayload
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportSource
@@ -198,21 +199,24 @@ private suspend fun resolveEmbeddedSubscriptionConfig(
     embedded: SubscriptionEmbeddedConfig,
     fetchResponse: suspend (String) -> SubscriptionFetchResponse,
 ): ResolvedEmbeddedSubscriptionConfig? {
-    val content = if (embedded.isUrl) {
+    // A link payload may hold the address percent-encoded or in Base64 rather than the document.
+    val inline = if (embedded.isUrl) null else embedded.payload.resolveSkipiConfigPayload()
+    val url = if (embedded.isUrl) embedded.payload.trim() else inline?.takeIf(String::isSingleHttpUrl)
+    val content = if (url != null) {
         try {
-            fetchResponse(embedded.payload).body
+            fetchResponse(url).body
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Throwable) {
             null
         }
     } else {
-        embedded.payload.decodeSkipiPayload() ?: embedded.payload.trim()
+        inline
     }
     return content?.takeIf(String::isNotBlank)?.let { resolved ->
         ResolvedEmbeddedSubscriptionConfig(
             content = resolved,
-            sourceUrl = if (embedded.isUrl) embedded.payload.trim() else "subscription://$subscriptionId",
+            sourceUrl = url ?: "subscription://$subscriptionId",
             fallbackName = fallbackName.ifBlank { "Subscription Config" },
             activate = embedded.activate,
         )

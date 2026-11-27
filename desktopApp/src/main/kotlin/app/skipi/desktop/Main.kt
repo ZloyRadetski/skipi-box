@@ -162,6 +162,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import features.config.SkipiDeepLink
+import androidx.compose.runtime.mutableStateListOf
+import app.skipi.ui.resources.external_import_confirm_accept
+import app.skipi.ui.resources.external_import_confirm_message
+import app.skipi.ui.resources.external_import_confirm_title
+import app.skipi.ui.resources.external_import_inline_content
+import app.skipi.ui.resources.skipi_import_failed
+import app.skipi.ui.resources.common_cancel
+import app.skipi.ui.resources.desktop_import_changed_server
+import features.config.confirmationTarget
+import features.config.redactSkipiLinkForLog
+import features.config.TrafficConfigResourceSettings
 import app.skipi.app.home.ConnectionClock
 import org.jetbrains.compose.resources.getString
 import app.skipi.ui.resources.notification_vpn_disconnect_failed
@@ -188,6 +199,9 @@ import app.skipi.app.model.SubscriptionRecord
 import features.resources.ResourceFileDownloadCancelledException
 import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
+
+/** A page that fires links in a loop gets no more dialogs than this. */
+private const val MaxPendingImportLinks = 8
 
 fun main(args: Array<String>) {
     // The renderer is read when the first window is made, so the user's choice goes in before anything else.
@@ -216,11 +230,13 @@ fun main(args: Array<String>) {
     val incomingLinks = Channel<String>(Channel.UNLIMITED)
     launch.links.forEach { link -> incomingLinks.trySend(link) }
     instance?.listen { link -> incomingLinks.trySend(link) }
+    listenForOpenedLinks { link -> incomingLinks.trySend(link) }
     instance?.let { channel -> Runtime.getRuntime().addShutdownHook(Thread { channel.close() }) }
     // Read once: the three start-up steps below share the same file read and the same elevation query.
     val startupSettings = DesktopSettingsLibraries.loadDefault().getOrNull()
     val elevated = if (isWindowsHost()) isWindowsElevated() else false
     if (relaunchElevatedForSavedTunMode(args.toList(), launch, startupSettings, elevated)) exitWithoutClassArchive()
+    registerUrlSchemeAtStart()
     moveAutostartToElevatedTask(startupSettings, elevated)
     healAutostartAtStart(startupSettings)
     runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks, initialSettings = startupSettings)
@@ -233,6 +249,16 @@ private fun healAutostartAtStart(settings: DesktopAppSettings?) {
     Thread {
         healAutostart(desktopAutostartFor(), launchOnLogin = true, launcher = launcher)
             .onFailure { error -> DesktopLogger.warn("Autostart", "The login entry could not be refreshed", error) }
+    }.apply { isDaemon = true }.start()
+}
+
+/** Run by the instance that stays up, off the start-up path: the system tools take a moment. */
+private fun registerUrlSchemeAtStart() {
+    val scheme = desktopUrlSchemeFor() ?: return
+    val launcher = resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null)).getOrNull() ?: return
+    Thread {
+        scheme.register(launcher)
+            .onFailure { error -> DesktopLogger.warn("Links", "skipi:// links could not be registered", error) }
     }.apply { isDaemon = true }.start()
 }
 
@@ -348,6 +374,9 @@ private fun runDesktopApplication(
     val trayAvailable = statusNotifierShown || androidx.compose.ui.window.isTraySupported
     // With the background choice the window, and the GPU and UI memory it holds, exists only while it is shown.
     var pendingThemeLink by remember { mutableStateOf<features.config.CustomThemeShare?>(null) }
+    // Links that add a subscription, server or config, shown one at a time until each is approved or declined.
+    val pendingImportLinks = remember { mutableStateListOf<SkipiDeepLink>() }
+    val approvedImportLinks = remember { Channel<SkipiDeepLink>(Channel.UNLIMITED) }
     var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground && trayAvailable)) }
     // A window hidden to the tray would be lost if the tray went away (the panel quit): bring it back.
     LaunchedEffect(trayAvailable) { if (!trayAvailable) windowShown = true }
@@ -1327,6 +1356,71 @@ private fun runDesktopApplication(
                     )
                 }
                 val desktopImportProxies: suspend (DesktopProxyImportInput) -> Result<String> = desktopProxyImportRunner::run
+                val desktopTransformConfigs: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary = { transform ->
+                    val result = desktopSharedApplication.trafficConfigs.transformLatestWithPrevious(transform)
+                    configLibrary = result.updated
+                    val proxyGroupInputsChanged =
+                        result.previous.configs != result.updated.configs ||
+                            result.previous.selectedConfigId != result.updated.selectedConfigId
+                    if (proxyGroupInputsChanged) {
+                        subscriptionScope.launch {
+                            try {
+                                configProxyGroupReconciler.reconcile()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Throwable) {
+                                serverLibraryMessage =
+                                    desktopText(Res.string.desktop_groups_sync_failed, error.message.orEmpty())
+                            }
+                        }
+                    }
+                    if (tunnel.coreState.isRunning && result.updated.activeProfileChangedFrom(result.previous)) {
+                        tunnel.requestReconnect(desktopText(Res.string.desktop_reason_active_profile_changed))
+                    }
+                    result.updated
+                }
+                val desktopLinkImporter = DesktopLinkImporter(
+                    installSubscription = desktopPrepareSubscription,
+                    servers = proxyServerRepository,
+                    fetchConfig = { url ->
+                        desktopTrafficConfigManualProfileFetcher.fetch(
+                            TrafficConfigState(
+                                id = 0,
+                                name = "",
+                                rawConfig = "",
+                                resourceSettings = TrafficConfigResourceSettings(userAgent = DefaultSubscriptionUserAgent),
+                            ),
+                            url,
+                        )
+                    },
+                    transformConfigs = { transform -> desktopTransformConfigs(transform) },
+                )
+                val currentLinkImporter by rememberUpdatedState(desktopLinkImporter)
+                LaunchedEffect(approvedImportLinks) {
+                    for (link in approvedImportLinks) {
+                        val selectedBefore = serverLibrary.selectedServerId
+                        val result = currentLinkImporter.import(link)
+                        val message = result.getOrElse { error ->
+                            listOf(getString(Res.string.skipi_import_failed), error.message.orEmpty())
+                                .filter(String::isNotBlank).joinToString(": ")
+                        }
+                        currentSection = if (link is SkipiDeepLink.TrafficConfig) {
+                            SkipiMainDestination.Configs
+                        } else {
+                            SkipiMainDestination.Proxy
+                        }
+                        serverLibraryMessage = message
+                        if (link is SkipiDeepLink.ManualServer && tunnel.coreState.isRunning &&
+                            serverLibrary.selectedServerId != selectedBefore
+                        ) {
+                            tunnel.requestReconnect(desktopText(Res.string.desktop_import_changed_server))
+                        }
+                        withContext(Dispatchers.IO) {
+                            coreController.nativeForTun().mapCatching { native -> native.notify("SKIPI", message) }
+                                .onFailure { error -> DesktopLogger.info("Links", "No notification shown: ${error.message}") }
+                        }
+                    }
+                }
                 val desktopToggleTunnel: () -> Unit = {
                     tunnel.toggle(
                         scope = subscriptionScope,
@@ -1427,7 +1521,7 @@ private fun runDesktopApplication(
                     for (raw in incomingLinks) {
                         val parsed = parseSkipiDeepLinkOrNull(raw)
                         if (parsed != null && !desktopLinkAllowed(parsed, desktopSettings.allowExternalControl)) {
-                            DesktopLogger.info("Links", "Ignored $raw: external control is off")
+                            DesktopLogger.info("Links", "Ignored ${redactSkipiLinkForLog(raw)}: external control is off")
                             val blocked = getString(Res.string.desktop_external_control_blocked)
                             withContext(Dispatchers.IO) {
                                 coreController.nativeForTun().mapCatching { native -> native.notify("SKIPI", blocked) }
@@ -1435,7 +1529,7 @@ private fun runDesktopApplication(
                             continue
                         }
                         when (val link = parsed) {
-                            null -> DesktopLogger.info("Links", "Ignored unknown link $raw")
+                            null -> DesktopLogger.info("Links", "Ignored unknown link ${redactSkipiLinkForLog(raw)}")
                             SkipiDeepLink.Open -> {
                                 windowShown = true
                                 windowState.isMinimized = false
@@ -1451,7 +1545,7 @@ private fun runDesktopApplication(
                             }
                             SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle -> {
                                 val command = desktopTunnelCommandFor(link, running = tunnel.desiredRunning)
-                                DesktopLogger.info("Links", "$raw -> $command")
+                                DesktopLogger.info("Links", "${redactSkipiLinkForLog(raw)} -> $command")
                                 if (command != DesktopTunnelCommand.None) {
                                     desktopToggleTunnel()
                                     delay(100)
@@ -1475,7 +1569,16 @@ private fun runDesktopApplication(
                                         .onFailure { error -> DesktopLogger.info("Links", "No notification shown: ${error.message}") }
                                 }
                             }
-                            else -> DesktopLogger.info("Links", "$raw is not handled on Desktop yet")
+                            is SkipiDeepLink.Subscription,
+                            is SkipiDeepLink.ManualServer,
+                            is SkipiDeepLink.TrafficConfig,
+                            -> {
+                                // Any web page can send this link: nothing is added until approved.
+                                if (pendingImportLinks.size < MaxPendingImportLinks) pendingImportLinks.add(link)
+                                windowShown = true
+                                windowState.isMinimized = false
+                                shownWindow?.toFront()
+                            }
                         }
                     }
                 }
@@ -1587,6 +1690,24 @@ private fun runDesktopApplication(
                             pendingThemeLink = null
                         },
                         onDismiss = { pendingThemeLink = null },
+                    )
+                }
+                pendingImportLinks.firstOrNull()?.let { incoming ->
+                    app.skipi.ui.components.WarningConfirmDialog(
+                        show = true,
+                        title = stringResource(Res.string.external_import_confirm_title),
+                        summary = stringResource(
+                            Res.string.external_import_confirm_message,
+                            incoming.confirmationTarget()
+                                .ifBlank { stringResource(Res.string.external_import_inline_content) },
+                        ),
+                        dismissText = stringResource(Res.string.common_cancel),
+                        confirmText = stringResource(Res.string.external_import_confirm_accept),
+                        onDismissRequest = { pendingImportLinks.remove(incoming) },
+                        onConfirm = {
+                            pendingImportLinks.remove(incoming)
+                            approvedImportLinks.trySend(incoming)
+                        },
                     )
                 }
                 DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
@@ -2149,29 +2270,7 @@ private fun runDesktopApplication(
                         SkipiMainDestination.Configs -> key(configsOpenCount) { DesktopConfigsScreen(
                             openRulesOfSelectedProfile = configsStartOnRules,
                             configLibrary = configLibrary,
-                            onTransformConfigLibrary = { transform ->
-                                val result = desktopSharedApplication.trafficConfigs.transformLatestWithPrevious(transform)
-                                configLibrary = result.updated
-                                val proxyGroupInputsChanged =
-                                    result.previous.configs != result.updated.configs ||
-                                        result.previous.selectedConfigId != result.updated.selectedConfigId
-                                if (proxyGroupInputsChanged) {
-                                    subscriptionScope.launch {
-                                        try {
-                                            configProxyGroupReconciler.reconcile()
-                                        } catch (cancelled: CancellationException) {
-                                            throw cancelled
-                                        } catch (error: Throwable) {
-                                            serverLibraryMessage =
-                                                desktopText(Res.string.desktop_groups_sync_failed, error.message.orEmpty())
-                                        }
-                                    }
-                                }
-                                if (tunnel.coreState.isRunning && result.updated.activeProfileChangedFrom(result.previous)) {
-                                    tunnel.requestReconnect(desktopText(Res.string.desktop_reason_active_profile_changed))
-                                }
-                                result.updated
-                            },
+                            onTransformConfigLibrary = desktopTransformConfigs,
                             fetchUserAgent = DefaultSubscriptionUserAgent,
                             fetchTimeoutSeconds = desktopSettings.subscriptionFetchTimeoutSeconds,
                             fetchProfileDocument = desktopTrafficConfigManualProfileFetcher::fetch,

@@ -79,8 +79,8 @@ private fun String.toSkipiTrafficConfigDeepLinkOrNull(): SkipiDeepLink.TrafficCo
         else -> return null
     }
     val payload = rawPayloadAfterSkipiPrefix(route.prefix) ?: return null
-    val decoded = payload.decodeSkipiPayload() ?: payload.trim()
-    val sourceUrl = decoded.takeIf(String::isHttpUrl).orEmpty()
+    val decoded = payload.resolveSkipiConfigPayload()
+    val sourceUrl = decoded.takeIf(String::isSingleHttpUrl).orEmpty()
     return SkipiDeepLink.TrafficConfig(
         content = decoded,
         activate = route.activate,

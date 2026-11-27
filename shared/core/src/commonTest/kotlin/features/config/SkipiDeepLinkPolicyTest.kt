@@ -28,12 +28,12 @@ class SkipiDeepLinkPolicyTest {
         assertEquals(DeepLinkGate.NeedsAutomationEnabled, SkipiDeepLink.Connect.gate())
         assertEquals(DeepLinkGate.NeedsAutomationEnabled, SkipiDeepLink.Disconnect.gate())
         assertEquals(DeepLinkGate.NeedsAutomationEnabled, SkipiDeepLink.Toggle.gate())
+        assertEquals(DeepLinkGate.NeedsAutomationEnabled, SkipiDeepLink.Close.gate())
     }
 
     @Test
-    fun openingAndClosingTheAppIsAlwaysAllowed() {
+    fun openingTheAppIsAlwaysAllowed() {
         assertEquals(DeepLinkGate.Allowed, SkipiDeepLink.Open.gate())
-        assertEquals(DeepLinkGate.Allowed, SkipiDeepLink.Close.gate())
     }
 
     @Test

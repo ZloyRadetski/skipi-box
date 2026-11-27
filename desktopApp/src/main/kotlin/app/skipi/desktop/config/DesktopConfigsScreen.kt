@@ -99,7 +99,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import features.config.ShadowrocketConfigDiagnosticSeverity
+import features.config.TrafficConfigImportInput
+import features.config.parseTrafficConfigImportInput
+import features.config.trafficConfigDocumentErrorOrNull
 import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import app.skipi.ui.config.SkipiTrafficConfigContextMenu
@@ -376,13 +378,13 @@ internal fun DesktopConfigsScreen(
         )
     }
 
-    fun importRawConfig(content: String, name: String, sourceUrl: String = "") {
+    fun importRawConfig(content: String, name: String, sourceUrl: String = "", activate: Boolean = false) {
         persist(
             transform = { latest ->
                 DesktopConfigLibraries.importDocument(
                     library = latest,
                     content = content,
-                    activate = false,
+                    activate = activate,
                     fallbackName = name,
                     sourceUrl = sourceUrl,
                 )
@@ -424,7 +426,7 @@ internal fun DesktopConfigsScreen(
         }
     }
 
-    fun importUrlFromClipboard(url: String) {
+    fun importUrlFromClipboard(url: String, activate: Boolean) {
         fetchConfigFromUrl(
             url = url,
             fetchDocument = ::fetchImportedDocument,
@@ -434,7 +436,7 @@ internal fun DesktopConfigsScreen(
                     DesktopConfigLibraries.importDocument(
                         library = latest,
                         content = content,
-                        activate = false,
+                        activate = activate,
                         fallbackName = importedProfileName,
                         sourceUrl = normalizedUrl,
                     )
@@ -451,11 +453,9 @@ internal fun DesktopConfigsScreen(
             fetchDocument = ::fetchImportedDocument,
         ) { normalizedUrl, content ->
             val normalizedContent = content.trimEnd().plus("\n")
-            val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
-                it.severity == ShadowrocketConfigDiagnosticSeverity.Error
-            }
+            val error = normalizedContent.trafficConfigDocumentErrorOrNull()
             if (error != null) {
-                message = desktopText(Res.string.desktop_config_import_failed, error.message)
+                message = desktopText(Res.string.desktop_config_import_failed, error)
                 return@fetchConfigFromUrl
             }
             val profile = ConfigProfile(
@@ -482,11 +482,9 @@ internal fun DesktopConfigsScreen(
             fetchDocument = { normalizedUrl -> fetchProfileDocument(snapshot, normalizedUrl) },
         ) { normalizedUrl, content ->
             val normalizedContent = content.trimEnd().plus("\n")
-            val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
-                it.severity == ShadowrocketConfigDiagnosticSeverity.Error
-            }
+            val error = normalizedContent.trafficConfigDocumentErrorOrNull()
             if (error != null) {
-                message = desktopText(Res.string.desktop_config_import_failed, error.message)
+                message = desktopText(Res.string.desktop_config_import_failed, error)
                 return@fetchConfigFromUrl
             }
             persist(
@@ -886,10 +884,18 @@ internal fun DesktopConfigsScreen(
                                         .getData(DataFlavor.stringFlavor)
                                         .toString()
                                 }.getOrDefault("").trim()
-                                when {
-                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
-                                    text.isNotBlank() -> importRawConfig(text, importedProfileName)
-                                    else -> message = clipboardEmptyMessage
+                                if (text.isBlank()) {
+                                    message = clipboardEmptyMessage
+                                } else {
+                                    runCatching { parseTrafficConfigImportInput(text) }.onSuccess { input ->
+                                        when (input) {
+                                            is TrafficConfigImportInput.Url -> importUrlFromClipboard(input.url, input.activate)
+                                            is TrafficConfigImportInput.Document ->
+                                                importRawConfig(input.content, importedProfileName, activate = input.activate)
+                                        }
+                                    }.onFailure { error ->
+                                        message = desktopText(Res.string.desktop_config_import_failed, error.message.orEmpty())
+                                    }
                                 }
                             },
                         ),

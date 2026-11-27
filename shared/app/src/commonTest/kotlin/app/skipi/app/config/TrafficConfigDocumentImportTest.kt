@@ -6,6 +6,7 @@ package app.skipi.app.config
 import features.config.TrafficConfigState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -166,6 +167,41 @@ class TrafficConfigDocumentImportTest {
         assertTrue(imported.rawConfig.contains("DOMAIN-SET,geosite:category-ads-all,REJECT"))
         assertTrue(imported.rawConfig.contains("AND,((DOMAIN-SUFFIX,hypixel.net),(DST-PORT,25565)),DIRECT"))
         assertTrue(imported.rawConfig.contains("FINAL,PROXY"))
+    }
+
+    @Test
+    fun textWithoutAConfigSectionIsRefused() {
+        listOf(
+            "skipi://conf/add/W1J1bGVdCkZJTkFMLFBST1hZ",
+            "https://example.test/profile.conf",
+            "<html><body>404</body></html>",
+        ).forEach { content ->
+            assertFailsWith<IllegalArgumentException>(content) {
+                importTrafficConfigDocument(
+                    trafficConfigs = emptyList(),
+                    nextTrafficConfigId = 1,
+                    activeTrafficConfigId = 0,
+                    content = content,
+                    activate = true,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun routingJsonIsImportedAsAProfileWithRules() {
+        val result = importTrafficConfigDocument(
+            trafficConfigs = emptyList(),
+            nextTrafficConfigId = 1,
+            activeTrafficConfigId = 0,
+            content = """{"Name":"Routed","RouteOrder":"block-proxy-direct","DirectSites":["domain:example.test"]}""",
+            activate = false,
+        )
+
+        val imported = result.trafficConfigs.single()
+        assertEquals("Routed", imported.name)
+        assertTrue(imported.rawConfig.contains("[Rule]"))
+        assertTrue(imported.rawConfig.contains("example.test,DIRECT"))
     }
 
     private fun document(name: String, logLevel: String): String = """# name: $name

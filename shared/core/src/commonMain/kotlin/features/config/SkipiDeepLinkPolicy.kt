@@ -10,7 +10,7 @@ enum class DeepLinkGate {
     /** Adds servers or configs: any web page can send it, so the user must approve. */
     NeedsConfirmation,
 
-    /** Starts or stops the tunnel: only honoured when external control is enabled. */
+    /** Starts or stops the tunnel, or closes the app: only honoured when external control is enabled. */
     NeedsAutomationEnabled,
 }
 
@@ -24,11 +24,10 @@ fun SkipiDeepLink.gate(): DeepLinkGate = when (this) {
     SkipiDeepLink.Connect,
     SkipiDeepLink.Disconnect,
     SkipiDeepLink.Toggle,
+    SkipiDeepLink.Close,
     -> DeepLinkGate.NeedsAutomationEnabled
 
-    SkipiDeepLink.Open,
-    SkipiDeepLink.Close,
-    -> DeepLinkGate.Allowed
+    SkipiDeepLink.Open -> DeepLinkGate.Allowed
 }
 
 /** The host a confirmation dialog shows, or an empty string for inline content. */

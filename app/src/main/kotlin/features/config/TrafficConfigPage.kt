@@ -189,22 +189,21 @@ fun TrafficConfigPage(
             val text = clipboard.getPlainText().orEmpty().trim()
             runCatchingCancellable {
                 require(text.isNotBlank()) { context.getString(R.string.common_clipboard_empty) }
-                val isHttpUrl = text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true)
-                val content = if (isHttpUrl) {
-                    services.subscriptionFetcher.fetch(
-                        url = text,
+                val input = parseTrafficConfigImportInput(text)
+                val content = when (input) {
+                    is TrafficConfigImportInput.Url -> services.subscriptionFetcher.fetch(
+                        url = input.url,
                         userAgent = DefaultSubscriptionUserAgent,
                         options = appState.toSubscriptionFetchOptions(),
                     )
-                } else {
-                    text
+                    is TrafficConfigImportInput.Document -> input.content
                 }
                 updateAppState { state ->
                     val imported = state.withImportedTrafficConfig(
                         content = content,
-                        activate = false,
+                        activate = input.activate,
                         fallbackName = context.getString(R.string.configs_imported_name),
-                        sourceUrl = if (isHttpUrl) text else "",
+                        sourceUrl = (input as? TrafficConfigImportInput.Url)?.url.orEmpty(),
                     )
                     imported.withProxyCatalogFrom(state)
                 }
@@ -226,10 +225,7 @@ fun TrafficConfigPage(
                     options = appState.toSubscriptionFetchOptions(),
                 )
                 val normalized = fetched.trimEnd() + "\n"
-                val analysis = normalized.analyzeShadowrocketConfig()
-                require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
-                    analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
-                }
+                normalized.trafficConfigDocumentErrorOrNull()?.let { error -> throw IllegalArgumentException(error) }
                 var newId = appState.nextTrafficConfigId
                 updateAppState { state ->
                     state.withCreatedTrafficConfig(
@@ -260,10 +256,7 @@ fun TrafficConfigPage(
                         options = appState.toSubscriptionFetchOptions(),
                     )
                     val normalized = fetched.trimEnd() + "\n"
-                    val analysis = normalized.analyzeShadowrocketConfig()
-                    require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
-                        analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
-                    }
+                    normalized.trafficConfigDocumentErrorOrNull()?.let { error -> throw IllegalArgumentException(error) }
                     updateAppState { state ->
                         state.withCommittedTrafficConfigRefresh(
                             configId = config.id,

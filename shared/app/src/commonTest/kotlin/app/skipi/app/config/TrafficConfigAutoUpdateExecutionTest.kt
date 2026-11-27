@@ -69,6 +69,21 @@ class TrafficConfigAutoUpdateExecutionTest {
     }
 
     @Test
+    fun responseThatIsNotAConfigRetriesWithoutCommitOrReconciliation() = runTest {
+        val events = mutableListOf<String>()
+
+        val result = executeTrafficConfigAutoUpdate(
+            capturedProfile = eligibleProfile(),
+            fetch = { _, _ -> "<html><body>Sign in to the network</body></html>" },
+            commit = { _, _, _ -> events += "commit" },
+            reconcile = { events += "reconcile" },
+        )
+
+        assertEquals(TrafficConfigAutoUpdateExecutionResult.Retry, result)
+        assertEquals(emptyList<String>(), events)
+    }
+
+    @Test
     fun documentWithAnErrorDiagnosticRetriesWithoutCommitOrReconciliation() = runTest {
         val events = mutableListOf<String>()
         val invalidDocument = """

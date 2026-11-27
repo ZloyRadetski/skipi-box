@@ -3,9 +3,8 @@
 
 package app.skipi.app.config
 
-import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.TrafficConfigState
-import features.config.analyzeShadowrocketConfig
+import features.config.trafficConfigDocumentErrorOrNull
 
 /** Outcome mapped by a host to its automatic-refresh scheduler result. */
 public enum class TrafficConfigAutoUpdateExecutionResult {
@@ -19,8 +18,8 @@ public enum class TrafficConfigAutoUpdateExecutionResult {
  * The captured profile is checked before any callbacks run. A missing profile, disabled automatic
  * refresh, locked profile, or blank source URL completes with [TrafficConfigAutoUpdateExecutionResult.Success].
  * For an eligible profile, this trims the captured URL, fetches using the captured profile object,
- * trims trailing whitespace from the document and appends one newline, then retries if analysis
- * reports an error diagnostic. Otherwise it invokes [commit] with the captured profile ID, the
+ * trims trailing whitespace from the document and appends one newline, then retries if the response
+ * is not a config document or analysis reports an error diagnostic. Otherwise it invokes [commit] with the captured profile ID, the
  * normalized document, and the trimmed captured URL, in that order, then invokes [reconcile].
  *
  * A normally returning [commit] callback always proceeds to [reconcile], including when the host's
@@ -53,8 +52,7 @@ public suspend fun executeTrafficConfigAutoUpdate(
         val url = profile.sourceUrl.trim()
         val fetched = fetch(profile, url)
         val normalized = fetched.trimEnd() + "\n"
-        val analysis = normalized.analyzeShadowrocketConfig()
-        if (analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
+        if (normalized.trafficConfigDocumentErrorOrNull() != null) {
             return@runCatching TrafficConfigAutoUpdateExecutionResult.Retry
         }
 

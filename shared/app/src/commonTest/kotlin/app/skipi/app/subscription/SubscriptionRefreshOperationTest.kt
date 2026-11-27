@@ -307,6 +307,41 @@ class SubscriptionRefreshOperationTest {
     }
 
     @Test
+    fun embeddedConfigUrlInsideAnEncodedLinkPayloadIsDecodedAndFetched() = runTest {
+        val embeddedUrl = "https://config.example/profile.conf"
+        val payloads = listOf(
+            "aHR0cHM6Ly9jb25maWcuZXhhbXBsZS9wcm9maWxlLmNvbmY=",
+            "https%3A%2F%2Fconfig.example%2Fprofile.conf",
+        )
+        for (payload in payloads) {
+            val automaticCalls = mutableListOf<String>()
+            val loaded = loadSubscriptionRefresh(
+                request = SubscriptionRefreshLoadRequest(
+                    subscription = subscription(title = "Provider plan"),
+                    fetchOptions = RefreshOptions(),
+                ),
+                fetchResponse = { _, _, _ ->
+                    SubscriptionFetchResponse(
+                        body = "one proxy",
+                        headers = mapOf("routing" to "skipi://conf/add/$payload"),
+                    )
+                },
+                parsers = listOf<ProxyServerPayloadParser>(
+                    { _, _ -> ProxyServerImportResult(1, listOf(vless("one.example", "one"))) },
+                ),
+                fetchAutomaticResource = { url, _, _ ->
+                    automaticCalls += url
+                    SubscriptionFetchResponse(body = "[Rule]\nFINAL,PROXY")
+                },
+            )
+
+            assertEquals(listOf(embeddedUrl), automaticCalls, payload)
+            assertEquals("[Rule]\nFINAL,PROXY", loaded.resolvedEmbeddedConfig?.content, payload)
+            assertEquals(embeddedUrl, loaded.resolvedEmbeddedConfig?.sourceUrl, payload)
+        }
+    }
+
+    @Test
     fun inlineEmbeddedConfigUsesSubscriptionSourceAndAndroidFallbackName() = runTest {
         val request = SubscriptionRefreshLoadRequest(
             subscription = subscription(id = 73, title = ""),

@@ -26,7 +26,8 @@ import engine.network.toIdnUrl
 import engine.network.toBasicAuthHeaderOrNull
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.normalizeSkipiUserAgent
-import features.config.decodeSkipiConfigPayloadOrNull
+import features.config.isSingleHttpUrl
+import features.config.resolveSkipiConfigPayload
 import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.subscription.KageSubscriptionAgeCrypto
 import features.subscription.SubscriptionAgeCrypto
@@ -180,21 +181,24 @@ class DesktopSubscriptionFetcher(
         deviceHeaders: Map<String, String> = emptyMap(),
     ): DesktopResolvedEmbeddedConfig? {
         val embedded = metadata.embeddedConfig ?: return null
-        val content = if (embedded.isUrl) {
+        // A link payload may hold the address percent-encoded or in Base64 rather than the document.
+        val inline = if (embedded.isUrl) null else embedded.payload.resolveSkipiConfigPayload()
+        val url = if (embedded.isUrl) embedded.payload.trim() else inline?.takeIf(String::isSingleHttpUrl)
+        val content = if (url != null) {
             fetchAutomaticResource(
-                url = embedded.payload,
+                url = url,
                 userAgent = userAgent,
                 timeout = timeout,
                 proxy = proxy,
                 deviceHeaders = deviceHeaders,
             ).body
         } else {
-            embedded.payload.decodeSkipiConfigPayloadOrNull() ?: embedded.payload.trim()
+            inline.orEmpty()
         }.trim()
         return content.takeIf(String::isNotEmpty)?.let { resolved ->
             DesktopResolvedEmbeddedConfig(
                 content = resolved,
-                sourceUrl = if (embedded.isUrl) embedded.payload.trim() else "",
+                sourceUrl = url.orEmpty(),
                 activate = embedded.activate,
             )
         }

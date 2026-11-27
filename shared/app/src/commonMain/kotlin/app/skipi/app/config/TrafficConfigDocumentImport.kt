@@ -3,11 +3,12 @@
 
 package app.skipi.app.config
 
-import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
-import features.config.analyzeShadowrocketConfig
+import features.config.toRoscomRoutingJsonOrNull
+import features.config.toRoscomRoutingShadowrocketConf
 import features.config.toV2RayNgRoutingConfOrNull
+import features.config.trafficConfigDocumentErrorOrNull
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
 
@@ -30,13 +31,13 @@ fun importTrafficConfigDocument(
     sourceUrl: String = "",
     newProfileResourceSettings: TrafficConfigResourceSettings = TrafficConfigResourceSettings(),
 ): TrafficConfigDocumentImportResult {
-    // A v2rayNG rule export is converted to a regular profile, so every import path accepts it.
-    val normalized = (content.toV2RayNgRoutingConfOrNull(fallbackName) ?: content).trimEnd() + "\n"
+    // v2rayNG rule exports and Happ/Incy routing JSON become regular profiles, so every import path accepts them.
+    val converted = content.toRoscomRoutingJsonOrNull()?.toRoscomRoutingShadowrocketConf(fallbackName)
+        ?: content.toV2RayNgRoutingConfOrNull(fallbackName)
+        ?: content
+    val normalized = converted.trimEnd() + "\n"
     require(normalized.isNotBlank()) { "Configuration is empty" }
-    val analysis = normalized.analyzeShadowrocketConfig()
-    require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
-        analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
-    }
+    normalized.trafficConfigDocumentErrorOrNull()?.let { error -> throw IllegalArgumentException(error) }
     val configName = normalized.lineSequence()
         .firstOrNull { line -> line.trim().startsWith("#") && line.contains("name", ignoreCase = true) }
         ?.substringAfter(':')

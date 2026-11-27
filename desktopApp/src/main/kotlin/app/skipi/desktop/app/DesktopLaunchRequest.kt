@@ -3,7 +3,9 @@
 
 package app.skipi.desktop
 
+import features.config.DeepLinkGate
 import features.config.SkipiDeepLink
+import features.config.gate
 
 /** What one start of the executable asks for: a hidden start and/or skipi:// links to run. */
 internal data class DesktopLaunchRequest(
@@ -36,12 +38,10 @@ internal fun parseDesktopLaunchArgs(args: List<String>): DesktopLaunchRequest = 
 /**
  * A skipi:// link reaches SKIPI from any web page or mail, so one that starts or stops the tunnel, or quits the
  * app, is honoured only when the user turned external control on (a keyboard shortcut needs it too). Opening the
- * window changes nothing; theme links are approved on screen.
+ * window changes nothing; links that add something are approved on screen.
  */
-internal fun desktopLinkAllowed(link: SkipiDeepLink, externalControl: Boolean): Boolean = when (link) {
-    SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle, SkipiDeepLink.Close -> externalControl
-    else -> true
-}
+internal fun desktopLinkAllowed(link: SkipiDeepLink, externalControl: Boolean): Boolean =
+    link.gate() != DeepLinkGate.NeedsAutomationEnabled || externalControl
 
 internal enum class DesktopTunnelCommand { Start, Stop, None }
 

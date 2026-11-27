@@ -21,7 +21,7 @@ internal fun desktopAutostartEntry(launcher: String): String = buildString {
 }
 
 // Inside quotes the spec escapes four characters; the string-value rule then doubles each backslash.
-private fun String.escapeDesktopExecArgument(): String = buildString {
+internal fun String.escapeDesktopExecArgument(): String = buildString {
     for (character in this@escapeDesktopExecArgument) {
         if (character == '"' || character == '`' || character == '$') append("\\\\")
         if (character == '\\') append("\\\\\\\\") else append(character)

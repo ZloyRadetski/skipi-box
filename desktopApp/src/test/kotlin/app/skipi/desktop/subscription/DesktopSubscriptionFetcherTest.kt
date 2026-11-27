@@ -19,6 +19,7 @@ import java.net.InetAddress
 import java.net.URI
 import java.time.Duration
 import features.subscription.SubscriptionHttpException
+import features.subscription.subscriptionMetadata
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -213,6 +214,33 @@ class DesktopSubscriptionFetcherTest {
             assertEquals("[Rule]\nFINAL,PROXY", config?.content)
             assertEquals(true, config?.activate)
             assertEquals("", config?.sourceUrl)
+        }
+    }
+
+    @Test
+    fun an_encoded_config_url_is_fetched_as_an_automatic_resource_instead_of_becoming_the_config() {
+        withSubscriptionServer { server ->
+            val profileUrl = "http://127.0.0.1:${server.address.port}/profile"
+            var profileRequests = 0
+            server.createContext("/profile") { exchange ->
+                profileRequests += 1
+                exchange.sendResponseHeaders(200, -1)
+                exchange.close()
+            }
+            val payloads = listOf(
+                java.util.Base64.getEncoder().encodeToString(profileUrl.encodeToByteArray()),
+                java.net.URLEncoder.encode(profileUrl, "UTF-8"),
+            )
+            for (payload in payloads) {
+                val metadata = features.subscription.SubscriptionFetchResponse(
+                    body = "",
+                    headers = mapOf("routing" to "skipi://conf/add/$payload"),
+                ).subscriptionMetadata()
+
+                // The loopback address proves the URL went through the guard of automatic resources.
+                assertFailsWith<Exception>(payload) { DesktopSubscriptionFetcher().resolveEmbeddedConfig(metadata) }
+            }
+            assertEquals(0, profileRequests)
         }
     }
 
