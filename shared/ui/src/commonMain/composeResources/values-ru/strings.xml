@@ -1676,7 +1676,7 @@
     <string name="settings_category_multilink">Объединение каналов</string>
     <string name="settings_category_multilink_summary">Все подключения к интернету сразу</string>
     <string name="multilink_enabled">Объединять каналы</string>
-    <string name="multilink_enabled_summary">Wi-Fi, Ethernet и телефон работают вместе. Быстрее становятся загрузки и много соединений сразу; одно соединение идёт по одному каналу.</string>
+    <string name="multilink_enabled_summary">Новые соединения распределяются по всем подключениям к интернету. Быстрее работают загрузки и программы, которые открывают много соединений; одно соединение всегда идёт через один канал.</string>
     <string name="multilink_core_unsupported">В этой версии SKIPI Core нет объединения каналов. Обновите SKIPI.</string>
     <string name="multilink_links">Каналы</string>
     <string name="multilink_links_empty">Каналы появятся после подключения SKIPI</string>
@@ -1708,7 +1708,7 @@
     <string name="multilink_probe_targets_default">1.1.1.1 и 8.8.8.8 (по умолчанию)</string>
     <string name="multilink_probe_targets_help">ip:порт через запятую, IPv6 — в квадратных скобках. Замените, если ваша сеть блокирует адреса по умолчанию.</string>
     <string name="multilink_probe_targets_error">Каждый адрес — это IP с портом, например 77.88.8.8:443</string>
-    <string name="multilink_skipped_section">Не используются ({count})</string>
+    <string name="multilink_skipped_section">Пропущенные адаптеры ({count})</string>
     <string name="multilink_credit">Основано на net-merge, автор Rohit Mahto (лицензия MIT).</string>
     <string name="tray_multilink_enable">Объединять каналы</string>
     <string name="tray_multilink_disable">Не объединять каналы</string>
@@ -1725,5 +1725,5 @@
     <string name="multilink_chip_limit">лимит {limit} Мбит/с</string>
     <string name="multilink_chip_weight">доля ×{weight}</string>
     <string name="multilink_chip_cooling">охлаждение до {rate} Мбит/с</string>
-    <string name="multilink_skipped_summary">VPN, виртуальные и туннельные адаптеры, каналы без интернета</string>
+    <string name="multilink_skipped_summary">VPN, виртуальные и туннельные адаптеры, адаптеры без выхода в интернет</string>
 </resources>
