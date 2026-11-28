@@ -39,7 +39,11 @@ data class SpeedTestConfig(
      */
     val downloadByteBudget: Long = 2L * 1024 * 1024 * 1024,
     val uploadByteBudget: Long = 512L * 1024 * 1024,
-    val downloadPayloadBytes: Int = 16 * 1024 * 1024,
+    /**
+     * Not 16 MiB: the endpoint answers 403 to exactly that size (checked against speed.cloudflare.com), and every
+     * download then failed and the test showed 0.
+     */
+    val downloadPayloadBytes: Int = 25_000_000,
     val uploadPayloadBytes: Long = 8L * 1024 * 1024,
     /** The start of a transfer, while TCP is still opening its window, is left out of the result. */
     val warmupMillis: Long = 2_000L,
@@ -196,7 +200,8 @@ class SpeedTestRunner(
         }
 
         val totalBytes = transferred.value
-        if (totalBytes <= 0) return 0.0
+        // Nothing came through: a failed test, not a connection of 0 Mbps.
+        if (totalBytes <= 0) error("No data was transferred")
         // Steady state: from the end of the warm-up, when at least a second of it is left to measure.
         val steady = afterWarmup.value
         if (steady != null) {

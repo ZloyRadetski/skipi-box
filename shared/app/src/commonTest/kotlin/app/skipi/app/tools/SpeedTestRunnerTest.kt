@@ -150,5 +150,20 @@ class SpeedTestRunnerTest {
         // At a gigabit the budget outlasts the time cap: a gigabit moves 125 MB a second.
         assertTrue(defaults.downloadByteBudget > 125L * 1024 * 1024 * (defaults.downloadMaxDurationMillis / 1000))
         assertTrue(defaults.pingSamples >= 10)
+        // speed.cloudflare.com refuses a request for exactly 16 MiB with 403.
+        assertTrue(defaults.downloadPayloadBytes != 16 * 1024 * 1024)
+    }
+
+    @Test
+    fun aTransferThatMovesNoDataFailsTheTestInsteadOfShowingZero() = runTest {
+        val states = mutableListOf<SpeedTestState>()
+        val refused = object : FakeTransport() {
+            override suspend fun download(url: String, onBytes: (Int) -> Unit) = error("403")
+        }
+
+        val result = SpeedTestRunner(refused, config.copy(downloadMaxDurationMillis = 300L), states::add).run()
+
+        assertNull(result)
+        assertEquals(SpeedTestPhase.Failed, states.last().phase)
     }
 }
