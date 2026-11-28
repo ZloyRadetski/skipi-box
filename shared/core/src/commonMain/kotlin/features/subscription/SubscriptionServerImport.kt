@@ -63,6 +63,7 @@ private val ProxySubscriptionSchemes = setOf(
     ProxyServerConstants.PROTOCOL_TROJAN,
     ProxyServerConstants.PROTOCOL_HYSTERIA2,
     ProxyServerConstants.PROTOCOL_HY2,
+    ProxyServerConstants.PROTOCOL_MASQUE,
     ProxyServerConstants.PROTOCOL_WIREGUARD,
     ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
     ProxyServerConstants.PROTOCOL_AWG,
