@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -214,25 +215,46 @@ fun SkipiDnsLeakTestScreen(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
         ) {
-            item(key = "hero") {
-                SkipiDnsLeakHero(model = model, onStart = onStart, onStop = onStop, modifier = Modifier.padding(top = 12.dp))
-            }
-            if (model.systemRows.isNotEmpty()) {
-                item(key = "system") {
-                    SmallTitle(text = stringResource(Res.string.tools_dns_group_system))
-                    SkipiDnsLeakRows(model.systemRows)
-                }
-            }
-            if (model.publicRows.isNotEmpty()) {
-                item(key = "public") {
-                    SmallTitle(text = stringResource(Res.string.tools_dns_group_public))
-                    SkipiDnsLeakRows(model.publicRows)
-                }
-            }
-            if (model.unanswered.isNotEmpty()) {
-                item(key = "unanswered") {
-                    SmallTitle(text = stringResource(Res.string.tools_dns_group_unanswered))
-                    SkipiDnsLeakUnanswered(model.unanswered)
+            item(key = "content") {
+                BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                    val hero: @Composable (Modifier) -> Unit = { heroModifier ->
+                        SkipiDnsLeakHero(model = model, onStart = onStart, onStop = onStop, modifier = heroModifier)
+                    }
+                    val results: @Composable (Modifier) -> Unit = { resultsModifier ->
+                        Column(resultsModifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SkipiDnsLeakStats(model)
+                            if (model.systemRows.isNotEmpty()) {
+                                Column {
+                                    SmallTitle(text = stringResource(Res.string.tools_dns_group_system))
+                                    SkipiDnsLeakRows(model.systemRows)
+                                }
+                            }
+                            if (model.publicRows.isNotEmpty()) {
+                                Column {
+                                    SmallTitle(text = stringResource(Res.string.tools_dns_group_public))
+                                    SkipiDnsLeakRows(model.publicRows)
+                                }
+                            }
+                            if (model.unanswered.isNotEmpty()) {
+                                Column {
+                                    SmallTitle(text = stringResource(Res.string.tools_dns_group_unanswered))
+                                    SkipiDnsLeakUnanswered(model.unanswered)
+                                }
+                            }
+                        }
+                    }
+                    // Wide enough, the verdict stays on the left while the paths are listed beside it.
+                    if (maxWidth >= 760.dp) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            hero(Modifier.weight(1f))
+                            results(Modifier.weight(1f))
+                        }
+                    } else {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            hero(Modifier.fillMaxWidth())
+                            results(Modifier.fillMaxWidth())
+                        }
+                    }
                 }
             }
             item(key = "description") {

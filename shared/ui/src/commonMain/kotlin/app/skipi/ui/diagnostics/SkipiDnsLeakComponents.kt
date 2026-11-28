@@ -3,9 +3,14 @@
 
 package app.skipi.ui.diagnostics
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,10 +23,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Dns
+import androidx.compose.material.icons.rounded.PriorityHigh
+import androidx.compose.material.icons.rounded.QuestionMark
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,18 +72,21 @@ import app.skipi.ui.resources.tools_dns_title_leak
 import app.skipi.ui.resources.tools_dns_title_no_leak
 import app.skipi.ui.resources.tools_dns_title_running
 import app.skipi.ui.resources.tools_dns_title_unknown
+import app.skipi.ui.settings.readableOn
 import app.skipi.ui.theme.SkipiTheme
 import features.tools.dnsleak.DnsLeakExitInfo
 import features.tools.dnsleak.DnsLeakResolverStatus
 import features.tools.dnsleak.DnsLeakStage
 import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** The verdict of the test at a glance: a status disc, what it means, the exit it was judged against, and the run button. */
+/** The verdict of the test at a glance: a status ring, what it means, the exit it was judged against, and the run button. */
 @Composable
 fun SkipiDnsLeakHero(
     model: DnsLeakScreenModel,
@@ -81,17 +101,8 @@ fun SkipiDnsLeakHero(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier = Modifier.size(64.dp).clip(CircleShape).background(accent.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (running) {
-                    InfiniteProgressIndicator(modifier = Modifier.size(32.dp))
-                } else {
-                    Text(model.headline.glyph(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = accent)
-                }
-            }
-            Spacer(Modifier.height(12.dp))
+            DnsStatusRing(headline = model.headline, accent = accent, running = running)
+            Spacer(Modifier.height(14.dp))
             Text(
                 text = model.headline.title(),
                 fontSize = 20.sp,
@@ -110,33 +121,70 @@ fun SkipiDnsLeakHero(
             )
             model.exit?.let { exit ->
                 Spacer(Modifier.height(14.dp))
-                DnsLeakExitLine(exit)
+                DnsLeakExitTile(exit, Modifier.widthIn(max = 420.dp).fillMaxWidth())
             }
-            Spacer(Modifier.height(16.dp))
-            val buttonColor = if (running) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.primary
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .border(1.5.dp, buttonColor, RoundedCornerShape(24.dp))
-                    .clickable { if (running) onStop() else onStart() }
-                    .padding(horizontal = 36.dp, vertical = 10.dp),
-                contentAlignment = Alignment.Center,
+            Spacer(Modifier.height(18.dp))
+            Button(
+                onClick = { if (running) onStop() else onStart() },
+                colors = if (running) ButtonDefaults.buttonColors() else ButtonDefaults.buttonColorsPrimary(),
+                modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth(),
             ) {
                 val label = when {
                     running -> Res.string.tools_dns_stop
                     model.headline == DnsLeakHeadline.Idle -> Res.string.tools_dns_start
                     else -> Res.string.tools_dns_rerun
                 }
-                Text(stringResource(label), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = buttonColor)
+                Text(
+                    text = stringResource(label),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (running) MiuixTheme.colorScheme.onSurface else readableOn(MiuixTheme.colorScheme.primary),
+                )
             }
         }
     }
 }
 
+/** A ring with the state's icon in it; while the test runs an arc goes round it. */
 @Composable
-private fun DnsLeakExitLine(exit: DnsLeakExitInfo) {
+private fun DnsStatusRing(headline: DnsLeakHeadline, accent: Color, running: Boolean) {
+    val track = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val turn by rememberInfiniteTransition(label = "dnsRing").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+        label = "dnsRing",
+    )
+    Box(modifier = Modifier.size(76.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(76.dp)) {
+            val stroke = 4.dp.toPx()
+            val inset = stroke / 2f
+            val arc = Size(size.width - stroke, size.height - stroke)
+            drawArc(track, 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
+            when {
+                running -> drawArc(accent, turn - 90f, 100f, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
+                headline != DnsLeakHeadline.Idle -> drawArc(accent, 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
+            }
+        }
+        Icon(
+            imageVector = headline.icon(),
+            contentDescription = null,
+            tint = if (headline == DnsLeakHeadline.Idle) MiuixTheme.colorScheme.onSurfaceVariantSummary else accent,
+            modifier = Modifier.size(32.dp),
+        )
+    }
+}
+
+@Composable
+private fun DnsLeakExitTile(exit: DnsLeakExitInfo, modifier: Modifier = Modifier) {
     val place = exit.countryName.ifBlank { exit.countryCode }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             stringResource(Res.string.tools_dns_exit_label),
             fontSize = 11.sp,
@@ -149,6 +197,32 @@ private fun DnsLeakExitLine(exit: DnsLeakExitInfo) {
             color = MiuixTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/** How many of the answering paths are fine, leak, or could not be judged; shown once there is a result. */
+@Composable
+fun SkipiDnsLeakStats(model: DnsLeakScreenModel, modifier: Modifier = Modifier) {
+    if (model.systemRows.isEmpty() && model.publicRows.isEmpty()) return
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        DnsStatTile(stringResource(Res.string.tools_dns_status_ok), model.safeCount, SkipiTheme.colors.success, Modifier.weight(1f))
+        DnsStatTile(stringResource(Res.string.tools_dns_status_leak), model.leakCount, SkipiTheme.colors.error, Modifier.weight(1f))
+        DnsStatTile(stringResource(Res.string.tools_dns_status_unknown), model.unknownCount, MiuixTheme.colorScheme.onSurfaceVariantSummary, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun DnsStatTile(label: String, count: Int, color: Color, modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(label, fontSize = 12.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1)
+            Text(
+                text = count.toString(),
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Light,
+                color = if (count == 0) MiuixTheme.colorScheme.onSurface else color,
+            )
+        }
     }
 }
 
@@ -257,18 +331,18 @@ private fun DnsLeakHeadline.accent(): Color = when (this) {
     -> MiuixTheme.colorScheme.primary
 }
 
-private fun DnsLeakHeadline.glyph(): String = when (this) {
-    DnsLeakHeadline.NoLeak -> "✓"
-    DnsLeakHeadline.SuspectedLeak -> "!"
-    DnsLeakHeadline.Unknown -> "?"
+private fun DnsLeakHeadline.icon(): ImageVector = when (this) {
+    DnsLeakHeadline.NoLeak -> Icons.Rounded.Check
+    DnsLeakHeadline.SuspectedLeak -> Icons.Rounded.PriorityHigh
+    DnsLeakHeadline.Unknown -> Icons.Rounded.QuestionMark
     DnsLeakHeadline.Failed,
     DnsLeakHeadline.FailedNoInternet,
     DnsLeakHeadline.FailedTunnel,
-    -> "✕"
+    -> Icons.Rounded.Close
 
     DnsLeakHeadline.Idle,
     DnsLeakHeadline.Running,
-    -> "DNS"
+    -> Icons.Rounded.Dns
 }
 
 @Composable

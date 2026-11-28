@@ -38,6 +38,8 @@ data class DnsLeakScreenModel(
     /** Servers that never answered, so a missing path is visible instead of silently absent. */
     val unanswered: List<String>,
     val leakCount: Int,
+    val safeCount: Int = 0,
+    val unknownCount: Int = 0,
 )
 
 /** Projects the controller state onto what the screen shows; results of a run in progress or a failed run are never shown. */
@@ -69,6 +71,8 @@ fun dnsLeakScreenModel(state: DnsLeakTestUiState): DnsLeakScreenModel {
         publicRows = group(system = false),
         unanswered = outcome?.silentServers.orEmpty().map { it.server },
         leakCount = rows.count { (_, row) -> row.status == DnsLeakResolverStatus.Leak },
+        safeCount = rows.count { (_, row) -> row.status == DnsLeakResolverStatus.Safe },
+        unknownCount = rows.count { (_, row) -> row.status == DnsLeakResolverStatus.Unknown },
     )
 }
 
