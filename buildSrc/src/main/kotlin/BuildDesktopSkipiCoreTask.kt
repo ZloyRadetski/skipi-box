@@ -39,6 +39,13 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
     @get:OutputFile
     abstract val outputLibrary: RegularFileProperty
 
+    /**
+     * libcronet, the NaiveProxy network stack the Core loads from its own folder: beside [outputLibrary], named
+     * libcronet.dll, libcronet.so or libcronet.dylib.
+     */
+    @get:OutputFile
+    abstract val outputCronetLibrary: RegularFileProperty
+
     init {
         group = "build"
         description = "Builds the in-process SKIPI Core library from ../skipi-core."
@@ -70,13 +77,16 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
                 else "Install G++ (e.g. build-essential or g++) or pass -PskipiCoreDesktopCxx=<path-to-g++>."
         }
 
+        // with_purego: the NaiveProxy outbound loads libcronet at run time instead of linking it.
+        val tags = listOfNotNull("skipi_hev".takeIf { linkHev }, "with_purego").joinToString(",")
         execOperations.exec {
             workingDir = sourceDirectory
             commandLine(
                 goExecutable.get(),
                 "build",
                 "-buildmode=c-shared",
-                *(if (linkHev) arrayOf("-tags", "skipi_hev") else emptyArray()),
+                "-tags",
+                tags,
                 "-trimpath",
                 "-ldflags=-s -w -buildid= -checklinkname=0",
                 "-o",
@@ -108,6 +118,41 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         require(destination.isFile && destination.length() > 0) {
             "SKIPI Core build completed without producing ${destination.path}."
         }
+        fetchCronet(sourceDirectory, outputCronetLibrary.get().asFile)
+    }
+
+    /**
+     * Puts libcronet of the cronet-go commit the Core pins beside the library, through the Core's own script, which
+     * checks its checksum (and on macOS links it from the pinned static archive). Without it the Core works, but every
+     * NaiveProxy connection fails, so a missing script or a failed fetch stops the build. An older Core checkout
+     * without NaiveProxy has no script and needs no libcronet.
+     */
+    private fun fetchCronet(sourceDirectory: File, target: File) {
+        val script = File(sourceDirectory, "scripts/fetch-cronet.sh")
+        if (!script.isFile) return
+        val platform = cronetPlatform()
+        execOperations.exec {
+            workingDir = sourceDirectory
+            commandLine("bash", "scripts/fetch-cronet.sh", platform, target.parentFile.absolutePath.replace('\\', '/'))
+        }.rethrowFailure().assertNormalExitValue()
+        require(target.isFile && target.length() > 0) {
+            "scripts/fetch-cronet.sh $platform did not produce ${target.path}."
+        }
+    }
+
+    private fun cronetPlatform(): String {
+        val osName = System.getProperty("os.name").orEmpty()
+        val arch = when (System.getProperty("os.arch").orEmpty().lowercase()) {
+            "amd64", "x86_64" -> "amd64"
+            "aarch64", "arm64" -> "arm64"
+            else -> System.getProperty("os.arch").orEmpty()
+        }
+        val os = when {
+            osName.contains("windows", ignoreCase = true) -> "windows"
+            osName.contains("mac", ignoreCase = true) -> "darwin"
+            else -> "linux"
+        }
+        return "$os-$arch"
     }
 
     /**

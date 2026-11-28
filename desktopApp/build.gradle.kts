@@ -15,6 +15,12 @@ val desktopCoreLibraryName = when {
     isMacHost -> "libskipicore.dylib"
     else -> "libskipicore.so"
 }
+// The NaiveProxy network stack the Core loads from its own folder.
+val desktopCronetLibraryName = when {
+    isWindowsHost -> "libcronet.dll"
+    isMacHost -> "libcronet.dylib"
+    else -> "libcronet.so"
+}
 
 fun findDefaultDesktopCompiler(binaryName: String): String {
     val isWindows = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
@@ -70,6 +76,7 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     )
     // The sibling checkout is a read-only source dependency; keep generated binaries in this repo.
     outputLibrary.set(layout.buildDirectory.file("native/skipi-core/$desktopCoreLibraryName"))
+    outputCronetLibrary.set(layout.buildDirectory.file("native/skipi-core/$desktopCronetLibraryName"))
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 
@@ -87,6 +94,8 @@ val prepareDesktopCoreRuntime = tasks.register<PrepareDesktopCoreRuntimeTask>("p
         ),
     )
     coreLibraryFile.set(layout.file(coreLibraryPath.map(::File)))
+    cronetLibraryName.set(desktopCronetLibraryName)
+    cronetLibraryFile.from(coreLibraryPath.map { path -> File(File(path).parentFile, desktopCronetLibraryName) })
     coreLicensePath.set(rootProject.file("../skipi-core/LICENSE").absolutePath)
     outputLibraryName.set(desktopCoreLibraryName)
     xrayVersion.set(ProjectConfig.XRAY_CORE_VERSION)

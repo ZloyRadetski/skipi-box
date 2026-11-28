@@ -20,19 +20,23 @@ expect() { # expect <name> <expected-exit> <platform> <listing>
 # hev is not listed: SKIPI Core carries it (linked in on Linux, embedded on Windows).
 linux_full='./opt/skipi/bin/SKIPI
 ./opt/skipi/lib/app/resources/libskipicore.so
+./opt/skipi/lib/app/resources/libcronet.so
 ./opt/skipi/lib/app/resources/geoip.dat
 ./opt/skipi/lib/app/resources/geosite.dat'
 windows_full='SKIPI/SKIPI.exe
 SKIPI/app/resources/skipicore.dll
+SKIPI/app/resources/libcronet.dll
 SKIPI/app/resources/geoip.dat
 SKIPI/app/resources/geosite.dat'
 
 expect "linux package with everything passes" 0 linux "$linux_full"
 expect "linux package without the Core library fails" 1 linux "$(echo "$linux_full" | grep -v libskipicore)"
+expect "linux package without libcronet (NaiveProxy) fails" 1 linux "$(echo "$linux_full" | grep -v libcronet)"
 expect "linux package without the launcher fails" 1 linux "$(echo "$linux_full" | grep -v bin/SKIPI)"
 expect "linux package without geo data fails" 1 linux "$(echo "$linux_full" | grep -v geosite)"
 expect "windows package with everything passes" 0 windows "$windows_full"
 expect "windows package without the Core library fails" 1 windows "$(echo "$windows_full" | grep -v skipicore)"
+expect "windows package without libcronet (NaiveProxy) fails" 1 windows "$(echo "$windows_full" | grep -v libcronet)"
 expect "windows package without the executable fails" 1 windows "$(echo "$windows_full" | grep -v 'SKIPI.exe')"
 expect "empty listing fails" 1 linux ""
 expect "unknown platform is a usage error" 2 beos "$linux_full"

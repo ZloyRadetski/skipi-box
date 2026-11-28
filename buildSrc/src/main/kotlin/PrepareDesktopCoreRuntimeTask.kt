@@ -1,10 +1,12 @@
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -38,6 +40,18 @@ abstract class PrepareDesktopCoreRuntimeTask : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val coreLibraryFile: RegularFileProperty
+
+    /**
+     * libcronet (libcronet.dll, .so or .dylib), the NaiveProxy network stack. The Core loads it from its own
+     * folder, so it is taken from beside the source library and staged beside the staged one.
+     */
+    @get:Input
+    abstract val cronetLibraryName: Property<String>
+
+    /** The libcronet beside the source library, tracked like [coreLibraryFile]; may be missing until checked. */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val cronetLibraryFile: ConfigurableFileCollection
 
     @get:Input
     abstract val coreLicensePath: Property<String>
@@ -77,6 +91,13 @@ abstract class PrepareDesktopCoreRuntimeTask : DefaultTask() {
         destination.mkdirs()
         val destinationLibrary = File(destination, outputLibraryName.get())
         copyIfChanged(sourceLibrary, destinationLibrary)
+        val sourceCronet = File(sourceLibrary.parentFile, cronetLibraryName.get())
+        require(sourceCronet.isFile && sourceCronet.length() > 0) {
+            "${cronetLibraryName.get()} (NaiveProxy) was not found beside the SKIPI Core library at ${sourceCronet.path}. " +
+                "The Core build puts it there; for a released library take it from the same release " +
+                "(or run scripts/fetch-cronet.sh of the Core into that folder)."
+        }
+        copyIfChanged(sourceCronet, File(destination, cronetLibraryName.get()))
         val sourceLicense = File(coreLicensePath.get()).absoluteFile
         require(sourceLicense.isFile && sourceLicense.length() > 0) {
             "SKIPI Core GPL license was not found at ${sourceLicense.path}."

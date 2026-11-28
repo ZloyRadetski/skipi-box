@@ -33,8 +33,11 @@ Desktop запускает SKIPI Core **внутри JVM-процесса** че
 Результат: `desktopApp/build/compose/binaries/main/msi/SKIPI-<version>.msi`.
 Перед упаковкой Gradle:
 
-- строит нативную библиотеку (`libskipicore.so` / `skipicore.dll`) как Go `c-shared` библиотеку;
-- кладёт библиотеку, `geoip.dat`, `geosite.dat` и лицензии в `app/resources`;
+- строит нативную библиотеку (`libskipicore.so` / `skipicore.dll`) как Go `c-shared` библиотеку (`-tags with_purego`);
+- кладёт рядом `libcronet` (`libcronet.so` / `libcronet.dll` / `libcronet.dylib`), сетевой стек NaiveProxy, который
+  Core загружает из своей папки: его скачивает и проверяет по SHA-256 скрипт `scripts/fetch-cronet.sh` из
+  `../skipi-core` (нужны `bash` и `git`; на macOS скрипт собирает dylib из закреплённого `libcronet.a`);
+- кладёт библиотеку, `libcronet`, `geoip.dat`, `geosite.dat` и лицензии в `app/resources`;
 - скачивает только geo-данные из проверенного по SHA-256 архива Xray, но не
   его исполняемый файл.
 
@@ -47,6 +50,8 @@ Desktop запускает SKIPI Core **внутри JVM-процесса** че
 # Windows
 .\gradlew.bat :desktopApp:packageMsi -PskipiCoreDesktopLibrary=C:\path\to\skipicore.dll
 ```
+
+`libcronet` той же версии Core должен лежать в той же папке, что и библиотека (он есть в архивах релиза Core).
 
 Для явного указания компиляторов и Go доступны свойства:
 - `-PskipiCoreDesktopCc=<path-or-binary>`

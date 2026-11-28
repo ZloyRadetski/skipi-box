@@ -8,8 +8,9 @@
 set -u
 
 case "${1:-}" in
-  linux)   required=(bin/SKIPI libskipicore.so geoip.dat geosite.dat) ;;
-  windows) required=(SKIPI.exe skipicore.dll geoip.dat geosite.dat) ;;
+  # libcronet is the NaiveProxy network stack the Core loads from its own folder.
+  linux)   required=(bin/SKIPI libskipicore.so libcronet.so geoip.dat geosite.dat) ;;
+  windows) required=(SKIPI.exe skipicore.dll libcronet.dll geoip.dat geosite.dat) ;;
   *) echo "usage: verify-listing.sh <linux|windows> < listing" >&2; exit 2 ;;
 esac
 
