@@ -93,6 +93,8 @@ private val ProxyServerUrlPrefixes = listOf(
     "${ProxyServerConstants.PROTOCOL_HY2}://",
     "${ProxyServerConstants.PROTOCOL_HYSTERIA2}://",
     "${ProxyServerConstants.PROTOCOL_MASQUE}://",
+    "${ProxyServerConstants.PROTOCOL_NAIVE_HTTPS}://",
+    "${ProxyServerConstants.PROTOCOL_NAIVE_QUIC}://",
     "${ProxyServerConstants.PROTOCOL_WIREGUARD}://",
     "${ProxyServerConstants.PROTOCOL_AMNEZIA_WG}://",
     "${ProxyServerConstants.PROTOCOL_AWG}://",
@@ -100,5 +102,5 @@ private val ProxyServerUrlPrefixes = listOf(
 )
 
 private val ProxyServerUrlRegex = Regex(
-    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|masque|wireguard|amneziawg|awg|vpn)://[^\\s<>\"']+",
+    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|masque|naive\\+https|naive\\+quic|wireguard|amneziawg|awg|vpn)://[^\\s<>\"']+",
 )

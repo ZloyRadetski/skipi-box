@@ -45,4 +45,26 @@ class SubscriptionServerImportTest {
         assertEquals(1, result.servers.size)
         assertEquals(0, result.rejectedUrlCount)
     }
+
+    @Test
+    fun imports_base64_subscription_with_naive_links() {
+        val source = """
+            naive+https://alice:pw@naive.example.com:443?padding=true#One
+            naive+quic://alice:pw@203.0.113.7:443#Two
+        """.trimIndent()
+        val encoded = source.encodeToByteArray().encodeBase64()
+
+        val result = encoded.importSubscriptionServers()
+
+        assertEquals(2, result.urlCount)
+        assertEquals(listOf("Naive", "Naive"), result.servers.map { it.getInfo().protocol })
+        assertEquals(0, result.rejectedUrlCount)
+    }
+
+    @Test
+    fun imports_plain_subscription_with_naive_links() {
+        val result = "naive+https://alice:pw@naive.example.com:443#One".importSubscriptionServers()
+
+        assertEquals(1, result.servers.size)
+    }
 }

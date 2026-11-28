@@ -7,6 +7,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+private const val PERSISTED_NAIVE = "naive"
+
 @Serializable
 data class PersistedProxyServer(
     val protocol: String,
@@ -27,6 +29,7 @@ fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
         is Trojan -> persisted(ProxyServerConstants.PROTOCOL_TROJAN, this)
         is Hysteria2 -> persisted(ProxyServerConstants.PROTOCOL_HYSTERIA2, this)
         is Masque -> persisted(ProxyServerConstants.PROTOCOL_MASQUE, this)
+        is NaiveProxy -> persisted(PERSISTED_NAIVE, this)
         is Wireguard -> persisted(ProxyServerConstants.PROTOCOL_WIREGUARD, this)
         is AmneziaWg -> persisted(ProxyServerConstants.PROTOCOL_AMNEZIA_WG, this)
         is StrategyGroup -> persisted(ProxyServerConstants.PROTOCOL_STRATEGY_GROUP, this)
@@ -78,6 +81,9 @@ fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
 
         ProxyServerConstants.PROTOCOL_MASQUE ->
             ProxyServer.json.decodeFromJsonElement<Masque>(payload)
+
+        PERSISTED_NAIVE ->
+            ProxyServer.json.decodeFromJsonElement<NaiveProxy>(payload)
 
         ProxyServerConstants.PROTOCOL_WIREGUARD ->
             ProxyServer.json.decodeFromJsonElement<Wireguard>(payload)

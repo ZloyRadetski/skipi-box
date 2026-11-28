@@ -26,6 +26,8 @@ object ProxyServerConstants {
     const val PROTOCOL_HYSTERIA2 = "hysteria2"
     const val PROTOCOL_HY2 = "hy2"
     const val PROTOCOL_MASQUE = "masque"
+    const val PROTOCOL_NAIVE_HTTPS = "naive+https"
+    const val PROTOCOL_NAIVE_QUIC = "naive+quic"
     const val PROTOCOL_WIREGUARD = "wireguard"
     const val PROTOCOL_AMNEZIA_WG = "amneziawg"
     const val PROTOCOL_AWG = "awg"
@@ -74,6 +76,8 @@ interface ProxyServer<T : ProxyServer<T>> {
                 ProxyServerConstants.PROTOCOL_TROJAN -> Trojan().parse(url)
                 ProxyServerConstants.PROTOCOL_HY2, ProxyServerConstants.PROTOCOL_HYSTERIA2 -> Hysteria2().parse(url)
                 ProxyServerConstants.PROTOCOL_MASQUE -> Masque().parse(url)
+                ProxyServerConstants.PROTOCOL_NAIVE_HTTPS,
+                ProxyServerConstants.PROTOCOL_NAIVE_QUIC -> NaiveProxy().parse(url)
                 ProxyServerConstants.PROTOCOL_WIREGUARD -> Wireguard().parse(url)
                 ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
                 ProxyServerConstants.PROTOCOL_AWG -> AmneziaWg().parse(url)
@@ -441,6 +445,7 @@ fun ProxyServer<*>.getTransportDisplay(): String? {
         }
         is Hysteria2 -> "QUIC"
         is Masque -> "QUIC"
+        is NaiveProxy -> if (quic) "HTTP/3" else "HTTP/2"
         is Wireguard -> "UDP"
         is AmneziaWg -> "UDP"
         is HTTP -> "TCP"

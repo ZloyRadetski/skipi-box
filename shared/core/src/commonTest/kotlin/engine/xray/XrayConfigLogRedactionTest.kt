@@ -48,6 +48,28 @@ class XrayConfigLogRedactionTest {
     }
 
     @Test
+    fun naiveOutboundCredentialsAndServerIdentityAreMasked() {
+        val redacted = redactXrayConfigForLog(
+            """
+            {"outbounds": [
+              {"tag": "n", "protocol": "naive", "settings": {
+                "address": "naive.example.com", "port": 443, "user": "naive-user", "pass": "naive-pass",
+                "quic": true, "serverName": "naive-front.example.com", "insecureConcurrency": 4,
+                "headers": {"Authorization": "Bearer naive-header-token", "X-Api-Key": "naive-api-key"}}}
+            ]}
+            """.trimIndent(),
+        )
+
+        listOf(
+            "naive.example.com", "naive-user", "naive-pass", "naive-front.example.com",
+            "naive-header-token", "naive-api-key",
+        ).forEach { secret ->
+            assertFalse(redacted.contains(secret), "$secret leaked into the log")
+        }
+        assertTrue(redacted.contains("naive"), "the protocol name is not a secret and helps debugging")
+    }
+
+    @Test
     fun credentialsAndServerAddressesAreMasked() {
         val redacted = redactXrayConfigForLog(config)
 

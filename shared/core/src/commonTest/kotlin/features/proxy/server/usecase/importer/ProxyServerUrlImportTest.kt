@@ -3,6 +3,7 @@
 
 package features.proxy.server.usecase.importer
 
+import features.proxy.server.model.getTransportDisplay
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -14,6 +15,42 @@ class ProxyServerUrlImportTest {
         val result = importProxyServersFromUrls(link)
 
         assertEquals(emptyList(), result.servers)
+    }
+
+    @Test
+    fun aNaiveHttpsLineIsImported() {
+        val result = importProxyServersFromUrls("naive+https://alice:pw@naive.example.com:443?padding=true#Naive")
+
+        assertEquals(listOf("Naive"), result.servers.map { it.getInfo().remarks })
+        assertEquals(listOf("Naive"), result.servers.map { it.getInfo().protocol })
+    }
+
+    @Test
+    fun aNaiveQuicLineIsImportedAsQuic() {
+        val result = importProxyServersFromUrls("naive+quic://alice:pw@naive.example.com:443#NaiveQ")
+
+        assertEquals("HTTP/3", result.servers.single().getTransportDisplay())
+    }
+
+    @Test
+    fun aNaiveLinkInsideProseIsImported() {
+        val result = importProxyServersFromUrls("my server: naive+https://alice:pw@naive.example.com:443#Naive, thanks")
+
+        assertEquals(listOf("Naive"), result.servers.map { it.getInfo().protocol })
+    }
+
+    @Test
+    fun naiveLinksMixWithOtherLinksOnSeveralLines() {
+        val result = importProxyServersFromUrls(
+            """
+            vless://123e4567-e89b-42d3-a456-426614174000@example.com:443?security=tls#One
+            naive+https://alice:pw@naive.example.com:443#Two
+            naive+quic://alice:pw@203.0.113.7:443#Three
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("VLESS", "Naive", "Naive"), result.servers.map { it.getInfo().protocol })
+        assertEquals(3, result.urlCount)
     }
 
     @Test
