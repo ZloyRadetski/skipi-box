@@ -95,7 +95,10 @@ class ProxyHomeWideSidePanelTest {
     }
 
     @Test
-    fun theLegacyLayoutHasNoLeftColumnForIt() {
-        assertNull(panelBounds(1280, 800, state(ProxyHomeConnectionMode.Legacy)))
+    fun theLegacyLayoutShowsThePanelBesideTheServerList() {
+        val panel = assertNotNull(panelBounds(1280, 800, state(ProxyHomeConnectionMode.Legacy)))
+
+        assertTrue(panel.left > 640f, "the panel must sit right of the list")
+        assertTrue(panel.height >= 100f, "only ${panel.height} px left for the panel")
     }
 }

@@ -154,7 +154,8 @@ fun ProxyHomeScreen(
 }
 
 /**
- * [wideSidePanel] fills what the left column of a wide window has left under the server details.
+ * [wideSidePanel] fills what the left column of a wide window has left under the server details; the Legacy
+ * widget has no such column and shows it beside the server list.
  * It owns its state, so what it shows never recomposes the server list.
  */
 @Composable
@@ -513,7 +514,9 @@ val easterEgg = rememberHeaderEasterEggState()
                     }
                 }
                 if (state.displayOptions.connectionMode == ProxyHomeConnectionMode.Legacy) {
-                    // The widget from before the redesign keeps its layout: the card on top, details beside the list.
+                    // The widget from before the redesign keeps its layout: the card on top, a pane beside the list.
+                    // Desktop puts the side panel into that pane (no pane without one); elsewhere it shows details.
+                    val isDesktop = SkipiTheme.visualProfile is SkipiVisualProfile.Desktop
                     HomeConnectionPanel(
                         state = state,
                         compact = false,
@@ -525,12 +528,17 @@ val easterEgg = rememberHeaderEasterEggState()
                         horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
                     ) {
                         wideList(Modifier.weight(1.1f))
-                        LegacyServerDetailsPane(
-                            state = state,
-                            server = selectedServer,
-                            onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
-                            modifier = Modifier.weight(0.9f).fillMaxSize(),
-                        )
+                        val paneModifier = Modifier.weight(0.9f).fillMaxSize()
+                        if (isDesktop) {
+                            wideSidePanel?.invoke(paneModifier)
+                        } else {
+                            LegacyServerDetailsPane(
+                                state = state,
+                                server = selectedServer,
+                                onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
+                                modifier = paneModifier,
+                            )
+                        }
                     }
                 } else {
                     // The left column starts as wide as the button needs; dragging the divider widens it.

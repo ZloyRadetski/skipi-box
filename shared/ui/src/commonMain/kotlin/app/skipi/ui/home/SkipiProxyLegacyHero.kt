@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -277,13 +276,9 @@ fun SkipiProxyHeroLegacyCard(
                 ) {
                     Column {
                         Spacer(Modifier.height(14.dp))
-                        // One raised panel for the live facts, like the tiles of the wide layout.
+                        // The live facts lie straight on the card, without a panel of their own.
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(colors.raisedSurface)
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                         if (state.sessionDuration != null) Row(
