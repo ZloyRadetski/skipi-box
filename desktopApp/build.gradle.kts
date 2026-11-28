@@ -56,7 +56,7 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     coreSourceDirectory.set(skipiCoreSourceDirectory)
     coreSources.from(
         fileTree(skipiCoreSourceDirectory) {
-            exclude(".git/**", "dist/**", "build/xray-overlay/**")
+            exclude(".git/**", "dist/**", "build/xray-overlay/**", "build/hev/**")
         },
     )
     goExecutable.set(providers.gradleProperty("skipiCoreDesktopGo").orElse("go"))

@@ -54,6 +54,7 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         destination.parentFile.mkdirs()
 
         stageHevRuntime(sourceDirectory)
+        val linkHev = buildLinuxHev(sourceDirectory)
         val xrayModfile = prepareXrayPatches(sourceDirectory)
 
         val cc = resolveCompiler(cCompiler.get())
@@ -75,6 +76,7 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
                 goExecutable.get(),
                 "build",
                 "-buildmode=c-shared",
+                *(if (linkHev) arrayOf("-tags", "skipi_hev") else emptyArray()),
                 "-trimpath",
                 "-ldflags=-s -w -buildid= -checklinkname=0",
                 "-o",
@@ -86,7 +88,8 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
                 // The patched xray-core (patches/xray-geodata in the Core): go.mod stays as it is.
                 environment(
                     "GOFLAGS",
-                    listOf(System.getenv("GOFLAGS").orEmpty(), "-modfile=${xrayModfile.absolutePath}")
+                    // GOFLAGS is split on spaces; quote the whole flag so a project path with a space works.
+                    listOf(System.getenv("GOFLAGS").orEmpty(), "\"-modfile=${xrayModfile.absolutePath}\"")
                         .filter { it.isNotBlank() }
                         .joinToString(" "),
                 )
@@ -112,6 +115,22 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
      * before the build. Without bash and its tools the library is still built, but a started tunnel reports that
      * this build carries no HEV TUN runtime. Release libraries come from the Core release, which has it staged.
      */
+    /**
+     * On Linux hev is linked into the Core as static libraries (build tag skipi_hev); without it the Core uses a
+     * stub and every connect fails with "HEV TUN is not built into this Core". Returns whether the tag can be used.
+     */
+    private fun buildLinuxHev(sourceDirectory: File): Boolean {
+        val osName = System.getProperty("os.name").orEmpty()
+        if (!osName.contains("linux", ignoreCase = true)) return false
+        val script = File(sourceDirectory, "scripts/build-hev-linux.sh")
+        if (!script.isFile) return false
+        execOperations.exec {
+            workingDir = sourceDirectory
+            commandLine("bash", "scripts/build-hev-linux.sh")
+        }.rethrowFailure().assertNormalExitValue()
+        return true
+    }
+
     private fun stageHevRuntime(sourceDirectory: File) {
         val platform = when {
             isWindows() -> "windows"
