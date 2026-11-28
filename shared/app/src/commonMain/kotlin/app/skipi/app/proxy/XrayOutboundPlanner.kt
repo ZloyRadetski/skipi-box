@@ -20,6 +20,7 @@ import features.proxy.server.model.customXrayConfigPrimaryProxyOutbound
 import features.proxy.server.model.customXrayConfigProxyServerHosts
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.isCustomProxyServer
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.serverHost
 import features.proxy.server.model.toXrayBalancerStrategy
 import features.routing.model.RouteRule
@@ -225,7 +226,8 @@ object XrayOutboundPlanner {
                 tag = tag,
                 server = server.server,
                 dialerProxyTag = dialerProxyTag,
-                allowFragment = allowFragment,
+                // NaiveProxy brings its own padding and is TCP only: fragment does not apply.
+                allowFragment = allowFragment && server.server !is NaiveProxy,
             )
             dnsHostServers += server.server.serverHost()
             routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)

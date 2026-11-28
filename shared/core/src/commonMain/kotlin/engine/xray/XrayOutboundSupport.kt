@@ -173,6 +173,9 @@ fun buildXrayMuxConfig(
     put("xudpProxyUDP443", MuxUdp443Values.getOrElse(xudpProxyUdp443Mode) { MuxUdp443Values.first() })
 }
 
+/** The native NaiveProxy outbound: TCP only, with its own padding, so neither mux nor fragment applies. */
+internal fun JsonObject.isNaiveOutbound(): Boolean = stringValue("protocol") == "naive"
+
 /** An outbound on the xdrive transport, which the core only accepts with a mux of its own kind. */
 internal fun JsonObject.isXdriveOutbound(): Boolean =
     objectValue("streamSettings")?.stringValue("network") == "xdrive"

@@ -5,6 +5,7 @@ package engine.proxy.latency
 
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.Wireguard
@@ -43,5 +44,11 @@ class TcpStartupProbeEligibilityTest {
                 parms = V2RayParameters(type = "mkcp"),
             ).supportsTcpStartupProbe(),
         )
+    }
+
+    @Test
+    fun naive_over_http2_is_tcp_and_over_http3_is_quic() {
+        assertTrue(NaiveProxy(server = "naive.example.com", quic = false).supportsTcpStartupProbe())
+        assertFalse(NaiveProxy(server = "naive.example.com", quic = true).supportsTcpStartupProbe())
     }
 }

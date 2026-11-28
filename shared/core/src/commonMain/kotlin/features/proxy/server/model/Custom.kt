@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import utils.toTrimmedNonEmptyDistinctList
 
@@ -157,6 +158,7 @@ private fun customXrayConfigProtocolDisplayName(outbounds: JsonArray?): String {
         "wireguard" -> "WireGuard"
         "socks" -> "SOCKS"
         "http" -> "HTTP"
+        "naive" -> "Naive"
         null, "" -> null
         else -> rawProtocol.uppercase()
     }
@@ -197,6 +199,10 @@ internal fun customXrayConfigTransportDisplay(value: String): String? {
             "wireguard" -> "UDP"
             "hysteria2", "hy2", "tuic" -> "QUIC"
             "shadowsocks", "ss", "socks", "http", "vless", "vmess", "trojan" -> "TCP"
+            "naive" -> {
+                val quic = (primary.objectValue("settings")?.get("quic") as? JsonPrimitive)?.booleanOrNull == true
+                if (quic) "HTTP/3" else "HTTP/2"
+            }
             else -> null
         }
         else -> network.uppercase()

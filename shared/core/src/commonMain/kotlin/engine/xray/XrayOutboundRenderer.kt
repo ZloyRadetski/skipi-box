@@ -100,10 +100,12 @@ private fun buildProxyOutbound(
     outboundServer.dialerProxyTag?.let { dialerProxyTag ->
         outbound = outbound.withDialerProxyTag(dialerProxyTag)
     }
-    if (outbound.isXdriveOutbound()) {
-        outbound = outbound.updated { put("mux", xdriveMuxConfig(options.mux)) }
-    } else {
-        options.mux?.let { mux ->
+    // Naive is TCP only with its own padding: neither mux nor fragment applies.
+    val naive = outbound.isNaiveOutbound()
+    when {
+        naive -> Unit
+        outbound.isXdriveOutbound() -> outbound = outbound.updated { put("mux", xdriveMuxConfig(options.mux)) }
+        else -> options.mux?.let { mux ->
             outbound = outbound.updated {
                 put(
                     "mux",
@@ -116,7 +118,7 @@ private fun buildProxyOutbound(
             }
         }
     }
-    if (options.fragment != null && outboundServer.allowFragment) {
+    if (options.fragment != null && outboundServer.allowFragment && !naive) {
         // Xray removed outbound.proxySettings; dialerProxy is its supported
         // replacement and keeps this generated config valid on current core.
         outbound = outbound.withDialerProxyTag(XrayTags.FRAGMENT)
@@ -159,6 +161,7 @@ fun List<JsonObject>.withXrayMuxAndFragmentOverlay(
     fragment: XrayFragmentOutboundOptions?,
 ): List<JsonObject> = map { source ->
     var outbound = source
+    if (outbound.isNaiveOutbound()) return@map outbound
     if (outbound.isXdriveOutbound()) {
         outbound = outbound.updated { put("mux", xdriveMuxConfig(mux)) }
     } else {

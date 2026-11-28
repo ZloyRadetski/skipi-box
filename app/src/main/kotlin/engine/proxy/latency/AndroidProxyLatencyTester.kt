@@ -24,6 +24,7 @@ import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -677,6 +678,9 @@ internal fun ProxyServer<*>.supportsTcpStartupProbe(): Boolean {
     return when (this) {
         is HTTP,
         is Socks -> true
+
+        // Naive is HTTPS CONNECT over HTTP/2 (TCP), or over HTTP/3 (QUIC, UDP) with quic set.
+        is NaiveProxy -> !quic
 
         is VLESS -> parms.usesTcpStartupTransport()
         is VMess -> parms.usesTcpStartupTransport()

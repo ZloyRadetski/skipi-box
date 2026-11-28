@@ -10,6 +10,7 @@ import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -684,6 +685,52 @@ class XrayOutboundPlannerTest {
         assertEquals(plan.routeTargets.getValue("100"), plan.routeTargets.getValue("200"))
         // The shortest interval still wins, even from the group that shares the balancer.
         assertEquals("10s", plan.observatoryProbeInterval)
+    }
+
+    @Test
+    fun aNaiveServerIsPlannedLikeAnyOutboundButNeverFragmented() {
+        val naive = record(1, NaiveProxy(remarks = "Naive", server = "naive.example.com"))
+
+        val plan = XrayOutboundPlanner.plan(input(naive, listOf(naive), enableFragment = true))
+
+        assertEquals(listOf("proxy"), plan.proxyOutbounds.map { it.tag })
+        assertEquals("naive", plan.proxyOutbounds.single().server?.toXrayOutbound("proxy")?.protocol)
+        assertFalse(plan.proxyOutbounds.single().allowFragment)
+        assertEquals(listOf("naive.example.com"), plan.dnsHostServers)
+    }
+
+    @Test
+    fun aNaiveServerTakesPartInChains() {
+        val hop1 = node(1, "Hop 1", "hop1.example")
+        val naive = record(2, NaiveProxy(remarks = "Naive", server = "naive.example.com"))
+        val chain = record(99, ChainProxy(remarks = "Chain", proxyServerIds = listOf(1, 2)))
+
+        val plan = XrayOutboundPlanner.plan(input(chain, listOf(chain, hop1, naive), enableFragment = true))
+
+        assertEquals(listOf("proxy", "proxy-chain-1"), plan.proxyOutbounds.map { it.tag })
+        assertEquals("naive", plan.proxyOutbounds.first().server?.toXrayOutbound("x")?.protocol)
+        assertEquals("proxy-chain-1", plan.proxyOutbounds.first().dialerProxyTag)
+        assertTrue(plan.proxyOutbounds.all { !it.allowFragment })
+        assertEquals(listOf("naive.example.com", "hop1.example"), plan.dnsHostServers)
+    }
+
+    @Test
+    fun aNaiveServerIsAMemberOfAStrategyGroup() {
+        val naive = record(1, NaiveProxy(remarks = "Naive", server = "naive.example.com"))
+        val other = node(2, "Other", "other.example")
+        val group = record(
+            99,
+            StrategyGroup(
+                remarks = "Group",
+                strategy = StrategyGroupConstants.TYPE_FALLBACK,
+                proxyServerIds = listOf(1, 2),
+            ),
+        )
+
+        val plan = XrayOutboundPlanner.plan(input(group, listOf(group, naive, other)))
+
+        assertTrue(plan.proxyOutbounds.any { it.server is NaiveProxy })
+        assertTrue("naive.example.com" in plan.dnsHostServers)
     }
 
     private fun input(

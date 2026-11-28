@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.VLESS
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -43,6 +44,16 @@ class DesktopHttpLatencyTesterTest {
         val outbound = root.getValue("outbounds").jsonArray.single().jsonObject
         assertEquals("vless", outbound.getValue("protocol").jsonPrimitive.content)
         assertTrue("inbounds" !in root && "routing" !in root, "the probe needs only the outbound")
+        assertNull(probe.amneziaWg)
+    }
+
+    @Test
+    fun aNaiveServerIsProbedThroughItsOwnNaiveOutbound() {
+        val probe = buildDesktopLatencyProbe(NaiveProxy(remarks = "n", server = "naive.example.com", port = "443"))
+
+        val outbound = Json.parseToJsonElement(probe.configJson).jsonObject.getValue("outbounds").jsonArray.single().jsonObject
+        assertEquals("naive", outbound.getValue("protocol").jsonPrimitive.content)
+        assertEquals("naive.example.com", outbound.getValue("settings").jsonObject.getValue("address").jsonPrimitive.content)
         assertNull(probe.amneziaWg)
     }
 
