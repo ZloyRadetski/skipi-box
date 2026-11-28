@@ -310,6 +310,7 @@ val easterEgg = rememberHeaderEasterEggState()
     val listEdge = SkipiTheme.spacing.screenHorizontal
     val listFade = 12.dp
     val listBottomBleed = SkipiTheme.spacing.screenVertical
+    val wideListFade = 24.dp
     val phoneListPadding = PaddingValues(
         start = listEdge,
         top = listFade,
@@ -481,11 +482,17 @@ val easterEgg = rememberHeaderEasterEggState()
                             subscription = state.subscription,
                             subscriptionExpanded = true,
                         )
-                    Box(modifier = listModifier.fillMaxSize()) {
+                    // The list runs on to the window's lower edge and fades out at both ends instead of ending in a cut.
+                    Box(
+                        modifier = listModifier
+                            .fillMaxSize()
+                            .scrollBleed(horizontal = 0.dp, top = wideListFade, bottom = listBottomBleed)
+                            .verticalEdgeFade(top = wideListFade, bottom = wideListFade),
+                    ) {
                         PageServerGrid(
                             page = wideSelectedPage,
                             state = state,
-                            contentPadding = PaddingValues(bottom = listBottomPadding),
+                            contentPadding = PaddingValues(top = wideListFade, bottom = listBottomPadding + listBottomBleed),
                             pullRefreshController = pullRefreshController,
                             pullRefreshPresentation = pullRefreshPresentation,
                             groupSelector = groupSelectorContent,

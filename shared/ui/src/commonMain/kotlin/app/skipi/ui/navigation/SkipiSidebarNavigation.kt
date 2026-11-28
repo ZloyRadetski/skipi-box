@@ -5,6 +5,7 @@ package app.skipi.ui.navigation
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
@@ -12,10 +13,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,12 +35,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -64,6 +73,8 @@ fun SkipiSidebarNavigation(
     expanded: Boolean = true,
     onExpandedChange: ((Boolean) -> Unit)? = null,
     items: List<SkipiNavigationItem> = defaultSkipiNavigationItems(),
+    /** The thin line along the sidebar's inner edge; a host that rounds the content's corners leaves it out. */
+    showBorder: Boolean = true,
     /** Pinned shortcuts listed under the destinations, each running its action instead of selecting a section. */
     actions: List<SkipiNavigationAction> = emptyList(),
 ) {
@@ -114,7 +125,7 @@ fun SkipiSidebarNavigation(
                 SidebarToggle(expanded = expanded, colors = colors, onClick = { onExpandedChange(!expanded) })
             }
         }
-        Box(Modifier.width(1.dp).fillMaxHeight().background(borderColor))
+        if (showBorder) Box(Modifier.width(1.dp).fillMaxHeight().background(borderColor))
     }
 }
 
@@ -200,5 +211,36 @@ private fun SidebarToggle(
             fontSize = 22.sp,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+/**
+ * The content beside a sidebar ends in rounded corners at its top and bottom left edge: the sidebar's color fills what
+ * lies between the corner and the arc, so the content looks like a sheet laid over the sidebar. It is drawn on top of
+ * the content, whatever its background is (a photo or a gradient too), so place it last inside the content's box.
+ */
+@Composable
+fun BoxScope.SkipiSidebarInnerCorners(
+    colors: SkipiExpressiveNavigationColors,
+    modifier: Modifier = Modifier,
+    radius: Dp = 16.dp,
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val r = radius.toPx()
+        val h = size.height
+        val top = Path().apply {
+            moveTo(0f, 0f)
+            lineTo(r, 0f)
+            arcTo(Rect(0f, 0f, 2 * r, 2 * r), 270f, -90f, false)
+            close()
+        }
+        val bottom = Path().apply {
+            moveTo(0f, h)
+            lineTo(0f, h - r)
+            arcTo(Rect(0f, h - 2 * r, 2 * r, h), 180f, -90f, false)
+            close()
+        }
+        drawPath(top, colors.surface)
+        drawPath(bottom, colors.surface)
     }
 }

@@ -109,6 +109,7 @@ import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.LocalNavigationReselectToken
 import app.skipi.ui.navigation.SkipiSidebarNavigation
+import app.skipi.ui.navigation.SkipiSidebarInnerCorners
 import app.skipi.ui.navigation.SkipiNavigationAction
 import app.skipi.ui.navigation.SkipiTool
 import app.skipi.ui.navigation.skipiToolActions
@@ -2377,6 +2378,19 @@ private fun runDesktopApplication(
                         ) }
                     }
                 }
+                    // Rounded corners where the content meets the sidebar, in the sidebar's own color.
+                    if (sidebar) {
+                        val sidebarColors = SkipiTheme.colors
+                        SkipiSidebarInnerCorners(
+                            colors = SkipiExpressiveNavigationColors(
+                                surface = sidebarColors.surface,
+                                accent = sidebarColors.accent,
+                                onAccent = sidebarColors.onAccent,
+                                onSurfaceVariant = sidebarColors.onSurfaceVariant,
+                                isDark = sidebarColors.isDark,
+                            ),
+                        )
+                    }
                 }
                 }
                 }
@@ -2418,6 +2432,7 @@ private fun DesktopSidebarNavigation(
 ) {
     val colors = SkipiTheme.colors
     SkipiSidebarNavigation(
+        showBorder = false,
         selectedDestination = selected,
         onSelect = onSelect,
         actions = actions,
