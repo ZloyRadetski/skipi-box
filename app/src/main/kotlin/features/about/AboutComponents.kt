@@ -63,6 +63,8 @@ internal fun AboutUpdatesCard(
         onAutoCheckChange = { checked -> updateAppState { it.copy(autoCheckAppUpdates = checked) } },
         nightInstallEnabled = appState.autoInstallAppUpdatesAtNight,
         onNightInstallChange = { checked -> updateAppState { it.copy(autoInstallAppUpdatesAtNight = checked) } },
+        viaProxyEnabled = appState.updateAppViaProxy,
+        onViaProxyChange = { checked -> updateAppState { it.copy(updateAppViaProxy = checked) } },
         channel = appState.appUpdateChannel,
         onChannelChange = { channel -> scope.launch { services.appUpdateCheckCoordinator.changeChannel(channel) } },
         checkSummary = when {

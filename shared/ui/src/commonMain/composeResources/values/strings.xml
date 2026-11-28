@@ -1027,6 +1027,8 @@
     <string name="settings_auto_install_night_title">Auto-download on Wi-Fi</string>
     <string name="settings_auto_install_night_summary">Download updates on unmetered Wi-Fi while charging. Android will always ask before installation.</string>
     <string name="settings_check_updates_now_action">Check for updates now</string>
+    <string name="settings_update_via_proxy_title">Download updates through the proxy</string>
+    <string name="settings_update_via_proxy_summary">Check for and download updates through the SKIPI tunnel while it is on. Turn off to connect directly.</string>
     <string name="settings_update_channel_title">Update channel</string>
     <string name="settings_update_channel_stable">Stable</string>
     <string name="settings_update_channel_nightly">Nightly</string>

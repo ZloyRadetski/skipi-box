@@ -464,6 +464,7 @@ internal class AppSettingsPreferences(
             autoCheckAppUpdates = preferences.getBoolean(KeyAutoCheckAppUpdates, defaults.autoCheckAppUpdates),
             appUpdateChannel = AppUpdateChannel.fromId(preferences.getString(KeyAppUpdateChannel, null)),
             autoInstallAppUpdatesAtNight = preferences.getBoolean(KeyAutoInstallAppUpdatesAtNight, defaults.autoInstallAppUpdatesAtNight),
+            updateAppViaProxy = preferences.getBoolean(KeyUpdateAppViaProxy, defaults.updateAppViaProxy),
             availableAppUpdate = preferences.getAppUpdateInfo(defaults.availableAppUpdate),
             dismissedUpdateVersion = preferences.getString(KeyDismissedUpdateVersion, defaults.dismissedUpdateVersion) ?: defaults.dismissedUpdateVersion,
             appUpdateDownloadStatus = preferences.getAppUpdateDownloadStatus(defaults.appUpdateDownloadStatus),
@@ -657,6 +658,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
             .putString(KeyAppUpdateChannel, state.appUpdateChannel.id)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
+            .putBoolean(KeyUpdateAppViaProxy, state.updateAppViaProxy)
             .putString(
                 KeyAvailableAppUpdate,
                 state.availableAppUpdate?.let { update -> AppUpdateJson.encodeToString(update) },
@@ -1124,6 +1126,7 @@ private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
 private const val KeyAppUpdateChannel = "app_update_channel"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
+private const val KeyUpdateAppViaProxy = "update_app_via_proxy"
 private const val KeyAvailableAppUpdate = "available_app_update"
 private const val KeyAppUpdateDownloadStatus = "app_update_download_status"
 private const val KeyAppUpdateDownloadedBytes = "app_update_downloaded_bytes"

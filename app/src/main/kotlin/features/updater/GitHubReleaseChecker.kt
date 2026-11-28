@@ -15,8 +15,9 @@ private const val LogTag = "GitHubReleaseChecker"
 
 internal class GitHubReleaseChecker(
     context: Context? = null,
+    viaProxy: Boolean = true,
     private val fetcher: GitHubUpdateFetcher = GitHubUpdateFetcher(
-        AndroidUpdateTransport(context, UpdateHttp.ApiConnectTimeoutMs, UpdateHttp.ApiReadTimeoutMs),
+        AndroidUpdateTransport(context, UpdateHttp.ApiConnectTimeoutMs, UpdateHttp.ApiReadTimeoutMs, viaProxy),
         ProjectInfo.VERSION_NAME,
     ),
 ) {

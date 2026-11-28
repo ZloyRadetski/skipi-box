@@ -38,6 +38,7 @@ class SettingsSearchCatalogTest {
         subscriptions = SubscriptionSettingsCapabilities(expiryNotifications = false),
         logs = LogsSettingsCapabilities(logcat = false),
         nightUpdateInstall = false,
+        updateRouteChoice = false,
         pages = SettingsSearchPage.entries.toSet(),
         desktopVpnRows = true,
         systemProxy = true,

@@ -9,15 +9,19 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** Opens update requests through the tunnel when it is up (the app is excluded from its own VPN), never following redirects. */
+/**
+ * Opens update requests, never following redirects. With [viaProxy] they go through the tunnel while it is up (the app
+ * is excluded from its own VPN); without it they always take the device's own network.
+ */
 internal class AndroidUpdateTransport(
     private val context: Context?,
     private val connectTimeoutMs: Int,
     private val readTimeoutMs: Int,
+    private val viaProxy: Boolean,
 ) : UpdateTransport {
     override fun open(url: String, rangeFrom: Long, headers: Map<String, String>): UpdateResponse {
         val connection = TunnelNetworks.withLocalProxyAuthenticator {
-            TunnelNetworks.openHttpConnection(context, URL(url)).apply {
+            openConnection(URL(url)).apply {
                 requestMethod = "GET"
                 instanceFollowRedirects = false
                 connectTimeout = connectTimeoutMs
@@ -30,6 +34,9 @@ internal class AndroidUpdateTransport(
         }
         return ConnectionResponse(url, connection)
     }
+
+    private fun openConnection(url: URL): HttpURLConnection =
+        if (viaProxy) TunnelNetworks.openHttpConnection(context, url) else url.openConnection() as HttpURLConnection
 
     private class ConnectionResponse(
         override val url: String,

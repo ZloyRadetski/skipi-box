@@ -195,6 +195,18 @@ class AppSettingsPreferencesCompatibilityTest {
     }
 
     @Test
+    fun updatesGoThroughTheProxyByDefaultAndTheChoiceSurvivesSaveAndLoad() {
+        val preferences = InMemorySharedPreferences()
+        val store = AppSettingsPreferences(TestContext(preferences))
+
+        assertTrue(store.load().updateAppViaProxy)
+
+        store.save(AppState(updateAppViaProxy = false))
+
+        assertEquals(false, store.load().updateAppViaProxy)
+    }
+
+    @Test
     fun anUnknownStoredUpdateChannelFallsBackToStable() {
         val preferences = InMemorySharedPreferences().apply { seedString("app_update_channel", "weekly") }
 

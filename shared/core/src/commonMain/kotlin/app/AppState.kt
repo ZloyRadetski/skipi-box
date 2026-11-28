@@ -243,6 +243,8 @@ data class AppState(
     val autoInstallAppUpdatesAtNight: Boolean = true,
     /** Which GitHub releases the update check follows; changing it goes through [withAppUpdateChannel]. */
     val appUpdateChannel: features.updater.AppUpdateChannel = features.updater.AppUpdateChannel.Stable,
+    /** Whether update checks and downloads use the running tunnel; off sends them past it (Android). */
+    val updateAppViaProxy: Boolean = true,
     val availableAppUpdate: features.updater.AppUpdateInfo? = null,
     val dismissedUpdateVersion: String = "",
     val appUpdateDownloadStatus: features.updater.AppUpdateDownloadStatus = features.updater.AppUpdateDownloadStatus.IDLE,

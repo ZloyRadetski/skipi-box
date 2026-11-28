@@ -946,6 +946,8 @@
     <string name="settings_auto_install_night_title">通过 Wi-Fi 自动下载</string>
     <string name="settings_auto_install_night_summary">在充电且使用非计费 Wi-Fi 时下载更新。安装前 Android 始终会请求确认。</string>
     <string name="settings_check_updates_now_action">立即检查更新</string>
+    <string name="settings_update_via_proxy_title">通过代理下载更新</string>
+    <string name="settings_update_via_proxy_summary">SKIPI 隧道开启时，通过隧道检查和下载更新。关闭后直接连接。</string>
     <string name="settings_update_channel_title">更新渠道</string>
     <string name="settings_update_channel_stable">稳定版</string>
     <string name="settings_update_channel_nightly">Nightly</string>

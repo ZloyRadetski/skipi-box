@@ -40,7 +40,8 @@ internal class AppUpdateDownloadWorker(
 
         var failureMessage: String? = null
         try {
-            AppUpdateDownloader(applicationContext).downloadApk(update).collect { progress ->
+            val viaProxy = application.stateStore.currentState.updateAppViaProxy
+            AppUpdateDownloader(applicationContext, viaProxy).downloadApk(update).collect { progress ->
                 when (progress) {
                     is AppUpdateDownloadProgress.Downloading -> {
                         coordinator.markProgress(update, progress.downloadedBytes, progress.totalBytes)

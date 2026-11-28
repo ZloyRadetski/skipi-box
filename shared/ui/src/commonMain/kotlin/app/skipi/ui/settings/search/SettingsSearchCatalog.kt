@@ -479,6 +479,9 @@ private fun MutableList<SettingsSearchEntry>.about(host: SettingsSearchHost) = p
     row("settings_auto_install_night_title", Res.string.settings_auto_install_night_title,
         Res.string.settings_auto_install_night_summary, keywords = "update night обновление ночь установка",
         parent = "settings_auto_check_updates_title", shown = can.updates && host.nightUpdateInstall)
+    row("settings_update_via_proxy_title", Res.string.settings_update_via_proxy_title,
+        Res.string.settings_update_via_proxy_summary, keywords = "update proxy vpn direct обновление прокси напрямую",
+        shown = can.updates && host.updateRouteChoice)
     row("settings_update_channel_title", Res.string.settings_update_channel_title,
         keywords = "update channel stable nightly beta обновление канал", shown = can.updates)
     row("settings_check_updates_now_action", Res.string.settings_check_updates_now_action,

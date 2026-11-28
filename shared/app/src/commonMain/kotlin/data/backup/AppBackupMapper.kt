@@ -98,6 +98,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings = toPersistedSettings
         enableResolveProxyServerDomain = enableResolveProxyServerDomain,
         appUpdateChannel = appUpdateChannel.id,
         autoInstallAppUpdatesAtNight = autoInstallAppUpdatesAtNight,
+        updateAppViaProxy = updateAppViaProxy,
         fakeDnsIpPool = fakeDnsIpPool,
         fakeDnsPoolSize = fakeDnsPoolSize,
         hevTcpReadWriteTimeoutMillis = hevTcpReadWriteTimeoutMillis,
@@ -247,6 +248,7 @@ private fun AppBackupData.toAppState(): AppState {
         appUpdateChannel = AppUpdateChannel.fromId(settings.appUpdateChannel),
         autoCheckAppUpdates = settings.autoCheckAppUpdates,
         autoInstallAppUpdatesAtNight = settings.autoInstallAppUpdatesAtNight,
+        updateAppViaProxy = settings.updateAppViaProxy,
         bottomBarSize = settings.bottomBarSize.takeIf { it in BottomBarSizeSmall..BottomBarSizeLarge }
             ?: defaults.bottomBarSize,
         classicButtonSize = settings.classicButtonSize.takeIf { it in ClassicButtonSizeSmall..ClassicButtonSizeGiant }

@@ -22,13 +22,14 @@ internal class AppUpdateDownloader(
     private val updatesDirectory: File,
     private val downloader: UpdateFileDownloader,
 ) {
-    constructor(context: Context) : this(
+    constructor(context: Context, viaProxy: Boolean) : this(
         updatesDirectory = File(context.applicationContext.filesDir, UpdatesDirectoryName),
         downloader = UpdateFileDownloader(
             AndroidUpdateTransport(
                 context.applicationContext,
                 UpdateHttp.DownloadConnectTimeoutMs,
                 UpdateHttp.DownloadReadTimeoutMs,
+                viaProxy,
             ),
         ),
     )

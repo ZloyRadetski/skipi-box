@@ -59,7 +59,7 @@ internal class AppUpdateCheckCoordinator(
         if (!enabled) return@withLock AppUpdateCheckOutcome.UpToDate
         val channel = stateStore.currentState.appUpdateChannel
         val checkStore = AppUpdateCheckStore(appContext, channel)
-        val checker = GitHubReleaseChecker(appContext)
+        val checker = GitHubReleaseChecker(appContext, viaProxy = stateStore.currentState.updateAppViaProxy)
         val conditionalResult = checker.checkLatestReleaseResult(channel, checkStore.eTag())
         // Older app versions persisted the ETag but not the discovered update.
         // A 304 in that state must not hide the update forever after process death.
@@ -156,14 +156,8 @@ internal class AppUpdateDownloadCoordinator(
         automatic: Boolean,
         policy: ExistingWorkPolicy,
     ) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(if (automatic) NetworkType.UNMETERED else NetworkType.CONNECTED)
-            .apply {
-                if (automatic) setRequiresCharging(true)
-            }
-            .build()
         val request = OneTimeWorkRequestBuilder<AppUpdateDownloadWorker>()
-            .setConstraints(constraints)
+            .setConstraints(appUpdateDownloadConstraints(automatic))
             .setInputData(
                 workDataOf(
                     AppUpdateDownloadVersionCodeInputKey to update.versionCode,
@@ -175,6 +169,20 @@ internal class AppUpdateDownloadCoordinator(
         workManager.enqueueUniqueWork(AppUpdateDownloadWorkName, policy, request)
     }
 }
+
+/**
+ * A download the user asked for has no network constraint: Android reports a network as connected only after its own
+ * probe passes, and where that probe is blocked the work stayed queued at 0%. Without a network the transfer fails
+ * and is retried. An automatic one still waits for unmetered Wi-Fi and a charger.
+ */
+internal fun appUpdateDownloadConstraints(automatic: Boolean): Constraints = Constraints.Builder()
+    .apply {
+        if (automatic) {
+            setRequiredNetworkType(NetworkType.UNMETERED)
+            setRequiresCharging(true)
+        }
+    }
+    .build()
 
 internal const val AppUpdateDownloadWorkName = "app-update-download"
 internal const val AppUpdateDownloadVersionCodeInputKey = "app_update_download_version_code"

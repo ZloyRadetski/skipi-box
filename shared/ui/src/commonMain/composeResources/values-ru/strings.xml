@@ -1016,6 +1016,8 @@
     <string name="settings_auto_install_night_title">Автоскачивание по Wi-Fi</string>
     <string name="settings_auto_install_night_summary">Скачивать обновления по безлимитному Wi-Fi во время зарядки. Перед установкой Android всегда запросит подтверждение.</string>
     <string name="settings_check_updates_now_action">Проверить обновления сейчас</string>
+    <string name="settings_update_via_proxy_title">Скачивать обновления через прокси</string>
+    <string name="settings_update_via_proxy_summary">Проверять и скачивать обновления через туннель SKIPI, когда он включён. Выключите, чтобы качать напрямую, мимо прокси.</string>
     <string name="settings_update_channel_title">Канал обновлений</string>
     <string name="settings_update_channel_stable">Стабильный</string>
     <string name="settings_update_channel_nightly">Nightly</string>

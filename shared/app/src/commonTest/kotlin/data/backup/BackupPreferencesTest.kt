@@ -51,6 +51,7 @@ class BackupPreferencesTest {
             appUpdateChannel = AppUpdateChannel.Nightly,
             autoCheckAppUpdates = false,
             autoInstallAppUpdatesAtNight = false,
+            updateAppViaProxy = false,
             bottomBarSize = BottomBarSizeSmall,
             classicButtonSize = ClassicButtonSizeGiant,
             fakeDnsIpPool = "198.19.0.0/16",
@@ -64,6 +65,7 @@ class BackupPreferencesTest {
         assertEquals(AppUpdateChannel.Nightly, restored.appUpdateChannel)
         assertEquals(false, restored.autoCheckAppUpdates)
         assertEquals(false, restored.autoInstallAppUpdatesAtNight)
+        assertEquals(false, restored.updateAppViaProxy)
         assertEquals(BottomBarSizeSmall, restored.bottomBarSize)
         assertEquals(ClassicButtonSizeGiant, restored.classicButtonSize)
         assertEquals("198.19.0.0/16", restored.fakeDnsIpPool)
@@ -100,7 +102,7 @@ class BackupPreferencesTest {
         val keys = listOf(
             "appUpdateChannel", "autoCheckAppUpdates", "autoInstallAppUpdatesAtNight", "bottomBarSize",
             "classicButtonSize", "fakeDnsIpPool", "fakeDnsPoolSize", "hevTcpReadWriteTimeoutMillis",
-            "resourceFileUserAgent",
+            "resourceFileUserAgent", "updateAppViaProxy",
         )
         val document = Json.parseToJsonElement(encodeAppBackup(AppState().toAppBackupFile(0L, "0.4.1", 323))).jsonObject
         val data = document.getValue("data").jsonObject
@@ -113,6 +115,7 @@ class BackupPreferencesTest {
         assertEquals(defaults.appUpdateChannel, restored.appUpdateChannel)
         assertEquals(defaults.autoCheckAppUpdates, restored.autoCheckAppUpdates)
         assertEquals(defaults.autoInstallAppUpdatesAtNight, restored.autoInstallAppUpdatesAtNight)
+        assertEquals(defaults.updateAppViaProxy, restored.updateAppViaProxy)
         assertEquals(defaults.bottomBarSize, restored.bottomBarSize)
         assertEquals(defaults.classicButtonSize, restored.classicButtonSize)
         assertEquals(defaults.fakeDnsIpPool, restored.fakeDnsIpPool)

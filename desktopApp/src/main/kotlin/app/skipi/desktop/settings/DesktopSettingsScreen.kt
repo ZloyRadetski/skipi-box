@@ -279,6 +279,7 @@ internal fun desktopSettingsSearchHost(vpnPage: Boolean, systemProxy: Boolean): 
         about = AboutSettingsCapabilities(),
         resetVpn = true,
         nightUpdateInstall = false,
+        updateRouteChoice = false,
         desktopVpnRows = true,
         systemProxy = systemProxy,
         desktopDiagnostics = true,

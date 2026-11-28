@@ -254,6 +254,7 @@ class SettingsFieldInventoryTest {
         "trafficConfigs",
         "trafficStatsNotificationRefreshIntervalSeconds",
         "unappliedRoutingRules",
+        "updateAppViaProxy",
     )
 
     /** Desktop window, autostart and system-proxy settings, and the library-backed state. */

@@ -55,6 +55,7 @@ private object BackupDefaults {
     const val appUpdateChannel = "stable"
     const val autoCheckAppUpdates = true
     const val autoInstallAppUpdatesAtNight = true
+    const val updateAppViaProxy = true
     const val bottomBarSize = 2
     const val classicButtonSize = 1
     const val enableSeasonalEvents = true
@@ -255,6 +256,7 @@ data class AppBackupSettings(
     val appUpdateChannel: String = BackupDefaults.appUpdateChannel,
     val autoCheckAppUpdates: Boolean = BackupDefaults.autoCheckAppUpdates,
     val autoInstallAppUpdatesAtNight: Boolean = BackupDefaults.autoInstallAppUpdatesAtNight,
+    val updateAppViaProxy: Boolean = BackupDefaults.updateAppViaProxy,
     val bottomBarSize: Int = BackupDefaults.bottomBarSize,
     val classicButtonSize: Int = BackupDefaults.classicButtonSize,
     val enableSeasonalEvents: Boolean = BackupDefaults.enableSeasonalEvents,

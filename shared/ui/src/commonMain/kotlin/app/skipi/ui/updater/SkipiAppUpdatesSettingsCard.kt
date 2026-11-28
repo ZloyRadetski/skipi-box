@@ -7,6 +7,7 @@ import app.skipi.ui.settings.search.SettingsSearchAnchor
 import app.skipi.ui.settings.SkipiSettingsReveal
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,8 @@ import app.skipi.ui.resources.settings_update_channel_nightly_summary
 import app.skipi.ui.resources.settings_update_channel_stable
 import app.skipi.ui.resources.settings_update_channel_stable_summary
 import app.skipi.ui.resources.settings_update_channel_title
+import app.skipi.ui.resources.settings_update_via_proxy_summary
+import app.skipi.ui.resources.settings_update_via_proxy_title
 import app.skipi.ui.settings.SkipiSettingsSectionCard
 import features.updater.AppUpdateChannel
 import org.jetbrains.compose.resources.StringResource
@@ -35,8 +38,8 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 /**
- * Shared "Updates" card of About. Night installation is an Android-only transfer policy, so a host
- * without an installer passes `null` for [nightInstallEnabled].
+ * Shared "Updates" card of About. Night installation and the choice of route are Android-only transfer policies, so
+ * a host without them passes `null` for [nightInstallEnabled] and [viaProxyEnabled].
  */
 @Composable
 fun SkipiAppUpdatesSettingsCard(
@@ -49,6 +52,8 @@ fun SkipiAppUpdatesSettingsCard(
     checkSummary: String?,
     onCheckNow: () -> Unit,
     modifier: Modifier = Modifier,
+    viaProxyEnabled: Boolean? = null,
+    onViaProxyChange: (Boolean) -> Unit = {},
 ) {
     SkipiSettingsSectionCard(modifier = modifier, bottomPadding = 12.dp) {
         SettingsSearchAnchor("settings_auto_check_updates_title") {
@@ -68,6 +73,17 @@ fun SkipiAppUpdatesSettingsCard(
                     summary = stringResource(Res.string.settings_auto_install_night_summary),
                     checked = nightInstallEnabled == true,
                     onCheckedChange = onNightInstallChange,
+                )
+            }
+        }
+        if (viaProxyEnabled != null) {
+            SettingsSearchAnchor("settings_update_via_proxy_title") {
+                SwitchPreference(
+                    title = stringResource(Res.string.settings_update_via_proxy_title),
+                    startAction = settingIcon(Icons.Rounded.VpnKey),
+                    summary = stringResource(Res.string.settings_update_via_proxy_summary),
+                    checked = viaProxyEnabled,
+                    onCheckedChange = onViaProxyChange,
                 )
             }
         }

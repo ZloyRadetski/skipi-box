@@ -44,6 +44,7 @@ data class SettingsSearchHost(
     val resetVpn: Boolean = true,
     /** Updates can be installed at night. */
     val nightUpdateInstall: Boolean = true,
+    val updateRouteChoice: Boolean = true,
     /** The desktop rows of the VPN page: TUN mode, local DNS, and the launch-on-login wording. */
     val desktopVpnRows: Boolean = false,
     val systemProxy: Boolean = false,
