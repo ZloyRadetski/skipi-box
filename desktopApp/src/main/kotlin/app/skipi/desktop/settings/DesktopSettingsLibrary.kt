@@ -139,6 +139,7 @@ data class DesktopAppSettings(
     val fontWeightMode: Int? = null,
     val backgroundStyle: Int? = null,
     val backgroundPhotoDimPercent: Int? = null,
+    val backgroundPhotoBlurPercent: Int? = null,
     val bottomBarSize: Int? = null,
     val classicButtonSize: Int? = null,
     val enableSeasonalEvents: Boolean = true,

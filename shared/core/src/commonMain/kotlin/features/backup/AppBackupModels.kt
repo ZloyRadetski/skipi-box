@@ -120,6 +120,7 @@ private object BackupDefaults {
     const val enableSubscriptionSwipe = true
     const val backgroundStyle = 0
     const val backgroundPhotoDimPercent = 45
+    const val backgroundPhotoBlurPercent = 0
     const val enableHaptics = true
     const val classicShowFloatingPowerButton = false
     const val floatingButtonX = 1f
@@ -293,6 +294,7 @@ data class AppBackupSettings(
     val enableSubscriptionSwipe: Boolean = BackupDefaults.enableSubscriptionSwipe,
     val backgroundStyle: Int = BackupDefaults.backgroundStyle,
     val backgroundPhotoDimPercent: Int = BackupDefaults.backgroundPhotoDimPercent,
+    val backgroundPhotoBlurPercent: Int = BackupDefaults.backgroundPhotoBlurPercent,
     val enableHaptics: Boolean = BackupDefaults.enableHaptics,
     val hasCompletedOnboarding: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = BackupDefaults.classicShowFloatingPowerButton,

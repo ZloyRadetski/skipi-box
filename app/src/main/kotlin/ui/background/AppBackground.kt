@@ -31,7 +31,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -200,6 +202,7 @@ fun clearCustomBackgroundPhoto(context: Context): Boolean {
 private data class BackgroundSettings(
     val style: Int,
     val dimPercent: Int,
+    val blurPercent: Int,
     val connected: Boolean,
     val seasonalEvents: Boolean,
 )
@@ -215,16 +218,29 @@ fun AppBackground(
     val settings by remember {
         derivedStateOf {
             val state = appState.value
-            BackgroundSettings(state.backgroundStyle, state.backgroundPhotoDimPercent, state.proxyRunning, state.enableSeasonalEvents)
+            BackgroundSettings(state.backgroundStyle, state.backgroundPhotoDimPercent, state.backgroundPhotoBlurPercent, state.proxyRunning, state.enableSeasonalEvents)
         }
     }
     val context = LocalContext.current
     val photoSeed = backgroundPhotoUpdateSeed
     val isPhotoStyle = settings.style == BackgroundStylePhoto
     // Decoded off the main thread; the previous bitmap stays on screen until the new one is ready.
-    val photoState = produceState<ImageBitmap?>(initialValue = null, photoSeed, isPhotoStyle) {
+    // Modifier.blur works from API 31; older devices get a blurred copy of the bitmap, cached per (photo, percent).
+    val nativeBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val fallbackBlurPercent = if (nativeBlur) 0 else settings.blurPercent
+    val density = LocalDensity.current.density
+    val photoState = produceState<ImageBitmap?>(initialValue = null, photoSeed, isPhotoStyle, fallbackBlurPercent) {
         value = if (isPhotoStyle) {
-            withContext(Dispatchers.IO) { loadCustomBackgroundBitmap(context) }
+            withContext(Dispatchers.IO) {
+                val bitmap = loadCustomBackgroundBitmap(context)
+                if (bitmap == null || fallbackBlurPercent <= 0) {
+                    bitmap
+                } else {
+                    runCatchingCancellable {
+                        blurredImageBitmap(bitmap.asAndroidBitmap(), app.skipi.ui.background.backgroundBlurRadiusDp(fallbackBlurPercent) * density)
+                    }.getOrDefault(bitmap)
+                }
+            }
         } else {
             null
         }
@@ -249,6 +265,7 @@ fun AppBackground(
         solidColor = AppTheme.colors.background,
         isConnected = settings.connected,
         dimPercent = settings.dimPercent,
+        blurPercent = if (nativeBlur) settings.blurPercent else 0,
         photo = photo,
         reduceMotion = powerManager?.isPowerSaveMode == true,
         modifier = modifier,

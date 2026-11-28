@@ -7,6 +7,7 @@ package app.skipi.ui.settings
 data class AppearanceSettingsState(
     val appIcon: Int = 0,
     val backgroundPhotoDimPercent: Int = 45,
+    val backgroundPhotoBlurPercent: Int = 0,
     val backgroundStyle: Int = 0,
     val bottomBarSize: Int = 1,
     val classicButtonSize: Int = 1,

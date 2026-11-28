@@ -190,6 +190,7 @@ class AndroidAppRepositoryMappingTest {
             fontWeightMode = 5,
             backgroundStyle = BackgroundStylePhoto,
             backgroundPhotoDimPercent = 63,
+            backgroundPhotoBlurPercent = 37,
             bottomBarSize = 2,
             connectionDisplayMode = ConnectionDisplayModeCompact,
             pinConnectionPanelOnHome = true,
@@ -208,6 +209,7 @@ class AndroidAppRepositoryMappingTest {
         assertEquals(0xFF223344, shared.appearance.customBackgroundColor)
         assertEquals(BackgroundStylePhoto, shared.appearance.backgroundStyle)
         assertEquals(63, shared.appearance.backgroundPhotoDimPercent)
+        assertEquals(37, shared.appearance.backgroundPhotoBlurPercent)
         assertEquals("first-code\nsecond-code", shared.appearance.customThemes)
         assertEquals("first-code\nsecond-code", restored.customThemes)
         assertEquals(ConnectionDisplayModeCompact, shared.home.connectionDisplayMode)

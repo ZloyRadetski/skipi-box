@@ -28,6 +28,7 @@ class AppearanceStateMappingTest {
             fontWeightMode = 1,
             backgroundStyle = 2,
             backgroundPhotoDimPercent = 60,
+            backgroundPhotoBlurPercent = 37,
             bottomBarSize = 0,
             classicButtonSize = 3,
             seasonalEvents = false,
@@ -60,6 +61,7 @@ class AppearanceStateMappingTest {
         assertEquals(1, state.fontWeightMode)
         assertEquals(2, state.backgroundStyle)
         assertEquals(60, state.backgroundPhotoDimPercent)
+        assertEquals(37, state.backgroundPhotoBlurPercent)
         assertEquals(0, state.bottomBarSize)
         assertEquals(3, state.classicButtonSize)
         assertEquals(false, state.enableSeasonalEvents)
@@ -89,6 +91,7 @@ class AppearanceStateMappingTest {
         assertEquals(app.modes.FontSizeModeSmall, state.fontSizeMode)
         assertEquals(defaults.backgroundStyle, state.backgroundStyle)
         assertEquals(defaults.backgroundPhotoDimPercent, state.backgroundPhotoDimPercent)
+        assertEquals(defaults.backgroundPhotoBlurPercent, state.backgroundPhotoBlurPercent)
         assertEquals(defaults.bottomBarSize, state.bottomBarSize)
         assertEquals(defaults.classicButtonSize, state.classicButtonSize)
         assertEquals(defaults.connectionDisplayMode, state.connectionDisplayMode)

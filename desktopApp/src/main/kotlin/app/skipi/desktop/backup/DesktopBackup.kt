@@ -296,6 +296,7 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         classicButtonSize = classicButtonSize.takeIf { it in app.modes.ClassicButtonSizeSmall..app.modes.ClassicButtonSizeGiant },
         backgroundStyle = backgroundStyle,
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
+        backgroundPhotoBlurPercent = backgroundPhotoBlurPercent,
         connectionDisplayMode = connectionDisplayMode,
         enableAllProxyGroup = enableAllProxyGroup,
         confirmDeletion = enableDeletionConfirmation,

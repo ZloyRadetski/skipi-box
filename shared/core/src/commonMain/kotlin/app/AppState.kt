@@ -102,6 +102,7 @@ data class AppState(
     val floatingButtonY: Float = app.modes.FloatingButtonDefaultFraction,
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
+    val backgroundPhotoBlurPercent: Int = 0,
     val bottomBarSize: Int = BottomBarSizeLarge,
     /** Size of the connection button in the classic Home view; medium by default. */
     val classicButtonSize: Int = ClassicButtonSizeMedium,

@@ -23,6 +23,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
 import app.seasonal.SeasonalEvent
 import app.skipi.ui.anim.rememberInfinitePulse
@@ -57,6 +61,12 @@ fun connectionBackgroundSpec(isRunning: Boolean, isDark: Boolean): ConnectionBac
 
 fun backgroundDimAlpha(percent: Int): Float = percent.coerceIn(0, 100) / 100f
 
+/** Blur radius in dp for the photo: 0.4 dp per percent, so 100% is 40 dp. */
+fun backgroundBlurRadiusDp(percent: Int): Float = percent.coerceIn(0, 100) * 0.4f
+
+/** Scale that hides the soft edges a blurred photo gets; 1 without blur, up to 1.1 at full blur. */
+fun backgroundBlurScale(percent: Int): Float = 1f + percent.coerceIn(0, 100) / 1000f
+
 /** Top and middle stops (the page colour closes the gradient) used while no photo is stored. */
 fun photoFallbackGradient(isDark: Boolean): List<Color> =
     if (isDark) listOf(Color(0xFF312E81), Color(0xFF1E1B4B)) else listOf(Color(0xFFC7D2FE), Color(0xFFE0E7FF))
@@ -73,6 +83,7 @@ fun SkipiAppBackground(
     isConnected: Boolean,
     dimPercent: Int,
     photo: ImageBitmap?,
+    blurPercent: Int = 0,
     reduceMotion: Boolean,
     modifier: Modifier = Modifier,
     seasonalEvent: SeasonalEvent? = null,
@@ -84,7 +95,7 @@ fun SkipiAppBackground(
         when (style) {
             AppearanceSettingValues.BackgroundStylePhoto -> {
                 if (photo != null) {
-                    Image(bitmap = photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    BackgroundPhoto(photo, blurPercent)
                     if (dimPercent.coerceIn(0, 100) > 0) DimLayer(dimPercent)
                 } else {
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(photoFallbackGradient(isDark) + solidColor)))
@@ -162,6 +173,28 @@ private fun AuroraLayer(isDark: Boolean, reduceMotion: Boolean) {
             val phases = auroraPhases(elapsed.longValue)
             drawAuroraMesh(isDark, phases.t1, phases.t2, phases.t3, phases.t4)
         }
+    }
+}
+
+/** The photo alone is blurred (and slightly enlarged so the blurred rim stays outside the window); dimming is drawn above it. */
+@Composable
+private fun BackgroundPhoto(photo: ImageBitmap, blurPercent: Int) {
+    val radius = backgroundBlurRadiusDp(blurPercent)
+    if (radius <= 0f) {
+        Image(bitmap = photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        return
+    }
+    val scale = backgroundBlurScale(blurPercent)
+    Box(Modifier.fillMaxSize().clipToBounds()) {
+        Image(
+            bitmap = photo,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .blur(radius.dp, BlurredEdgeTreatment.Rectangle),
+        )
     }
 }
 

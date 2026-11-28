@@ -342,6 +342,7 @@ private fun AppBackupData.toAppState(): AppState {
         enableSubscriptionSwipe = settings.enableSubscriptionSwipe,
         backgroundStyle = settings.backgroundStyle,
         backgroundPhotoDimPercent = settings.backgroundPhotoDimPercent,
+        backgroundPhotoBlurPercent = settings.backgroundPhotoBlurPercent,
         enableHaptics = settings.enableHaptics,
         hasCompletedOnboarding = true,
         classicShowFloatingPowerButton = settings.classicShowFloatingPowerButton,

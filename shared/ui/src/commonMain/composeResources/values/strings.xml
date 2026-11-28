@@ -1278,6 +1278,7 @@
     <string name="settings_background_photo_pick">Choose photo</string>
     <string name="settings_background_photo_remove">Remove photo</string>
     <string name="settings_background_dim">Background dimming</string>
+    <string name="settings_background_photo_blur">Background blur</string>
     <!-- App update notifications -->
     <string name="app_update_notification_channel_name">App Updates</string>
     <string name="app_update_notification_channel_description">Shows available updates and download progress</string>

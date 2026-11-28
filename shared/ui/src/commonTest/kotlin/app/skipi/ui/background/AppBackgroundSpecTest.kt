@@ -45,6 +45,22 @@ class AppBackgroundSpecTest {
     }
 
     @Test
+    fun blurRadiusIsFortyPercentOfDpAndClamped() {
+        assertEquals(0f, backgroundBlurRadiusDp(0))
+        assertEquals(0f, backgroundBlurRadiusDp(-10))
+        assertEquals(20f, backgroundBlurRadiusDp(50))
+        assertEquals(40f, backgroundBlurRadiusDp(100))
+        assertEquals(40f, backgroundBlurRadiusDp(300))
+    }
+
+    @Test
+    fun blurScalesPhotoUpOnlyWhenBlurred() {
+        assertEquals(1f, backgroundBlurScale(0))
+        assertEquals(1.1f, backgroundBlurScale(100), 0.0001f)
+        assertEquals(1.05f, backgroundBlurScale(50), 0.0001f)
+    }
+
+    @Test
     fun missingPhotoFallsBackToThemedGradient() {
         assertEquals(listOf(Color(0xFF312E81), Color(0xFF1E1B4B)), photoFallbackGradient(isDark = true))
         assertEquals(listOf(Color(0xFFC7D2FE), Color(0xFFE0E7FF)), photoFallbackGradient(isDark = false))

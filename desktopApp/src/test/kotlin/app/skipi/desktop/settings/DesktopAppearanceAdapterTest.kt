@@ -92,6 +92,7 @@ class DesktopAppearanceAdapterTest {
             fontWeightMode = 5,
             backgroundStyle = 1,
             backgroundPhotoDimPercent = 71,
+            backgroundPhotoBlurPercent = 37,
             bottomBarSize = 2,
             customThemes = "first-code\nsecond-code",
         )
@@ -129,6 +130,7 @@ class DesktopAppearanceAdapterTest {
         assertEquals(5, settings.fontWeightMode)
         assertEquals(1, settings.backgroundStyle)
         assertEquals(71, settings.backgroundPhotoDimPercent)
+        assertEquals(37, settings.backgroundPhotoBlurPercent)
         assertEquals(2, settings.bottomBarSize)
         assertEquals("first-code\nsecond-code", settings.customThemes)
         assertEquals("first-code\nsecond-code", fixture.repository.state.value.appearance.customThemes)

@@ -31,6 +31,7 @@ fun PersistedSettings.toAppearanceSettingsState(host: AppearanceHostSettings = A
     return AppearanceSettingsState(
         appIcon = host.appIcon,
         backgroundPhotoDimPercent = appearance.backgroundPhotoDimPercent ?: defaults.backgroundPhotoDimPercent,
+        backgroundPhotoBlurPercent = appearance.backgroundPhotoBlurPercent ?: defaults.backgroundPhotoBlurPercent,
         backgroundStyle = appearance.backgroundStyle ?: defaults.backgroundStyle,
         bottomBarSize = appearance.bottomBarSize ?: defaults.bottomBarSize,
         classicButtonSize = appearance.classicButtonSize ?: defaults.classicButtonSize,
@@ -78,6 +79,7 @@ fun PersistedSettings.withAppearanceSettingsState(state: AppearanceSettingsState
             fontWeightMode = state.fontWeightMode,
             backgroundStyle = state.backgroundStyle,
             backgroundPhotoDimPercent = state.backgroundPhotoDimPercent,
+            backgroundPhotoBlurPercent = state.backgroundPhotoBlurPercent,
             bottomBarSize = state.bottomBarSize,
             classicButtonSize = state.classicButtonSize,
             seasonalEvents = state.enableSeasonalEvents,

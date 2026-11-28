@@ -34,6 +34,7 @@ fun PersistedSettings.toBackupSettings(base: AppBackupSettings = AppBackupSettin
         enableSeasonalEvents = appearance.seasonalEvents,
         backgroundStyle = appearance.backgroundStyle ?: base.backgroundStyle,
         backgroundPhotoDimPercent = appearance.backgroundPhotoDimPercent ?: base.backgroundPhotoDimPercent,
+        backgroundPhotoBlurPercent = appearance.backgroundPhotoBlurPercent ?: base.backgroundPhotoBlurPercent,
         connectionDisplayMode = home.connectionDisplayMode ?: base.connectionDisplayMode,
         pinConnectionPanelOnHome = home.pinConnectionPanel,
         enableSubscriptionSwipe = home.subscriptionSwipeEnabled,

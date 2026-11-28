@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.FormatBold
 import androidx.compose.material.icons.rounded.Dock
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.BlurOn
 import androidx.compose.material.icons.rounded.Contrast
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Swipe
@@ -195,6 +196,8 @@ internal fun AppearanceBackgroundSection(
 
     val backgroundDimOptions = remember { listOf(0, 25, 45, 60, 75) }
     val backgroundDimLabels = remember { listOf("0%", "25%", "45%", "60%", "75%") }
+    val backgroundBlurOptions = remember { listOf(0, 25, 50, 75, 100) }
+    val backgroundBlurLabels = remember { listOf("0%", "25%", "50%", "75%", "100%") }
 
     SmallTitle(text = stringResource(Res.string.settings_background_title))
     SkipiSettingsSectionCard {
@@ -231,6 +234,19 @@ internal fun AppearanceBackgroundSection(
                         onSelectedIndexChange = { index ->
                             updateAppState {
                                 it.copy(backgroundPhotoDimPercent = backgroundDimOptions[index])
+                            }
+                        },
+                    )
+                }
+                SettingsSearchAnchor("settings_background_photo_blur") {
+                    SkipiDropdownPreference(
+                        title = stringResource(Res.string.settings_background_photo_blur),
+                        startAction = settingIcon(Icons.Rounded.BlurOn),
+                        items = backgroundBlurLabels,
+                        selectedIndex = backgroundBlurOptions.indexOf(appState.backgroundPhotoBlurPercent).coerceIn(0, backgroundBlurOptions.lastIndex),
+                        onSelectedIndexChange = { index ->
+                            updateAppState {
+                                it.copy(backgroundPhotoBlurPercent = backgroundBlurOptions[index])
                             }
                         },
                     )

@@ -115,6 +115,8 @@ private fun MutableList<SettingsSearchEntry>.appearance(host: SettingsSearchHost
         parent = "settings_background_style", shown = can.wallpaper)
     row("settings_background_dim", Res.string.settings_background_dim,
         keywords = "dim darken затемнение яркость фон", parent = "settings_background_style", shown = can.wallpaper)
+    row("settings_background_photo_blur", Res.string.settings_background_photo_blur,
+        keywords = "blur размытие размыть фон фото", parent = "settings_background_style", shown = can.wallpaper)
     row("settings_background_photo_remove", Res.string.settings_background_photo_remove,
         keywords = "photo delete фото удалить убрать фон", parent = "settings_background_style", shown = can.wallpaper)
     row("settings_seasonal_events", Res.string.settings_seasonal_events, Res.string.settings_seasonal_events_summary,

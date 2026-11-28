@@ -23,6 +23,29 @@ class BackupPreferencesTest {
     }
 
     @Test
+    fun backgroundBlurDefaultsToNoneAndComesBackAfterARestore() {
+        assertEquals(0, AppState().backgroundPhotoBlurPercent)
+        assertEquals(0, features.backup.AppBackupSettings().backgroundPhotoBlurPercent)
+
+        val restored = restore(AppState(backgroundPhotoBlurPercent = 75, backgroundPhotoDimPercent = 30))
+
+        assertEquals(75, restored.backgroundPhotoBlurPercent)
+        assertEquals(30, restored.backgroundPhotoDimPercent)
+    }
+
+    @Test
+    fun backupWithoutBackgroundBlurRestoresWithoutBlur() {
+        val backup = AppState(backgroundPhotoBlurPercent = 75).toAppBackupFile(createdAtMillis = 0L, appVersionName = "1.0", appVersionCode = 1)
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(encodeAppBackup(backup)).jsonObject
+        val settings = json.getValue("data").jsonObject.getValue("settings").jsonObject
+        val old = JsonObject(json + ("data" to JsonObject(json.getValue("data").jsonObject + ("settings" to JsonObject(settings - "backgroundPhotoBlurPercent")))))
+
+        val restored = decodeAppBackup(old.toString()).toRestorePreview().restoredState
+
+        assertEquals(0, restored.backgroundPhotoBlurPercent)
+    }
+
+    @Test
     fun updateAndLayoutPreferencesComeBackAfterARestore() {
         val chosen = AppState(
             appUpdateChannel = AppUpdateChannel.Nightly,

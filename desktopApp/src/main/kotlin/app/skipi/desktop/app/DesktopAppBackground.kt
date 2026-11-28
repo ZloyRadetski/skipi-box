@@ -48,6 +48,7 @@ internal fun DesktopAppBackground(
         isConnected = isConnected,
         dimPercent = settings.backgroundPhotoDimPercent ?: 45,
         photo = photo,
+        blurPercent = settings.backgroundPhotoBlurPercent ?: 0,
         reduceMotion = false,
         seasonalEvent = seasonalEvent,
         content = content,

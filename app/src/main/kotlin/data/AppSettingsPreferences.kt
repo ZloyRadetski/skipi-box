@@ -401,6 +401,10 @@ internal class AppSettingsPreferences(
                 KeyBackgroundPhotoDimPercent,
                 defaults.backgroundPhotoDimPercent,
             ),
+            backgroundPhotoBlurPercent = preferences.getInt(
+                KeyBackgroundPhotoBlurPercent,
+                defaults.backgroundPhotoBlurPercent,
+            ),
             bottomBarSize = preferences.getInt(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
@@ -662,6 +666,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableHaptics, state.enableHaptics)
             .putInt(KeyBackgroundStyle, state.backgroundStyle)
             .putInt(KeyBackgroundPhotoDimPercent, state.backgroundPhotoDimPercent)
+            .putInt(KeyBackgroundPhotoBlurPercent, state.backgroundPhotoBlurPercent)
             .putBoolean(KeyEnableSubscriptionExpiryNotifications, state.enableSubscriptionExpiryNotifications)
             .putStringList(
                 KeySubscriptionExpiryReminders,
@@ -1077,6 +1082,7 @@ private const val KeyPinConnectionPanelOnHome = "pin_connection_panel_on_home"
 private const val KeyEnableSubscriptionSwipe = "enable_subscription_swipe"
 private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
+private const val KeyBackgroundPhotoBlurPercent = "background_photo_blur_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicButtonSize = "classic_button_size"
 private const val KeyFloatingButtonX = "floating_button_x"

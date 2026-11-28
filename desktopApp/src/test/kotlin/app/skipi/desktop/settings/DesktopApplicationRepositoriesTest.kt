@@ -695,6 +695,7 @@ class DesktopApplicationRepositoriesTest {
                     customBackgroundColor = 0xFF223344,
                     backgroundStyle = 1,
                     backgroundPhotoDimPercent = 71,
+                    backgroundPhotoBlurPercent = 37,
                     fontFamilyMode = 4,
                     fontSizeMode = 115,
                     fontWeightMode = 5,
@@ -716,6 +717,7 @@ class DesktopApplicationRepositoriesTest {
         assertEquals(0xFF223344, settings.customBackgroundColor)
         assertEquals(1, settings.backgroundStyle)
         assertEquals(71, settings.backgroundPhotoDimPercent)
+        assertEquals(37, settings.backgroundPhotoBlurPercent)
         assertEquals(4, settings.fontFamilyMode)
         assertEquals(115, settings.fontSizeMode)
         assertEquals(5, settings.fontWeightMode)
@@ -728,6 +730,7 @@ class DesktopApplicationRepositoriesTest {
         assertTrue(settings.showServerSearch)
         assertEquals(settings.customBackgroundColor, repository.state.value.appearance.customBackgroundColor)
         assertEquals(settings.backgroundPhotoDimPercent, repository.state.value.appearance.backgroundPhotoDimPercent)
+        assertEquals(settings.backgroundPhotoBlurPercent, repository.state.value.appearance.backgroundPhotoBlurPercent)
     }
 
     @Test
@@ -803,6 +806,7 @@ class DesktopApplicationRepositoriesTest {
             assertEquals(null, loaded.customBackgroundColor)
             assertEquals(null, loaded.backgroundStyle)
             assertEquals(null, loaded.backgroundPhotoDimPercent)
+            assertEquals(null, loaded.backgroundPhotoBlurPercent)
             assertEquals(null, loaded.connectionDisplayMode)
         } finally {
             Files.deleteIfExists(path)

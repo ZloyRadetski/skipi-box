@@ -1267,6 +1267,7 @@
     <string name="settings_background_photo_pick">Выбрать фото из галереи</string>
     <string name="settings_background_photo_remove">Удалить фоновое фото</string>
     <string name="settings_background_dim">Степень затемнения</string>
+    <string name="settings_background_photo_blur">Размытие фона</string>
     <!-- Уведомления об обновлении приложения -->
     <string name="app_update_notification_channel_name">Обновления приложения</string>
     <string name="app_update_notification_channel_description">Показывает доступные обновления и ход загрузки</string>
