@@ -1,6 +1,10 @@
 name: Build Release APKs
 
 # Runs only on request: by hand from the Actions tab, or when a v* tag is pushed (build only).
+#
+# Android and the three desktop platforms build in parallel. Nothing is published (no tag, no release,
+# no Telegram message, no update manifest) unless every one of them succeeded; a failed run leaves only
+# its workflow artifacts.
 # A push to a branch never builds anything.
 #
 # What a manual run publishes is chosen with "publish":
@@ -42,25 +46,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build, Publish, And Notify
+  prepare:
+    name: Version
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     outputs:
       version_name: ${{ steps.version.outputs.version_name }}
       tag_name: ${{ steps.version.outputs.tag_name }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
       create_github_release: ${{ steps.version.outputs.create_github_release }}
-      version_code: ${{ steps.collect.outputs.version_code }}
+      version_code: ${{ steps.version.outputs.version_code }}
     env:
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
-      TELEGRAM_MAX_DOCUMENT_BYTES: ${{ vars.TELEGRAM_MAX_DOCUMENT_BYTES }}
-      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-      RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-      SEND_TO_TELEGRAM: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.send_to_telegram == 'true' }}
       REQUESTED_VERSION_NAME: ${{ github.event.inputs.version_name }}
       PUBLISH_MODE: ${{ github.event.inputs.publish || 'none' }}
 
@@ -82,7 +78,12 @@ jobs:
             exit 1
           fi
 
-          version_name="${REQUESTED_VERSION_NAME:-$config_version}"
+          version_name="${REQUESTED_VERSION_NAME:-}"
+          # A pushed v* tag names the version it builds.
+          if [ -z "$version_name" ] && [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$GITHUB_REF_NAME" ]; then
+            version_name="${GITHUB_REF_NAME#v}"
+          fi
+          version_name="${version_name:-$config_version}"
           mode="${PUBLISH_MODE:-none}"
           release_regex='^[0-9]+\.[0-9]+\.[0-9]+$'
           prerelease_regex='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
@@ -124,6 +125,26 @@ jobs:
           echo "tag_name=v$version_name" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
           echo "create_github_release=$create_github_release" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Build Android APKs
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+      RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
+      VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
@@ -270,25 +291,10 @@ jobs:
           fi
 
       - name: Collect release APKs
-        id: collect
         shell: bash
-        env:
-          CONFIG_VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          CREATE_GITHUB_RELEASE: ${{ steps.version.outputs.create_github_release }}
         run: |
           set -euo pipefail
 
-          ref_version_name="${GITHUB_REF_NAME#v}"
-          version_name="${REQUESTED_VERSION_NAME:-}"
-
-          if [ -z "$version_name" ] && [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ "$ref_version_name" != "$GITHUB_REF_NAME" ]; then
-            version_name="$ref_version_name"
-          fi
-          if [ -z "$version_name" ]; then
-            version_name="$CONFIG_VERSION_NAME"
-          fi
-
-          version_code="$(git rev-list --count HEAD)"
           mkdir -p release-artifacts github-release-artifacts
 
           shopt -s nullglob
@@ -303,7 +309,7 @@ jobs:
               *universal*) abi="universal" ;;
             esac
 
-            cp "$apk" "release-artifacts/SKIPI_${version_name}-${version_code}-${abi}.apk"
+            cp "$apk" "release-artifacts/SKIPI_${VERSION_NAME}-${VERSION_CODE}-${abi}.apk"
             cp "$apk" "github-release-artifacts/SKIPI-${abi}.apk"
           done
 
@@ -311,284 +317,30 @@ jobs:
             echo "::error::No release APKs were found under signed-apks."
             exit 1
           fi
-          if ! find github-release-artifacts -type f -name "*.apk" | grep -q .; then
-            echo "::error::No GitHub Release APKs were found under signed-apks."
-            exit 1
-          fi
-
-          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
-          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
-          ls -lh release-artifacts
-          ls -lh github-release-artifacts
+          ls -lh release-artifacts github-release-artifacts
 
       - name: Upload GitHub artifact
         uses: actions/upload-artifact@v7
         with:
-          name: SKIPI_${{ steps.collect.outputs.version_name }}-${{ steps.collect.outputs.version_code }}
+          name: SKIPI_${{ env.VERSION_NAME }}-${{ env.VERSION_CODE }}
           path: release-artifacts/*.apk
           if-no-files-found: error
 
-      - name: Create tag and release notes
-        if: steps.version.outputs.create_github_release == 'true'
-        id: release_info
-        shell: bash
-        env:
-          TAG_NAME: ${{ steps.version.outputs.tag_name }}
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          VERSION_CODE: ${{ steps.collect.outputs.version_code }}
-          IS_PRERELEASE: ${{ steps.version.outputs.is_prerelease }}
-        run: |
-          set -euo pipefail
-
-          current_sha="$(git rev-parse HEAD)"
-          git fetch --tags --force
-
-          if git rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
-            tag_sha="$(git rev-list -n 1 "$TAG_NAME")"
-            if [ "$tag_sha" != "$current_sha" ]; then
-              echo "::error::Tag $TAG_NAME already exists at $tag_sha, but this workflow is running at $current_sha."
-              exit 1
-            fi
-            echo "Tag $TAG_NAME already exists on the current commit."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "$TAG_NAME" -m "Release $TAG_NAME" "$current_sha"
-            git push origin "refs/tags/$TAG_NAME"
-          fi
-
-          # A pre-release is compared with the closest earlier tag of any kind (the previous pre-release or release),
-          # so each pre-release lists only what is new in it; a full release is compared with the previous full release.
-          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
-            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
-          else
-            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
-          fi
-          mapfile -t release_tags < <(
-            git for-each-ref --format='%(refname:short)' refs/tags |
-              grep -E "$tag_pattern" || true
-          )
-
-          previous_candidates="$(mktemp)"
-          for candidate in "${release_tags[@]}"; do
-            if [ "$candidate" = "$TAG_NAME" ]; then
-              continue
-            fi
-            if git merge-base --is-ancestor "$candidate" "$current_sha"; then
-              count="$(git rev-list --count "${candidate}..${current_sha}")"
-              printf '%s\t%s\n' "$count" "$candidate" >> "$previous_candidates"
-            fi
-          done
-
-          previous_tag=""
-          if [ -s "$previous_candidates" ]; then
-            previous_tag="$(sort -n "$previous_candidates" | head -n 1 | cut -f2-)"
-          fi
-
-          range="$current_sha"
-          if [ -n "$previous_tag" ]; then
-            range="${previous_tag}..${current_sha}"
-          fi
-
-          repo_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
-          log_file="$(mktemp)"
-          git log --reverse --no-merges --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
-          if [ ! -s "$log_file" ]; then
-            git log --reverse --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
-          fi
-
-          # One section per commit type; each item keeps the commit subject and links to the commit.
-          sections_dir="$(mktemp -d)"
-          while IFS=$'\t' read -r short full subject; do
-            [ -n "$short" ] || continue
-            # Notes about the notes themselves are not release content.
-            if [[ "$subject" =~ ^docs\(trail\) ]]; then continue; fi
-            type="other"
-            text="$subject"
-            if [[ "$subject" =~ ^([a-z]+)(\([^\)]*\))?!?:\ (.*)$ ]]; then
-              type="${BASH_REMATCH[1]}"
-              text="${BASH_REMATCH[3]}"
-            fi
-            case "$type" in
-              feat) group="1-features" ;;
-              fix) group="2-fixes" ;;
-              perf) group="3-performance" ;;
-              *) group="4-internal" ;;
-            esac
-            text="$(printf '%s' "$text" | sed -E 's/^(.)/\U\1/')"
-            printf -- '- %s ([`%s`](%s/commit/%s))\n' "$text" "$short" "$repo_url" "$full" >> "$sections_dir/$group"
-          done < "$log_file"
-
-          emit_section() {
-            local file="$sections_dir/$1" title="$2" fold="${3:-}"
-            [ -s "$file" ] || return 0
-            if [ "$fold" = "fold" ]; then
-              echo "<details>"
-              echo "<summary><b>$title</b> ($(wc -l < "$file" | tr -d ' '))</summary>"
-              echo
-              cat "$file"
-              echo
-              echo "</details>"
-            else
-              echo "### $title"
-              echo
-              cat "$file"
-            fi
-            echo
-          }
-
-          logo_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/design/skipi_logo_long.svg"
-          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
-            channel_badge="https://img.shields.io/badge/channel-pre--release-orange?style=flat-square"
-          else
-            channel_badge="https://img.shields.io/badge/channel-stable-3DDC84?style=flat-square"
-          fi
-
-          {
-            echo "<p align=\"center\">"
-            echo "  <img src=\"$logo_url\" alt=\"SKIPI\" width=\"420\" />"
-            echo "</p>"
-            echo
-            echo "<p align=\"center\">"
-            echo "  <img src=\"https://img.shields.io/badge/version-${VERSION_NAME//-/--}-4285F4?style=flat-square\" alt=\"Version\" />"
-            echo "  <img src=\"https://img.shields.io/badge/build-${VERSION_CODE}-555555?style=flat-square\" alt=\"Build\" />"
-            echo "  <img src=\"$channel_badge\" alt=\"Channel\" />"
-            echo "</p>"
-            echo
-            # The app reads the build number from this exact line (AppReleaseVersions.extractVersionCodeFromBody);
-            # without it the update check cannot tell that this release is newer.
-            echo "- Version name: $VERSION_NAME"
-            echo "- Version code: $VERSION_CODE"
-            echo
-            if [ -n "$previous_tag" ]; then
-              echo "> **Since [$previous_tag](${repo_url}/releases/tag/${previous_tag})** · [full diff \`$previous_tag...$TAG_NAME\`](${repo_url}/compare/${previous_tag}...${TAG_NAME})"
-              echo
-            fi
-
-            if [ -n "$(cat "$sections_dir"/* 2>/dev/null)" ]; then
-              emit_section 1-features "✨ New"
-              emit_section 2-fixes "🐞 Fixed"
-              emit_section 3-performance "⚡ Faster and lighter"
-              emit_section 4-internal "🔧 Under the hood" fold
-            else
-              echo "No commit changes found."
-              echo
-            fi
-          } > release-notes.md
-
-          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
-          cat release-notes.md
-
-      - name: Create GitHub Release
-        if: steps.version.outputs.create_github_release == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ steps.version.outputs.tag_name }}
-          IS_PRERELEASE: ${{ steps.version.outputs.is_prerelease }}
-        run: |
-          set -euo pipefail
-
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            kind_flags=(--prerelease --latest=false)
-            title="SKIPI $TAG_NAME (pre-release)"
-          else
-            kind_flags=(--prerelease=false --latest)
-            title="SKIPI $TAG_NAME"
-          fi
-
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            already_prerelease="$(gh release view "$TAG_NAME" --json isPrerelease --jq .isPrerelease)"
-            if [ "$IS_PRERELEASE" = "true" ] && [ "$already_prerelease" = "false" ]; then
-              echo "::error::$TAG_NAME is already a published release; refusing to turn it back into a pre-release."
-              exit 1
-            fi
-            gh release upload "$TAG_NAME" github-release-artifacts/*.apk --clobber
-            gh release edit "$TAG_NAME"               --title "$title"               --notes-file release-notes.md               "${kind_flags[@]}"
-          else
-            gh release create "$TAG_NAME" github-release-artifacts/*.apk               --title "$title"               --notes-file release-notes.md               "${kind_flags[@]}"
-          fi
-
-      - name: Upload release APKs to Telegram
-        if: env.SEND_TO_TELEGRAM == 'true' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mapfile -d '' apks < <(find release-artifacts -maxdepth 1 -type f -name '*.apk' -print0 | sort -z)
-          if [ "${#apks[@]}" -eq 0 ]; then
-            echo "::error::No APK files were found in release-artifacts before Telegram upload."
-            find release-artifacts -maxdepth 1 -type f -print || true
-            exit 1
-          fi
-
-          ls -lh release-artifacts
-          max_document_bytes="${TELEGRAM_MAX_DOCUMENT_BYTES:-52428800}"
-          commit_id="$(git rev-parse HEAD)"
-          commit_short_id="$(git rev-parse --short=12 HEAD)"
-          commit_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$commit_id"
-          workflow_run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          commit_message="$(git log -1 --pretty=%B)"
-          commit_message="${commit_message//$'\r'/}"
-          if [ -z "${commit_message//[[:space:]]/}" ]; then
-            commit_message="(empty commit message)"
-          fi
-          if [ "${#commit_message}" -gt 650 ]; then
-            commit_message="${commit_message:0:650}"$'\n...'
-          fi
-          commit_message_html="$(printf '%s' "$commit_message" | python3 -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=False), end="")')"
-
-          for apk in "${apks[@]}"; do
-            apk_path="$(realpath "$apk")"
-            apk_name="$(basename "$apk")"
-            if [ ! -r "$apk_path" ]; then
-              echo "::error::APK is not readable: $apk_path"
-              exit 1
-            fi
-
-            apk_size="$(stat -c '%s' "$apk_path")"
-            if [ "$apk_size" -gt "$max_document_bytes" ]; then
-              echo "::warning::Skipping Telegram upload for $apk_name because it is $apk_size bytes, above the $max_document_bytes byte limit."
-              continue
-            fi
-
-            echo "Uploading $apk_name to Telegram"
-
-            caption="$(printf 'SKIPI\n\n%s\n\n%s\n<a href="%s">Commit</a> | <a href="%s">Workflow run</a>' \
-              "$commit_message_html" \
-              "$commit_short_id" \
-              "$commit_url" \
-              "$workflow_run_url")"
-
-            args=(
-              --fail-with-body
-              -sS
-              -X POST
-              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
-              --form-string "chat_id=${TELEGRAM_CHAT_ID}"
-              --form "document=@${apk_path};filename=${apk_name}"
-              --form-string "caption=${caption}"
-              --form-string "parse_mode=HTML"
-            )
-
-            if [ -n "${TELEGRAM_MESSAGE_THREAD_ID:-}" ]; then
-              args+=(--form-string "message_thread_id=${TELEGRAM_MESSAGE_THREAD_ID}")
-            fi
-
-            curl "${args[@]}"
-          done
+      # The same APKs under the names the GitHub Release gives them, for the publish job.
+      - name: Upload the APKs for the release
+        uses: actions/upload-artifact@v7
+        with:
+          name: github-release-apks
+          path: github-release-artifacts/*.apk
+          if-no-files-found: error
 
   desktop-windows:
     name: Build Windows Desktop (portable)
-    # Runs after the APK job so the GitHub Release (if any) already exists to attach the archive to.
-    needs: release
+    needs: prepare
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION_NAME: ${{ needs.release.outputs.version_name }}
-      TAG_NAME: ${{ needs.release.outputs.tag_name }}
-      CREATE_GITHUB_RELEASE: ${{ needs.release.outputs.create_github_release }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
 
     steps:
       - name: Checkout
@@ -692,23 +444,13 @@ jobs:
             SKIPI-windows-x64-portable.zip
           if-no-files-found: error
 
-      - name: Attach the installer and the archive to the GitHub Release
-        if: env.CREATE_GITHUB_RELEASE == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release upload "$TAG_NAME" SKIPI-windows-x64.msi SKIPI-windows-x64-portable.zip --clobber
-
   desktop-linux:
     name: Build Linux Desktop (AppImage, deb, rpm)
-    needs: release
+    needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION_NAME: ${{ needs.release.outputs.version_name }}
-      TAG_NAME: ${{ needs.release.outputs.tag_name }}
-      CREATE_GITHUB_RELEASE: ${{ needs.release.outputs.create_github_release }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
 
     steps:
       - name: Checkout
@@ -836,23 +578,13 @@ jobs:
             SKIPI-linux-x64-portable.tar.gz
           if-no-files-found: error
 
-      - name: Attach the packages to the GitHub Release
-        if: env.CREATE_GITHUB_RELEASE == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release upload "$TAG_NAME" SKIPI-linux-x64.AppImage SKIPI-linux-x64.deb SKIPI-linux-x64.rpm SKIPI-linux-x64-portable.tar.gz --clobber
-
   desktop-macos:
     name: Build macOS Desktop (Apple Silicon)
-    needs: release
+    needs: prepare
     runs-on: macos-latest
     timeout-minutes: 60
     env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION_NAME: ${{ needs.release.outputs.version_name }}
-      TAG_NAME: ${{ needs.release.outputs.tag_name }}
-      CREATE_GITHUB_RELEASE: ${{ needs.release.outputs.create_github_release }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
 
     steps:
       - name: Checkout
@@ -939,26 +671,325 @@ jobs:
           path: SKIPI-macos-arm64.dmg
           if-no-files-found: error
 
-      - name: Attach the disk image to the GitHub Release
-        if: env.CREATE_GITHUB_RELEASE == 'true'
+  publish:
+    name: Tag and publish the release
+    # Only after Android and every desktop platform succeeded; a failed or skipped build skips this job.
+    needs: [prepare, android, desktop-windows, desktop-linux, desktop-macos]
+    if: needs.prepare.outputs.create_github_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: ${{ needs.prepare.outputs.tag_name }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
+      VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
+      IS_PRERELEASE: ${{ needs.prepare.outputs.is_prerelease }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download the APKs
+        uses: actions/download-artifact@v7
+        with:
+          name: github-release-apks
+          path: release-files
+
+      - name: Download the desktop packages
+        uses: actions/download-artifact@v7
+        with:
+          pattern: SKIPI_${{ env.VERSION_NAME }}-*
+          path: release-files
+          merge-multiple: true
+
+      # The Android artifact of the same pattern carries the APKs under their long names; the release
+      # has them under the short ones only.
+      - name: List the release files
         shell: bash
         run: |
           set -euo pipefail
-          gh release upload "$TAG_NAME" SKIPI-macos-arm64.dmg --clobber
+          find release-files -maxdepth 1 -name 'SKIPI_*.apk' -delete
+          ls -lh release-files
+
+      - name: Write the release notes
+        id: release_info
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_sha="$(git rev-parse HEAD)"
+          git fetch --tags --force
+
+          if git rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
+            tag_sha="$(git rev-list -n 1 "$TAG_NAME")"
+            if [ "$tag_sha" != "$current_sha" ]; then
+              echo "::error::Tag $TAG_NAME already exists at $tag_sha, but this workflow is running at $current_sha."
+              exit 1
+            fi
+            echo "Tag $TAG_NAME already exists on the current commit."
+          fi
+
+          # A pre-release is compared with the closest earlier tag of any kind (the previous pre-release or release),
+          # so each pre-release lists only what is new in it; a full release is compared with the previous full release.
+          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
+            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
+          else
+            tag_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          fi
+          mapfile -t release_tags < <(
+            git for-each-ref --format='%(refname:short)' refs/tags |
+              grep -E "$tag_pattern" || true
+          )
+
+          previous_candidates="$(mktemp)"
+          for candidate in "${release_tags[@]}"; do
+            if [ "$candidate" = "$TAG_NAME" ]; then
+              continue
+            fi
+            if git merge-base --is-ancestor "$candidate" "$current_sha"; then
+              count="$(git rev-list --count "${candidate}..${current_sha}")"
+              printf '%s\t%s\n' "$count" "$candidate" >> "$previous_candidates"
+            fi
+          done
+
+          previous_tag=""
+          if [ -s "$previous_candidates" ]; then
+            previous_tag="$(sort -n "$previous_candidates" | head -n 1 | cut -f2-)"
+          fi
+
+          range="$current_sha"
+          if [ -n "$previous_tag" ]; then
+            range="${previous_tag}..${current_sha}"
+          fi
+
+          repo_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          log_file="$(mktemp)"
+          git log --reverse --no-merges --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
+          if [ ! -s "$log_file" ]; then
+            git log --reverse --pretty=format:"%h%x09%H%x09%s" "$range" > "$log_file"
+          fi
+
+          # One section per commit type; each item keeps the commit subject and links to the commit.
+          sections_dir="$(mktemp -d)"
+          while IFS=$'\t' read -r short full subject; do
+            [ -n "$short" ] || continue
+            # Notes about the notes themselves are not release content.
+            if [[ "$subject" =~ ^docs\(trail\) ]]; then continue; fi
+            type="other"
+            text="$subject"
+            if [[ "$subject" =~ ^([a-z]+)(\([^\)]*\))?!?:\ (.*)$ ]]; then
+              type="${BASH_REMATCH[1]}"
+              text="${BASH_REMATCH[3]}"
+            fi
+            case "$type" in
+              feat) group="1-features" ;;
+              fix) group="2-fixes" ;;
+              perf) group="3-performance" ;;
+              *) group="4-internal" ;;
+            esac
+            text="$(printf '%s' "$text" | sed -E 's/^(.)/\U\1/')"
+            printf -- '- %s ([`%s`](%s/commit/%s))\n' "$text" "$short" "$repo_url" "$full" >> "$sections_dir/$group"
+          done < "$log_file"
+
+          emit_section() {
+            local file="$sections_dir/$1" title="$2" fold="${3:-}"
+            [ -s "$file" ] || return 0
+            if [ "$fold" = "fold" ]; then
+              echo "<details>"
+              echo "<summary><b>$title</b> ($(wc -l < "$file" | tr -d ' '))</summary>"
+              echo
+              cat "$file"
+              echo
+              echo "</details>"
+            else
+              echo "### $title"
+              echo
+              cat "$file"
+            fi
+            echo
+          }
+
+          logo_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/design/skipi_logo_long.svg"
+          if [ "${IS_PRERELEASE:-false}" = "true" ]; then
+            channel_badge="https://img.shields.io/badge/channel-pre--release-orange?style=flat-square"
+          else
+            channel_badge="https://img.shields.io/badge/channel-stable-3DDC84?style=flat-square"
+          fi
+
+          {
+            echo "<p align=\"center\">"
+            echo "  <img src=\"$logo_url\" alt=\"SKIPI\" width=\"420\" />"
+            echo "</p>"
+            echo
+            echo "<p align=\"center\">"
+            echo "  <img src=\"https://img.shields.io/badge/version-${VERSION_NAME//-/--}-4285F4?style=flat-square\" alt=\"Version\" />"
+            echo "  <img src=\"https://img.shields.io/badge/build-${VERSION_CODE}-555555?style=flat-square\" alt=\"Build\" />"
+            echo "  <img src=\"$channel_badge\" alt=\"Channel\" />"
+            echo "</p>"
+            echo
+            # The app reads the build number from this exact line (AppReleaseVersions.extractVersionCodeFromBody);
+            # without it the update check cannot tell that this release is newer.
+            echo "- Version name: $VERSION_NAME"
+            echo "- Version code: $VERSION_CODE"
+            echo
+            if [ -n "$previous_tag" ]; then
+              echo "> **Since [$previous_tag](${repo_url}/releases/tag/${previous_tag})** · [full diff \`$previous_tag...$TAG_NAME\`](${repo_url}/compare/${previous_tag}...${TAG_NAME})"
+              echo
+            fi
+
+            if [ -n "$(cat "$sections_dir"/* 2>/dev/null)" ]; then
+              emit_section 1-features "✨ New"
+              emit_section 2-fixes "🐞 Fixed"
+              emit_section 3-performance "⚡ Faster and lighter"
+              emit_section 4-internal "🔧 Under the hood" fold
+            else
+              echo "No commit changes found."
+              echo
+            fi
+          } > release-notes.md
+
+          echo "previous_tag=$previous_tag" >> "$GITHUB_OUTPUT"
+          cat release-notes.md
+
+      - name: Publish the GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            kind_flags=(--prerelease --latest=false)
+            title="SKIPI $TAG_NAME (pre-release)"
+          else
+            kind_flags=(--prerelease=false --latest)
+            title="SKIPI $TAG_NAME"
+          fi
+
+          existing="$(gh release view "$TAG_NAME" --json isDraft,isPrerelease 2>/dev/null || true)"
+          if [ -n "$existing" ] && [ "$(jq -r .isDraft <<< "$existing")" = "false" ]; then
+            # A re-run of a published release replaces its files and notes.
+            if [ "$IS_PRERELEASE" = "true" ] && [ "$(jq -r .isPrerelease <<< "$existing")" = "false" ]; then
+              echo "::error::$TAG_NAME is already a published release; refusing to turn it back into a pre-release."
+              exit 1
+            fi
+            gh release upload "$TAG_NAME" release-files/* --clobber
+            gh release edit "$TAG_NAME" --title "$title" --notes-file release-notes.md "${kind_flags[@]}"
+            exit 0
+          fi
+
+          # A draft creates no tag and nobody sees it; it is published only once every file is on it, and
+          # publishing creates the tag at this commit. A draft left by an earlier failed run is replaced.
+          if [ -n "$existing" ]; then gh release delete "$TAG_NAME" --yes; fi
+          gh release create "$TAG_NAME" release-files/* --draft --target "$(git rev-parse HEAD)" \
+            --title "$title" --notes-file release-notes.md "${kind_flags[@]}"
+          gh release edit "$TAG_NAME" --draft=false
+
+  telegram:
+    name: Send the APKs to Telegram
+    # After every build and, when there is one, after the release was published.
+    needs: [prepare, android, desktop-windows, desktop-linux, desktop-macos, publish]
+    if: ${{ !cancelled() && !failure() && (github.event_name != 'workflow_dispatch' || github.event.inputs.send_to_telegram == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+      TELEGRAM_MAX_DOCUMENT_BYTES: ${{ vars.TELEGRAM_MAX_DOCUMENT_BYTES }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download the APKs
+        uses: actions/download-artifact@v7
+        with:
+          name: SKIPI_${{ needs.prepare.outputs.version_name }}-${{ needs.prepare.outputs.version_code }}
+          path: release-artifacts
+
+      - name: Upload release APKs to Telegram
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -d '' apks < <(find release-artifacts -maxdepth 1 -type f -name '*.apk' -print0 | sort -z)
+          if [ "${#apks[@]}" -eq 0 ]; then
+            echo "::error::No APK files were found in release-artifacts before Telegram upload."
+            find release-artifacts -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          ls -lh release-artifacts
+          max_document_bytes="${TELEGRAM_MAX_DOCUMENT_BYTES:-52428800}"
+          commit_id="$(git rev-parse HEAD)"
+          commit_short_id="$(git rev-parse --short=12 HEAD)"
+          commit_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$commit_id"
+          workflow_run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          commit_message="$(git log -1 --pretty=%B)"
+          commit_message="${commit_message//$'\r'/}"
+          if [ -z "${commit_message//[[:space:]]/}" ]; then
+            commit_message="(empty commit message)"
+          fi
+          if [ "${#commit_message}" -gt 650 ]; then
+            commit_message="${commit_message:0:650}"$'\n...'
+          fi
+          commit_message_html="$(printf '%s' "$commit_message" | python3 -c 'import html, sys; print(html.escape(sys.stdin.read(), quote=False), end="")')"
+
+          for apk in "${apks[@]}"; do
+            apk_path="$(realpath "$apk")"
+            apk_name="$(basename "$apk")"
+            if [ ! -r "$apk_path" ]; then
+              echo "::error::APK is not readable: $apk_path"
+              exit 1
+            fi
+
+            apk_size="$(stat -c '%s' "$apk_path")"
+            if [ "$apk_size" -gt "$max_document_bytes" ]; then
+              echo "::warning::Skipping Telegram upload for $apk_name because it is $apk_size bytes, above the $max_document_bytes byte limit."
+              continue
+            fi
+
+            echo "Uploading $apk_name to Telegram"
+
+            caption="$(printf 'SKIPI\n\n%s\n\n%s\n<a href="%s">Commit</a> | <a href="%s">Workflow run</a>' \
+              "$commit_message_html" \
+              "$commit_short_id" \
+              "$commit_url" \
+              "$workflow_run_url")"
+
+            args=(
+              --fail-with-body
+              -sS
+              -X POST
+              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+              --form-string "chat_id=${TELEGRAM_CHAT_ID}"
+              --form "document=@${apk_path};filename=${apk_name}"
+              --form-string "caption=${caption}"
+              --form-string "parse_mode=HTML"
+            )
+
+            if [ -n "${TELEGRAM_MESSAGE_THREAD_ID:-}" ]; then
+              args+=(--form-string "message_thread_id=${TELEGRAM_MESSAGE_THREAD_ID}")
+            fi
+
+            curl "${args[@]}"
+          done
 
   update-manifest:
     name: Publish the update manifest
     # The update check of every installed app reads this file, so it is written last: a release is announced
-    # only after its APKs and every desktop package are on it.
-    needs: [release, desktop-windows, desktop-linux, desktop-macos]
-    if: needs.release.outputs.create_github_release == 'true'
+    # only after it was published with its APKs and every desktop package.
+    needs: [prepare, publish]
+    if: needs.prepare.outputs.create_github_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
-      TAG_NAME: ${{ needs.release.outputs.tag_name }}
-      VERSION_NAME: ${{ needs.release.outputs.version_name }}
-      VERSION_CODE: ${{ needs.release.outputs.version_code }}
+      TAG_NAME: ${{ needs.prepare.outputs.tag_name }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
+      VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
     steps:
       - name: Build the manifest from the files the release really has
         shell: bash
