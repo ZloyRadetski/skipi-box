@@ -43,7 +43,7 @@ SKIPI является кроссплатформенным клиентом д�
 
 ## Возможности
 
-Клиент поддерживает VLESS, VMess, Trojan, Shadowsocks, Hysteria 2, WireGuard и AmneziaWG, а также SOCKS5, HTTP и произвольные конфигурации Xray в формате JSON. Серверы можно объединять в цепочки и в группы со стратегиями выбора, например с автоматической балансировкой по задержке.
+Клиент поддерживает VLESS, VMess, Trojan, Shadowsocks, Hysteria 2, NaiveProxy, WireGuard и AmneziaWG, а также SOCKS5, HTTP и произвольные конфигурации Xray в формате JSON. Серверы можно объединять в цепочки и в группы со стратегиями выбора, например с автоматической балансировкой по задержке.
 
 Маршрутизация описывается правилами в формате Shadowrocket (.conf), списками доменов, GeoIP и GeoSite. Для правил есть визуальный редактор. Подписки импортируются в форматах v2rayNG, Clash, Clash Meta (включая шифрование age-ключами) и Base64, а подписки и геобазы обновляются по расписанию.
 
@@ -55,7 +55,7 @@ SKIPI является кроссплатформенным клиентом д�
 
 ## Протоколы
 
-Для VLESS доступны Reality, XTLS Vision и TLS, а транспортом может быть TCP, WebSocket, gRPC, HTTP/2 и mKCP. VMess работает по тем же транспортам. Trojan поддерживает TLS поверх TCP, WebSocket и gRPC. Shadowsocks поддерживает шифры AEAD и SS-2022 на blake3. Hysteria 2 использует UDP и QUIC. WireGuard работает как обычный UDP-туннель, а AmneziaWG добавляет к нему настраиваемые заголовки и мусорные пакеты для защиты от DPI. SOCKS5 и HTTP применяются как обычные прокси с авторизацией или без неё.
+Для VLESS доступны Reality, XTLS Vision и TLS, а транспортом может быть TCP, WebSocket, gRPC, HTTP/2 и mKCP. VMess работает по тем же транспортам. Trojan поддерживает TLS поверх TCP, WebSocket и gRPC. Shadowsocks поддерживает шифры AEAD и SS-2022 на blake3. Hysteria 2 использует UDP и QUIC. NaiveProxy ходит через HTTPS CONNECT по HTTP/2 или HTTP/3. WireGuard работает как обычный UDP-туннель, а AmneziaWG добавляет к нему настраиваемые заголовки и мусорные пакеты для защиты от DPI. SOCKS5 и HTTP применяются как обычные прокси с авторизацией или без неё.
 
 ---
 

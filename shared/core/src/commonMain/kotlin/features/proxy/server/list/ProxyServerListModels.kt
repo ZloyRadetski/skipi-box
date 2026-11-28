@@ -18,6 +18,7 @@ enum class ProxyServerListAddAction {
     Socks,
     Hysteria2,
     Masque,
+    Naive,
     Wireguard,
     AmneziaWg,
 }

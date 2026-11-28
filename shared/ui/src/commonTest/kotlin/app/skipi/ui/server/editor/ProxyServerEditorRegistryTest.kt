@@ -9,6 +9,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.Masque
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -93,6 +94,24 @@ class ProxyServerEditorRegistryTest {
         assertEquals(original, copy)
         copy.remarks = "Masque Changed"
         assertEquals("Masque", original.remarks)
+    }
+
+    @Test
+    fun editableCopy_naive() {
+        val original = NaiveProxy().apply {
+            remarks = "Naive"
+            server = "naive.example.com"
+            user = "alice"
+            quic = true
+            headers = "{}"
+            concurrency = "4"
+        }
+
+        val copy = original.editableCopy() as NaiveProxy
+        assertNotSame(original, copy)
+        assertEquals(original, copy)
+        copy.remarks = "Naive Changed"
+        assertEquals("Naive", original.remarks)
     }
 
     @Test

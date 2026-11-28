@@ -43,7 +43,7 @@ macOS 版本面向 Apple Silicon 处理器构建，目前尚未签名和公证�
 
 ## 功能
 
-客户端支持 VLESS、VMess、Trojan、Shadowsocks、Hysteria 2、WireGuard 和 AmneziaWG，也支持 SOCKS5、HTTP 以及 JSON 格式的任意 Xray 配置。服务器可以组成代理链，也可以组成带有选择策略的分组，例如按延迟自动负载均衡。
+客户端支持 VLESS、VMess、Trojan、Shadowsocks、Hysteria 2、NaiveProxy、WireGuard 和 AmneziaWG，也支持 SOCKS5、HTTP 以及 JSON 格式的任意 Xray 配置。服务器可以组成代理链，也可以组成带有选择策略的分组，例如按延迟自动负载均衡。
 
 路由通过 Shadowrocket（.conf）格式的规则、域名列表、GeoIP 和 GeoSite 来描述，规则配有可视化编辑器。订阅可以按 v2rayNG、Clash、Clash Meta（包括 age 密钥加密）和 Base64 格式导入，订阅和 Geo 数据库会按计划自动更新。
 
@@ -55,7 +55,7 @@ macOS 版本面向 Apple Silicon 处理器构建，目前尚未签名和公证�
 
 ## 协议
 
-VLESS 支持 Reality、XTLS Vision 和 TLS，传输方式有 TCP、WebSocket、gRPC、HTTP/2 和 mKCP。VMess 使用相同的传输方式。Trojan 支持基于 TCP、WebSocket 和 gRPC 的 TLS。Shadowsocks 支持 AEAD 加密以及使用 blake3 的 SS-2022。Hysteria 2 使用 UDP 和 QUIC。WireGuard 作为普通的 UDP 隧道工作，AmneziaWG 在此基础上加入可配置的报头和垃圾数据包，用于对抗 DPI。SOCKS5 和 HTTP 作为普通代理使用，可以带认证，也可以不带。
+VLESS 支持 Reality、XTLS Vision 和 TLS，传输方式有 TCP、WebSocket、gRPC、HTTP/2 和 mKCP。VMess 使用相同的传输方式。Trojan 支持基于 TCP、WebSocket 和 gRPC 的 TLS。Shadowsocks 支持 AEAD 加密以及使用 blake3 的 SS-2022。Hysteria 2 使用 UDP 和 QUIC。NaiveProxy 通过基于 HTTP/2 或 HTTP/3 的 HTTPS CONNECT 建立隧道。WireGuard 作为普通的 UDP 隧道工作，AmneziaWG 在此基础上加入可配置的报头和垃圾数据包，用于对抗 DPI。SOCKS5 和 HTTP 作为普通代理使用，可以带认证，也可以不带。
 
 ---
 

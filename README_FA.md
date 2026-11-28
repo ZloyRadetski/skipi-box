@@ -49,7 +49,7 @@ SKIPI یک کلاینت چندسکویی برای کار با پروکسی و ت
 
 ## امکانات
 
-این کلاینت از VLESS، VMess، Trojan، Shadowsocks، Hysteria 2، WireGuard و AmneziaWG پشتیبانی می‌کند و SOCKS5، HTTP و پیکربندی‌های دلخواه Xray را در قالب JSON نیز می‌پذیرد. سرورها را می‌توان در زنجیره‌ها و در گروه‌هایی با راهبرد انتخاب، مثلاً توزیع خودکار بار بر اساس تأخیر، ترکیب کرد.
+این کلاینت از VLESS، VMess، Trojan، Shadowsocks، Hysteria 2، NaiveProxy، WireGuard و AmneziaWG پشتیبانی می‌کند و SOCKS5، HTTP و پیکربندی‌های دلخواه Xray را در قالب JSON نیز می‌پذیرد. سرورها را می‌توان در زنجیره‌ها و در گروه‌هایی با راهبرد انتخاب، مثلاً توزیع خودکار بار بر اساس تأخیر، ترکیب کرد.
 
 مسیریابی با قوانینی در قالب Shadowrocket (‎.conf)، فهرست‌های دامنه، GeoIP و GeoSite توصیف می‌شود و برای قوانین یک ویرایشگر بصری وجود دارد. اشتراک‌ها در قالب‌های v2rayNG، Clash، Clash Meta (از جمله رمزگذاری با کلید age) و Base64 وارد می‌شوند و اشتراک‌ها و پایگاه‌های Geo طبق زمان‌بندی به‌روزرسانی می‌شوند.
 
@@ -61,7 +61,7 @@ SKIPI یک کلاینت چندسکویی برای کار با پروکسی و ت
 
 ## پروتکل‌ها
 
-VLESS با Reality، XTLS Vision و TLS و روی TCP، WebSocket، gRPC، HTTP/2 و mKCP در دسترس است. VMess روی همان انتقال‌ها کار می‌کند. Trojan از TLS روی TCP، WebSocket و gRPC پشتیبانی می‌کند. Shadowsocks رمزهای AEAD و SS-2022 با blake3 را پشتیبانی می‌کند. Hysteria 2 از UDP و QUIC استفاده می‌کند. WireGuard مانند یک تونل معمولی UDP کار می‌کند و AmneziaWG سرآیندهای قابل تنظیم و بسته‌های زائد را برای مقابله با DPI به آن اضافه می‌کند. SOCKS5 و HTTP به‌عنوان پروکسی‌های معمولی، با احراز هویت یا بدون آن، به کار می‌روند.
+VLESS با Reality، XTLS Vision و TLS و روی TCP، WebSocket، gRPC، HTTP/2 و mKCP در دسترس است. VMess روی همان انتقال‌ها کار می‌کند. Trojan از TLS روی TCP، WebSocket و gRPC پشتیبانی می‌کند. Shadowsocks رمزهای AEAD و SS-2022 با blake3 را پشتیبانی می‌کند. Hysteria 2 از UDP و QUIC استفاده می‌کند. NaiveProxy از طریق HTTPS CONNECT روی HTTP/2 یا HTTP/3 تونل می‌زند. WireGuard مانند یک تونل معمولی UDP کار می‌کند و AmneziaWG سرآیندهای قابل تنظیم و بسته‌های زائد را برای مقابله با DPI به آن اضافه می‌کند. SOCKS5 و HTTP به‌عنوان پروکسی‌های معمولی، با احراز هویت یا بدون آن، به کار می‌روند.
 
 ---
 

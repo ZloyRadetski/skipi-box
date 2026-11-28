@@ -437,6 +437,7 @@
     <string name="proxy_server_list_add_socks">Socks را اضافه کنید</string>
     <string name="proxy_server_list_add_hysteria2">Hysteria2 را اضافه کنید</string>
     <string name="proxy_server_list_add_masque">MASQUE را اضافه کنید</string>
+    <string name="proxy_server_list_add_naive">NaiveProxy را اضافه کنید</string>
     <string name="proxy_server_list_add_wireguard">WireGuard را اضافه کنید</string>
     <string name="proxy_server_list_add_amnezia_wg">AmneziaWG را اضافه کنید</string>
     <string name="proxy_server_list_restart_service">سرویس را دوباره راه اندازی کنید</string>
@@ -517,6 +518,9 @@
     <string name="proxy_editor_masque_warp_private_key">کلید خصوصی WARP (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">کلید عمومی WARP (base64)</string>
     <string name="proxy_editor_masque_warp_address">آدرس‌های WARP (IPv4/IPv6، با کاما جدا شوند)</string>
+    <string name="proxy_editor_naive_quic">HTTP/3 (QUIC)</string>
+    <string name="proxy_editor_naive_quic_summary">به‌جای HTTP/2 از طریق QUIC متصل شوید. سرور باید HTTP/3 را بپذیرد</string>
+    <string name="proxy_editor_naive_concurrency">همزمانی ناامن (اختیاری، ۱ تا ۶۴)</string>
     <string name="proxy_editor_certificate_fingerprint">اثر انگشت گواهی (SHA-256)</string>
     <string name="proxy_editor_transport">انتقال</string>
     <string name="proxy_editor_transport_type">پروتکل انتقال</string>

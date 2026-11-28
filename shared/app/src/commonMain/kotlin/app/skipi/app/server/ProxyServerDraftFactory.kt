@@ -11,6 +11,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.Masque
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -48,6 +49,7 @@ fun createProxyServerDraft(kind: ProxyHomeServerKind): ProxyServer<*> = when (ki
     ProxyHomeServerKind.Socks -> Socks(port = "")
     ProxyHomeServerKind.Hysteria2 -> Hysteria2(port = "")
     ProxyHomeServerKind.Masque -> Masque(port = "")
+    ProxyHomeServerKind.Naive -> NaiveProxy(port = "")
     ProxyHomeServerKind.Wireguard -> Wireguard(port = "", reserved = "", address = "", mtu = "")
     ProxyHomeServerKind.AmneziaWg -> AmneziaWg(
         server = "",

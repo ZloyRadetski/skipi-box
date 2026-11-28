@@ -43,7 +43,7 @@ The macOS builds are made for Apple Silicon processors and are not yet signed or
 
 ## Features
 
-The client supports VLESS, VMess, Trojan, Shadowsocks, Hysteria 2, WireGuard and AmneziaWG, as well as SOCKS5, HTTP and arbitrary Xray configurations written in JSON. Servers can be combined into chains and into groups with a selection strategy, for example automatic balancing by latency.
+The client supports VLESS, VMess, Trojan, Shadowsocks, Hysteria 2, NaiveProxy, WireGuard and AmneziaWG, as well as SOCKS5, HTTP and arbitrary Xray configurations written in JSON. Servers can be combined into chains and into groups with a selection strategy, for example automatic balancing by latency.
 
 Routing is described by rules in the Shadowrocket (.conf) format, by domain lists, GeoIP and GeoSite, and a visual editor is available for the rules. Subscriptions are imported in the v2rayNG, Clash and Clash Meta formats (including age-key encryption) and in Base64, and both subscriptions and Geo databases are refreshed on a schedule.
 
@@ -55,7 +55,7 @@ Other features include server latency tests, a speed test, a DNS leak check, det
 
 ## Protocols
 
-VLESS is available with Reality, XTLS Vision and TLS, over TCP, WebSocket, gRPC, HTTP/2 and mKCP. VMess works over the same transports. Trojan supports TLS over TCP, WebSocket and gRPC. Shadowsocks supports AEAD ciphers and SS-2022 with blake3. Hysteria 2 uses UDP and QUIC. WireGuard works as an ordinary UDP tunnel, while AmneziaWG adds configurable headers and junk packets to it as a protection against DPI. SOCKS5 and HTTP are used as ordinary proxies, with or without authentication.
+VLESS is available with Reality, XTLS Vision and TLS, over TCP, WebSocket, gRPC, HTTP/2 and mKCP. VMess works over the same transports. Trojan supports TLS over TCP, WebSocket and gRPC. Shadowsocks supports AEAD ciphers and SS-2022 with blake3. Hysteria 2 uses UDP and QUIC. NaiveProxy tunnels through HTTPS CONNECT over HTTP/2 or HTTP/3. WireGuard works as an ordinary UDP tunnel, while AmneziaWG adds configurable headers and junk packets to it as a protection against DPI. SOCKS5 and HTTP are used as ordinary proxies, with or without authentication.
 
 ---
 

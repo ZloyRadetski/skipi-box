@@ -495,6 +495,7 @@
     <string name="proxy_server_list_add_socks">Add Socks</string>
     <string name="proxy_server_list_add_hysteria2">Add Hysteria2</string>
     <string name="proxy_server_list_add_masque">Add MASQUE</string>
+    <string name="proxy_server_list_add_naive">Add NaiveProxy</string>
     <string name="proxy_server_list_add_wireguard">Add WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">Add AmneziaWG</string>
     <string name="proxy_server_list_restart_service">Restart service</string>
@@ -577,6 +578,9 @@
     <string name="proxy_editor_masque_warp_private_key">WARP private key (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">WARP public key (base64)</string>
     <string name="proxy_editor_masque_warp_address">WARP addresses (IPv4/IPv6, comma-separated)</string>
+    <string name="proxy_editor_naive_quic">HTTP/3 (QUIC)</string>
+    <string name="proxy_editor_naive_quic_summary">Connect over QUIC instead of HTTP/2. The server must accept HTTP/3</string>
+    <string name="proxy_editor_naive_concurrency">Insecure concurrency (optional, 1-64)</string>
     <string name="proxy_editor_certificate_fingerprint">Certificate fingerprint (SHA-256)</string>
     <string name="proxy_editor_transport">Transport</string>
     <string name="proxy_editor_transport_type">Transport protocol</string>

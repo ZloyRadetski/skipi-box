@@ -10,6 +10,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.Masque
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -58,6 +59,7 @@ class ProxyServerListAddActionTest {
         assertTrue(createProxyServer(ProxyServerListAddAction.Socks) is Socks)
         assertTrue(createProxyServer(ProxyServerListAddAction.Hysteria2) is Hysteria2)
         assertTrue(createProxyServer(ProxyServerListAddAction.Masque) is Masque)
+        assertTrue(createProxyServer(ProxyServerListAddAction.Naive) is NaiveProxy)
         assertTrue(createProxyServer(ProxyServerListAddAction.Wireguard) is Wireguard)
         assertTrue(createProxyServer(ProxyServerListAddAction.AmneziaWg) is AmneziaWg)
         assertTrue(createProxyServer(ProxyServerListAddAction.Custom) is Custom)

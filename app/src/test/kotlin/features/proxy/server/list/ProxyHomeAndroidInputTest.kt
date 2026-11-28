@@ -329,6 +329,7 @@ class ProxyHomeAndroidInputTest {
                 ProxyHomeServerKind.Socks,
                 ProxyHomeServerKind.Hysteria2,
                 ProxyHomeServerKind.Masque,
+                ProxyHomeServerKind.Naive,
                 ProxyHomeServerKind.Wireguard,
                 ProxyHomeServerKind.AmneziaWg,
                 ProxyHomeServerKind.StrategyGroup,

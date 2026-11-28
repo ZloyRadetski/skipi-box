@@ -958,6 +958,7 @@ fun ProxyServerListPage(
                             ProxyHomeServerKind.Socks -> ProxyServerListAddAction.Socks
                             ProxyHomeServerKind.Hysteria2 -> ProxyServerListAddAction.Hysteria2
                             ProxyHomeServerKind.Masque -> ProxyServerListAddAction.Masque
+                            ProxyHomeServerKind.Naive -> ProxyServerListAddAction.Naive
                             ProxyHomeServerKind.Wireguard -> ProxyServerListAddAction.Wireguard
                             ProxyHomeServerKind.AmneziaWg -> ProxyServerListAddAction.AmneziaWg
                             ProxyHomeServerKind.StrategyGroup -> ProxyServerListAddAction.StrategyGroup

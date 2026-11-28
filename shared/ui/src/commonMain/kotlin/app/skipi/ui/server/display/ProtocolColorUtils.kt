@@ -20,6 +20,7 @@ object ProtocolColorUtils {
     val DefaultChainLight = Color(0xFF00838F)       // Cyan
     val DefaultJsonLight = Color(0xFF8E24AA)        // Magenta
     val DefaultMasqueLight = Color(0xFF6D4C41)      // Brown
+    val DefaultNaiveLight = Color(0xFF0277BD)       // Light Blue
 
     // Default colors for dark theme
     val DefaultVlessDark = Color(0xFF7986CB)
@@ -35,6 +36,7 @@ object ProtocolColorUtils {
     val DefaultChainDark = Color(0xFF4DD0E1)
     val DefaultJsonDark = Color(0xFFCE93D8)
     val DefaultMasqueDark = Color(0xFFA1887F)
+    val DefaultNaiveDark = Color(0xFF4FC3F7)
 
     fun resolveProtocolColor(
         protocol: String,
@@ -59,6 +61,7 @@ object ProtocolColorUtils {
                 customColors["masque"]?.let { Color(it) }
                     ?: if (isDark) DefaultMasqueDark else DefaultMasqueLight
             }
+            normalized.contains("naive") -> if (isDark) DefaultNaiveDark else DefaultNaiveLight
             normalized.contains("trojan") -> {
                 customColors["trojan"]?.let { Color(it) }
                     ?: if (isDark) DefaultTrojanDark else DefaultTrojanLight

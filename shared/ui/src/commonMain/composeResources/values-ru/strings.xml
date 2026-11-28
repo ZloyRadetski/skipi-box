@@ -478,6 +478,7 @@
     <string name="proxy_server_list_add_socks">Добавить Socks</string>
     <string name="proxy_server_list_add_hysteria2">Добавить Hysteria2</string>
     <string name="proxy_server_list_add_masque">Добавить MASQUE</string>
+    <string name="proxy_server_list_add_naive">Добавить NaiveProxy</string>
     <string name="proxy_server_list_add_wireguard">Добавить WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">Добавить AmneziaWG</string>
     <string name="proxy_server_list_restart_service">Перезапустить службу</string>
@@ -552,6 +553,9 @@
     <string name="proxy_editor_masque_warp_private_key">Приватный ключ WARP (base64)</string>
     <string name="proxy_editor_masque_warp_public_key">Публичный ключ WARP (base64)</string>
     <string name="proxy_editor_masque_warp_address">Адреса WARP (IPv4/IPv6, через запятую)</string>
+    <string name="proxy_editor_naive_quic">HTTP/3 (QUIC)</string>
+    <string name="proxy_editor_naive_quic_summary">Подключаться по QUIC вместо HTTP/2. Сервер должен принимать HTTP/3</string>
+    <string name="proxy_editor_naive_concurrency">Небезопасная параллельность (необязательно, 1-64)</string>
     <string name="proxy_editor_certificate_fingerprint">Отпечаток сертификата (SHA-256)</string>
     <string name="proxy_editor_transport">Сетевой транспорт</string>
     <string name="proxy_editor_transport_type">Протокол транспорта</string>

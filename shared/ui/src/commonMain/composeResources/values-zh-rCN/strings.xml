@@ -445,6 +445,7 @@
     <string name="proxy_server_list_add_socks">添加 Socks</string>
     <string name="proxy_server_list_add_hysteria2">添加 Hysteria2</string>
     <string name="proxy_server_list_add_masque">添加 MASQUE</string>
+    <string name="proxy_server_list_add_naive">添加 NaiveProxy</string>
     <string name="proxy_server_list_add_wireguard">添加 WireGuard</string>
     <string name="proxy_server_list_add_amnezia_wg">添加 AmneziaWG</string>
     <string name="proxy_server_list_restart_service">重启服务</string>
@@ -525,6 +526,9 @@
     <string name="proxy_editor_masque_warp_private_key">WARP 私钥（base64）</string>
     <string name="proxy_editor_masque_warp_public_key">WARP 公钥（base64）</string>
     <string name="proxy_editor_masque_warp_address">WARP 地址（IPv4/IPv6，以逗号分隔）</string>
+    <string name="proxy_editor_naive_quic">HTTP/3 (QUIC)</string>
+    <string name="proxy_editor_naive_quic_summary">使用 QUIC 而不是 HTTP/2 连接，服务器必须支持 HTTP/3</string>
+    <string name="proxy_editor_naive_concurrency">不安全并发数（可选，1-64）</string>
     <string name="proxy_editor_certificate_fingerprint">证书指纹 (SHA-256)</string>
     <string name="proxy_editor_transport">传输</string>
     <string name="proxy_editor_transport_type">传输协议</string>

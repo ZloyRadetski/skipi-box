@@ -12,6 +12,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.Masque
+import features.proxy.server.model.NaiveProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -44,6 +45,7 @@ fun ProxyServer<*>.editableCopy(): ProxyServer<*> {
         is AmneziaWg -> copy()
         is Hysteria2 -> copy()
         is Masque -> copy()
+        is NaiveProxy -> copy()
         else -> unsupportedProxyServerEditor()
     }
 }
@@ -80,6 +82,7 @@ fun LazyListScope.proxyServerEditorContent(
         is AmneziaWg -> amneziaWgProxyServer(proxyServer)
         is Hysteria2 -> hysteria2ProxyServer(proxyServer)
         is Masque -> masqueProxyServer(proxyServer)
+        is NaiveProxy -> naiveProxyServer(proxyServer)
         else -> proxyServer.unsupportedProxyServerEditor()
     }
 }
